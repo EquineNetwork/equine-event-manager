@@ -142,7 +142,8 @@ a:hover{text-decoration:none}
 .eem-stall-chart-table tbody tr{border-bottom:1px solid #dcdcde}
 .eem-loc-check-col{width:34px}
 .eem-chart-unit-num{font-weight:700;color:#031B4E}
-tr.eem-chart-barn-row td{background:#fdf4e7;padding:9px 22px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#b45309;border-bottom:1px solid #f3e2c4;border-top:1px solid #f3e2c4}
+tr.eem-chart-barn-row td{background:#f8fafc;padding:10px 14px;font-size:13.5px;color:#031B4E;border-bottom:1px solid #e5e7eb;border-top:1px solid #e5e7eb;text-transform:none;vertical-align:middle;white-space:nowrap}
+tr.eem-chart-barn-row td:first-child{padding-left:22px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#031B4E}
 .eem-loc-cell-td{white-space:nowrap}
 .eem-loc-cell{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;border:1px solid;font-size:12px;font-weight:700;font-family:inherit;line-height:1.5;cursor:pointer;white-space:nowrap;background:#fff}
 .eem-loc-cell .eem-occ-chevron{width:12px;height:12px;flex-shrink:0;opacity:.7}
@@ -151,10 +152,7 @@ tr.eem-chart-barn-row td{background:#fdf4e7;padding:9px 22px;font-size:12px;font
 .eem-loc-cell--cleaning{background:#f5f3ff;border-color:#ddd6fe;color:#7c3aed}
 .eem-loc-cell--blocked{background:#f3f4f5;border-color:#e2e4e7;color:#64748b;cursor:default}
 /* ★ Per-day metrics rows (By Location – List) — at-a-glance availability/cleaning per day */
-.eem-chart-day-metrics td{background:#fbfdff;border-bottom:1px solid #eef2f7;padding:8px 14px;vertical-align:middle;white-space:nowrap}
-.eem-chart-day-metrics td:first-child{padding-left:22px}
-.eem-chart-day-metrics--all td{background:#f0f4fb;border-bottom:1px solid #d9e2f2}
-.eem-day-metrics-label{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#64748b}
+/* per-day metrics live inside the barn header row */
 /* Available = hero number; cleaning/blocked surface only when there's something to act on */
 .eem-day-metric{white-space:nowrap;text-transform:none}
 .eem-dm-avail{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#15803d}
@@ -541,15 +539,7 @@ tr.eem-chart-barn-row td{background:#fdf4e7;padding:9px 22px;font-size:12px;font
                   </tr>
                 </thead>
                 <tbody>
-                  <!-- ★ All-barns per-day totals -->
-                  <tr class="eem-chart-day-metrics eem-chart-day-metrics--all">
-                    <td colspan="3" class="eem-day-metrics-label">All barns</td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">431</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">4 to clean</span><span class="eem-dm-flag eem-dm-flag--block">1 blocked</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">426</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">4 to clean</span><span class="eem-dm-flag eem-dm-flag--block">1 blocked</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">455</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">3 to clean</span><span class="eem-dm-flag eem-dm-flag--block">1 blocked</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">493</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--block">2 blocked</span></td>
-                  </tr>
-                  <!-- Barn header row carries its own per-day metrics (no duplicate name row) -->
+                  <!-- Barn header row carries its own per-day metrics -->
                   <tr class="eem-chart-barn-row">
                     <td colspan="3">Montcrief</td>
                     <td class="eem-day-metric"><span class="eem-dm-avail">251</span><span class="eem-dm-unit">avail</span><span class="eem-dm-flag eem-dm-flag--clean">3 to clean</span></td>
@@ -616,14 +606,6 @@ tr.eem-chart-barn-row td{background:#fdf4e7;padding:9px 22px;font-size:12px;font
                   </tr>
                 </thead>
                 <tbody>
-                  <!-- ★ All-zones per-day totals -->
-                  <tr class="eem-chart-day-metrics eem-chart-day-metrics--all">
-                    <td colspan="3" class="eem-day-metrics-label">All zones</td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">68</span><span class="eem-dm-unit">avail</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">67</span><span class="eem-dm-unit">avail</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">69</span><span class="eem-dm-unit">avail</span></td>
-                    <td class="eem-day-metric"><span class="eem-dm-avail">71</span><span class="eem-dm-unit">avail</span></td>
-                  </tr>
                   <tr class="eem-chart-barn-row">
                     <td colspan="3">Premium Zone</td>
                     <td class="eem-day-metric"><span class="eem-dm-avail">38</span><span class="eem-dm-unit">avail</span></td>
