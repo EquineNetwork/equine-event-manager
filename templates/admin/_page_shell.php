@@ -17,6 +17,47 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+if ( ! function_exists( 'eem_action_allowed_html' ) ) {
+	/**
+	 * Allowed-HTML allowlist for page-header / topbar action slots.
+	 *
+	 * Extends post-content tags with inline SVG so icon buttons (Refresh,
+	 * Print All, Print Today, etc.) keep their glyphs — wp_kses_post() strips
+	 * <svg> and its children, which silently drops every action-button icon.
+	 *
+	 * @return array<string, array<string, bool>> kses tag/attribute map.
+	 */
+	function eem_action_allowed_html(): array {
+		$svg_global = array(
+			'xmlns'           => true,
+			'width'           => true,
+			'height'          => true,
+			'viewbox'         => true,
+			'fill'            => true,
+			'stroke'          => true,
+			'stroke-width'    => true,
+			'stroke-linecap'  => true,
+			'stroke-linejoin' => true,
+			'class'           => true,
+			'aria-hidden'     => true,
+			'focusable'       => true,
+		);
+		return array_merge(
+			wp_kses_allowed_html( 'post' ),
+			array(
+				'svg'      => $svg_global,
+				'path'     => array_merge( $svg_global, array( 'd' => true ) ),
+				'polyline' => array_merge( $svg_global, array( 'points' => true ) ),
+				'polygon'  => array_merge( $svg_global, array( 'points' => true ) ),
+				'line'     => array_merge( $svg_global, array( 'x1' => true, 'y1' => true, 'x2' => true, 'y2' => true ) ),
+				'rect'     => array_merge( $svg_global, array( 'x' => true, 'y' => true, 'rx' => true, 'ry' => true ) ),
+				'circle'   => array_merge( $svg_global, array( 'cx' => true, 'cy' => true, 'r' => true ) ),
+				'g'        => $svg_global,
+			)
+		);
+	}
+}
+
 if ( ! function_exists( 'eem_render_page_open' ) ) {
 	/**
 	 * Open the EEM page shell. Renders breadcrumb + page-wrap header.
@@ -42,16 +83,17 @@ if ( ! function_exists( 'eem_render_page_open' ) ) {
 		$args = wp_parse_args(
 			$args,
 			array(
-				'title'      => '',
-				'subtitle'   => '',
-				'meta'       => '',
-				'breadcrumb' => array(),
-				'actions'    => '',
+				'title'           => '',
+				'subtitle'        => '',
+				'meta'            => '',
+				'breadcrumb'      => array(),
+				'actions'         => '',
+				'topbar_actions'  => '',
 			)
 		);
 		?>
 		<div class="eem-page">
-			<?php eem_render_breadcrumb( $args['breadcrumb'] ); ?>
+			<?php eem_render_breadcrumb( $args['breadcrumb'], $args['topbar_actions'] ); ?>
 			<div class="eem-page-wrap">
 				<header class="eem-page-header">
 					<div class="eem-page-header-left">
@@ -66,7 +108,7 @@ if ( ! function_exists( 'eem_render_page_open' ) ) {
 						<?php endif; ?>
 					</div>
 					<?php if ( '' !== $args['actions'] ) : ?>
-						<div class="eem-page-actions"><?php echo wp_kses_post( $args['actions'] ); ?></div>
+						<div class="eem-page-actions"><?php echo wp_kses( $args['actions'], eem_action_allowed_html() ); ?></div>
 					<?php endif; ?>
 				</header>
 				<div class="eem-page-body">

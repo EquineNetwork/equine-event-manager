@@ -11195,34 +11195,143 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 }
 
 /* ── Daily Movement ───────────────────────────────────────────────── */
-.eem-shell-page--daily-movement .eem-page-body {
+/* Override WP admin body containers so the full viewport is #F7F9FC. */
+.eem-shell-page--daily-movement #wpcontent,
+.eem-shell-page--daily-movement #wpbody,
+.eem-shell-page--daily-movement #wpbody-content,
+.eem-shell-page--daily-movement .wrap {
+	background: #F7F9FC;
+}
+/* Full bleed: kill the .eem-page inset so topbar + header + cards span the full
+   content width. Each element supplies its own internal padding. */
+.eem-shell-page--daily-movement .eem-page {
 	padding: 0;
 }
-/* The page-wrap now holds ONLY the top card (header + overview + toolbar) —
-   the date sections render outside it (see render()). Give it the same subtle
-   border as the day cards so the top reads as its own card. */
-.eem-shell-page--daily-movement .eem-page-wrap {
-	border: 1px solid #e2e4e7;
-	border-radius: var(--eem-radius);
+
+/* Breadcrumb nav becomes the mockup's app-topbar for this page:
+   white, full-width, 56px tall, logo+breadcrumb left | actions right. */
+.eem-shell-page--daily-movement .eem-breadcrumb {
+	background: #fff;
+	border-bottom: 1px solid #e2e8f4;
+	padding: 0 24px;
+	height: 56px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin: 0;
+	flex-wrap: nowrap;
+	gap: 0;
 }
-/* Date sections float below the top card on the page background. */
-.eem-shell-page--daily-movement .eem-dm-sections {
-	padding: 14px 0 0;
+.eem-shell-page--daily-movement .eem-breadcrumb-left {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-shrink: 0;
+}
+.eem-shell-page--daily-movement .eem-breadcrumb-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-shrink: 0;
+}
+.eem-dm-topbar-updated {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 12px;
+	color: #94a3b8;
+}
+.eem-dm-topbar-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: #22c55e;
+	display: inline-block;
+	flex-shrink: 0;
+}
+.eem-dm-topbar-updated-text {
+	white-space: nowrap;
+}
+.eem-dm-topbar-btn {
+	display: inline-flex;
+	align-items: center;
+	cursor: pointer;
+	white-space: nowrap;
+	text-decoration: none;
+	font-weight: 600;
+	line-height: 1;
+}
+.eem-dm-topbar-btn svg {
+	flex-shrink: 0;
+	display: block;
+}
+/* Refresh: small chip — 12px / 6px 12px / radius 7px per mockup .refresh-btn. */
+.eem-dm-topbar-btn--refresh {
+	gap: 5px;
+	font-size: 12px;
+	padding: 6px 12px;
+	border-radius: 7px;
+	color: #1668F2;
+	background: #f0f5ff;
+	border: 1px solid #d0e0fb;
+}
+.eem-dm-topbar-btn--refresh:hover {
+	background: #e0ecff;
+	color: #1668F2;
+	text-decoration: none;
+}
+/* Print All: larger — 13px / 8px 16px / radius 8px per mockup .app-print-btn. */
+.eem-dm-topbar-btn--print {
+	gap: 6px;
+	font-size: 13px;
+	padding: 8px 16px;
+	border-radius: 8px;
+	color: #0d1b3e;
+	background: #F7F9FC;
+	border: 1px solid #d0daea;
+}
+.eem-dm-topbar-btn--print:hover {
+	background: #e8eef8;
+	color: #0d1b3e;
+	text-decoration: none;
+}
+/* Page-wrap is invisible — each element (hero, day rail, toolbar, date sections)
+   provides its own card treatment. Mockup body background (#F7F9FC) shows through. */
+.eem-shell-page--daily-movement .eem-page-wrap {
+	background: #F7F9FC;
+	border: none;
+	border-radius: 0;
+	overflow: visible;
+}
+/* Page header is a white horizontal band with a bottom border. */
+.eem-shell-page--daily-movement .eem-page-header {
+	background: #fff;
+	border-bottom: 1px solid #e2e8f4;
+	padding: 20px 24px 16px;
+	align-items: flex-start;
+}
+/* Page body is a flex column — hero, day rail, toolbar, and date sections
+   all stack with 16px gaps on a #F7F9FC field, matching the mockup's app-content. */
+.eem-shell-page--daily-movement .eem-page-body {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 20px 24px 48px;
+	background: #F7F9FC;
 }
 
 /* ── Today Hero card ────────────────────────────────────────────────── */
 .eem-dm-hero {
 	background: linear-gradient(135deg, #1668F2 0%, #0d4fc2 100%);
-	border-radius: var(--eem-radius);
+	border-radius: 12px;
 	padding: 20px 24px;
-	box-shadow: 0 4px 20px rgba(22, 104, 242, 0.22);
-	margin-bottom: 0;
+	box-shadow: 0 4px 20px rgba(22, 104, 242, 0.25);
 }
 .eem-dm-hero-top {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	justify-content: space-between;
-	margin-bottom: 18px;
+	margin-bottom: 16px;
 	flex-wrap: wrap;
 	gap: 8px;
 }
@@ -11241,7 +11350,7 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 	text-align: right;
 }
 .eem-dm-hero-week-num {
-	font-size: 22px;
+	font-size: 18px;
 	font-weight: 700;
 	color: #00e5ee;
 	line-height: 1;
@@ -11264,7 +11373,7 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 .eem-dm-hero-metric:first-child { padding-left: 0; }
 .eem-dm-hero-metric:last-child  { border-right: none; }
 .eem-dm-hero-icon {
-	font-size: 14px;
+	font-size: 15px;
 	color: rgba(255,255,255,0.7);
 	display: block;
 	margin-bottom: 2px;
@@ -11299,7 +11408,7 @@ a.eem-dm-day-pill,
 a.eem-dm-day-pill:visited {
 	background: #fff;
 	border: 1.5px solid #e2e8f4;
-	border-radius: var(--eem-radius);
+	border-radius: 10px;
 	padding: 11px 14px;
 	display: flex;
 	align-items: center;
@@ -11492,7 +11601,7 @@ textarea.eem-dm-note-textarea:focus {
 	padding: 14px 18px;
 	background: #fff;
 	border: 1px solid #e2e8f4;
-	border-radius: var(--eem-radius);
+	border-radius: 10px;
 	display: flex;
 	flex-wrap: wrap;
 	align-items: flex-end;
@@ -11514,17 +11623,46 @@ textarea.eem-dm-note-textarea:focus {
 .eem-dm-toolbar-group {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	gap: 5px;
 	/* Grow to fill the row; when the toolbar wraps to stack (tablet/phone),
 	   each group takes a full row so the selects go full width. */
-	flex: 1 1 240px;
+	flex: 1 1 200px;
 }
 .eem-dm-toolbar-label {
 	font-size: 11px;
-	font-weight: 600;
-	color: var(--eem-slate, #64748b);
+	font-weight: 700;
+	color: #94a3b8;
 	text-transform: uppercase;
-	letter-spacing: 0.05em;
+	letter-spacing: 0.06em;
+}
+/* Toolbar selects — match mockup .app-select exactly. */
+select.eem-dm-select {
+	box-sizing: border-box;
+	font-family: 'IBM Plex Sans', sans-serif;
+	font-size: 14px;
+	line-height: 1.5;
+	color: #0d1b3e;
+	background-color: #F7F9FC;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 10px center;
+	border: 1.5px solid #d0daea;
+	border-radius: 8px;
+	padding: 10px 32px 10px 12px;
+	appearance: none;
+	-webkit-appearance: none;
+	cursor: pointer;
+	width: 100%;
+	max-width: none;
+	height: 44px;
+	min-height: 44px;
+	box-shadow: none;
+	margin: 0;
+}
+select.eem-dm-select:focus {
+	outline: none;
+	border-color: #1668F2;
+	box-shadow: 0 0 0 3px rgba(22, 104, 242, 0.1);
 }
 .eem-dm-cell-order a {
 	color: var(--eem-electric, #1668F2);
@@ -11555,23 +11693,21 @@ textarea.eem-dm-note-textarea:focus {
 }
 .eem-dm-date-section {
 	background: #fff;
-	border: 1px solid #e2e4e7;
-	border-radius: var(--eem-radius);
+	border: 1px solid #e2e8f4;
+	border-radius: 10px;
 	overflow: hidden;
-	margin: 0 0 14px;
-}
-.eem-dm-date-section:last-child {
-	margin-bottom: 0;
 }
 /* Date heading + metric summary = the card's WHITE header. The colored
    Arriving/Departing bands + tables follow inside the same card. */
-.eem-dm-date-heading {
+/* .eem-page h3 reset (0,1,1) beats .eem-dm-date-heading (0,1,0) — use parent+class to win. */
+.eem-dm-date-section .eem-dm-date-heading {
 	font-size: 17px;
 	font-weight: 700;
 	color: #0d1b3e;
 	letter-spacing: -0.01em;
 	padding: 16px 20px 0;
 	background: #fff;
+	margin: 0;
 }
 .eem-dm-summary {
 	display: flex;
@@ -11624,9 +11760,9 @@ textarea.eem-dm-note-textarea:focus {
 .eem-dm-summary-stat.is-zero .eem-dm-summary-icon  { color: #c8d4e8; }
 .eem-dm-summary-stat.is-zero .eem-dm-summary-label { color: #c8d4e8; }
 
-/* Arriving = blue band, Departing = amber band — colored icon + text + tint so
-   the two halves of the day's table stand apart. Bands sit flush (margin 0). */
-.eem-dm-group-heading {
+/* Arriving = blue band, Departing = amber band. Use .eem-dm-date-section parent to
+   beat the .eem-page h4 { padding:0 } reset (0,1,1) with (0,2,0) specificity. */
+.eem-dm-date-section .eem-dm-group-heading {
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -11658,65 +11794,55 @@ textarea.eem-dm-note-textarea:focus {
 }
 .eem-dm-table {
 	width: 100%;
-	/* Keeps columns wide enough that cells don't wrap; the wrapper scrolls when
-	   the viewport is narrower than this. */
-	min-width: 820px;
-	/* Fixed layout so the Arriving + Departing tables (separate <table>s) share
-	   identical column geometry — columns line up across both. */
+	min-width: 750px;
+	/* Fixed layout so the nth-child column widths are authoritative and IDENTICAL
+	   across every day-section's separate table — auto layout sizes each table to
+	   its own content, misaligning columns between sections. */
 	table-layout: fixed;
 	border-collapse: collapse;
-	background: var(--eem-white, #fff);
-	/* Full-bleed (top/bottom rules only, no side border or radius) so it matches
-	   the full-bleed bands above; cell content is inset to line up. */
-	border-top: 1px solid var(--eem-border, #dcdcde);
-	border-radius: 0;
+	background: #fff;
 }
 .eem-dm-table th,
 .eem-dm-table td {
 	white-space: nowrap;
 }
-/* Line the first/last cells up with the 22px band-text inset. */
-.eem-dm-table th:first-child, .eem-dm-table td:first-child { padding-left: 22px; }
-.eem-dm-table th:last-child, .eem-dm-table td:last-child { padding-right: 22px; }
-/* Shared column widths (must total 100%): Stall, Customer, Order #, Arrival,
-   Departure, Shavings, Status. */
+.eem-dm-table th:first-child, .eem-dm-table td:first-child { padding-left: 20px; }
+.eem-dm-table th:last-child, .eem-dm-table td:last-child { padding-right: 20px; }
 /* 8 columns: Stall, Customer, Order #, Arrival, Departure, Shavings, Status, Notes */
-.eem-dm-table th:nth-child(1), .eem-dm-table td:nth-child(1) { width: 12%; }
-.eem-dm-table th:nth-child(2), .eem-dm-table td:nth-child(2) { width: 18%; }
-.eem-dm-table th:nth-child(3), .eem-dm-table td:nth-child(3) { width: 10%; }
-.eem-dm-table th:nth-child(4), .eem-dm-table td:nth-child(4) { width: 13%; }
-.eem-dm-table th:nth-child(5), .eem-dm-table td:nth-child(5) { width: 13%; }
-.eem-dm-table th:nth-child(6), .eem-dm-table td:nth-child(6) { width: 8%; text-align: center; }
-.eem-dm-table th:nth-child(7), .eem-dm-table td:nth-child(7) { width: 18%; }
-.eem-dm-table th:nth-child(8), .eem-dm-table td:nth-child(8) { width: 8%; text-align: center; }
+.eem-dm-table th:nth-child(1), .eem-dm-table td:nth-child(1) { width: 100px; }
+.eem-dm-table th:nth-child(2), .eem-dm-table td:nth-child(2) { width: 160px; }
+.eem-dm-table th:nth-child(3), .eem-dm-table td:nth-child(3) { width: 80px; }
+.eem-dm-table th:nth-child(4), .eem-dm-table td:nth-child(4) { width: 110px; }
+.eem-dm-table th:nth-child(5), .eem-dm-table td:nth-child(5) { width: 110px; }
+.eem-dm-table th:nth-child(6), .eem-dm-table td:nth-child(6) { width: 80px; text-align: center; }
+.eem-dm-table th:nth-child(7), .eem-dm-table td:nth-child(7) { width: 150px; }
+.eem-dm-table th:nth-child(8), .eem-dm-table td:nth-child(8) { width: 60px; min-width: 60px; text-align: center; }
 .eem-dm-table td { overflow: hidden; text-overflow: ellipsis; }
 /* Status cell hosts the dropdown menu — must not clip it. */
 .eem-dm-table td.eem-dm-cell-status { overflow: visible; }
 .eem-dm-table thead th {
-	background: var(--eem-gray-50, #f8fafc);
-	border-top: 1px solid #d9e2f2;
-	border-bottom: 1px solid #d9e2f2;
-	padding: 10px 12px;
-	text-align: left;
-	font-size: 12px;
-	font-weight: 600;
-	color: var(--eem-navy, #031B4E);
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
 	text-transform: uppercase;
-	letter-spacing: 0.04em;
+	color: #94a3b8;
+	padding: 10px 16px;
+	text-align: left;
+	border-bottom: 1px solid #f0f4fb;
+	background: #fff;
 }
 .eem-dm-table tbody td {
-	padding: 10px 12px;
-	border-bottom: 1px solid var(--eem-border, #dcdcde);
 	font-size: 14px;
-	color: var(--eem-navy, #1e293b);
-	vertical-align: top;
+	color: #0d1b3e;
+	padding: 14px 16px;
+	border-bottom: 1px solid #f7f9fc;
+	vertical-align: middle;
 }
 .eem-dm-table tbody tr:last-child td {
 	border-bottom: none;
 }
-/* Subtle zebra striping for readability across the wide row. */
-.eem-dm-table tbody tr:nth-child(even) td {
-	background: #f8fafc;
+.eem-dm-table tbody tr:hover td {
+	background: #fafbfe;
 }
 .eem-dm-cell-stall {
 	font-weight: 600;
@@ -11739,19 +11865,20 @@ textarea.eem-dm-note-textarea:focus {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-	/* Match the Stall & RV Charts name chips (.eem-occ-pill) exactly. */
-	padding: 4px 11px;
-	border-radius: 20px;
-	font-size: 12px;
+	padding: 7px 12px;
+	border-radius: 8px;
+	font-size: 13px;
 	font-weight: 600;
 	white-space: nowrap;
+	min-height: 36px;
 }
 .eem-dm-status::before {
 	content: '';
 	display: inline-block;
-	width: 6px;
-	height: 6px;
+	width: 7px;
+	height: 7px;
 	border-radius: 50%;
+	flex-shrink: 0;
 }
 .eem-dm-status-not_checked_in,
 .eem-dm-status-occupied {
@@ -11832,14 +11959,14 @@ textarea.eem-dm-note-textarea:focus {
 	   (JS sets top/left from the trigger's bounding rect on open). */
 	position: fixed;
 	z-index: 100000;
-	min-width: 150px;
+	min-width: 165px;
 	margin: 0;
-	padding: 4px;
+	padding: 5px;
 	list-style: none;
-	background: var(--eem-white, #fff);
-	border: 1px solid var(--eem-border, #dcdcde);
-	border-radius: var(--eem-radius, 3px);
-	box-shadow: 0 6px 18px rgba( 3, 27, 78, 0.12 );
+	background: #fff;
+	border: 1px solid #e2e8f4;
+	border-radius: 10px;
+	box-shadow: 0 8px 24px rgba(13, 27, 62, 0.12);
 	display: none;
 }
 .eem-dm-status-menu.open .eem-dm-status-options {
@@ -11851,19 +11978,21 @@ textarea.eem-dm-note-textarea:focus {
 	text-align: left;
 	background: none;
 	border: 0;
-	padding: 7px 10px;
-	border-radius: var(--eem-radius, 3px);
-	font-size: 13px;
+	padding: 11px 14px;
+	border-radius: 7px;
+	font-size: 14px;
 	font-weight: 500;
-	color: var(--eem-navy, #1e293b);
+	color: #0d1b3e;
+	min-height: 44px;
 	cursor: pointer;
 }
 .eem-dm-status-option:hover {
-	background: var(--eem-gray-50, #f1f5f9);
+	background: #f0f5ff;
+	color: #1668F2;
 }
 .eem-dm-status-option.is-current {
 	font-weight: 700;
-	color: var(--eem-electric, #1d4ed8);
+	color: #1668F2;
 }
 .eem-dm-status-needs_cleaning {
 	background: #fefce8;
@@ -11885,6 +12014,29 @@ textarea.eem-dm-note-textarea:focus {
 }
 
 /* ── Daily Movement: responsive ──────────────────────────────────── */
+/* Mockup mobile header (≤900px): collapse breadcrumb path to logo-only,
+   drop the "Live data" text (keep the dot), and shrink the Refresh / Print All
+   buttons to 40×40 icon-only squares. */
+@media (max-width: 900px) {
+	.eem-shell-page--daily-movement .eem-breadcrumb-sep,
+	.eem-shell-page--daily-movement .eem-breadcrumb-segment {
+		display: none;
+	}
+	.eem-shell-page--daily-movement .eem-dm-topbar-updated-text {
+		display: none;
+	}
+	.eem-shell-page--daily-movement .eem-dm-topbar-btn-label {
+		display: none;
+	}
+	.eem-shell-page--daily-movement .eem-dm-topbar-btn {
+		width: 40px;
+		height: 40px;
+		padding: 0;
+		border-radius: 8px;
+		justify-content: center;
+		gap: 0;
+	}
+}
 @media (max-width: 782px) {
 	/* Toolbar stacks: selects then Print View, each full width. */
 	.eem-dm-toolbar {

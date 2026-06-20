@@ -30,28 +30,33 @@ if ( ! function_exists( 'eem_render_breadcrumb' ) ) {
 	 *                        Omit/null `url` to render the segment as the current page.
 	 * @return void
 	 */
-	function eem_render_breadcrumb( array $segments = array() ) {
+	function eem_render_breadcrumb( array $segments = array(), string $topbar_actions = '' ) {
 		$logo_url = admin_url( 'admin.php?page=' . EEM_Admin::MENU_SLUG );
 		?>
 		<nav class="eem-breadcrumb" aria-label="<?php esc_attr_e( 'Breadcrumb', 'equine-event-manager' ); ?>">
-			<a class="eem-breadcrumb-logo" href="<?php echo esc_url( $logo_url ); ?>" aria-label="<?php esc_attr_e( 'Equine Event Manager dashboard', 'equine-event-manager' ); ?>">
-				<img src="<?php echo esc_url( EQUINE_EVENT_MANAGER_URL . 'assets/images/logo.png' ); ?>" alt="<?php esc_attr_e( 'Equine Event Manager', 'equine-event-manager' ); ?>" />
-			</a>
+			<div class="eem-breadcrumb-left">
+				<a class="eem-breadcrumb-logo" href="<?php echo esc_url( $logo_url ); ?>" aria-label="<?php esc_attr_e( 'Equine Event Manager dashboard', 'equine-event-manager' ); ?>">
+					<img src="<?php echo esc_url( EQUINE_EVENT_MANAGER_URL . 'assets/images/logo.png' ); ?>" alt="<?php esc_attr_e( 'Equine Event Manager', 'equine-event-manager' ); ?>" />
+				</a>
 
-			<?php
-			$last_index = count( $segments ) - 1;
-			foreach ( $segments as $index => $segment ) :
-				$label = isset( $segment['label'] ) ? (string) $segment['label'] : '';
-				$url   = isset( $segment['url'] ) ? (string) $segment['url'] : '';
-				$is_current = ( $index === $last_index ) || '' === $url;
-				?>
-				<span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
-				<?php if ( $is_current ) : ?>
-					<span class="eem-breadcrumb-segment" aria-current="page"><?php echo esc_html( $label ); ?></span>
-				<?php else : ?>
-					<a class="eem-breadcrumb-segment" href="<?php echo esc_url( $url ); ?>"><?php echo esc_html( $label ); ?></a>
-				<?php endif; ?>
-			<?php endforeach; ?>
+				<?php
+				$last_index = count( $segments ) - 1;
+				foreach ( $segments as $index => $segment ) :
+					$label = isset( $segment['label'] ) ? (string) $segment['label'] : '';
+					$url   = isset( $segment['url'] ) ? (string) $segment['url'] : '';
+					$is_current = ( $index === $last_index ) || '' === $url;
+					?>
+					<span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+					<?php if ( $is_current ) : ?>
+						<span class="eem-breadcrumb-segment" aria-current="page"><?php echo esc_html( $label ); ?></span>
+					<?php else : ?>
+						<a class="eem-breadcrumb-segment" href="<?php echo esc_url( $url ); ?>"><?php echo esc_html( $label ); ?></a>
+					<?php endif; ?>
+				<?php endforeach; ?>
+			</div>
+			<?php if ( '' !== $topbar_actions ) : ?>
+				<div class="eem-breadcrumb-actions"><?php echo wp_kses( $topbar_actions, function_exists( 'eem_action_allowed_html' ) ? eem_action_allowed_html() : wp_kses_allowed_html( 'post' ) ); ?></div>
+			<?php endif; ?>
 		</nav>
 		<?php
 	}

@@ -131,34 +131,46 @@ class EEM_Daily_Movement_Page {
 			. esc_html__( 'Print Today', 'equine-event-manager' )
 			. '</button>';
 
+		$refresh_url    = esc_url( add_query_arg( array(
+			'page'           => self::MENU_SLUG,
+			'reservation_id' => $reservation_id,
+			'date'           => $date,
+		), admin_url( 'admin.php' ) ) );
+		$topbar_actions = '<span class="eem-dm-topbar-updated">'
+			. '<span class="eem-dm-topbar-dot" aria-hidden="true"></span>'
+			. '<span class="eem-dm-topbar-updated-text">' . esc_html__( 'Live data', 'equine-event-manager' ) . '</span>'
+			. '</span>'
+			. '<a href="' . $refresh_url . '" class="eem-dm-topbar-btn eem-dm-topbar-btn--refresh" aria-label="' . esc_attr__( 'Refresh', 'equine-event-manager' ) . '">'
+			. '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>'
+			. '<span class="eem-dm-topbar-btn-label">' . esc_html__( 'Refresh', 'equine-event-manager' ) . '</span>'
+			. '</a>'
+			. '<button type="button" class="eem-dm-topbar-btn eem-dm-topbar-btn--print" onclick="window.print()" aria-label="' . esc_attr__( 'Print All', 'equine-event-manager' ) . '">'
+			. '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>'
+			. '<span class="eem-dm-topbar-btn-label">' . esc_html__( 'Print All', 'equine-event-manager' ) . '</span>'
+			. '</button>';
+
 		eem_render_page_open( array(
-			'title'      => __( 'Daily Movement', 'equine-event-manager' ),
-			'subtitle'   => __( 'Arrivals, departures, and check-in status for on-the-ground staff.', 'equine-event-manager' ),
-			'breadcrumb' => array(
+			'title'          => __( 'Daily Movement', 'equine-event-manager' ),
+			'subtitle'       => __( 'Arrivals, departures, and check-in status for on-the-ground staff.', 'equine-event-manager' ),
+			'breadcrumb'     => array(
 				array(
 					'label' => __( 'Reports', 'equine-event-manager' ),
 					'url'   => admin_url( 'admin.php?page=equine-event-manager-reports' ),
 				),
 				array( 'label' => __( 'Daily Movement', 'equine-event-manager' ) ),
 			),
-			'actions'    => $print_today_btn,
+			'actions'        => $print_today_btn,
+			'topbar_actions' => $topbar_actions,
 		) );
 
 		// Today Hero + Day Rail replace the old per-date mini-card overview grid.
 		self::render_today_hero( $today_report, $reservation_title, $all_rail_reports );
 		self::render_day_rail( $all_rail_reports, $date, $reservation_id );
-
 		self::render_toolbar( $reservations, $reservation_id, $date, $available_dates, $print_url );
 
-		// Close the top card (header + overview + toolbar) HERE so the per-day
-		// date sections render OUTSIDE the page-wrap and float as their own
-		// cards on the page background, instead of being enclosed by the page
-		// frame. We hand-close .eem-page-body + .eem-page-wrap (mirroring
-		// eem_render_page_close, which only emits closing markup) and close
-		// .eem-page ourselves at the end.
-		echo '</div><!-- /.eem-page-body --></div><!-- /.eem-page-wrap -->';
-
-		echo '<div class="eem-dm-sections">';
+		// Date sections render inside .eem-page-body alongside the hero/rail/toolbar.
+		// The page-wrap is transparent for this page, so each element sits on the
+		// gray page background with a 16px gap (flex column on .eem-page-body).
 		if ( empty( $reservations ) ) {
 			echo '<div class="eem-dm-empty"><p>' . esc_html__( 'No published reservations yet. Create and publish a reservation to see movement data.', 'equine-event-manager' ) . '</p></div>';
 		} elseif ( empty( $reports ) || ( 1 === count( $reports ) && 0 === $totals['arriving'] && 0 === $totals['departing'] ) ) {
@@ -170,11 +182,9 @@ class EEM_Daily_Movement_Page {
 			}
 			self::render_check_toggle_script();
 		}
-		echo '</div><!-- /.eem-dm-sections -->';
 
 		self::render_note_modal();
-
-		echo '</div><!-- /.eem-page -->';
+		eem_render_page_close();
 	}
 
 	/**
@@ -532,7 +542,7 @@ class EEM_Daily_Movement_Page {
 
 				<div class="eem-dm-toolbar-group">
 					<label class="eem-dm-toolbar-label" for="eem-dm-reservation"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?></label>
-					<select name="reservation_id" id="eem-dm-reservation" class="eem-field-select">
+					<select name="reservation_id" id="eem-dm-reservation" class="eem-dm-select">
 						<?php foreach ( $reservations as $res ) : ?>
 							<option value="<?php echo esc_attr( (string) $res->ID ); ?>" <?php selected( $reservation_id, $res->ID ); ?>>
 								<?php echo esc_html( $res->post_title ); ?>
@@ -544,7 +554,7 @@ class EEM_Daily_Movement_Page {
 				<div class="eem-dm-toolbar-group">
 					<label class="eem-dm-toolbar-label" for="eem-dm-date"><?php esc_html_e( 'Date', 'equine-event-manager' ); ?></label>
 					<?php $today = wp_date( 'Y-m-d' ); ?>
-					<select name="date" id="eem-dm-date" class="eem-field-select" onchange="this.form.submit()">
+					<select name="date" id="eem-dm-date" class="eem-dm-select" onchange="this.form.submit()">
 						<option value=""><?php esc_html_e( 'All Days', 'equine-event-manager' ); ?></option>
 						<option value="<?php echo esc_attr( $today ); ?>" <?php selected( $date, $today ); ?>><?php esc_html_e( 'Today', 'equine-event-manager' ); ?></option>
 						<?php foreach ( $available_dates as $d ) : ?>
@@ -556,9 +566,6 @@ class EEM_Daily_Movement_Page {
 					</select>
 				</div>
 			</form>
-			<?php if ( '' !== $print_url ) : ?>
-				<a href="<?php echo esc_url( $print_url ); ?>" target="_blank" class="eem-btn eem-btn-secondary eem-dm-toolbar-print"><?php esc_html_e( 'Print View', 'equine-event-manager' ); ?></a>
-			<?php endif; ?>
 		</div>
 		<?php
 	}
