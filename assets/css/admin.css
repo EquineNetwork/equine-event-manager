@@ -6013,7 +6013,7 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
    No top/side padding: cards span the full header width (page-wrap edges) and
    sit flush under the header card with no gray gap above the first card. The
    gaps BETWEEN cards come from each card's own margin-bottom / grid gap. */
-.eem-dashboard-body { padding: 14px 0 18px; background: #f0f0f1; }
+.eem-dashboard-body { padding: 14px 0 18px; background: #F7F9FC; }
 
 /* Page-wrap now holds ONLY the header band — give it the same subtle card
    border as the floating cards so the top reads as its own card, and drop the
@@ -6022,13 +6022,28 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
 	padding: 0;
 }
 .eem-shell-page--dashboard .eem-page-wrap {
-	border: 1px solid #e2e4e7;
-	border-radius: var(--eem-radius);
+	border: 1px solid #e2e8f4;
+	border-radius: 10px;
 }
-/* Match the floating cards to the Daily Movement card edge (lighter #e2e4e7
-   border) so every card on the gray background reads consistently. */
+/* Match the floating cards to the mockup canonical border (#e2e8f4).
+   Also apply the mockup's 10px card radius (Whitney: "mockup wins" 2026-06-20)
+   since the global .eem-card uses var(--eem-radius) = 3px. */
 .eem-shell-page--dashboard .eem-dashboard-card {
-	border-color: #e2e4e7;
+	border-color: #e2e8f4;
+	border-radius: 10px;
+}
+/* Card header + body overrides — mockup specifies #f0f4fb divider and 14px body padding;
+   global .eem-card-header uses #dcdcde and .eem-card-body uses 16px. */
+.eem-shell-page--dashboard .eem-card-header {
+	border-bottom-color: #f0f4fb;
+}
+.eem-shell-page--dashboard .eem-card-body {
+	padding: 14px 18px;
+}
+/* Card title: mockup 14px (global is already 14px but .eem-dashboard-card override below
+   sets 15px — revert to 14px per mockup). Card link: mockup 12px (global is 12.5px). */
+.eem-shell-page--dashboard .eem-card-link {
+	font-size: 12px;
 }
 
 /* Range filter bar */
@@ -6139,18 +6154,18 @@ select.eem-dashboard-range-select:focus {
 	color: var(--eem-text-muted);
 }
 
-/* Body grid (1fr + 340px side) */
+/* Body grid (1fr + 320px side) — mockup line 57: grid-template-columns:1fr 320px; gap:16px */
 .eem-dashboard-grid {
 	display: grid;
-	grid-template-columns: 1fr 340px;
-	gap: 14px;
+	grid-template-columns: 1fr 320px;
+	gap: 16px;
 	align-items: start;
 }
 .eem-dashboard-main,
 .eem-dashboard-side {
 	display: flex;
 	flex-direction: column;
-	gap: 14px;
+	gap: 16px;
 	/* min-width:0 lets the grid `1fr` track shrink below the cards'
 	   intrinsic min-content width on phone/tablet. Without it, the
 	   long order/reservation rows (~467px min-content) force the track
@@ -6164,9 +6179,8 @@ select.eem-dashboard-range-select:focus {
 .eem-dashboard-card,
 .eem-dashboard-kpi-card { min-width: 0; }
 
-/* Inner card chrome shared with .eem-card — but reset card-title size
-   to the Dashboard's slightly larger 15px scale (mockup line 84). */
-.eem-dashboard-card .eem-card-title { font-size: 15px; }
+/* Inner card chrome shared with .eem-card — card-title matches mockup 14px. */
+.eem-dashboard-card .eem-card-title { font-size: 14px; }
 
 /* DS-1.B.2: anchor umbrella for the 4 Dashboard anchor-capable row
    classes — per DS-1.A.1 + DS-1.A.1.1 lesson. WP core
@@ -6218,7 +6232,7 @@ a.eem-dashboard-qa-btn:focus {
 	color: var(--eem-text);
 }
 .eem-dashboard-res-row:last-child { border-bottom: none; }
-.eem-dashboard-res-row:hover { background: #f6f7f7; }
+.eem-dashboard-res-row:hover { background: #fafbfe; }
 .eem-dashboard-res-name {
 	font-size: 14px;
 	font-weight: 700;
@@ -6247,7 +6261,7 @@ a.eem-dashboard-qa-btn:focus {
 	color: var(--eem-text);
 }
 .eem-dashboard-event-row:last-child { border-bottom: none; }
-.eem-dashboard-event-row:hover { background: #f6f7f7; }
+.eem-dashboard-event-row:hover { background: #fafbfe; }
 .eem-dashboard-event-main { min-width: 0; }
 .eem-dashboard-event-name {
 	font-size: 14px;
@@ -6327,7 +6341,7 @@ a.eem-dashboard-qa-btn:focus {
 	font-size: 11.5px;
 	font-weight: 700;
 	padding: 3px 10px;
-	border-radius: 12px;
+	border-radius: 20px;
 	background: #FEF2F2;
 	color: #b91c1c;
 	border: 1px solid #fecaca;
@@ -6341,11 +6355,11 @@ a.eem-dashboard-qa-btn:focus {
 	color: var(--eem-text);
 }
 .eem-dashboard-attention-row:last-child { border-bottom: none; }
-.eem-dashboard-attention-row:hover { background: #f6f7f7; }
+.eem-dashboard-attention-row:hover { background: #fafbfe; }
 .eem-dashboard-attention-icon {
 	width: 32px;
 	height: 32px;
-	border-radius: var(--eem-radius);
+	border-radius: 7px;
 	flex-shrink: 0;
 	display: flex;
 	align-items: center;
@@ -6393,7 +6407,7 @@ a.eem-dashboard-qa-btn:focus {
 	color: var(--eem-text);
 }
 .eem-dashboard-order-row:last-child { border-bottom: none; }
-.eem-dashboard-order-row:hover { background: #f6f7f7; }
+.eem-dashboard-order-row:hover { background: #fafbfe; }
 .eem-dashboard-order-num {
 	font-size: 13px;
 	font-weight: 700;
@@ -6439,9 +6453,9 @@ a.eem-dashboard-qa-btn:focus {
 	align-items: center;
 	gap: 10px;
 	padding: 12px 14px;
-	background: #F0F4FB;
-	border: 1px solid var(--eem-border);
-	border-radius: var(--eem-radius);
+	background: #F7F9FC;
+	border: 1px solid #e2e8f4;
+	border-radius: 8px;
 	color: var(--eem-text);
 }
 .eem-dashboard-qa-btn:hover {
@@ -6451,7 +6465,7 @@ a.eem-dashboard-qa-btn:focus {
 .eem-dashboard-qa-icon {
 	width: 32px;
 	height: 32px;
-	border-radius: var(--eem-radius);
+	border-radius: 7px;
 	flex-shrink: 0;
 	display: flex;
 	align-items: center;
@@ -6543,7 +6557,7 @@ a.eem-dashboard-qa-btn:focus {
 	.eem-dashboard-side {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 14px;
+		gap: 16px;
 	}
 }
 @media (max-width: 767px) {
