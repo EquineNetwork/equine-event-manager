@@ -326,6 +326,11 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-034-additional-shavings-items.php';
 			eem_mig_034_additional_shavings_items();
 		}
+
+		if ( ! get_option( 'eem_mig_035_shavings_products_column_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-035-shavings-products-column.php';
+			eem_mig_035_shavings_products_column();
+		}
 	}
 
 	/**

@@ -754,6 +754,7 @@ class EEM_Reservation_Config {
 			'additional_shavings_enabled'    => 'tinyint(1)',
 			'additional_shavings_description' => 'varchar(255)',
 			'additional_shavings_price'       => 'decimal(10,2)',
+			'additional_shavings_products'   => 'text',
 			// Descriptions / venue / check-in.
 			'reservation_description'        => 'text',
 			'event_details_summary'          => 'text',
@@ -828,6 +829,7 @@ class EEM_Reservation_Config {
 			'stall_chart_blocked_rv_units',
 			'rv_lots',
 			'general_addons',
+			'additional_shavings_products',
 			'required_documents',
 			'rv_lot_zones',
 			'rv_addons',
