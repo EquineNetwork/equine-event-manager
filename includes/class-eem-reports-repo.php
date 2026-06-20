@@ -239,8 +239,7 @@ class EEM_Reports_Repo {
 				$event_header .= '  ·  ' . $unique_dates[0];
 			}
 		} elseif ( count( $unique_names ) > 1 ) {
-			/* translators: %d: number of events. */
-			$event_header = sprintf( _n( '%d event', '%d events', count( $unique_names ), 'equine-event-manager' ), count( $unique_names ) );
+			$event_header = implode( '  |  ', $unique_names );
 		}
 
 		return array(

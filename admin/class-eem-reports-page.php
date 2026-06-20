@@ -516,19 +516,56 @@ class EEM_Reports_Page {
 		$report = $repo->get_report( $slug, $norm );
 		$meta   = self::pdf_meta( $norm );
 
-		$headers      = isset( $report['headers'] ) && is_array( $report['headers'] ) ? $report['headers'] : array();
-		$rows         = isset( $report['rows'] ) && is_array( $report['rows'] ) ? $report['rows'] : array();
+		$all_headers  = isset( $report['headers'] ) && is_array( $report['headers'] ) ? $report['headers'] : array();
+		$all_rows     = isset( $report['rows'] ) && is_array( $report['rows'] ) ? $report['rows'] : array();
 		$groups       = isset( $report['groups'] ) && is_array( $report['groups'] ) ? $report['groups'] : array();
 		$event_header = isset( $report['event_header'] ) ? (string) $report['event_header'] : '';
 		$title     = (string) ( $report['title'] ?? __( 'Report', 'equine-event-manager' ) );
 		$total_lbl = isset( $report['total_label'] ) ? (string) $report['total_label'] : '';
-		$colspan   = max( 1, count( $headers ) );
 		$doc_title = $title . ' — ' . ( $norm['reservation_id'] > 0 ? get_the_title( $norm['reservation_id'] ) : __( 'All reservations', 'equine-event-manager' ) );
+
+		// print_columns: optional array of column indices to show in the print view.
+		// When absent, all columns are shown. CSV always uses the full dataset.
+		$print_cols = isset( $report['print_columns'] ) && is_array( $report['print_columns'] )
+			? array_map( 'absint', $report['print_columns'] )
+			: array_keys( $all_headers );
+
+		$headers = array_values( array_intersect_key( $all_headers, array_flip( $print_cols ) ) );
+		$rows    = array_map(
+			static function ( array $row ) use ( $print_cols ): array {
+				$out = array();
+				foreach ( $print_cols as $i ) {
+					$out[] = $row[ $i ] ?? '';
+				}
+				return $out;
+			},
+			$all_rows
+		);
+		if ( ! empty( $groups ) ) {
+			$groups = array_map(
+				static function ( array $group ) use ( $print_cols ): array {
+					$group['rows'] = array_map(
+						static function ( array $row ) use ( $print_cols ): array {
+							$out = array();
+							foreach ( $print_cols as $i ) {
+								$out[] = $row[ $i ] ?? '';
+							}
+							return $out;
+						},
+						isset( $group['rows'] ) && is_array( $group['rows'] ) ? $group['rows'] : array()
+					);
+					return $group;
+				},
+				$groups
+			);
+		}
+
+		$colspan = max( 1, count( $headers ) );
 
 		// Renders one <tr> from a flat row array aligned to $headers.
 		$render_row = static function ( array $row ) use ( $headers ): void {
 			echo '<tr>';
-			for ( $i = 0; $i < count( $headers ); $i++ ) {
+			foreach ( $headers as $i => $_ ) {
 				echo '<td>' . esc_html( (string) ( $row[ $i ] ?? '' ) ) . '</td>';
 			}
 			echo '</tr>';
@@ -563,12 +600,12 @@ class EEM_Reports_Page {
 				.rpt-pv-group td .rpt-pv-group-count{font-weight:600;color:#92400e}
 				.rpt-pv-total{padding:12px 22px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E;border-top:1px solid #d9e2f2;background:#f8fafc}
 				.rpt-pv-empty{padding:28px 22px;text-align:center;color:#646970}
+				@page{size:landscape}
 				@media print{
 					.rpt-pv-toolbar{display:none}
 					body{background:#fff;padding:0}
 					.rpt-pv-doc{border:0;border-radius:0;max-width:none}
 					*{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
-					@page{size:landscape}
 				}
 			</style>
 		</head>
