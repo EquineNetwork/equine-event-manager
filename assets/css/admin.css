@@ -9105,6 +9105,773 @@ body.destination-mode .eem-occ-pill--blocked { opacity: 0.5; pointer-events: non
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   STALL CHART DETAIL — 2026 redesign (Chunk 1: chrome)
+   Mockup: .mockups/stall_chart_detail.html. New visual vocabulary layered over
+   the existing functional page. Map builder + its JS are untouched.
+   ═══════════════════════════════════════════════════════════════════════════ */
+/* Page field: mockup body is #F7F9FC; paint the WP admin containers so the gray
+   default doesn't show through, and drop the .eem-page inset for full-bleed
+   topbar + header (override-traps #5). */
+.eem-shell-page--stall-charts #wpcontent,
+.eem-shell-page--stall-charts #wpbody,
+.eem-shell-page--stall-charts #wpbody-content,
+.eem-shell-page--stall-charts .wrap {
+	background: #F7F9FC;
+}
+.eem-shell-page--stall-charts .eem-page {
+	padding: 0;
+}
+
+/* Topbar: the breadcrumb bar IS the mockup .app-topbar — white, 56px, bottom
+   border, 24px gutters, logo+breadcrumb left / action buttons right. */
+.eem-shell-page--stall-charts .eem-breadcrumb {
+	background: #fff;
+	border-bottom: 1px solid #e2e8f4;
+	min-height: 56px;
+	padding: 0 24px;
+	margin: 0;
+	gap: 10px;
+	justify-content: space-between;
+	flex-wrap: nowrap;
+}
+.eem-shell-page--stall-charts .eem-breadcrumb-left {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+}
+/* Mockup breadcrumb link is electric blue (page-local; the global breadcrumb
+   convention stays navy elsewhere). Current segment stays bold navy. */
+.eem-shell-page--stall-charts .eem-breadcrumb a.eem-breadcrumb-segment,
+.eem-shell-page--stall-charts .eem-breadcrumb a.eem-breadcrumb-segment:link,
+.eem-shell-page--stall-charts .eem-breadcrumb a.eem-breadcrumb-segment:visited {
+	color: #1668F2;
+}
+.eem-shell-page--stall-charts .eem-breadcrumb-sep { color: #c8d4e8; }
+.eem-shell-page--stall-charts .eem-breadcrumb-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+/* Topbar actions (reuses .eem-breadcrumb-actions slot) — ghost buttons. */
+.eem-shell-page--stall-charts .eem-sc-topbtn,
+.eem-shell-page--stall-charts a.eem-sc-topbtn,
+.eem-shell-page--stall-charts a.eem-sc-topbtn:link,
+.eem-shell-page--stall-charts a.eem-sc-topbtn:visited {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	/* 8px 16px matches the Daily Movement "Print Today" button height. */
+	padding: 8px 16px;
+	border-radius: 8px;
+	font-size: 13px;
+	font-weight: 600;
+	color: #0d1b3e;
+	background: #F7F9FC;
+	border: 1px solid #d0daea;
+	cursor: pointer;
+	text-decoration: none;
+	white-space: nowrap;
+	line-height: 1;
+}
+.eem-shell-page--stall-charts .eem-sc-topbtn svg { flex-shrink: 0; display: block; }
+.eem-shell-page--stall-charts .eem-sc-topbtn:hover,
+.eem-shell-page--stall-charts a.eem-sc-topbtn:hover,
+.eem-shell-page--stall-charts a.eem-sc-topbtn:focus {
+	background: #e8eef8;
+	color: #0d1b3e;
+	text-decoration: none;
+}
+
+/* Page header band — white, full-bleed, title + Generate Assignments. */
+.eem-shell-page--stall-charts .eem-sc-pagehead {
+	background: #fff;
+	border-bottom: 1px solid #e2e8f4;
+	padding: 18px 24px;
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+.eem-shell-page--stall-charts .eem-sc-pagehead-title {
+	font-size: 20px;
+	font-weight: 700;
+	color: #0d1b3e;
+	letter-spacing: -0.02em;
+	line-height: 1.2;
+	margin: 0;
+}
+.eem-shell-page--stall-charts .eem-sc-pagehead-actions {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	flex-shrink: 0;
+}
+.eem-shell-page--stall-charts .eem-sc-btn-primary,
+.eem-shell-page--stall-charts button.eem-sc-btn-primary {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	/* 8px 16px matches the Daily Movement "Print Today" button height. */
+	padding: 8px 16px;
+	border-radius: 8px;
+	font-size: 13px;
+	font-weight: 600;
+	color: #fff;
+	background: #1668F2;
+	border: 1px solid #1668F2;
+	cursor: pointer;
+	line-height: 1;
+}
+.eem-shell-page--stall-charts .eem-sc-btn-primary:hover { background: #0d4fc2; color: #fff; }
+
+/* Change-Event typeahead lives in the topbar; keep it usable when revealed. */
+.eem-shell-page--stall-charts .eem-header-typeahead { display: flex; align-items: center; gap: 8px; }
+
+/* Global amber banner (full-bleed, left accent). */
+.eem-shell-page--stall-charts .eem-sc-banner-amber {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 12px 24px;
+	background: #fffbeb;
+	border-top: 1px solid #fde68a;
+	border-bottom: 1px solid #fde68a;
+	border-left: 4px solid #d97706;
+	font-size: 13px;
+	color: #92400e;
+	line-height: 1.5;
+}
+.eem-shell-page--stall-charts .eem-sc-banner-amber svg { width: 15px; height: 15px; color: #d97706; flex-shrink: 0; margin-top: 1px; }
+.eem-shell-page--stall-charts .eem-sc-banner-amber strong { color: #92400e; }
+.eem-shell-page--stall-charts .eem-sc-banner-amber .eem-link-btn {
+	background: none; border: 0; padding: 0; font: inherit; font-weight: 700;
+	color: #92400e; text-decoration: underline; cursor: pointer;
+}
+/* Card variant: amber banner sitting inside the padded content area. */
+.eem-shell-page--stall-charts .eem-sc-banner-amber--card {
+	border: 1px solid #fde68a;
+	border-left: 4px solid #d97706;
+	border-radius: 10px;
+	margin-bottom: 16px;
+	padding: 12px 18px;
+}
+/* Global variant: full-bleed, flush under the page header (cancels the
+   .eem-sc-content 20px/24px padding); no top border (header supplies it). */
+.eem-shell-page--stall-charts .eem-sc-banner-amber--global {
+	margin: -20px -24px 20px;
+	border-top: 0;
+}
+
+/* Content area: #F7F9FC field, 24px gutters, cards stacked. */
+.eem-shell-page--stall-charts .eem-sc-content {
+	padding: 20px 24px 48px;
+	background: #F7F9FC;
+}
+
+/* KPI bar */
+.eem-shell-page--stall-charts .eem-sc-kpi-bar {
+	background: #fff;
+	border: 1px solid #e2e8f4;
+	border-radius: 10px;
+	padding: 16px 20px;
+	margin-bottom: 16px;
+}
+.eem-shell-page--stall-charts .eem-sc-kpi-cards { display: flex; flex-wrap: wrap; gap: 10px; }
+.eem-shell-page--stall-charts .eem-sc-kpi-card {
+	flex: 1 1 0;
+	min-width: 0;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	background: #F7F9FC;
+	border: 1px solid #e2e8f4;
+	border-radius: 8px;
+	padding: 12px 16px;
+}
+.eem-shell-page--stall-charts .eem-sc-kpi-icon {
+	width: 32px; height: 32px; border-radius: 7px;
+	display: flex; align-items: center; justify-content: center;
+	font-size: 16px; flex-shrink: 0;
+	background: #e8effe; color: #1668F2;
+}
+.eem-shell-page--stall-charts .eem-sc-kpi-icon--green { background: #e8f5ee; color: #15803d; }
+.eem-shell-page--stall-charts .eem-sc-kpi-num { font-size: 24px; font-weight: 700; color: #0d1b3e; line-height: 1; }
+.eem-shell-page--stall-charts .eem-sc-kpi-num--green { color: #15803d; }
+.eem-shell-page--stall-charts .eem-sc-kpi-label { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #64748b; margin-top: 2px; }
+
+/* Filter bar */
+.eem-shell-page--stall-charts .eem-sc-filterbar {
+	background: #fff;
+	border: 1px solid #e2e8f4;
+	border-radius: 10px;
+	padding: 14px 18px;
+	margin-bottom: 16px;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 12px 16px;
+}
+.eem-shell-page--stall-charts .eem-sc-fgroup { display: flex; flex-direction: column; gap: 5px; }
+.eem-shell-page--stall-charts .eem-sc-flabel { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #94a3b8; }
+/* Segmented control (Show: Stalls / RV / Both) — wired to sc-inv-switch. */
+.eem-shell-page--stall-charts .eem-sc-seg {
+	display: inline-flex;
+	border: 1.5px solid #d0daea;
+	border-radius: 8px;
+	overflow: hidden;
+	background: #F7F9FC;
+}
+.eem-shell-page--stall-charts .eem-sc-seg-btn {
+	appearance: none;
+	border: 0;
+	border-right: 1px solid #d0daea;
+	background: #F7F9FC;
+	color: #64748b;
+	font-family: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	padding: 9px 18px;
+	cursor: pointer;
+	line-height: 1.2;
+	min-height: 40px;
+}
+.eem-shell-page--stall-charts .eem-sc-seg-btn:last-child { border-right: 0; }
+.eem-shell-page--stall-charts .eem-sc-seg-btn:hover { background: #e8eef8; color: #0d1b3e; }
+.eem-shell-page--stall-charts .eem-sc-seg-btn.active { background: #1668F2; color: #fff; }
+/* View select — mockup .app-select (override-traps #1: box-sizing, max-width). */
+.eem-shell-page--stall-charts select.eem-sc-select {
+	box-sizing: border-box;
+	font-family: 'IBM Plex Sans', sans-serif;
+	font-size: 14px;
+	line-height: 1.5;
+	color: #0d1b3e;
+	background-color: #F7F9FC;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 10px center;
+	border: 1.5px solid #d0daea;
+	border-radius: 8px;
+	padding: 9px 32px 9px 12px;
+	appearance: none;
+	-webkit-appearance: none;
+	cursor: pointer;
+	min-width: 200px;
+	max-width: none;
+	min-height: 40px;
+	height: 40px;
+	box-shadow: none;
+	margin: 0;
+}
+.eem-shell-page--stall-charts select.eem-sc-select:focus { outline: none; border-color: #1668F2; box-shadow: 0 0 0 3px rgba(22,104,242,0.1); }
+.eem-shell-page--stall-charts .eem-sc-filter-actions { margin-left: auto; display: flex; gap: 8px; align-items: flex-end; }
+
+/* Main content card + blue assign banner */
+.eem-shell-page--stall-charts .eem-sc-content-card {
+	background: #fff;
+	border: 1px solid #e2e8f4;
+	border-radius: 10px;
+	overflow: hidden;
+}
+.eem-shell-page--stall-charts .eem-sc-banner-blue {
+	padding: 12px 20px;
+	background: #1668F2;
+	font-size: 13px;
+	color: #fff;
+	line-height: 1.5;
+}
+.eem-shell-page--stall-charts .eem-sc-banner-blue strong { color: #fff; }
+
+/* Responsive: mobile topbar collapses breadcrumb path + icon-only buttons. */
+@media (max-width: 900px) {
+	.eem-shell-page--stall-charts .eem-breadcrumb-sep,
+	.eem-shell-page--stall-charts .eem-breadcrumb-segment { display: none; }
+	.eem-shell-page--stall-charts .eem-sc-content { padding: 14px 14px 40px; }
+	.eem-shell-page--stall-charts .eem-sc-pagehead { padding: 14px; }
+	.eem-shell-page--stall-charts .eem-sc-kpi-card { flex: 1 1 calc(50% - 5px); }
+	.eem-shell-page--stall-charts .eem-sc-seg { width: 100%; }
+	.eem-shell-page--stall-charts .eem-sc-seg-btn { flex: 1; }
+	/* Topbar buttons collapse to 40x40 icon-only squares (mockup mobile). */
+	.eem-shell-page--stall-charts .eem-sc-topbtn-label { display: none; }
+	.eem-shell-page--stall-charts .eem-sc-topbtn,
+	.eem-shell-page--stall-charts a.eem-sc-topbtn {
+		width: 40px;
+		height: 40px;
+		padding: 0;
+		justify-content: center;
+		gap: 0;
+	}
+}
+
+/* ── Chunk 2: By Customer table (reskin existing .eem-cust-chart-table to mockup .tbl) ── */
+.eem-shell-page--stall-charts .eem-cust-chart-table {
+	width: 100%;
+	border-collapse: collapse;
+	min-width: 700px;
+	background: #fff;
+}
+.eem-shell-page--stall-charts .eem-cust-chart-table thead tr { border-bottom: 1px solid #e2e8f4; background: #fff; }
+.eem-shell-page--stall-charts .eem-cust-chart-table th {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: #94a3b8;
+	padding: 10px 16px;
+	text-align: left;
+	white-space: nowrap;
+	background: #fff;
+	border-bottom: 0;
+}
+.eem-shell-page--stall-charts .eem-cust-chart-table th:first-child,
+.eem-shell-page--stall-charts .eem-cust-chart-table td:first-child { padding-left: 20px; }
+.eem-shell-page--stall-charts .eem-cust-chart-table th:last-child,
+.eem-shell-page--stall-charts .eem-cust-chart-table td:last-child { padding-right: 20px; }
+.eem-shell-page--stall-charts .eem-cust-chart-table td {
+	font-size: 13px;
+	color: #0d1b3e;
+	padding: 12px 16px;
+	border-bottom: 1px solid #f0f4fb;
+	vertical-align: middle;
+	white-space: nowrap;
+}
+.eem-shell-page--stall-charts .eem-cust-chart-table tbody tr:last-child td { border-bottom: none; }
+.eem-shell-page--stall-charts .eem-cust-chart-table tbody tr:hover td { background: #fafbfe; }
+.eem-shell-page--stall-charts .eem-chart-cust-link,
+.eem-shell-page--stall-charts a.eem-chart-cust-link { font-weight: 600; color: #0d1b3e; text-decoration: none; }
+.eem-shell-page--stall-charts a.eem-chart-cust-link:hover { color: #1668F2; text-decoration: none; }
+.eem-shell-page--stall-charts .eem-chart-cust-order,
+.eem-shell-page--stall-charts a.eem-chart-cust-order { font-size: 12px; color: #64748b; font-weight: 600; display: block; margin-top: 1px; text-decoration: none; }
+.eem-shell-page--stall-charts a.eem-chart-cust-order:hover { color: #1668F2; text-decoration: none; }
+.eem-shell-page--stall-charts .eem-chart-barn-name,
+.eem-shell-page--stall-charts .eem-chart-lot-name { color: #0d1b3e; }
+.eem-shell-page--stall-charts .eem-chart-dash { color: #94a3b8; }
+/* Let the wide assignment cells wrap so long stall/RV lists don't push the
+   table past the card edge and clip the Notes column. The rest of the row
+   keeps its natural sizing. */
+.eem-shell-page--stall-charts .eem-cust-chart-table { table-layout: auto; }
+.eem-shell-page--stall-charts .eem-cust-chart-table td { white-space: normal; }
+.eem-shell-page--stall-charts .eem-chart-stall-assignment,
+.eem-shell-page--stall-charts .eem-chart-rv-assignment { white-space: normal; min-width: 90px; }
+.eem-shell-page--stall-charts .eem-cust-chart-table td.eem-chart-date-cell,
+.eem-shell-page--stall-charts .eem-cust-chart-table td.eem-chart-checkin-cell,
+.eem-shell-page--stall-charts .eem-cust-chart-table td.eem-chart-notes-cell { white-space: nowrap; }
+
+/* ── Chunk 3: By Location List (reskin .eem-loc-table to mockup .loc-tbl) ── */
+.eem-shell-page--stall-charts .eem-loc-table {
+	width: 100%;
+	border-collapse: collapse;
+	min-width: 580px;
+	background: #fff;
+}
+.eem-shell-page--stall-charts .eem-loc-table thead th {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: #94a3b8;
+	padding: 9px 14px;
+	text-align: left;
+	border-bottom: 1px solid #f0f4fb;
+	background: #fff;
+	white-space: nowrap;
+}
+.eem-shell-page--stall-charts .eem-loc-table thead th:first-child { padding-left: 20px; }
+.eem-shell-page--stall-charts .eem-loc-table td {
+	padding: 10px 14px;
+	font-size: 13px;
+	color: #0d1b3e;
+	border-bottom: 1px solid #f0f4fb;
+	vertical-align: middle;
+	white-space: nowrap;
+}
+.eem-shell-page--stall-charts .eem-loc-table td:first-child { padding-left: 20px; }
+.eem-shell-page--stall-charts .eem-loc-table tbody tr:last-child td { border-bottom: none; }
+/* Barn / zone group header rows */
+.eem-shell-page--stall-charts .eem-chart-barn-row td {
+	background: #f8fafc;
+	padding: 9px 14px;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: #0d1b3e;
+	border-top: 1px solid #e2e8f4;
+	border-bottom: 1px solid #e2e8f4;
+}
+.eem-shell-page--stall-charts .eem-chart-barn-row td:first-child { padding-left: 20px; }
+.eem-shell-page--stall-charts .eem-chart-unit-num { font-weight: 700; color: #0d1b3e; }
+/* Location status cells — match the new badge style/shape (8px radius, 13px,
+   7px/12px padding, min-height 36px; no dot), per Whitney 2026-06-20. */
+.eem-shell-page--stall-charts .eem-loc-cell {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 7px 12px;
+	border-radius: 8px;
+	border: 1px solid;
+	font-size: 13px;
+	font-weight: 600;
+	min-height: 36px;
+	cursor: pointer;
+	white-space: nowrap;
+	background: #fff;
+	line-height: 1.2;
+}
+.eem-shell-page--stall-charts .eem-loc-cell .eem-occ-chevron { width: 12px; height: 12px; opacity: 0.5; }
+.eem-shell-page--stall-charts .eem-loc-cell--occupied { background: #eaf1fe; border-color: #b9d2fb; color: #0d1b3e; }
+.eem-shell-page--stall-charts .eem-loc-cell--available { background: #e8f5ee; border-color: #b6e0c7; color: #15803d; }
+.eem-shell-page--stall-charts .eem-loc-cell--cleaning,
+.eem-shell-page--stall-charts .eem-loc-cell--needs_cleaning { background: #f5f3ff; border-color: #ddd6fe; color: #7c3aed; }
+.eem-shell-page--stall-charts .eem-loc-cell--blocked { background: #f3f4f5; border-color: #e2e4e7; color: #64748b; cursor: default; }
+/* Section dividers: stalls = blue, RV = amber (mockup .section-divider). */
+.eem-shell-page--stall-charts [data-inv-section="stalls"] .eem-sc-section-divider {
+	background: #f0f5ff;
+	border-top: 1px solid #dce8fb;
+	border-bottom: 1px solid #dce8fb;
+	color: #1668F2;
+	margin: 0;
+}
+.eem-shell-page--stall-charts [data-inv-section="rv"] .eem-sc-section-divider {
+	background: #fdf4e7;
+	border-top: 1px solid #f3e2c4;
+	border-bottom: 1px solid #f3e2c4;
+	color: #d97706;
+	margin: 0;
+}
+/* Legacy full-bleed reset: these elements carry margin:* -22px from the old
+   22px-padded body. The new content-card has no padding, so those negative
+   margins overflow the card (clipped by its overflow:hidden) and cut off the
+   right-most content. Zero the horizontal negative margins for ALL of them. */
+.eem-shell-page--stall-charts .eem-sc-content-card .eem-chart-table-scroll,
+.eem-shell-page--stall-charts .eem-sc-content-card .eem-sc-section-divider,
+.eem-shell-page--stall-charts .eem-sc-content-card .eem-stall-chart-filter-row,
+.eem-shell-page--stall-charts .eem-sc-content-card .eem-stall-chart-filter-bar,
+.eem-shell-page--stall-charts .eem-sc-content-card .eem-stall-chart-dm-bar,
+.eem-shell-page--stall-charts .eem-sc-content-card .eem-stall-chart-unsaved-banner {
+	margin-left: 0;
+	margin-right: 0;
+	max-width: 100%;
+}
+/* Toolbar rows: mockup .cust-toolbar / .list-toolbar are WHITE with a light
+   #f0f4fb bottom border and 12px/20px padding — not the legacy gray band. */
+.eem-shell-page--stall-charts .eem-sc-content-card .eem-stall-chart-filter-row {
+	background: #fff;
+	border-top: 0;
+	border-bottom: 1px solid #f0f4fb;
+	padding: 12px 20px;
+}
+
+/* List toolbar / search reskin to mockup spacing. */
+.eem-shell-page--stall-charts .eem-stall-chart-filter-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+	padding: 12px 20px;
+	border-bottom: 1px solid #f0f4fb;
+}
+/* By Customer toolbar buttons (Show by group / Tack Stalls) → mockup .toolbar-btn.
+   Search is pushed to the right end of the row. */
+.eem-shell-page--stall-charts .eem-stall-chart-group-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 7px 12px;
+	border-radius: 7px;
+	font-size: 13px;
+	font-weight: 600;
+	color: #0d1b3e;
+	background: #F7F9FC;
+	border: 1.5px solid #d0daea;
+	cursor: pointer;
+	white-space: nowrap;
+}
+.eem-shell-page--stall-charts .eem-stall-chart-group-toggle:hover,
+.eem-shell-page--stall-charts .eem-stall-chart-group-toggle[aria-pressed="true"] {
+	background: #f0f5ff;
+	border-color: #1668F2;
+	color: #1668F2;
+}
+.eem-shell-page--stall-charts .eem-stall-chart-group-toggle svg { width: 13px; height: 13px; flex-shrink: 0; }
+.eem-shell-page--stall-charts .eem-stall-chart-filter-search { margin-left: auto; }
+
+/* ── Notes column + shared note button (By Customer) ── */
+.eem-shell-page--stall-charts .eem-chart-notes-col,
+.eem-shell-page--stall-charts .eem-chart-notes-cell { text-align: left; width: 60px; }
+.eem-shell-page--stall-charts .eem-sc-note-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	min-width: 32px;
+	border-radius: 7px;
+	background: none;
+	border: 1.5px solid #e2e8f4;
+	color: #94a3b8;
+	cursor: pointer;
+	position: relative;
+	transition: all 0.12s;
+}
+.eem-shell-page--stall-charts .eem-sc-note-btn:hover { border-color: #1668F2; color: #1668F2; background: #f0f5ff; }
+.eem-shell-page--stall-charts .eem-sc-note-btn.has-note { border-color: #d0e0fb; background: #f0f5ff; color: #1668F2; }
+.eem-shell-page--stall-charts .eem-sc-note-btn.has-note::after {
+	content: '';
+	position: absolute;
+	top: -3px;
+	right: -3px;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: #1668F2;
+	border: 2px solid #fff;
+}
+
+/* Shared admin-note modal */
+.eem-sc-note-overlay {
+	display: none;
+	position: fixed;
+	inset: 0;
+	background: rgba(13,27,62,0.35);
+	z-index: 100100;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	backdrop-filter: blur(2px);
+}
+.eem-sc-note-overlay.open { display: flex; }
+.eem-sc-note-modal {
+	background: #fff;
+	border-radius: 14px;
+	padding: 24px;
+	width: 100%;
+	max-width: 440px;
+	box-shadow: 0 20px 60px rgba(13,27,62,0.2);
+}
+.eem-sc-note-modal-title { font-size: 16px; font-weight: 700; color: #0d1b3e; margin-bottom: 4px; }
+.eem-sc-note-modal-sub { font-size: 13px; color: #64748b; margin-bottom: 6px; }
+.eem-sc-note-shared {
+	font-size: 12px;
+	color: #1668F2;
+	background: #f0f5ff;
+	border: 1px solid #d0e0fb;
+	border-radius: 6px;
+	padding: 6px 10px;
+	margin-bottom: 14px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+.eem-sc-note-shared svg { width: 12px; height: 12px; flex-shrink: 0; }
+textarea.eem-sc-note-textarea {
+	width: 100%;
+	min-height: 100px;
+	padding: 12px;
+	border: 1.5px solid #d0daea;
+	border-radius: 8px;
+	font-family: 'IBM Plex Sans', sans-serif;
+	font-size: 14px;
+	color: #0d1b3e;
+	resize: vertical;
+	line-height: 1.5;
+	background: #F7F9FC;
+	box-sizing: border-box;
+}
+textarea.eem-sc-note-textarea:focus { outline: none; border-color: #1668F2; box-shadow: 0 0 0 3px rgba(22,104,242,0.1); }
+.eem-sc-note-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+.eem-sc-note-cancel {
+	padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+	background: #F7F9FC; border: 1px solid #d0daea; color: #64748b; cursor: pointer;
+	font-family: inherit;
+}
+.eem-sc-note-cancel:hover { background: #e8eef8; }
+.eem-sc-note-save {
+	padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+	background: #1668F2; border: none; color: #fff; cursor: pointer; font-family: inherit;
+}
+.eem-sc-note-save:hover { background: #0d4fc2; }
+.eem-sc-note-save:disabled { opacity: 0.6; cursor: default; }
+
+/* ── By Location List: quick-view chips + auto-note + today highlight ── */
+.eem-shell-page--stall-charts .eem-sc-quick-filters {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	padding: 10px 20px;
+	border-bottom: 1px solid #f0f4fb;
+}
+.eem-shell-page--stall-charts .eem-sc-qf-label {
+	font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+	text-transform: uppercase; color: #94a3b8; margin-right: 2px;
+}
+.eem-shell-page--stall-charts .eem-sc-qf-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 5px 12px;
+	border-radius: 20px;
+	border: 1px solid #e2e8f4;
+	background: #fff;
+	color: #0d1b3e;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+	min-height: 32px;
+}
+.eem-shell-page--stall-charts .eem-sc-qf-chip:hover { background: #f0f5ff; border-color: #1668F2; color: #1668F2; }
+.eem-shell-page--stall-charts .eem-sc-qf-chip.active { background: #0d1b3e; border-color: #0d1b3e; color: #fff; }
+.eem-shell-page--stall-charts .eem-sc-dm-link,
+.eem-shell-page--stall-charts a.eem-sc-dm-link {
+	margin-left: auto;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 13px;
+	font-weight: 600;
+	color: #1668F2;
+	text-decoration: none;
+}
+.eem-shell-page--stall-charts a.eem-sc-dm-link:hover { color: #0d4fc2; text-decoration: none; }
+.eem-shell-page--stall-charts .eem-sc-dm-link svg { width: 12px; height: 12px; }
+/* Auto-note (purple turnover hint) */
+.eem-shell-page--stall-charts .eem-sc-auto-note {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 9px 20px;
+	background: #f5f3ff;
+	border-bottom: 1px solid #e6e0fb;
+	font-size: 12px;
+	color: #5b3aa8;
+}
+.eem-shell-page--stall-charts .eem-sc-auto-note svg { width: 13px; height: 13px; color: #7c3aed; flex-shrink: 0; }
+.eem-shell-page--stall-charts .eem-sc-auto-note strong { color: #5b3aa8; }
+/* Today column highlight + tag */
+.eem-shell-page--stall-charts .eem-loc-table thead th.is-today {
+	background: #eaf1fe;
+	color: #1257d1;
+	box-shadow: inset 0 -2px 0 #1668F2;
+}
+.eem-shell-page--stall-charts .eem-today-tag {
+	display: inline-block;
+	margin-left: 5px;
+	font-size: 9px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: #1668F2;
+	background: #dbe9ff;
+	border-radius: 3px;
+	padding: 1px 4px;
+	vertical-align: 1px;
+}
+/* Checkbox column */
+.eem-shell-page--stall-charts .eem-loc-check-col {
+	width: 36px;
+	padding-left: 16px;
+	padding-right: 4px;
+}
+.eem-shell-page--stall-charts .eem-loc-check-col input[type="checkbox"] {
+	width: 15px; height: 15px; cursor: pointer; accent-color: #1668F2;
+}
+
+/* Mobile: list toolbar selects go full width; View Daily Movement left-aligns. */
+@media (max-width: 782px) {
+	.eem-shell-page--stall-charts .eem-stall-chart-barn-tabs,
+	.eem-shell-page--stall-charts .eem-stall-chart-zone-tabs,
+	.eem-shell-page--stall-charts .eem-loc-bulk,
+	.eem-shell-page--stall-charts select.eem-loc-barn-select,
+	.eem-shell-page--stall-charts select.eem-loc-bulk-select {
+		width: 100%;
+		flex: 1 1 100%;
+	}
+	.eem-shell-page--stall-charts .eem-sc-dm-link,
+	.eem-shell-page--stall-charts a.eem-sc-dm-link {
+		margin-left: 0;
+		flex: 1 1 100%;
+	}
+}
+
+/* Assign banner: kill the legacy -22px full-bleed margin (it overflows the new
+   no-padding content card and clips the "Assigning…" text). Match mockup
+   .banner-blue padding 12px 20px. */
+.eem-shell-page--stall-charts .eem-assign-banner {
+	margin-left: 0;
+	margin-right: 0;
+	padding: 12px 20px;
+}
+
+/* ── Map view: section padding + white bg (mockup .map-section: 16px 20px) ── */
+.eem-shell-page--stall-charts .eem-smap {
+	padding: 16px 20px;
+	background: #fff;
+}
+/* Barn tabs — larger / more click-friendly, matching the metric chip size above. */
+.eem-shell-page--stall-charts .eem-smap-barn-tabs { gap: 6px; }
+.eem-shell-page--stall-charts .eem-smap-barn-tab {
+	padding: 10px 18px;
+	font-size: 14px;
+	min-height: 40px;
+	border-radius: 8px 8px 0 0;
+}
+
+/* ── Map view barn stats → mockup .map-stat pill chips ── */
+.eem-shell-page--stall-charts .eem-smap-barn-stat-name {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: #94a3b8;
+	margin-bottom: 8px;
+}
+.eem-shell-page--stall-charts .eem-smap-barn-stats,
+.eem-shell-page--stall-charts .eem-smap-barn-stat-nums {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	/* Kill the legacy gray panel (#f0f4fb) + its padding so the white .eem-smap
+	   section shows through, matching the mockup (.map-barn-stats has no bg). */
+	background: transparent;
+	border: 0;
+	border-radius: 0;
+	padding: 0;
+	margin: 0 0 14px;
+}
+.eem-shell-page--stall-charts .eem-smap-barn-stat { margin-bottom: 4px; }
+.eem-shell-page--stall-charts .eem-smap-stat {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	background: #F7F9FC;
+	border: 1px solid #e2e8f4;
+	border-radius: 7px;
+	padding: 6px 12px;
+	font-size: 13px;
+	font-weight: 600;
+	color: #0d1b3e;
+}
+.eem-shell-page--stall-charts .eem-smap-stat strong { font-size: 16px; font-weight: 700; }
+.eem-shell-page--stall-charts .eem-smap-stat-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	flex-shrink: 0;
+	display: inline-block;
+}
+.eem-shell-page--stall-charts .eem-smap-stat-dot--total { background: #94a3b8; }
+.eem-shell-page--stall-charts .eem-smap-stat-dot--avail { background: #15803d; }
+.eem-shell-page--stall-charts .eem-smap-stat-dot--assigned { background: #1668F2; }
+.eem-shell-page--stall-charts .eem-smap-stat-dot--tack { background: #d97706; }
+.eem-shell-page--stall-charts .eem-smap-stat-dot--blocked { background: #ef4444; }
+.eem-shell-page--stall-charts .eem-smap-stat--avail strong { color: #15803d; }
+.eem-shell-page--stall-charts .eem-smap-stat--assigned strong { color: #1668F2; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
    STALL CHART PRINT VIEW  (page=equine-event-manager-stall-chart-print)
    Mockup: .mockups/stall_chart_print_view.html
    ═══════════════════════════════════════════════════════════════════════════
@@ -11872,13 +12639,10 @@ select.eem-dm-select:focus {
 	white-space: nowrap;
 	min-height: 36px;
 }
+/* New badge style (locked 2026-06-20, Whitney): NO leading dot. The status
+   chip is the colored pill + label only, across Daily Movement + Stall Chart. */
 .eem-dm-status::before {
-	content: '';
-	display: inline-block;
-	width: 7px;
-	height: 7px;
-	border-radius: 50%;
-	flex-shrink: 0;
+	display: none;
 }
 .eem-dm-status-not_checked_in,
 .eem-dm-status-occupied {

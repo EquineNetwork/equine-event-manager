@@ -578,6 +578,9 @@ class EEM_Order_Detail_Page {
 				array(
 					'page'           => 'equine-event-manager-stall-charts',
 					'reservation_id' => $res_id,
+					// Stall assignment is a stalls-only flow — open the Stalls
+					// inventory, not Both (Whitney 2026-06-20).
+					'inv'            => 'stalls',
 					// Land in the By Location – Map view (Whitney 2026-06-20), the
 					// spatial assign surface where clicking an available stall places
 					// the pending order directly.
@@ -843,6 +846,10 @@ class EEM_Order_Detail_Page {
 					array(
 						'page'           => 'equine-event-manager-stall-charts',
 						'reservation_id' => $rv_res_id,
+						// RV-lot assignment is an RV-only flow — open the RV inventory
+						// + map view (Whitney 2026-06-20).
+						'inv'            => 'rv',
+						'tab'            => 'map',
 						'assign_order'   => isset( $order['order_key'] ) ? (string) $order['order_key'] : '',
 						'assign_kind'    => 'rv',
 					),

@@ -24,6 +24,9 @@ if ( ! function_exists( 'eem_action_allowed_html' ) ) {
 	 * Extends post-content tags with inline SVG so icon buttons (Refresh,
 	 * Print All, Print Today, etc.) keep their glyphs — wp_kses_post() strips
 	 * <svg> and its children, which silently drops every action-button icon.
+	 * Also permits the interactive controls an action slot may carry (a button
+	 * with a data-eem-action hook, a typeahead <input>, the cancel/print data
+	 * attributes) since wp_kses_post() strips <input> and all data-* attrs.
 	 *
 	 * @return array<string, array<string, bool>> kses tag/attribute map.
 	 */
@@ -42,6 +45,30 @@ if ( ! function_exists( 'eem_action_allowed_html' ) ) {
 			'aria-hidden'     => true,
 			'focusable'       => true,
 		);
+		// Interactive-control attributes an action slot legitimately uses.
+		$ctrl = array(
+			'class'                 => true,
+			'id'                    => true,
+			'type'                  => true,
+			'href'                  => true,
+			'title'                 => true,
+			'role'                  => true,
+			'tabindex'              => true,
+			'placeholder'           => true,
+			'autocomplete'          => true,
+			'value'                 => true,
+			'name'                  => true,
+			'aria-label'            => true,
+			'aria-expanded'         => true,
+			'aria-haspopup'         => true,
+			'aria-pressed'          => true,
+			'data-eem-action'       => true,
+			'data-eem-input-action' => true,
+			'data-print-url'        => true,
+			'data-order-key'        => true,
+			'data-reservation-id'   => true,
+			'style'                 => true,
+		);
 		return array_merge(
 			wp_kses_allowed_html( 'post' ),
 			array(
@@ -53,6 +80,11 @@ if ( ! function_exists( 'eem_action_allowed_html' ) ) {
 				'rect'     => array_merge( $svg_global, array( 'x' => true, 'y' => true, 'rx' => true, 'ry' => true ) ),
 				'circle'   => array_merge( $svg_global, array( 'cx' => true, 'cy' => true, 'r' => true ) ),
 				'g'        => $svg_global,
+				'input'    => $ctrl,
+				'button'   => $ctrl,
+				'a'        => $ctrl,
+				'div'      => $ctrl,
+				'span'     => $ctrl,
 			)
 		);
 	}

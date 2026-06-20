@@ -5111,6 +5111,17 @@
 			el.style.display = inv === 'stalls' ? 'none' : '';
 		});
 
+		// 4b. By Customer table: show/hide the stall-only (Barn, Stall #) and
+		//     rv-only (Lot Name, RV Lot #) columns. The cells always render; the
+		//     active inventory decides which columns are visible (mirrors the
+		//     mockup's scShowInv col-stall/col-rv toggling).
+		document.querySelectorAll('.col-stall').forEach(function (c) {
+			c.style.display = inv === 'rv' ? 'none' : '';
+		});
+		document.querySelectorAll('.col-rv').forEach(function (c) {
+			c.style.display = inv === 'stalls' ? 'none' : '';
+		});
+
 		// 5. Barn tabs: only in stalls mode. Zone tabs: only in rv mode.
 		var barnTabsWrap = document.getElementById('eem-sc-barn-tabs');
 		var zoneTabsWrap = document.getElementById('eem-sc-zone-tabs');
@@ -5229,6 +5240,76 @@
 		if (!sel) return;
 		eemScApplyState(sel.value || 'all', window._eemScTab || 'customer');
 	});
+
+	// Quick-view chips (By Location List): filter matrix rows by today's status.
+	document.addEventListener('click', function (ev) {
+		var chip = ev.target.closest && ev.target.closest('[data-eem-action="sc-quick-filter"]');
+		if (!chip) return;
+		ev.preventDefault();
+		var status = chip.getAttribute('data-status') || 'all';
+		document.querySelectorAll('[data-eem-action="sc-quick-filter"]').forEach(function (c) {
+			c.classList.toggle('active', c === chip);
+		});
+		document.querySelectorAll('#eem-sc-list .eem-chart-stall-row').forEach(function (row) {
+			var t = row.getAttribute('data-today') || 'available';
+			row.style.display = (status === 'all' || t === status) ? '' : 'none';
+		});
+	});
+
+	/* ── Shared admin-note modal (Stall Chart By-Customer Notes column) ── */
+	(function () {
+		var overlay = document.getElementById('eem-sc-note-overlay');
+		if (!overlay) return;
+		var titleEl = document.getElementById('eem-sc-note-title');
+		var subEl   = document.getElementById('eem-sc-note-sub');
+		var textEl  = document.getElementById('eem-sc-note-text');
+		var saveEl  = document.getElementById('eem-sc-note-save');
+		var activeBtn = null;
+
+		function openNote(btn) {
+			activeBtn = btn;
+			subEl.textContent  = (btn.getAttribute('data-customer') || '') +
+				(btn.getAttribute('data-order-number') ? '  ·  ' + btn.getAttribute('data-order-number') : '');
+			textEl.value = btn.getAttribute('data-note') || '';
+			overlay.classList.add('open');
+			setTimeout(function () { textEl.focus(); }, 50);
+		}
+		function closeNote() { overlay.classList.remove('open'); activeBtn = null; }
+
+		document.addEventListener('click', function (ev) {
+			var openBtn = ev.target.closest && ev.target.closest('[data-eem-action="sc-open-note"]');
+			if (openBtn) { ev.preventDefault(); openNote(openBtn); return; }
+			if (ev.target.closest && ev.target.closest('[data-eem-action="sc-close-note"]')) { closeNote(); return; }
+			if (ev.target === overlay) { closeNote(); }
+		});
+		document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') closeNote(); });
+
+		saveEl.addEventListener('click', function () {
+			if (!activeBtn) return;
+			var orderKey = activeBtn.getAttribute('data-order-key') || '';
+			var nonce    = activeBtn.getAttribute('data-nonce') || '';
+			var note     = textEl.value;
+			var btn      = activeBtn;
+			saveEl.disabled = true;
+			var body = new URLSearchParams();
+			body.set('action', 'eem_order_admin_note_set');
+			body.set('_wpnonce', nonce);
+			body.set('order_key', orderKey);
+			body.set('note', note);
+			fetch(ajaxurl, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() })
+				.then(function (r) { return r.json(); })
+				.then(function (res) {
+					saveEl.disabled = false;
+					if (res && res.success) {
+						btn.setAttribute('data-note', res.data.note || '');
+						btn.classList.toggle('has-note', !!(res.data && res.data.has_note));
+						closeNote();
+						if (window.EEM && typeof window.EEM.showSaveToast === 'function') { window.EEM.showSaveToast(); }
+					}
+				})
+				.catch(function () { saveEl.disabled = false; });
+		});
+	})();
 
 	document.addEventListener('click', function (ev) {
 		var t = ev.target;
@@ -6206,12 +6287,18 @@
 
 	// Initialise stall chart inv/tab state from URL params on page load.
 	document.addEventListener('DOMContentLoaded', function () {
-		if (!document.querySelector('[data-eem-action="sc-inv-select"]')) return;
+		// Detect the stall-chart detail page. The inventory control was changed
+		// from a <select data-eem-action="sc-inv-select"> to a segmented control
+		// (sc-inv-switch); also accept the view select or a map container so the
+		// init (and EEM.renderStallMaps) runs regardless of the inventory UI shape.
+		if (!document.querySelector('[data-eem-action="sc-inv-switch"], [data-eem-action="sc-inv-select"], #eem-sc-view-select, [data-eem-smap]')) return;
 		try {
 			var params  = new URLSearchParams(window.location.search);
-			var initInv = params.get('inv') || 'all';
+			// Default view is Stalls / By Customer (Whitney 2026-06-20) — must match
+			// the PHP default, else this client init overrides it back to "all".
+			var initInv = params.get('inv') || 'stalls';
 			var initTab = params.get('tab') || 'customer';
-			if (['all', 'stalls', 'rv'].indexOf(initInv) === -1) initInv = 'all';
+			if (['all', 'stalls', 'rv'].indexOf(initInv) === -1) initInv = 'stalls';
 			if (initTab === 'location') initTab = 'list';
 			if (['customer', 'list', 'map'].indexOf(initTab) === -1) initTab = 'customer';
 			eemScApplyState(initInv, initTab);

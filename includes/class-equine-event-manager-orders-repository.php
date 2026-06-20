@@ -1010,6 +1010,43 @@ class EEM_Orders_Repository {
 	}
 
 	/**
+	 * Set (or clear) the shared admin note for an order.
+	 *
+	 * Stored as an "Admin Note" note-line on every component so it reads back
+	 * regardless of which component the consumer queries. One note per order,
+	 * shared across the Stall Chart and Daily Movement screens.
+	 *
+	 * @param string $order_key Order key.
+	 * @param string $note      Note text ('' clears the note).
+	 * @return bool True when any component row was updated.
+	 */
+	public function update_order_admin_note( $order_key, $note = '' ) {
+		$order = $this->get_order( $order_key );
+		if ( ! $order ) {
+			return false;
+		}
+
+		$note        = trim( sanitize_textarea_field( $note ) );
+		$updated_any = false;
+
+		foreach ( $order['components'] as $component ) {
+			$notes = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+			$notes = ( '' === $note )
+				? $this->remove_note_line( $notes, 'Admin Note' )
+				: $this->upsert_note_line( $notes, 'Admin Note', $note );
+
+			$updated_any = $this->update_component_fields(
+				$component['table'],
+				$component['row_id'],
+				array( 'notes' => $notes ),
+				array( '%s' )
+			) || $updated_any;
+		}
+
+		return $updated_any;
+	}
+
+	/**
 	 * Auto-assign stall and RV units for a single order.
 	 *
 	 * Thin wrapper over {@see auto_assign_units_for_reservation()} scoped to one
