@@ -155,18 +155,19 @@ API/native last.*
 
 ---
 
-## 🔒 Concurrency hardening — follow-ups from the 2.7.515 re-audit (open)
+## 🔒 Concurrency hardening — follow-ups from the 2.7.515 re-audit
 
 From the **ADDENDUM (2026-06-20, v2.7.515)** in `docs/INVENTORY-CONCURRENCY-REPORT.md`. The customer
 checkout + all stall/RV assignment paths are confirmed safe; these are the **admin money-path** gaps.
 None are HIGH (each needs near-simultaneous admin action or a double-submit). **MED-4 is the only one
 that can move real money twice — payment path, change one-at-a-time + live Auth.net test per CLAUDE.md.**
 
-- [ ] **MED-3 — Edit-Dates "charge" branch is unlocked** (`admin.php` `handle_ajax_edit_dates:9654`,
-  charge `:9756-9781`). Mutates subtotal/total/tax/payment_status with no lock + no idempotency token →
-  lost-update vs a concurrent Edit-Dates/Add-Items; fast double-POST adds the delta twice. **Fix:** wrap
-  in `acquire_assignment_lock($reservation_id)` + re-`get_order` in-lock before recomputing. Admin-only,
-  no money moves on this branch.
+- [x] **MED-3 — Edit-Dates "charge" branch is unlocked** — ✅ **DONE (2.7.520).** Wrapped
+  `handle_ajax_edit_dates` in `acquire_assignment_lock(reservation_id)` (`eem_checkout_<rid>`) with the
+  component rows re-read in-lock; a duplicate submit re-reads the updated dates → delta 0 → no
+  double-apply. Refund branch uses a different lock key (no deadlock). *(Residual: a concurrent
+  Add-Items on the same rows isn't under the same lock — separate, lower-likelihood; revisit if it
+  surfaces.)*
 - [ ] **MED-4 — Admin Collect Payment (Auth.net) double-charge window** (`shortcodes.php`
   `ajax_collect_payment_authorize_charge:8284`). Non-atomic `already_paid` check vs the live charge →
   a double-click can fire two authCaptures. **Fix:** per-order `GET_LOCK` around read→charge→mark +
@@ -176,9 +177,12 @@ that can move real money twice — payment path, change one-at-a-time + live Aut
   pre-existing drift compounds. This is the root of the **#90801 $121-vs-$135** mismatch. **Fix:**
   recompute the row from rate×qty×nights after a qty bump (decide if manual price overrides are supported
   first), or a one-time reconciliation pass.
-- [ ] **LOW-3/4/5 — minor double-submit/recheck windows:** Stripe confirm has no already-paid recheck
-  (no 2nd charge though); mark-paid-manual non-atomic (duplicate note, no charge); custom-line-item
-  double-submit can dup a row (discount self-heals). Low priority; disable-on-submit / short locks.
+- [x] **LOW-5 — custom-item double-submit** — ✅ **DONE (2.7.520).** Add-Items confirm button stays
+  disabled through the post-success reload (re-enabled only on failure), so a fast second click can't
+  duplicate the line item. *(Server-side dedup remains a possible future hardening.)*
+- [ ] **LOW-3/4 — minor recheck windows (open):** Stripe confirm has no already-paid recheck (no 2nd
+  charge though — payment path, needs sign-off); mark-paid-manual non-atomic (duplicate note, no card
+  charged). Low priority; add short locks / idempotency rechecks.
 
 ---
 
