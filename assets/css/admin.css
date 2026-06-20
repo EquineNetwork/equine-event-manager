@@ -9111,6 +9111,17 @@ body.destination-mode .eem-occ-pill--blocked { opacity: 0.5; pointer-events: non
    does not use .eem-page-header / .eem-page-body).
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* Remove the default eem-page-wrap card border — the list page is full-bleed
+   (topbar → page-header → gray body), and the detail page uses its own
+   .eem-sc-content-card cards. The bare border-top was doubling up with the
+   breadcrumb's border-bottom, creating a visible double-line seam. */
+.eem-shell-page--stall-charts .eem-page-wrap {
+	border: none;
+	border-radius: 0;
+	overflow: visible;
+	background: transparent;
+}
+
 /* List page: style the page-header band as the mockup's .app-page-header */
 .eem-shell-page--stall-charts .eem-page-header {
 	background: #fff;
@@ -9153,20 +9164,28 @@ body.destination-mode .eem-occ-pill--blocked { opacity: 0.5; pointer-events: non
 	gap: 10px;
 	flex-wrap: wrap;
 }
-.eem-sc-date-select {
+/* select. prefix raises specificity to (0,1,1) to beat .wp-core-ui select (0,1,1)
+   via cascade order — admin.css loads after forms.css. */
+.eem-sc-date-wrap {
+	display: inline-flex; /* shrink-wraps on desktop */
+}
+select.eem-sc-date-select {
 	font-family: inherit;
 	font-size: 13px;
+	line-height: 1.4; /* override WP admin inherited ~2.7 line-height that inflates height */
 	color: #0d1b3e;
-	background: #F7F9FC;
+	background-color: #F7F9FC;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 8px center;
 	border: 1.5px solid #d0daea;
 	border-radius: 7px;
 	padding: 8px 28px 8px 10px;
 	appearance: none;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-	background-repeat: no-repeat;
-	background-position: right 8px center;
 	cursor: pointer;
-	min-height: 36px;
+	height: 36px;
+	box-sizing: border-box; /* width:100% includes padding+border so it fills wrapper exactly */
+	width: 100%;
 }
 select.eem-sc-date-select:focus { outline: none; border-color: #1668F2; box-shadow: 0 0 0 3px rgba(22,104,242,.1); }
 .eem-sc-search-wrap {
@@ -9181,7 +9200,9 @@ select.eem-sc-date-select:focus { outline: none; border-color: #1668F2; box-shad
 	min-height: 36px;
 }
 .eem-sc-search-wrap svg { color: #94a3b8; flex-shrink: 0; }
-.eem-sc-search-input {
+/* input. prefix raises specificity to (0,1,1) to beat WP core forms.css
+   input[type="search"] { border: ... } rule. */
+input.eem-sc-search-input {
 	border: 0;
 	outline: none;
 	padding: 7px 0;
@@ -9190,8 +9211,11 @@ select.eem-sc-date-select:focus { outline: none; border-color: #1668F2; box-shad
 	background: transparent;
 	flex: 1;
 	color: #0d1b3e;
+	box-shadow: none;
+	border-radius: 0;
+	min-height: unset;
 }
-input.eem-sc-search-input:focus { outline: none; }
+input.eem-sc-search-input:focus { outline: none; box-shadow: none; }
 .eem-sc-count { font-size: 13px; color: #64748b; margin-left: auto; white-space: nowrap; }
 
 /* ── Content card ── */
@@ -9346,7 +9370,20 @@ a.eem-sc-mob-edit-btn:focus { background: #e8eef8; color: #0d1b3e; text-decorati
 	.eem-sc-mobile-cards { display: block; }
 }
 @media ( max-width: 600px ) {
-	.eem-sc-search-wrap { min-width: unset; flex: 1; }
+	.eem-sc-list-toolbar {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	.eem-sc-date-wrap {
+		display: block; /* stretch to full column width */
+		width: 100%;
+	}
+	.eem-sc-search-wrap {
+		min-width: unset;
+		width: 100%;
+		box-sizing: border-box;
+	}
+	.eem-sc-count { margin-left: 0; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

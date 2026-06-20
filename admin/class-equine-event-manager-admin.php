@@ -4431,15 +4431,17 @@ class EEM_Admin {
 
 			<!-- Toolbar -->
 			<div class="eem-sc-list-toolbar">
-				<select class="eem-sc-date-select" id="eem-sc-date-filter" data-eem-input-action="sc-list-date-filter">
-					<option value="all"><?php esc_html_e( 'All dates', 'equine-event-manager' ); ?></option>
-					<?php foreach ( $date_options as $date_key => $date_label ) : ?>
-						<option value="<?php echo esc_attr( $date_key ); ?>"><?php echo esc_html( $date_label ); ?></option>
-					<?php endforeach; ?>
-				</select>
+				<div class="eem-sc-date-wrap">
+					<select class="eem-sc-date-select" id="eem-sc-date-filter" data-eem-input-action="sc-list-date-filter">
+						<option value="all"><?php esc_html_e( 'All dates', 'equine-event-manager' ); ?></option>
+						<?php foreach ( $date_options as $date_key => $date_label ) : ?>
+							<option value="<?php echo esc_attr( $date_key ); ?>"><?php echo esc_html( $date_label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</div>
 				<div class="eem-sc-search-wrap">
 					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-					<input class="eem-sc-search-input" type="search" placeholder="<?php esc_attr_e( 'Search reservations…', 'equine-event-manager' ); ?>" data-eem-input-action="sc-list-search">
+					<input class="eem-sc-search-input" type="search" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" data-eem-input-action="sc-list-search">
 				</div>
 				<span class="eem-sc-count" id="eem-sc-list-count">
 					<?php
