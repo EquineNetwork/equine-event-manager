@@ -172,11 +172,15 @@ that can move real money twice — payment path, change one-at-a-time + live Aut
   `ajax_collect_payment_authorize_charge:8284`). Non-atomic `already_paid` check vs the live charge →
   a double-click can fire two authCaptures. **Fix:** per-order `GET_LOCK` around read→charge→mark +
   re-read status in-lock; tighten Auth.net `duplicateWindow`. ⚠️ payment path — sign-off + live test.
-- [ ] **LOW-6 — `add_component_quantity` subtotal drift** (`orders-repository.php:595`, `:645-668`).
-  Adds the priced delta onto the stored subtotal instead of re-deriving `unit_price × qty × nights`, so a
-  pre-existing drift compounds. This is the root of the **#90801 $121-vs-$135** mismatch. **Fix:**
-  recompute the row from rate×qty×nights after a qty bump (decide if manual price overrides are supported
-  first), or a one-time reconciliation pass.
+- [x] **LOW-6 — `add_component_quantity` subtotal drift** — ✅ **CLOSED, not a bug (2026-06-20).**
+  Re-examined with Whitney. The additive logic (`stored_subtotal + engine_priced(added qty)`,
+  `orders-repository.php:651`) is *correct* and intentional: it **preserves the rate the customer
+  originally locked in** (e.g. early-bird / package pricing) and bills only the newly-added units at the
+  current rate. The proposed "recompute as current rate × qty × nights" would have been a *real* bug —
+  it would wipe out original EB/package pricing on a later add. The #90801 $121-vs-$135 mismatch was a
+  **seed/test artifact** (repeated edit-dates/add cycles on a fixture), not the normal flow. With no real
+  order data (seed only), there is nothing to reconcile. No code change. *(No custom/manual rates by
+  product decision — discounts go through the order-screen Discount feature.)*
 - [x] **LOW-5 — custom-item double-submit** — ✅ **DONE (2.7.520).** Add-Items confirm button stays
   disabled through the post-success reload (re-enabled only on failure), so a fast second click can't
   duplicate the line item. *(Server-side dedup remains a possible future hardening.)*
