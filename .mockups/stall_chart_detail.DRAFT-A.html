@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Stall &amp; RV Chart – DRAFT A (focused Show + sticky)</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!--
+  ═══════════════════════════════════════════════════════════════════════════
+  DRAFT A — FOCUSED "SHOW" FILTER + STICKY, for on-the-fly floor use
+  (built on the real live mockup of 2026-06-19 you provided)
+  ───────────────────────────────────────────────────────────────────────────
+  Goal: stop the page making staff wade through "All" to reach the stalls.
+  Changes vs. live:
+   1. "Show" now actually COLLAPSES the page to the chosen inventory:
+        • By Customer  — hides the other inventory's columns AND rows that have
+                         nothing in the active inventory.
+        • By Location  — shows only that inventory's section (+ its filters).
+        • By Map       — shows only that inventory's map.
+        • KPI cards    — drop to just the active inventory's two cards.
+   2. Default = STALLS (not All) — opens straight on the stalls.
+   3. STICKY on BOTH axes — Show and View are remembered (localStorage here;
+      per-user meta in the real build). Staff set it once for their role and
+      land there every time.
+   4. (Demo) auto-hide note: in the real build, if the event has no RV inventory
+      the RV option + RV cards are removed entirely. Toggle DEMO_HAS_RV below
+      to see that.
+  ═══════════════════════════════════════════════════════════════════════════
+-->
+<style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Stall & RV Chart – detail page (admin.php?page=equine-event-manager-stall-charts&reservation_id=N)
+   Curated mockup reflecting the LIVE page as of 2026-06-19. All component values
+   pulled from assets/css/admin.css. Brand tokens: electric #1668F2, navy #031B4E,
+   control border #8c8f94, radius 3px.
+   ───────────────────────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+svg{flex-shrink:0}
+a{text-decoration:none}
+a:hover{text-decoration:none}
+
+/* ── WP SHELL STUB ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+
+/* ── Breadcrumb + logo ── */
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.breadcrumb-sep{font-size:13px;color:#8c8f94}
+.breadcrumb-page{font-size:13px;color:#031B4E;font-weight:600}
+.breadcrumb-page a{color:#031B4E;font-weight:600}
+.breadcrumb-page a:hover{color:#1668F2}
+
+/* ── PLUGIN-WRAP (single bordered card) ── */
+.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+
+/* PAGE HEADER inside wrap */
+.eem-stall-chart-header,.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.plugin-header-left{flex:1;min-width:0}
+.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2}
+.eem-header-actions{display:flex;gap:8px;flex-shrink:0;align-items:center}
+.eem-header-action-change{background:#fff;border:1px solid #c3c4c7;color:#1d2327;padding:6px 12px;border-radius:4px;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center}
+.eem-header-action-change:hover{border-color:#8c8f94;background:#f6f7f7;color:#1d2327}
+
+/* ── BODY ── */
+.eem-stall-chart-body{padding:18px 22px;background:#fff}
+
+/* ── DAILY-MOVEMENT BAR + KPI STAT CARDS ── */
+.eem-stall-chart-dm-bar{background:#f8fafc;border:0;border-bottom:1px solid #d9e2f2;border-radius:0;padding:16px 22px;margin:-18px -22px 18px}
+.eem-stall-chart-dm-stats{display:flex;flex-wrap:wrap;gap:10px}
+.eem-scs-card{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #d9e2f2;border-radius:6px;padding:10px 14px}
+.eem-scs-icon{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;background:#e6eefc;color:#1668f2;font-size:16px;line-height:1}
+.eem-scs-num{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031b4e;line-height:1}
+.eem-scs-label{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#64748b;margin-left:2px}
+/* ★ A — active-inventory cards read a touch stronger (Available is the floor number) */
+.eem-scs-card--avail .eem-scs-icon{background:#e8f5ee;color:#15803d}
+.eem-scs-card--avail .eem-scs-num{color:#15803d}
+
+/* ── FILTER BAR (Show + View dropdowns + actions) ── */
+.eem-stall-chart-filter-bar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 18px;background:#f0f4fb;border-bottom:1px solid #dcdcde;padding:14px 22px;margin:-18px -22px 0}
+.eem-scf-group{display:flex;flex-direction:column;gap:5px}
+.eem-stall-chart-view-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#64748b}
+.eem-field-select{padding:7px 10px;border:1px solid #8c8f94;border-radius:3px;font-size:13px;font-family:inherit;color:#1d2327;background:#fff;outline:none;line-height:1.4}
+.eem-field-select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.eem-field-select--auto{width:auto}
+.eem-stall-chart-view-select{min-width:200px}
+.eem-scf-actions{margin-left:auto;display:flex;gap:10px}
+
+/* ★ A — "Show" promoted to a segmented control so it reads as a MODE, not a quiet filter.
+   Bigger tap targets for floor/tablet use. (Keeps the same all/stalls/rv values.) */
+.eem-inv-seg{display:inline-flex;border:1px solid #8c8f94;border-radius:3px;overflow:hidden;background:#fff}
+.eem-inv-seg button{appearance:none;border:0;border-right:1px solid #d9e2ec;background:#fff;color:#1d2327;font-family:inherit;font-size:14px;font-weight:600;padding:9px 20px;cursor:pointer;line-height:1.2}
+.eem-inv-seg button:last-child{border-right:0}
+.eem-inv-seg button:hover{background:#f6f7f7}
+.eem-inv-seg button.active{background:#1668F2;color:#fff}
+
+/* ── BUTTONS ── */
+.eem-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;border:1px solid;text-decoration:none}
+.eem-btn-electric{background:#1668F2;color:#fff;border-color:#1668F2}
+.eem-btn-electric:hover{background:#1257d1;border-color:#1257d1;color:#fff}
+.eem-btn--ghost{background:#fff;color:#1d2327;border-color:#c3c4c7}
+.eem-btn--ghost:hover{background:#f6f7f7;color:#1d2327}
+.eem-btn-secondary{background:#fff;color:#031B4E;border-color:#c3c4c7}
+.eem-btn-secondary:hover{background:#f6f7f7}
+
+/* ── FULL-BLEED NOTICE BANNERS ── */
+.eem-stall-chart-unsaved-banner{display:flex;align-items:flex-start;gap:10px;margin:0 -22px 0;padding:12px 22px;background:#FFF8EC;border:none;border-radius:0;font-size:13px;line-height:1.5;color:#6B4A0A}
+.eem-stall-chart-unsaved-banner svg{width:16px;height:16px;color:#E5A823;flex-shrink:0;margin-top:1px}
+.eem-stall-chart-unsaved-banner strong{color:#6B4A0A}
+.eem-assign-banner{margin:0 -22px;padding:14px 22px;background:#1668F2;border:none;border-radius:0;color:#fff;font-size:14px}
+.eem-assign-banner strong{color:#fff}
+
+/* ── SECTION DIVIDERS (Stall Units / RV Lots) ── */
+.eem-sc-section-divider{display:flex;align-items:center;gap:8px;padding:10px 22px;margin:0 -22px;background:#f8fafc;border-top:1px solid #dcdcde;border-bottom:1px solid #dcdcde;font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#031b4e}
+.eem-sc-section-divider svg{width:14px;height:14px;flex-shrink:0}
+
+/* ── BY LOCATION – LIST: toolbar + tables ── */
+.eem-stall-chart-filter-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 0 16px}
+.eem-loc-bulk{display:flex;align-items:center;gap:8px}
+.eem-loc-bulk-select{min-width:150px}
+.eem-stall-chart-filter-search{position:relative;flex:0 0 auto;margin-left:auto;width:300px;max-width:100%;min-width:200px}
+.eem-stall-chart-filter-search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94}
+.eem-stall-chart-search-input{width:100%;padding:6px 10px 6px 25px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:inherit;color:#1d2327;background:#fff;outline:none}
+.eem-stall-chart-search-input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.eem-chart-table-scroll{overflow-x:auto;margin:0 -22px}
+.eem-stall-chart-table{width:100%;border-collapse:collapse;min-width:600px}
+.eem-stall-chart-table thead tr{background:#f3f4f5;border-bottom:1px solid #dcdcde}
+.eem-stall-chart-table thead th{padding:11px 14px;font-size:13px;font-weight:600;color:#1d2327;text-align:left;white-space:nowrap}
+.eem-stall-chart-table thead th:first-child{padding-left:22px}
+.eem-stall-chart-table td{padding:11px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
+.eem-stall-chart-table td:first-child{padding-left:22px}
+.eem-stall-chart-table tbody tr{border-bottom:1px solid #dcdcde}
+.eem-loc-check-col{width:34px}
+.eem-chart-unit-num{font-weight:700;color:#031B4E}
+tr.eem-chart-barn-row td{background:#fdf4e7;padding:9px 22px;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#b45309;border-bottom:1px solid #f3e2c4;border-top:1px solid #f3e2c4}
+.eem-loc-cell-td{white-space:nowrap}
+.eem-loc-cell{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;border:1px solid;font-size:12px;font-weight:700;font-family:inherit;line-height:1.5;cursor:pointer;white-space:nowrap;background:#fff}
+.eem-loc-cell .eem-occ-chevron{width:12px;height:12px;flex-shrink:0;opacity:.7}
+.eem-loc-cell--occupied{background:#eaf1fe;border-color:#b9d2fb;color:#031b4e}
+.eem-loc-cell--available{background:#e8f5ee;border-color:#b6e0c7;color:#15803d}
+.eem-loc-cell--cleaning{background:#f5f3ff;border-color:#ddd6fe;color:#7c3aed}
+.eem-loc-cell--blocked{background:#f3f4f5;border-color:#e2e4e7;color:#64748b;cursor:default}
+
+/* ── BY LOCATION – MAP (eem-smap) ── */
+.eem-smap{--eem-smap-chip:30px;--eem-smap-gap:4px;padding:0 18px 4px}
+.eem-smap-barn-stats{display:flex;flex-wrap:wrap;gap:14px 24px;padding:14px 0 4px}
+.eem-smap-barn-stat{flex:1 1 200px;padding:0}
+.eem-smap-barn-stat-name{font-weight:700;color:#031B4E;font-size:13px;margin-bottom:6px}
+.eem-smap-barn-stat-nums{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px}
+.eem-smap-stat{display:inline-flex;align-items:center;gap:6px}
+.eem-smap-stat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.eem-smap-stat-dot--total{background:#6B7A99}
+.eem-smap-stat-dot--avail{background:#15803d}
+.eem-smap-stat-dot--assigned{background:#1668F2}
+.eem-smap-stat-dot--tack{background:#b45309}
+.eem-smap-stat-dot--blocked{background:#b91c1c}
+.eem-smap-barn-tabs{display:flex;gap:4px;flex-wrap:wrap;padding:10px 0 0}
+.eem-smap-barn-tab{appearance:none;border:1px solid #d9e2ec;border-bottom:0;background:#f6f9fd;color:#5f6f85;font-weight:700;font-size:13px;padding:8px 14px;border-radius:6px 6px 0 0;cursor:pointer}
+.eem-smap-barn-tab.active{background:#fff;color:#031B4E;box-shadow:inset 0 -2px 0 #1668F2}
+.eem-smap-legend{display:flex;gap:14px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid #d9e2ec;font-size:12px;color:#5f6f85;align-items:center}
+.eem-smap-legend span{display:inline-flex;align-items:center;gap:6px}
+.eem-smap-legend-hint{margin-left:auto;color:#8995a8}
+.eem-smap-sw{width:14px;height:14px;border-radius:3px;border:1px solid #d9e2ec;display:inline-block}
+.eem-smap-sw--avail{background:#fff;border-color:#b9c6da}
+.eem-smap-sw--resv{background:#dbe4f3;border-color:#bcccea}
+.eem-smap-sw--tack{background:#fff5e6;border-color:#E8A33D}
+.eem-smap-sw--block{background:#9aa6b6;border-color:#9aa6b6}
+.eem-smap-zoombar{display:flex;justify-content:flex-end;padding:8px 0 2px}
+.eem-smap-zoom{display:inline-flex;border:1px solid #d9e2ec;border-radius:3px;overflow:hidden}
+.eem-smap-zoom button{border:0;border-left:1px solid #d9e2ec;background:#fff;color:#031B4E;font-weight:700;font-size:13px;padding:5px 12px;line-height:1;cursor:pointer}
+.eem-smap-zoom button:first-child{border-left:0}
+.eem-smap-zoom button:hover{background:#eef4ff}
+.eem-smap-scroll{overflow:auto;padding:12px 0 6px}
+.eem-smap-grid{display:grid;grid-template-columns:repeat(10,var(--eem-smap-chip));gap:1px;width:max-content;background:#D9E2F2;border:1px solid #D9E2F2}
+.eem-smap-stall{position:relative;display:flex;align-items:center;justify-content:center;width:var(--eem-smap-chip);height:var(--eem-smap-chip);font-size:clamp(5px,calc(var(--eem-smap-chip) * .32),13px);font-weight:700;border:0;background:#fff;color:#031B4E;cursor:pointer;user-select:none;line-height:1;overflow:hidden}
+.eem-smap-stall:hover{outline:2px solid #1668F2;outline-offset:-1px;z-index:1}
+.eem-smap-stall.is-reserved{background:#dbe4f3;color:#2b4a78}
+.eem-smap-stall.is-blocked{background:repeating-linear-gradient(45deg,#9aa6b6,#9aa6b6 3px,#8593a5 3px,#8593a5 6px);color:#fff}
+.eem-smap-stall.is-tack{background:#fff5e6;color:#9a6a14}
+.eem-smap-cell--gap{background:#eef1f6;background-image:repeating-linear-gradient(45deg,transparent,transparent 5px,#e2e7ef 5px,#e2e7ef 6px)}
+.eem-smap-land{grid-column:span 2;display:flex;align-items:center;justify-content:center;text-align:center;height:var(--eem-smap-chip);font-size:clamp(7px,calc(var(--eem-smap-chip) * .22),11px);font-weight:700;color:#b45309;background:#fff7e6;border:0;padding:2px;line-height:1.15;overflow:hidden}
+
+/* ── BY CUSTOMER table ── */
+.eem-cust-chart-table{width:100%;border-collapse:collapse;min-width:700px}
+.eem-cust-chart-table thead tr{background:#f8fafc;border-bottom:2px solid #dcdcde}
+.eem-cust-chart-table thead th{padding:10px 12px;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;text-align:left;white-space:nowrap}
+.eem-cust-chart-table thead th:first-child{padding-left:22px}
+.eem-cust-chart-table tbody tr{border-bottom:1px solid #dcdcde}
+.eem-cust-chart-table tbody tr:hover{background:#f6f7f7}
+.eem-cust-chart-table tbody td{padding:10px 12px;font-size:14px;color:#1e293b;vertical-align:middle}
+.eem-cust-chart-table tbody td:first-child{padding-left:22px}
+.eem-chart-cust-cell{display:flex;flex-direction:column;gap:1px}
+.eem-chart-cust-cell__row{display:flex;align-items:center;gap:6px}
+.eem-chart-cust-link{color:#031B4E;font-weight:600}
+.eem-chart-cust-link:hover{color:#1668F2}
+.eem-chart-cust-order{color:#6B7A99;font-weight:600;font-size:11.5px;line-height:1.3}
+.eem-chart-cust-order:hover{color:#1668F2}
+.eem-chart-cust-icon--note{color:#6B7A99;display:inline-flex;cursor:help}
+.eem-chart-cust-icon--note svg{width:14px;height:14px}
+.eem-chart-dash{color:#94a3b8}
+.eem-chart-status-col{text-align:left}
+
+/* Check-in status menu chip (Pending Arrival / Checked In / Checked Out) */
+.eem-dm-status{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+.eem-dm-status::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%}
+.eem-dm-status-occupied{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.eem-dm-status-occupied::before{background:#ef4444}
+.eem-dm-status-checked_in{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+.eem-dm-status-checked_in::before{background:#22c55e}
+.eem-dm-status-checked_out{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.eem-dm-status-checked_out::before{background:#3b82f6}
+.eem-dm-status-trigger{display:inline-flex;align-items:center;gap:4px;background:none;border:0;padding:0;margin:0;cursor:pointer;font:inherit;line-height:1}
+.eem-dm-status--caret{gap:5px}
+.eem-dm-status--caret .eem-occ-chevron{width:12px;height:12px;color:currentColor;opacity:.35}
+.eem-dm-status-trigger:hover .eem-occ-chevron{opacity:1}
+
+/* View pane visibility (mockup toggling only) */
+.sc-view{display:none}
+.sc-view.active{display:block}
+
+/* ★ A — inventory-hidden helper (Show filter) */
+.inv-hidden{display:none !important}
+
+@media (max-width:860px){
+  .wp-sidebar{display:none}
+  .eem-stall-chart-dm-bar{margin:-12px -12px 18px;padding:14px 12px}
+  .eem-scs-card{flex:1 1 calc(50% - 5px)}
+  .eem-stall-chart-filter-bar{align-items:stretch;margin:-12px -12px 0;padding:12px}
+  .eem-scf-group{flex:1 1 calc(50% - 6px);min-width:0}
+  .eem-inv-seg{width:100%}
+  .eem-inv-seg button{flex:1}
+  .eem-scf-actions{flex:1 1 100%;margin-left:0}
+  .eem-stall-chart-filter-search{flex:1 1 100%;margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<!-- WP shell stub -->
+<div class="wp-admin-bar">
+  <span>&#9776;</span>
+  <span class="site">My Equestrian Site</span>
+  <span>+ New</span>
+  <span style="margin-left:auto">Howdy, whitney</span>
+</div>
+
+<div class="wp-body">
+  <nav class="wp-sidebar">
+    <div class="wp-sidebar-item">Dashboard</div>
+    <div class="wp-sidebar-item">Media</div>
+    <div class="wp-sidebar-item">Posts</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-label">Event Manager</div>
+    <div class="wp-sidebar-sub">Dashboard</div>
+    <div class="wp-sidebar-sub">Orders</div>
+    <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub active">Stall &amp; RV Charts</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub">Settings</div>
+  </nav>
+
+  <main class="wp-content">
+
+    <!-- Breadcrumb -->
+    <div class="breadcrumb">
+      <img class="breadcrumb-logo-box" src="Equine Event Manager Logo.png" alt="Equine Event Manager">
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page"><a href="admin.php?page=equine-event-manager-stall-charts">Stall &amp; RV Charts</a></span>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page">2026 Southeast Region Super Sort</span>
+    </div>
+
+    <!-- PLUGIN-WRAP (single bordered card) -->
+    <div class="plugin-wrap">
+
+      <!-- PAGE HEADER inside wrap: title + Change Event + Edit Reservation -->
+      <header class="eem-stall-chart-header">
+        <div class="plugin-header-left">
+          <h1 class="plugin-title">Stall &amp; RV Chart &#8211; 2026 Southeast Region Super Sort</h1>
+        </div>
+        <div class="eem-header-actions">
+          <button class="eem-header-action-change" type="button">Change Event</button>
+          <a class="eem-header-action-change eem-header-action-edit" href="post.php?post=5990&amp;action=edit">Edit Reservation</a>
+        </div>
+      </header>
+
+      <div class="eem-stall-chart-body">
+
+        <!-- ══ KPI STAT CARDS (Daily Movement bar) — cards react to Show ══ -->
+        <div class="eem-stall-chart-dm-bar">
+          <div class="eem-stall-chart-dm-stats">
+            <div class="eem-scs-card" data-inv="stalls">
+              <span class="eem-scs-icon" aria-hidden="true">&#9638;</span>
+              <span class="eem-scs-num">730</span>
+              <span class="eem-scs-label">Total Stalls</span>
+            </div>
+            <div class="eem-scs-card eem-scs-card--avail" data-inv="stalls">
+              <span class="eem-scs-icon" aria-hidden="true">&#9638;</span>
+              <span class="eem-scs-num">730</span>
+              <span class="eem-scs-label">Available Stalls</span>
+            </div>
+            <div class="eem-scs-card" data-inv="rv">
+              <span class="eem-scs-icon" aria-hidden="true">&#11041;</span>
+              <span class="eem-scs-num">71</span>
+              <span class="eem-scs-label">Total RV Lots</span>
+            </div>
+            <div class="eem-scs-card eem-scs-card--avail" data-inv="rv">
+              <span class="eem-scs-icon" aria-hidden="true">&#11041;</span>
+              <span class="eem-scs-num">71</span>
+              <span class="eem-scs-label">Available RV Lots</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ CONTROLS ROW: Show (segmented mode) + View + actions ══ -->
+        <div class="eem-stall-chart-filter-bar">
+          <div class="eem-scf-group">
+            <span class="eem-stall-chart-view-label">Show</span>
+            <div class="eem-inv-seg" role="group" aria-label="Inventory">
+              <button type="button" data-inv="stalls" onclick="scShowInv('stalls')">Stalls</button>
+              <button type="button" data-inv="rv" onclick="scShowInv('rv')">RV</button>
+              <button type="button" data-inv="all" onclick="scShowInv('all')">Both</button>
+            </div>
+          </div>
+          <div class="eem-scf-group">
+            <label class="eem-stall-chart-view-label" for="sc-view-select">View</label>
+            <select id="sc-view-select" class="eem-field-select eem-stall-chart-view-select" onchange="scShowView(this.value)">
+              <option value="customer">By Customer</option>
+              <option value="list">By Location &#8211; List</option>
+              <option value="map">By Location &#8211; Map</option>
+            </select>
+          </div>
+          <div class="eem-scf-actions">
+            <button class="eem-btn eem-btn-electric" type="button">Generate Assignments</button>
+            <button class="eem-btn eem-btn--ghost" type="button">Print View</button>
+          </div>
+        </div>
+
+        <!-- ══ FULL-BLEED AMBER UNSAVED-SUGGESTION NOTICE ══ -->
+        <div class="eem-stall-chart-unsaved-banner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span><strong>1 order</strong> has a suggested stall that isn&#8217;t saved yet. Review the assignment below, then use <strong>Generate Assignments</strong> to lock it in.</span>
+        </div>
+
+        <!-- ══ FULL-BLEED ELECTRIC-BLUE ASSIGN BANNER (sits directly above Stall Units) ══ -->
+        <div class="eem-assign-banner">
+          <strong>Assigning Order Edit Test (Stall)</strong> &#8212; click an available stall for <strong>Jul 9 &#8211; Jul 12</strong> to place them.
+        </div>
+
+        <!-- ══════════ VIEW PANES (mockup toggles via the View dropdown) ══════════ -->
+
+        <!-- ───── BY CUSTOMER (default active) ───── -->
+        <section class="sc-view active" data-view="customer">
+          <div class="eem-chart-table-scroll">
+            <table class="eem-cust-chart-table">
+              <thead>
+                <tr>
+                  <th>Customer</th>
+                  <th>Arrival</th>
+                  <th>Departure</th>
+                  <th class="col-stall">Barn</th>
+                  <th class="col-stall">Stall #</th>
+                  <th class="col-rv">Lot Name</th>
+                  <th class="col-rv">RV Lot #</th>
+                  <th class="eem-chart-status-col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Checked In — stall only -->
+                <tr data-has-stalls="1" data-has-rv="0">
+                  <td>
+                    <div class="eem-chart-cust-cell">
+                      <div class="eem-chart-cust-cell__row">
+                        <a class="eem-chart-cust-link" href="admin.php?page=equine-event-manager-order&amp;order_key=abc">(Stall), Order Edit Test</a>
+                      </div>
+                      <a class="eem-chart-cust-order" href="admin.php?page=equine-event-manager-order&amp;order_key=abc">#90801</a>
+                    </div>
+                  </td>
+                  <td>Jun 26, 2026</td>
+                  <td>Jun 27, 2026</td>
+                  <td class="col-stall">Montcrief</td>
+                  <td class="col-stall">5043, 5046, 5045</td>
+                  <td class="col-rv"><span class="eem-chart-dash">&#8212;</span></td>
+                  <td class="col-rv"><span class="eem-chart-dash">&#8212;</span></td>
+                  <td>
+                    <div class="eem-dm-status-menu">
+                      <button type="button" class="eem-dm-status-trigger" aria-haspopup="true">
+                        <span class="eem-dm-status eem-dm-status--caret eem-dm-status-checked_in"><span class="eem-dm-status-label">Checked In</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <!-- Pending Arrival, note icon — stall only -->
+                <tr data-has-stalls="1" data-has-rv="0">
+                  <td>
+                    <div class="eem-chart-cust-cell">
+                      <div class="eem-chart-cust-cell__row">
+                        <a class="eem-chart-cust-link" href="admin.php?page=equine-event-manager-order&amp;order_key=def">Thompson, Emma</a>
+                        <span class="eem-chart-cust-icon eem-chart-cust-icon--note" tabindex="0" aria-label="Special requests: Close to parking — limited mobility">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+                        </span>
+                      </div>
+                      <a class="eem-chart-cust-order" href="admin.php?page=equine-event-manager-order&amp;order_key=def">#09020</a>
+                    </div>
+                  </td>
+                  <td>Jun 26, 2026</td>
+                  <td>Jun 28, 2026</td>
+                  <td class="col-stall">Montcrief</td>
+                  <td class="col-stall">5038</td>
+                  <td class="col-rv"><span class="eem-chart-dash">&#8212;</span></td>
+                  <td class="col-rv"><span class="eem-chart-dash">&#8212;</span></td>
+                  <td>
+                    <div class="eem-dm-status-menu">
+                      <button type="button" class="eem-dm-status-trigger" aria-haspopup="true">
+                        <span class="eem-dm-status eem-dm-status--caret eem-dm-status-occupied"><span class="eem-dm-status-label">Pending Arrival</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <!-- Checked Out — RV only -->
+                <tr data-has-stalls="0" data-has-rv="1">
+                  <td>
+                    <div class="eem-chart-cust-cell">
+                      <div class="eem-chart-cust-cell__row">
+                        <a class="eem-chart-cust-link" href="admin.php?page=equine-event-manager-order&amp;order_key=ghi">Reyes, Marcus</a>
+                      </div>
+                      <a class="eem-chart-cust-order" href="admin.php?page=equine-event-manager-order&amp;order_key=ghi">#00128</a>
+                    </div>
+                  </td>
+                  <td>Jun 25, 2026</td>
+                  <td>Jun 27, 2026</td>
+                  <td class="col-stall"><span class="eem-chart-dash">&#8212;</span></td>
+                  <td class="col-stall"><span class="eem-chart-dash">&#8212;</span></td>
+                  <td class="col-rv">RV Row B</td>
+                  <td class="col-rv">B-14</td>
+                  <td>
+                    <div class="eem-dm-status-menu">
+                      <button type="button" class="eem-dm-status-trigger" aria-haspopup="true">
+                        <span class="eem-dm-status eem-dm-status--caret eem-dm-status-checked_out"><span class="eem-dm-status-label">Checked Out</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <!-- RV + stall, Pending — appears in all three modes -->
+                <tr data-has-stalls="1" data-has-rv="1">
+                  <td>
+                    <div class="eem-chart-cust-cell">
+                      <div class="eem-chart-cust-cell__row">
+                        <a class="eem-chart-cust-link" href="admin.php?page=equine-event-manager-order&amp;order_key=jkl">Okafor, Dana</a>
+                      </div>
+                      <a class="eem-chart-cust-order" href="admin.php?page=equine-event-manager-order&amp;order_key=jkl">#00131</a>
+                    </div>
+                  </td>
+                  <td>Jun 26, 2026</td>
+                  <td>Jun 29, 2026</td>
+                  <td class="col-stall">Burnett</td>
+                  <td class="col-stall">2210, 2211</td>
+                  <td class="col-rv">Premium Zone</td>
+                  <td class="col-rv">P-03</td>
+                  <td>
+                    <div class="eem-dm-status-menu">
+                      <button type="button" class="eem-dm-status-trigger" aria-haspopup="true">
+                        <span class="eem-dm-status eem-dm-status--caret eem-dm-status-occupied"><span class="eem-dm-status-label">Pending Arrival</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ───── BY LOCATION – LIST ───── -->
+        <section class="sc-view" data-view="list">
+          <!-- Toolbar: Bulk update + Apply, All Barns, All Zones, Search -->
+          <div class="eem-stall-chart-filter-row">
+            <div class="eem-loc-bulk">
+              <select class="eem-field-select eem-field-select--auto eem-loc-bulk-select" aria-label="Bulk status">
+                <option value="">Bulk update</option>
+                <option value="available">Mark Available</option>
+                <option value="needs_cleaning">Mark Cleaning</option>
+              </select>
+              <button type="button" class="eem-btn eem-btn-secondary">Apply</button>
+            </div>
+            <select class="eem-field-select eem-field-select--auto eem-loc-barn-select" aria-label="Filter by barn" data-inv="stalls">
+              <option value="all">All Barns</option>
+              <option value="burnett">Burnett</option>
+              <option value="montcrief">Montcrief</option>
+              <option value="premium">Premium</option>
+            </select>
+            <select class="eem-field-select eem-field-select--auto eem-loc-barn-select" aria-label="Filter by zone" data-inv="rv">
+              <option value="all">All Zones</option>
+              <option value="premiumzone">Premium Zone</option>
+              <option value="zone2">Zone 2</option>
+            </select>
+            <div class="eem-stall-chart-filter-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="search" class="eem-stall-chart-search-input" placeholder="Search">
+            </div>
+          </div>
+
+          <!-- STALL UNITS section -->
+          <div data-inv-section="stalls">
+            <div class="eem-sc-section-divider">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+              Stall Units
+            </div>
+            <div class="eem-chart-table-scroll">
+              <table class="eem-stall-chart-table eem-loc-table">
+                <thead>
+                  <tr>
+                    <th class="eem-loc-check-col"><input type="checkbox" aria-label="Select all stalls"></th>
+                    <th>Stall</th>
+                    <th>Barn</th>
+                    <th>Jul 9</th>
+                    <th>Jul 10</th>
+                    <th>Jul 11</th>
+                    <th>Jul 12</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="eem-chart-barn-row"><td colspan="7">Montcrief</td></tr>
+                  <tr class="eem-chart-stall-row">
+                    <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select 5001"></td>
+                    <td class="eem-chart-unit-num">5001</td>
+                    <td>Montcrief</td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--cleaning"><span class="eem-loc-cell__label">Cleaning</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  </tr>
+                  <tr class="eem-chart-stall-row">
+                    <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select 5002"></td>
+                    <td class="eem-chart-unit-num">5002</td>
+                    <td>Montcrief</td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--occupied"><span class="eem-loc-cell__label">Assigned</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--occupied"><span class="eem-loc-cell__label">Assigned</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  </tr>
+                  <tr class="eem-chart-barn-row"><td colspan="7">Burnett</td></tr>
+                  <tr class="eem-chart-stall-row">
+                    <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select 2210"></td>
+                    <td class="eem-chart-unit-num">2210</td>
+                    <td>Burnett</td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--blocked"><span class="eem-loc-cell__label">Blocked</span></button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- RV LOTS section -->
+          <div data-inv-section="rv">
+            <div class="eem-sc-section-divider">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 17h13V7a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z"/><path d="M16 10h3l2 3v4h-5"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg>
+              RV Lots
+            </div>
+            <div class="eem-chart-table-scroll">
+              <table class="eem-stall-chart-table eem-loc-table">
+                <thead>
+                  <tr>
+                    <th class="eem-loc-check-col"><input type="checkbox" aria-label="Select all lots"></th>
+                    <th>Lot</th>
+                    <th>Zone</th>
+                    <th>Jul 9</th>
+                    <th>Jul 10</th>
+                    <th>Jul 11</th>
+                    <th>Jul 12</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="eem-chart-barn-row"><td colspan="7">Premium Zone</td></tr>
+                  <tr class="eem-chart-stall-row">
+                    <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select P-03"></td>
+                    <td class="eem-chart-unit-num">P-03</td>
+                    <td>Premium Zone</td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--occupied"><span class="eem-loc-cell__label">Assigned</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--occupied"><span class="eem-loc-cell__label">Assigned</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  </tr>
+                  <tr class="eem-chart-stall-row">
+                    <td class="eem-loc-check-col"><input type="checkbox" aria-label="Select B-14"></td>
+                    <td class="eem-chart-unit-num">B-14</td>
+                    <td>RV Row B</td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                    <td class="eem-loc-cell-td"><button type="button" class="eem-loc-cell eem-loc-cell--available"><span class="eem-loc-cell__label">Available</span><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ───── BY LOCATION – MAP ───── -->
+        <section class="sc-view" data-view="map">
+          <!-- STALL map -->
+          <div class="eem-smap" data-inv-section="stalls" data-eem-smap data-eem-smap-kind="stall">
+            <div class="eem-smap-barn-stats">
+              <div class="eem-smap-barn-stat">
+                <div class="eem-smap-barn-stat-name">Montcrief</div>
+                <div class="eem-smap-barn-stat-nums">
+                  <span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--total"></i><strong>300</strong> total</span>
+                  <span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--avail"></i><strong>254</strong> avail</span>
+                  <span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--assigned"></i><strong>46</strong> assigned</span>
+                  <span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--tack"></i><strong>0</strong> tack</span>
+                  <span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--blocked"></i><strong>0</strong> blocked</span>
+                </div>
+              </div>
+            </div>
+            <div class="eem-smap-barn-tabs">
+              <button type="button" class="eem-smap-barn-tab active">Montcrief</button>
+              <button type="button" class="eem-smap-barn-tab">Burnett</button>
+              <button type="button" class="eem-smap-barn-tab">Premium</button>
+            </div>
+            <div class="eem-smap-legend">
+              <span><i class="eem-smap-sw eem-smap-sw--avail"></i> Available</span>
+              <span><i class="eem-smap-sw eem-smap-sw--resv"></i> Assigned</span>
+              <span><i class="eem-smap-sw eem-smap-sw--tack"></i> Tack</span>
+              <span><i class="eem-smap-sw eem-smap-sw--block"></i> Blocked</span>
+              <span class="eem-smap-legend-hint">Click any stall to assign, mark tack, or block.</span>
+            </div>
+            <div class="eem-smap-zoombar">
+              <span class="eem-smap-zoom" data-eem-smap-zoom>
+                <button type="button" data-zoom="out" title="Zoom out" aria-label="Zoom out">&minus;</button>
+                <button type="button" data-zoom="reset" title="Reset zoom">Zoom</button>
+                <button type="button" data-zoom="in" title="Zoom in" aria-label="Zoom in">+</button>
+              </span>
+            </div>
+            <div class="eem-smap-scroll" data-eem-smap-scroll>
+              <div class="eem-smap-grid" data-eem-smap-grid>
+                <div class="eem-smap-land">Office</div>
+                <button type="button" class="eem-smap-stall">5001</button>
+                <button type="button" class="eem-smap-stall">5002</button>
+                <button type="button" class="eem-smap-stall">5003</button>
+                <button type="button" class="eem-smap-stall is-reserved">5004</button>
+                <button type="button" class="eem-smap-stall is-reserved">5005</button>
+                <button type="button" class="eem-smap-stall">5006</button>
+                <button type="button" class="eem-smap-stall">5007</button>
+                <div class="eem-smap-land">Lobby</div>
+                <button type="button" class="eem-smap-stall">5008</button>
+                <button type="button" class="eem-smap-stall is-reserved">5009</button>
+                <button type="button" class="eem-smap-stall is-reserved">5010</button>
+                <button type="button" class="eem-smap-stall is-blocked">5011</button>
+                <button type="button" class="eem-smap-stall is-tack">5012</button>
+                <button type="button" class="eem-smap-stall">5013</button>
+                <button type="button" class="eem-smap-stall">5014</button>
+                <div class="eem-smap-cell eem-smap-cell--gap"></div>
+                <button type="button" class="eem-smap-stall">5015</button>
+                <button type="button" class="eem-smap-stall is-reserved">5016</button>
+                <button type="button" class="eem-smap-stall">5017</button>
+                <button type="button" class="eem-smap-stall">5018</button>
+                <button type="button" class="eem-smap-stall is-tack">5019</button>
+                <button type="button" class="eem-smap-stall">5020</button>
+                <button type="button" class="eem-smap-stall">5021</button>
+                <button type="button" class="eem-smap-stall">5022</button>
+                <button type="button" class="eem-smap-stall is-blocked">5023</button>
+                <button type="button" class="eem-smap-stall">5024</button>
+                <button type="button" class="eem-smap-stall">5025</button>
+                <button type="button" class="eem-smap-stall is-reserved">5026</button>
+                <button type="button" class="eem-smap-stall">5027</button>
+                <button type="button" class="eem-smap-stall">5028</button>
+                <button type="button" class="eem-smap-stall">5029</button>
+              </div>
+            </div>
+          </div>
+          <!-- RV map (shown when Show = RV) -->
+          <div class="eem-smap" data-inv-section="rv" data-eem-smap data-eem-smap-kind="rv">
+            <div class="eem-smap-barn-stats">
+              <div class="eem-smap-barn-stat">
+                <div class="eem-smap-barn-stat-name">Premium Zone</div>
+                <div class="eem-smap-barn-stat-nums">
+                  <span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--total"></i><strong>40</strong> total</span>
+                  <span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--avail"></i><strong>38</strong> avail</span>
+                  <span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--assigned"></i><strong>2</strong> assigned</span>
+                </div>
+              </div>
+            </div>
+            <div class="eem-smap-barn-tabs">
+              <button type="button" class="eem-smap-barn-tab active">Premium Zone</button>
+              <button type="button" class="eem-smap-barn-tab">RV Row B</button>
+            </div>
+            <div class="eem-smap-legend">
+              <span><i class="eem-smap-sw eem-smap-sw--avail"></i> Available</span>
+              <span><i class="eem-smap-sw eem-smap-sw--resv"></i> Assigned</span>
+              <span><i class="eem-smap-sw eem-smap-sw--block"></i> Blocked</span>
+              <span class="eem-smap-legend-hint">Click any lot to assign or block.</span>
+            </div>
+            <div class="eem-smap-scroll" data-eem-smap-scroll>
+              <div class="eem-smap-grid" data-eem-smap-grid>
+                <button type="button" class="eem-smap-stall">P-01</button>
+                <button type="button" class="eem-smap-stall">P-02</button>
+                <button type="button" class="eem-smap-stall is-reserved">P-03</button>
+                <button type="button" class="eem-smap-stall">P-04</button>
+                <button type="button" class="eem-smap-stall">P-05</button>
+                <button type="button" class="eem-smap-stall">P-06</button>
+                <button type="button" class="eem-smap-stall">P-07</button>
+                <button type="button" class="eem-smap-stall">P-08</button>
+                <button type="button" class="eem-smap-stall">P-09</button>
+                <button type="button" class="eem-smap-stall is-reserved">P-10</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div><!-- /.eem-stall-chart-body -->
+    </div><!-- /.plugin-wrap -->
+  </main>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   DRAFT A behavior — focused "Show" + sticky on both axes.
+   In the real build: Show/View persist to per-user meta; if the event has no RV
+   inventory the RV option + RV cards are removed server-side.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Toggle to false to simulate a stalls-only event (RV control + cards vanish). */
+var DEMO_HAS_RV = true;
+
+/* ── SHOW: collapse the page to one inventory (or both) ── */
+function scShowInv(inv){
+  var showStalls = (inv !== 'rv');
+  var showRv     = (inv !== 'stalls');
+
+  // Segmented button state
+  document.querySelectorAll('.eem-inv-seg button').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-inv') === inv);
+  });
+
+  // KPI cards
+  document.querySelectorAll('.eem-scs-card[data-inv]').forEach(function(c){
+    var t = c.getAttribute('data-inv');
+    c.classList.toggle('inv-hidden', (t === 'stalls' && !showStalls) || (t === 'rv' && !showRv));
+  });
+
+  // By Customer columns
+  document.querySelectorAll('.col-stall').forEach(function(c){ c.classList.toggle('inv-hidden', !showStalls); });
+  document.querySelectorAll('.col-rv').forEach(function(c){ c.classList.toggle('inv-hidden', !showRv); });
+
+  // By Customer rows — hide rows with nothing in the active inventory
+  document.querySelectorAll('.eem-cust-chart-table tbody tr').forEach(function(tr){
+    var hasS = tr.getAttribute('data-has-stalls') === '1';
+    var hasR = tr.getAttribute('data-has-rv') === '1';
+    var visible = (inv === 'all') || (inv === 'stalls' && hasS) || (inv === 'rv' && hasR);
+    tr.classList.toggle('inv-hidden', !visible);
+  });
+
+  // By Location / By Map sections + their inventory-specific filters
+  document.querySelectorAll('[data-inv-section]').forEach(function(sec){
+    var t = sec.getAttribute('data-inv-section');
+    sec.classList.toggle('inv-hidden', (t === 'stalls' && !showStalls) || (t === 'rv' && !showRv));
+  });
+  document.querySelectorAll('.eem-loc-barn-select[data-inv]').forEach(function(sel){
+    var t = sel.getAttribute('data-inv');
+    sel.classList.toggle('inv-hidden', (t === 'stalls' && !showStalls) || (t === 'rv' && !showRv));
+  });
+
+  try { localStorage.setItem('eem_sc_inv', inv); } catch(e){}
+}
+
+/* ── VIEW: switch pane (sticky) ── */
+function scShowView(view){
+  document.querySelectorAll('.sc-view').forEach(function(s){
+    s.classList.toggle('active', s.getAttribute('data-view') === view);
+  });
+  var sel = document.getElementById('sc-view-select');
+  if(sel && sel.value !== view){ sel.value = view; }
+  try { localStorage.setItem('eem_sc_view', view); } catch(e){}
+}
+
+/* ── Boot: restore both axes (defaults: Stalls + By Customer) ── */
+document.addEventListener('DOMContentLoaded', function(){
+  // Stalls-only event simulation: strip the RV control + RV cards entirely.
+  if(!DEMO_HAS_RV){
+    var rvBtn = document.querySelector('.eem-inv-seg button[data-inv="rv"]');
+    var bothBtn = document.querySelector('.eem-inv-seg button[data-inv="all"]');
+    if(rvBtn) rvBtn.remove();
+    if(bothBtn) bothBtn.remove();
+    document.querySelectorAll('.eem-scs-card[data-inv="rv"]').forEach(function(c){ c.remove(); });
+  }
+
+  var inv = 'stalls', view = 'customer';
+  try { inv = localStorage.getItem('eem_sc_inv') || 'stalls'; } catch(e){}
+  try { view = localStorage.getItem('eem_sc_view') || 'customer'; } catch(e){}
+  if(!DEMO_HAS_RV) inv = 'stalls';
+
+  scShowView(view);
+  scShowInv(inv);
+});
+</script>
+</body>
+</html>
