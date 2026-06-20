@@ -160,8 +160,18 @@ API/native last.*
 8. **Sheets & Results — CSV / Google Sheets / external URLs.**
 9. **Event Entries — competition management.**
 10. **PDF venue map → stall-grid overlay** (exploratory).
-11. **Global Handicaps data-ownership / API integration** — months out (Whitney).
-12. **Native mobile app (v4)** — API-gated; comes with/after #11.
+11. **Full WordPress-independence — extract reservation/event identity out of `wp_posts`** (strategic;
+    prerequisite for going native / leaving WordPress). **NEW (2026-06-20, Whitney).** Today the
+    *config* attached to reservations is already in owned relational tables (#7, done), but the
+    **reservation + event records themselves are still WordPress posts** (`en_reservation` / `en_event`
+    in `wp_posts` + the post's core fields). This item moves that entity identity into the plugin's own
+    tables so the **entire dataset is WordPress-agnostic** — at which point "leave WordPress / go native"
+    becomes a pure DB copy with **zero** WP-shaped data left and the data can live behind a standalone
+    API. Not an unfinished task — a *new* goal surfaced by the "get off WordPress eventually" discussion.
+    Pairs with #12/#13 (API + native app). First step: the **data-inventory / exit-map** doc (which tables
+    are already independent vs. still WP-shaped + exact export steps) before any schema move.
+12. **Global Handicaps data-ownership / API integration** — months out (Whitney).
+13. **Native mobile app (v4)** — API-gated; comes with/after #11–#12.
 
 ---
 
