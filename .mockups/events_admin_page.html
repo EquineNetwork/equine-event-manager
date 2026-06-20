@@ -32,12 +32,12 @@ a:hover{text-decoration:none}
 
 /* Breadcrumb */
 .breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.breadcrumb-logo{height:36px;width:auto}
 .breadcrumb-sep{font-size:13px;color:#8c8f94}
-.breadcrumb-page{font-size:13px;color:#1d2327;font-weight:600}
+.breadcrumb-page{font-size:13px;color:#031B4E;font-weight:600}
 
 /* ── PLUGIN-WRAP ── */
-.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+.plugin-wrap{background:#fff;border:1px solid #dcdcde;border-radius:3px;overflow:hidden;position:relative}
 
 /* PAGE HEADER */
 .plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
@@ -45,139 +45,132 @@ a:hover{text-decoration:none}
 .plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
 .plugin-subtitle{font-size:13px;color:#6B7A99;line-height:1.45}
 
-/* Header quick links */
-.header-links{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
-.header-link{font-size:13px;color:#1668F2;font-weight:500}
-.header-link:hover{color:#1257d1}
+/* Header meta links */
+.eem-page-meta-links{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
+.eem-page-meta-links a{font-size:13px;color:#1668F2;font-weight:500}
+.eem-page-meta-links a:hover{color:#1257d1}
 
 /* Primary CTA */
-.btn-primary{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:9px 18px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;text-decoration:none}
-.btn-primary:hover{background:#1257d1;border-color:#1257d1;color:#fff}
-.btn-primary svg{width:13px;height:13px}
+.eem-btn-electric{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:9px 18px;border-radius:3px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;text-decoration:none}
+.eem-btn-electric:hover{background:#1257d1;border-color:#1257d1;color:#fff}
 
-/* ── STATS CARDS ── */
-.stats-bar{padding:16px 22px;border-bottom:1px solid #dcdcde;background:#f9f9fa;display:flex;gap:12px;flex-wrap:wrap}
-.stat-card{background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:14px 18px;flex:1;min-width:140px}
-.stat-card-label{font-size:10.5px;font-weight:700;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
-.stat-card-num{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:#031B4E;line-height:1}
-/* Daily movement card — wider, list layout */
-.stat-card-wide{flex:2;min-width:220px}
-.stat-card-rows{display:flex;flex-direction:column;gap:3px;margin-top:2px}
-.stat-card-row{font-size:13px;color:#1d2327}
-.stat-card-row strong{color:#031B4E;font-weight:600}
+/* ── STATS STRIP ── */
+.eem-venues-stats{padding:16px 22px;border-bottom:1px solid #dcdcde;background:#f9f9fa;display:flex;gap:12px;flex-wrap:wrap}
+.eem-stat-card{background:#fff;border:1px solid #dcdcde;border-radius:3px;padding:14px 18px;flex:1;min-width:140px}
+.eem-stat-card--wide{flex:2;min-width:220px}
+.eem-stat-card-label{font-size:10.5px;font-weight:700;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
+.eem-stat-card-num{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:#031B4E;line-height:1}
+.eem-stat-card-rows{display:flex;flex-direction:column;gap:3px;margin-top:2px}
+.eem-stat-card-row{font-size:13px;color:#1d2327}
+.eem-stat-card-row strong{color:#031B4E;font-weight:600}
 
 /* ── STATUS TABS ── */
-.status-tabs{padding:10px 18px 0;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:0;flex-wrap:wrap}
-.status-tab{font-size:13px;color:#50575e;padding:6px 10px 8px;cursor:pointer;border-bottom:2px solid transparent;text-decoration:none;white-space:nowrap}
-.status-tab:hover{color:#031B4E}
-.status-tab.active{color:#031B4E;font-weight:600;border-bottom-color:#1668F2}
-.status-tab-count{color:#8c8f94;font-weight:400;margin-left:3px}
-.status-tab-sep{color:#8c8f94;font-size:12px;padding:6px 4px}
+.eem-status-tabs{padding:10px 18px 0;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:0;flex-wrap:wrap}
+.eem-status-tab{font-size:13px;color:#50575e;padding:6px 10px 8px;cursor:pointer;border-bottom:2px solid transparent;text-decoration:none;white-space:nowrap}
+.eem-status-tab:hover{color:#031B4E}
+.eem-status-tab.is-active{color:#031B4E;font-weight:600;border-bottom-color:#1668F2}
+.eem-status-tab-count{color:#8c8f94;font-weight:400;margin-left:3px}
+.eem-status-tab-sep{color:#8c8f94;font-size:12px;padding:6px 4px}
 
 /* ── TOOLBAR ── */
-.toolbar{padding:12px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff}
-.toolbar-left{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
-.toolbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.toolbar-select{padding:6px 28px 6px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none;cursor:pointer;min-width:130px}
-.toolbar-btn{padding:6px 14px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer;white-space:nowrap}
-.toolbar-btn:hover{background:#f6f7f7}
-.search-wrap{position:relative;min-width:160px;max-width:240px;flex:1}
-.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94}
-.search-input{width:100%;padding:6px 10px 6px 28px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
-.search-input:focus{border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
-.search-input::placeholder{color:#b0b0b0}
-.item-count{font-size:13px;color:#50575e;white-space:nowrap}
+.eem-list-toolbar{padding:12px 18px;border-bottom:1px solid #dcdcde;background:#fff}
+.eem-events-toolbar-form{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.eem-list-toolbar-left{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
+.eem-list-toolbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.eem-field-select{padding:6px 28px 6px 12px;border:1px solid #8c8f94;border-radius:3px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none;cursor:pointer;min-width:160px}
+.eem-toolbar-btn{padding:6px 14px;border:1px solid #8c8f94;border-radius:3px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer;white-space:nowrap}
+.eem-toolbar-btn:hover{background:#f6f7f7}
+.eem-search-wrap--attached{position:relative;min-width:160px;max-width:240px;flex:1;display:inline-flex;align-items:center}
+.eem-search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94;pointer-events:none}
+.eem-search-input{width:100%;padding:6px 10px 6px 28px;border:1px solid #8c8f94;border-radius:3px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
+.eem-search-input:focus{border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
+.eem-search-input::placeholder{color:#b0b0b0}
+.eem-item-count{font-size:13px;color:#50575e;white-space:nowrap;margin-left:auto}
 
 /* ── TABLE ── */
-.desktop-table{overflow-x:auto}
-table{width:100%;border-collapse:collapse}
-thead{background:#f3f4f5;border-bottom:1px solid #dcdcde}
-thead th{padding:11px 14px;font-size:13px;font-weight:600;color:#1d2327;text-align:left;white-space:nowrap}
-thead th.col-cb{width:36px;padding:11px 8px 11px 18px}
-thead th.sortable{cursor:pointer;color:#1668F2}
-thead th.sortable:hover{color:#1257d1}
-.sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:4px;vertical-align:middle;opacity:.5}
-.sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
-.sort-icon span:first-child{border-bottom:4px solid currentColor}
-.sort-icon span:last-child{border-top:4px solid currentColor}
+.eem-desktop-table{overflow-x:auto}
+.eem-table{width:100%;border-collapse:collapse}
+.eem-table thead{background:#f3f4f5;border-bottom:1px solid #dcdcde}
+.eem-table thead th{padding:11px 14px;font-size:13px;font-weight:600;color:#1d2327;text-align:left;white-space:nowrap}
+.eem-table thead th.sortable a{color:#1668F2;text-decoration:none;display:inline-flex;align-items:center;gap:4px}
+.eem-table thead th.sortable a:hover{color:#1257d1}
+.eem-sort-icon{display:inline-flex;flex-direction:column;gap:1px;vertical-align:middle;opacity:.5}
+.eem-sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
+.eem-sort-icon span:first-child{border-bottom:4px solid currentColor}
+.eem-sort-icon span:last-child{border-top:4px solid currentColor}
 
-tbody tr{border-bottom:1px solid #f0f0f1}
-tbody tr:last-child{border-bottom:none}
-td{padding:14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
-td.col-cb{padding:14px 8px 14px 18px;width:36px}
+.eem-table tbody tr{border-bottom:1px solid #f0f0f1}
+.eem-table tbody tr:last-child{border-bottom:none}
+.eem-table td{padding:14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
+.eem-table-empty{text-align:center;color:#8c8f94;padding:32px 14px;font-size:13px}
 
-/* Event title */
-.event-title{font-weight:700;color:#031B4E;font-size:13.5px;text-decoration:none;display:block;margin-bottom:3px}
-.event-title:hover{color:#1668F2}
-.event-row-actions{display:none;gap:8px;margin-top:4px}
-tbody tr:hover .event-row-actions{display:flex}
-.event-row-action{font-size:12px;color:#1668F2;cursor:pointer}
-.event-row-action:hover{color:#1257d1}
-.event-row-action-sep{font-size:12px;color:#c3c4c7}
+/* Event title link */
+.eem-venue-name{font-weight:700;color:#031B4E;font-size:13.5px;text-decoration:none;display:block}
+.eem-venue-name:hover{color:#1668F2}
+.eem-venue-muted{color:#8c8f94;font-size:13px}
 
-/* Date cell */
-.date-val{color:#1d2327;white-space:nowrap;font-size:13px}
-.date-val-empty{color:#8c8f94;font-size:13px}
+/* Status badges — matches PHP lifecycle_badge() output */
+.eem-status-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1.5;white-space:nowrap}
+.eem-status-badge::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
+/* eem-status-upcoming = starts in the future */
+.eem-status-upcoming{background:#dbeafe;color:#1d4ed8}
+.eem-status-upcoming::before{background:#2563eb}
+/* eem-status-active = ongoing (today within start–end) */
+.eem-status-active{background:#dcfce7;color:#15803d}
+.eem-status-active::before{background:#16a34a}
+/* eem-status-archived = past event */
+.eem-status-archived{background:#e5e7eb;color:#52525b}
+.eem-status-archived::before{background:#71717a}
 
-/* Venue / Producer */
-.venue-val{color:#1d2327;font-size:13px}
-.venue-val-empty{color:#8c8f94;font-size:13px}
-.producer-val{color:#1d2327;font-size:13px}
-.producer-val-empty{color:#8c8f94;font-size:13px}
+/* Draft post-status indicator */
+.eem-draft-tag{display:inline-block;margin-left:6px;padding:2px 6px;background:#fef3c7;color:#a16207;font-size:10px;font-weight:700;border-radius:3px;text-transform:uppercase;letter-spacing:.04em;vertical-align:middle}
 
-/* Status badges */
-.ev-status{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1.5;white-space:nowrap}
-.ev-status::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.status-published{background:#dcfce7;color:#15803d}
-.status-published::before{background:#16a34a}
-.status-draft{background:#fef3c7;color:#a16207}
-.status-draft::before{background:#ca8a04}
-.status-archived{background:#e5e7eb;color:#52525b}
-.status-archived::before{background:#71717a}
-.status-upcoming{background:#dbeafe;color:#1d4ed8}
-.status-upcoming::before{background:#2563eb}
-.status-ongoing{background:#dcfce7;color:#15803d}
-.status-ongoing::before{background:#16a34a}
-.status-past{background:#e5e7eb;color:#52525b}
-.status-past::before{background:#71717a}
-.ev-status-muted{color:#8c8f94;font-size:13px}
-.status-trashed{background:#fee2e2;color:#b91c1c}
-.status-trashed::before{background:#dc2626}
-
-/* Actions */
-.actions-cell{display:flex;align-items:center;gap:5px;justify-content:flex-end}
-.more-btn{width:30px;height:30px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;letter-spacing:.05em;line-height:1}
-.more-btn:hover{background:#f0f0f1;color:#1d2327;border-color:#8c8f94}
+/* Actions cell */
+.eem-actions-cell{display:flex;align-items:center;gap:5px;justify-content:flex-end}
+.eem-more-btn{width:30px;height:30px;border-radius:3px;border:1px solid #c3c4c7;background:#fff;color:#50575e;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;letter-spacing:.05em;line-height:1}
+.eem-more-btn:hover{background:#f0f0f1;color:#1d2327;border-color:#8c8f94}
 
 /* Row dropdown */
-.row-menu-wrap{position:relative;display:inline-block}
-.row-dropdown{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid #c3c4c7;border-radius:4px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:210px;z-index:100;overflow:hidden}
-.row-dropdown.open{display:block}
-.row-dd-item{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:13px;color:#1d2327;cursor:pointer;border-bottom:1px solid #f0f0f1;white-space:nowrap;text-decoration:none}
-.row-dd-item:last-child{border-bottom:none}
-.row-dd-item:hover{background:#f6f7f7}
-.row-dd-item svg{width:13px;height:13px;color:#6B7A99;flex-shrink:0}
-.row-dd-danger{color:#b91c1c}
-.row-dd-danger svg{color:#fca5a5}
-.row-dd-danger:hover{background:#fef2f2}
+.eem-row-menu-wrap{position:relative;display:inline-block}
+.eem-row-dropdown{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid #c3c4c7;border-radius:3px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:210px;z-index:100;overflow:hidden}
+.eem-row-dropdown.open{display:block}
+.eem-row-dd-item{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:13px;color:#1d2327;cursor:pointer;border-bottom:1px solid #f0f0f1;white-space:nowrap;text-decoration:none}
+.eem-row-dd-item:last-child{border-bottom:none}
+.eem-row-dd-item:hover{background:#f6f7f7}
+.eem-row-dd-item svg{width:13px;height:13px;color:#6B7A99;flex-shrink:0}
+.eem-row-dd-danger{color:#b91c1c}
+.eem-row-dd-danger svg{color:#fca5a5}
+.eem-row-dd-danger:hover{background:#fef2f2}
 
 /* ── TABLE FOOTER ── */
-.table-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid #dcdcde;background:#f3f4f5;flex-wrap:wrap;gap:8px}
-.table-footer-info{font-size:13px;color:#50575e}
-.pagination{display:flex;align-items:center;gap:3px}
-.page-btn{width:28px;height:28px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans',sans-serif;text-decoration:none}
-.page-btn:hover{background:#f6f7f7}
-.page-btn.active{background:#1668F2;color:#fff;border-color:#1668F2}
-.page-btn.disabled{opacity:.45;cursor:not-allowed}
+.eem-table-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid #dcdcde;background:#f3f4f5;flex-wrap:wrap;gap:8px}
+.eem-table-footer-info{font-size:13px;color:#50575e}
+.eem-pagination{display:flex;align-items:center;gap:3px}
+.eem-page-btn{width:28px;height:28px;border-radius:3px;border:1px solid #c3c4c7;background:#fff;color:#50575e;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans',sans-serif;text-decoration:none}
+.eem-page-btn:hover{background:#f6f7f7}
+.eem-page-btn.active{background:#1668F2;color:#fff;border-color:#1668F2}
+.eem-page-btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed;pointer-events:none}
 
 /* ── MOBILE CARDS ── */
-.mobile-events{display:none;padding:12px 14px}
-.mobile-event-card{background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:14px;margin-bottom:8px}
-.mob-ev-title{font-size:14px;font-weight:700;color:#031B4E;margin-bottom:4px;text-decoration:none;display:block}
-.mob-ev-title:hover{color:#1668F2}
-.mob-ev-meta{font-size:12.5px;color:#50575e;margin-bottom:6px;display:flex;flex-direction:column;gap:2px}
-.mob-ev-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.mob-ev-actions{display:flex;gap:5px}
+.eem-mobile-cards{display:none;padding:12px 14px}
+.eem-mobile-card{background:#fff;border:1px solid #dcdcde;border-radius:3px;padding:14px;margin-bottom:8px}
+.eem-mobile-card-top{margin-bottom:4px}
+.eem-mobile-card-id{font-size:14px;font-weight:700;color:#031B4E;text-decoration:none;display:block}
+.eem-mobile-card-id:hover{color:#1668F2}
+.eem-mobile-card-sub{font-size:12.5px;color:#50575e;margin-bottom:6px}
+.eem-mobile-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+
+/* ── COMING SOON GATE ──
+     Shown when TEC or GEMS is the active event source.
+     An overlay covers the page content with a centered notice. */
+.eem-coming-soon-overlay{position:absolute;inset:0;background:rgba(255,255,255,.88);display:flex;align-items:center;justify-content:center;z-index:50;backdrop-filter:blur(2px)}
+.eem-coming-soon-card{background:#fff;border:1px solid #dcdcde;border-radius:3px;padding:40px 48px;text-align:center;max-width:480px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.eem-coming-soon-badge{display:inline-flex;align-items:center;gap:6px;background:#fef3c7;color:#a16207;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:18px}
+.eem-coming-soon-title{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#031B4E;margin-bottom:8px;line-height:1.25}
+.eem-coming-soon-body{font-size:13.5px;color:#50575e;line-height:1.55;margin-bottom:22px}
+.eem-coming-soon-body strong{color:#1d2327}
+.eem-coming-soon-link{color:#1668F2;font-size:13px;font-weight:500}
+.eem-coming-soon-link:hover{color:#1257d1}
 
 /* ── RESPONSIVE ── */
 @media(max-width:960px){
@@ -187,21 +180,20 @@ tbody tr:hover .event-row-actions{display:flex}
 @media(max-width:767px){
   .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
   .wp-content{padding:8px 10px 32px}
-  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
   .plugin-header{padding:14px;flex-direction:column;align-items:stretch;gap:10px}
   .plugin-title{font-size:18px}
-  .btn-primary{justify-content:center}
-  .stats-bar{padding:12px 14px;gap:8px}
-  .stat-card{flex:1 1 calc(50% - 6px);min-width:0}
-  .stat-card-wide{flex:1 1 100%}
-  .status-tabs{overflow-x:auto;flex-wrap:nowrap;padding:8px 14px 0;-webkit-overflow-scrolling:touch}
-  .toolbar{flex-direction:column;align-items:stretch;padding:10px 14px}
-  .toolbar-left{flex-wrap:nowrap}
-  .toolbar-left .toolbar-select{flex:1;min-width:0}
-  .search-wrap{flex:1;max-width:100%}
-  .desktop-table{display:none}
-  .mobile-events{display:block}
-  .table-footer{padding:10px 14px}
+  .eem-btn-electric{justify-content:center}
+  .eem-venues-stats{padding:12px 14px;gap:8px}
+  .eem-stat-card{flex:1 1 calc(50% - 6px);min-width:0}
+  .eem-stat-card--wide{flex:1 1 100%}
+  .eem-status-tabs{overflow-x:auto;flex-wrap:nowrap;padding:8px 14px 0;-webkit-overflow-scrolling:touch}
+  .eem-list-toolbar{padding:10px 14px}
+  .eem-events-toolbar-form{flex-direction:column;align-items:stretch}
+  .eem-list-toolbar-right{flex-wrap:nowrap}
+  .eem-search-wrap--attached{flex:1;max-width:100%}
+  .eem-desktop-table{display:none}
+  .eem-mobile-cards{display:block}
+  .eem-table-footer{padding:10px 14px}
 }
 </style>
 </head>
@@ -222,11 +214,12 @@ tbody tr:hover .event-row-actions{display:flex}
     <div class="wp-sidebar-item">Pages</div>
     <div class="wp-sidebar-sep"></div>
     <div class="wp-sidebar-label">Event Manager</div>
-    <div class="wp-sidebar-sub active">Events</div>
+    <div class="wp-sidebar-sub">Dashboard</div>
     <div class="wp-sidebar-sub">Orders</div>
     <div class="wp-sidebar-sub">Reservations</div>
-    <div class="wp-sidebar-sub">Stall Charts</div>
-    <div class="wp-sidebar-sub">Invoicing</div>
+    <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
+    <div class="wp-sidebar-sub">Daily Movement</div>
+    <div class="wp-sidebar-sub active">Events</div>
     <div class="wp-sidebar-sub">Reports</div>
     <div class="wp-sidebar-sub">Settings</div>
   </nav>
@@ -234,11 +227,18 @@ tbody tr:hover .event-row-actions{display:flex}
   <main class="wp-content">
 
     <div class="breadcrumb">
-      <div class="breadcrumb-logo-box">Plugin Logo</div>
+      <img class="breadcrumb-logo" src="Equine Event Manager Logo.png" alt="Equine Event Manager">
       <span class="breadcrumb-sep">/</span>
       <span class="breadcrumb-page">Events</span>
     </div>
 
+    <!-- ══════════════════════════════════════════════
+         STATE A — TEC/GEMS is the active event source
+         The Native Events list is gated "Coming Soon".
+         The overlay covers the page but the page
+         structure underneath still renders so the
+         layout is meaningful when un-gated in v2.
+         ══════════════════════════════════════════════ -->
     <div class="plugin-wrap">
 
       <!-- PAGE HEADER -->
@@ -246,94 +246,82 @@ tbody tr:hover .event-row-actions{display:flex}
         <div class="plugin-header-left">
           <h1 class="plugin-title">Events</h1>
           <div class="plugin-subtitle">Manage your equine events. Each event can be linked to a reservation setup for stall, RV, and add-on bookings.</div>
-          <div class="header-links">
-            <a class="header-link" href="#">View Venues</a>
-            <a class="header-link" href="#">View Producers</a>
+          <div class="eem-page-meta-links">
+            <a href="#">View Venues</a>
+            <a href="#">View Producers</a>
           </div>
         </div>
-        <a href="#" class="btn-primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add Event
-        </a>
+        <a href="#" class="eem-btn-electric">+ Add Event</a>
       </header>
 
-      <!-- STATS CARDS -->
-      <div class="stats-bar">
-        <div class="stat-card stat-card-wide">
-          <div class="stat-card-label">Current + Upcoming</div>
-          <div class="stat-card-rows">
-            <div class="stat-card-row"><strong>Jun 14:</strong> Southeast Region Super Sort begins</div>
-            <div class="stat-card-row"><strong>Jul 3:</strong> Gulf Coast Classic begins</div>
-            <div class="stat-card-row"><strong>Aug 8:</strong> Lone Star Invitational begins</div>
+      <!-- STATS STRIP -->
+      <div class="eem-venues-stats">
+        <div class="eem-stat-card eem-stat-card--wide">
+          <div class="eem-stat-card-label">Current + Upcoming</div>
+          <div class="eem-stat-card-rows">
+            <div class="eem-stat-card-row"><strong>Jun 14:</strong> Southeast Region Super Sort begins</div>
+            <div class="eem-stat-card-row"><strong>Jul 3:</strong> Gulf Coast Classic begins</div>
+            <div class="eem-stat-card-row"><strong>Aug 8:</strong> Lone Star Invitational begins</div>
           </div>
         </div>
-        <div class="stat-card">
-          <div class="stat-card-label">Total Events</div>
-          <div class="stat-card-num">8</div>
+        <div class="eem-stat-card">
+          <div class="eem-stat-card-label">Total Events</div>
+          <div class="eem-stat-card-num">8</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-card-label">Published</div>
-          <div class="stat-card-num">6</div>
+        <div class="eem-stat-card">
+          <div class="eem-stat-card-label">Published</div>
+          <div class="eem-stat-card-num">6</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-card-label">Linked Reservations</div>
-          <div class="stat-card-num">3</div>
+        <div class="eem-stat-card">
+          <div class="eem-stat-card-label">Linked Reservations</div>
+          <div class="eem-stat-card-num">3</div>
         </div>
       </div>
 
-      <!-- STATUS TABS -->
-      <div class="status-tabs">
-        <a class="status-tab active" href="#">All <span class="status-tab-count">(8)</span></a>
-        <span class="status-tab-sep">|</span>
-        <a class="status-tab" href="#">Published <span class="status-tab-count">(6)</span></a>
-        <span class="status-tab-sep">|</span>
-        <a class="status-tab" href="#">Draft <span class="status-tab-count">(1)</span></a>
-        <span class="status-tab-sep">|</span>
-        <a class="status-tab" href="#">Archived <span class="status-tab-count">(1)</span></a>
-        <span class="status-tab-sep">|</span>
-        <a class="status-tab" href="#">Trash <span class="status-tab-count">(0)</span></a>
-      </div>
+      <!-- STATUS TABS — All / Published / Draft / Trash -->
+      <nav class="eem-status-tabs" aria-label="Filter events by status">
+        <a class="eem-status-tab is-active" href="#" aria-current="page">All <span class="eem-status-tab-count">(8)</span></a>
+        <span class="eem-status-tab-sep" aria-hidden="true">|</span>
+        <a class="eem-status-tab" href="#">Published <span class="eem-status-tab-count">(6)</span></a>
+        <span class="eem-status-tab-sep" aria-hidden="true">|</span>
+        <a class="eem-status-tab" href="#">Draft <span class="eem-status-tab-count">(1)</span></a>
+        <span class="eem-status-tab-sep" aria-hidden="true">|</span>
+        <a class="eem-status-tab" href="#">Trash <span class="eem-status-tab-count">(0)</span></a>
+      </nav>
 
-      <!-- TOOLBAR -->
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <select class="toolbar-select">
-            <option>Bulk actions</option>
-            <option>Edit</option>
-            <option>Move to Trash</option>
-          </select>
-          <button class="toolbar-btn">Apply</button>
-          <select class="toolbar-select">
-            <option>All dates</option>
-            <option>June 2026</option>
-            <option>May 2026</option>
-            <option>April 2026</option>
-          </select>
-          <select class="toolbar-select">
-            <option>All producers</option>
-            <option>AQHA</option>
-            <option>NRHA</option>
-          </select>
-          <button class="toolbar-btn">Filter</button>
-        </div>
-        <div class="toolbar-right">
-          <div class="search-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input class="search-input" type="text" placeholder="Search events...">
+      <!-- TOOLBAR — producer filter + search only (no bulk actions) -->
+      <div class="eem-list-toolbar">
+        <form class="eem-events-toolbar-form" role="search">
+          <input type="hidden" name="page" value="equine-event-manager-events">
+          <div class="eem-list-toolbar-left">
+            <select class="eem-field-select" name="producer" aria-label="Filter by producer">
+              <option value="0">All producers</option>
+              <option>AQHA</option>
+              <option>NRHA Southeast</option>
+              <option>Gulf Coast Equine Events</option>
+              <option>Lone Star Productions</option>
+              <option>BHSS Productions</option>
+            </select>
           </div>
-          <button class="toolbar-btn">Search Events</button>
-          <span class="item-count">8 items</span>
-        </div>
+          <div class="eem-list-toolbar-right">
+            <span class="eem-search-wrap--attached">
+              <svg class="eem-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input class="eem-search-input" type="search" name="s" value="" placeholder="Search">
+            </span>
+            <button type="submit" class="eem-toolbar-btn">Search Events</button>
+          </div>
+          <span class="eem-item-count">8 items</span>
+        </form>
       </div>
 
-      <!-- DESKTOP TABLE -->
-      <div class="desktop-table">
-        <table>
+      <!-- DESKTOP TABLE — no checkbox column; no inline row-actions on hover -->
+      <div class="eem-desktop-table">
+        <table class="eem-table">
           <thead>
             <tr>
-              <th class="col-cb"><input type="checkbox"></th>
-              <th class="sortable">Event Title <span class="sort-icon"><span></span><span></span></span></th>
-              <th class="sortable">Date <span class="sort-icon"><span></span><span></span></span></th>
+              <!-- Sortable: title (default asc), date -->
+              <th class="sortable"><a href="#">Event Title <span class="eem-sort-icon" aria-hidden="true"><span></span><span></span></span></a></th>
+              <th class="sortable"><a href="#">Date <span class="eem-sort-icon" aria-hidden="true"><span></span><span></span></span></a></th>
               <th>Venue</th>
               <th>Producer</th>
               <th>Status</th>
@@ -341,189 +329,168 @@ tbody tr:hover .event-row-actions{display:flex}
             </tr>
           </thead>
           <tbody>
+            <!-- Upcoming events -->
             <tr>
-              <td class="col-cb"><input type="checkbox"></td>
+              <td><a class="eem-venue-name" href="#">2026 Southeast Region Super Sort</a></td>
+              <td>Jun 14 – Jun 18, 2026</td>
+              <td>Georgia National Fairgrounds</td>
+              <td>NRHA Southeast</td>
+              <td><span class="eem-status-badge eem-status-upcoming">Upcoming</span></td>
               <td>
-                <a class="event-title" href="#">2026 Southeast Region Super Sort</a>
-                <div class="event-row-actions">
-                  <a class="event-row-action" href="#">Edit</a>
-                  <span class="event-row-action-sep">|</span>
-                  <a class="event-row-action" href="#">View Reservations</a>
-                  <span class="event-row-action-sep">|</span>
-                  <a class="event-row-action" href="#">View</a>
-                </div>
-              </td>
-              <td><span class="date-val">Jun 14 – Jun 18, 2026</span></td>
-              <td><span class="venue-val">Georgia National Fairgrounds</span></td>
-              <td><span class="producer-val">NRHA Southeast</span></td>
-              <td><span class="ev-status status-upcoming">Upcoming</span></td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap">
-                    <button class="more-btn" onclick="toggleRowMenu('ev-menu-1',event)">···</button>
-                    <div class="row-dropdown" id="ev-menu-1">
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Event</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Event</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Reservations</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Duplicate</a>
-                      <a class="row-dd-item row-dd-danger" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash</a>
+                <div class="eem-actions-cell">
+                  <div class="eem-row-menu-wrap">
+                    <button type="button" class="eem-more-btn" onclick="toggleRowMenu('ev-menu-1',event)" aria-haspopup="menu" aria-expanded="false" title="More actions">···</button>
+                    <div class="eem-row-dropdown" id="ev-menu-1" role="menu">
+                      <a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Event</a>
+                      <a class="eem-row-dd-item" role="menuitem" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Event</a>
+                      <a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Reservations</a>
+                      <a class="eem-row-dd-item eem-row-dd-danger" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash</a>
                     </div>
                   </div>
                 </div>
               </td>
             </tr>
             <tr>
-              <td class="col-cb"><input type="checkbox"></td>
+              <td><a class="eem-venue-name" href="#">2026 Gulf Coast Classic</a></td>
+              <td>Jul 3 – Jul 6, 2026</td>
+              <td>Katy Prairie Arena</td>
+              <td>Gulf Coast Equine Events</td>
+              <td><span class="eem-status-badge eem-status-upcoming">Upcoming</span></td>
               <td>
-                <a class="event-title" href="#">2026 Gulf Coast Classic</a>
-                <div class="event-row-actions">
-                  <a class="event-row-action" href="#">Edit</a>
-                  <span class="event-row-action-sep">|</span>
-                  <a class="event-row-action" href="#">View Reservations</a>
-                  <span class="event-row-action-sep">|</span>
-                  <a class="event-row-action" href="#">View</a>
-                </div>
-              </td>
-              <td><span class="date-val">Jul 3 – Jul 6, 2026</span></td>
-              <td><span class="venue-val">Katy Prairie Arena</span></td>
-              <td><span class="producer-val">Gulf Coast Equine Events</span></td>
-              <td><span class="ev-status status-upcoming">Upcoming</span></td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap">
-                    <button class="more-btn" onclick="toggleRowMenu('ev-menu-2',event)">···</button>
-                    <div class="row-dropdown" id="ev-menu-2">
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Event</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Event</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Reservations</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Duplicate</a>
-                      <a class="row-dd-item row-dd-danger" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash</a>
+                <div class="eem-actions-cell">
+                  <div class="eem-row-menu-wrap">
+                    <button type="button" class="eem-more-btn" onclick="toggleRowMenu('ev-menu-2',event)" title="More actions">···</button>
+                    <div class="eem-row-dropdown" id="ev-menu-2" role="menu">
+                      <a class="eem-row-dd-item" role="menuitem" href="#">Edit Event</a>
+                      <a class="eem-row-dd-item" role="menuitem" href="#" target="_blank" rel="noopener">View Event</a>
+                      <a class="eem-row-dd-item" role="menuitem" href="#">View Reservations</a>
+                      <a class="eem-row-dd-item eem-row-dd-danger" role="menuitem" href="#">Move to Trash</a>
                     </div>
                   </div>
                 </div>
               </td>
             </tr>
             <tr>
-              <td class="col-cb"><input type="checkbox"></td>
+              <td><a class="eem-venue-name" href="#">2026 Lone Star Invitational</a></td>
+              <td>Aug 8 – Aug 11, 2026</td>
+              <td>Fort Worth Stockyards</td>
+              <td>Lone Star Productions</td>
+              <td><span class="eem-status-badge eem-status-upcoming">Upcoming</span></td>
               <td>
-                <a class="event-title" href="#">2026 Lone Star Invitational</a>
-                <div class="event-row-actions">
-                  <a class="event-row-action" href="#">Edit</a>
-                  <span class="event-row-action-sep">|</span>
-                  <a class="event-row-action" href="#">View Reservations</a>
-                  <span class="event-row-action-sep">|</span>
-                  <a class="event-row-action" href="#">View</a>
-                </div>
-              </td>
-              <td><span class="date-val">Aug 8 – Aug 11, 2026</span></td>
-              <td><span class="venue-val">Fort Worth Stockyards</span></td>
-              <td><span class="producer-val">Lone Star Productions</span></td>
-              <td><span class="ev-status status-upcoming">Upcoming</span></td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td>
-                <a class="event-title" href="#">2026 Sunshine Dressage Classic</a>
-                <div class="event-row-actions">
-                  <a class="event-row-action" href="#">Edit</a>
-                  <span class="event-row-action-sep">|</span>
-                  <a class="event-row-action" href="#">View</a>
-                </div>
-              </td>
-              <td><span class="date-val">Sep 19 – Sep 21, 2026</span></td>
-              <td><span class="venue-val">Florida Horse Park</span></td>
-              <td><span class="producer-val-empty">—</span></td>
-              <td><span class="ev-status status-upcoming">Upcoming</span></td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
+                <div class="eem-actions-cell">
+                  <div class="eem-row-menu-wrap">
+                    <button type="button" class="eem-more-btn" onclick="toggleRowMenu('ev-menu-3',event)" title="More actions">···</button>
+                    <div class="eem-row-dropdown" id="ev-menu-3" role="menu">
+                      <a class="eem-row-dd-item" role="menuitem" href="#">Edit Event</a>
+                      <a class="eem-row-dd-item" role="menuitem" href="#" target="_blank" rel="noopener">View Event</a>
+                      <a class="eem-row-dd-item" role="menuitem" href="#">View Reservations</a>
+                      <a class="eem-row-dd-item eem-row-dd-danger" role="menuitem" href="#">Move to Trash</a>
+                    </div>
+                  </div>
                 </div>
               </td>
             </tr>
             <tr>
-              <td class="col-cb"><input type="checkbox"></td>
+              <td><a class="eem-venue-name" href="#">2026 Sunshine Dressage Classic</a></td>
+              <td>Sep 19 – Sep 21, 2026</td>
+              <td>Florida Horse Park</td>
+              <td><span class="eem-venue-muted">—</span></td>
+              <td><span class="eem-status-badge eem-status-upcoming">Upcoming</span></td>
               <td>
-                <a class="event-title" href="#">Black Hills Stock Show (EEMDEMO)</a>
-                <div class="event-row-actions">
-                  <a class="event-row-action" href="#">Edit</a>
-                  <span class="event-row-action-sep">|</span>
-                  <a class="event-row-action" href="#">View Reservations</a>
-                  <span class="event-row-action-sep">|</span>
-                  <a class="event-row-action" href="#">View</a>
+                <div class="eem-actions-cell">
+                  <div class="eem-row-menu-wrap">
+                    <button type="button" class="eem-more-btn" onclick="toggleRowMenu('ev-menu-4',event)" title="More actions">···</button>
+                    <div class="eem-row-dropdown" id="ev-menu-4" role="menu">
+                      <a class="eem-row-dd-item" role="menuitem" href="#">Edit Event</a>
+                      <a class="eem-row-dd-item" role="menuitem" href="#" target="_blank" rel="noopener">View Event</a>
+                      <a class="eem-row-dd-item" role="menuitem" href="#">View Reservations</a>
+                      <a class="eem-row-dd-item eem-row-dd-danger" role="menuitem" href="#">Move to Trash</a>
+                    </div>
+                  </div>
                 </div>
               </td>
-              <td><span class="date-val">Jan 27 – Feb 2, 2026</span></td>
-              <td><span class="venue-val">Rushmore Plaza Civic Center</span></td>
-              <td><span class="producer-val">BHSS Productions</span></td>
-              <td><span class="ev-status status-past">Past Event</span></td>
+            </tr>
+            <!-- Past events — lifecycle badge = eem-status-archived -->
+            <tr>
+              <td><a class="eem-venue-name" href="#">Black Hills Stock Show (EEMDEMO)</a></td>
+              <td>Jan 27 – Feb 2, 2026</td>
+              <td>Rushmore Plaza Civic Center</td>
+              <td>BHSS Productions</td>
+              <td><span class="eem-status-badge eem-status-archived">Past Event</span></td>
               <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
+                <div class="eem-actions-cell">
+                  <div class="eem-row-menu-wrap">
+                    <button type="button" class="eem-more-btn" onclick="toggleRowMenu('ev-menu-5',event)" title="More actions">···</button>
+                    <div class="eem-row-dropdown" id="ev-menu-5" role="menu">
+                      <a class="eem-row-dd-item" role="menuitem" href="#">Edit Event</a>
+                      <a class="eem-row-dd-item" role="menuitem" href="#" target="_blank" rel="noopener">View Event</a>
+                      <a class="eem-row-dd-item" role="menuitem" href="#">View Reservations</a>
+                      <a class="eem-row-dd-item eem-row-dd-danger" role="menuitem" href="#">Move to Trash</a>
+                    </div>
+                  </div>
                 </div>
               </td>
             </tr>
             <tr>
-              <td class="col-cb"><input type="checkbox"></td>
+              <td><a class="eem-venue-name" href="#">Cornhusker Classic (EEMDEMO)</a></td>
+              <td>Mar 12 – Mar 15, 2026</td>
+              <td>Lancaster Event Center</td>
+              <td>Nebraska Horse Council</td>
+              <td><span class="eem-status-badge eem-status-archived">Past Event</span></td>
               <td>
-                <a class="event-title" href="#">Cornhusker Classic (EEMDEMO)</a>
-                <div class="event-row-actions">
-                  <a class="event-row-action" href="#">Edit</a>
-                  <span class="event-row-action-sep">|</span>
-                  <a class="event-row-action" href="#">View</a>
-                </div>
-              </td>
-              <td><span class="date-val">Mar 12 – Mar 15, 2026</span></td>
-              <td><span class="venue-val">Lancaster Event Center</span></td>
-              <td><span class="producer-val">Nebraska Horse Council</span></td>
-              <td><span class="ev-status status-past">Past Event</span></td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td>
-                <a class="event-title" href="#">Energy Capital Reining (EEMDEMO)</a>
-                <div class="event-row-actions">
-                  <a class="event-row-action" href="#">Edit</a>
-                  <span class="event-row-action-sep">|</span>
-                  <a class="event-row-action" href="#">View</a>
-                </div>
-              </td>
-              <td><span class="date-val">Apr 4 – Apr 6, 2026</span></td>
-              <td><span class="venue-val">NRG Center</span></td>
-              <td><span class="producer-val-empty">—</span></td>
-              <td><span class="ev-status status-past">Past Event</span></td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
+                <div class="eem-actions-cell">
+                  <div class="eem-row-menu-wrap">
+                    <button type="button" class="eem-more-btn" onclick="toggleRowMenu('ev-menu-6',event)" title="More actions">···</button>
+                    <div class="eem-row-dropdown" id="ev-menu-6" role="menu">
+                      <a class="eem-row-dd-item" role="menuitem" href="#">Edit Event</a>
+                      <a class="eem-row-dd-item" role="menuitem" href="#" target="_blank" rel="noopener">View Event</a>
+                      <a class="eem-row-dd-item" role="menuitem" href="#">View Reservations</a>
+                      <a class="eem-row-dd-item eem-row-dd-danger" role="menuitem" href="#">Move to Trash</a>
+                    </div>
+                  </div>
                 </div>
               </td>
             </tr>
             <tr>
-              <td class="col-cb"><input type="checkbox"></td>
+              <td><a class="eem-venue-name" href="#">Energy Capital Reining (EEMDEMO)</a></td>
+              <td>Apr 4 – Apr 6, 2026</td>
+              <td>NRG Center</td>
+              <td><span class="eem-venue-muted">—</span></td>
+              <td><span class="eem-status-badge eem-status-archived">Past Event</span></td>
               <td>
-                <a class="event-title" href="#">Late Summer Barrel Bash (EEMDEMO)</a>
-                <div class="event-row-actions">
-                  <a class="event-row-action" href="#">Edit</a>
-                  <span class="event-row-action-sep">|</span>
-                  <a class="event-row-action" href="#">View</a>
+                <div class="eem-actions-cell">
+                  <div class="eem-row-menu-wrap">
+                    <button type="button" class="eem-more-btn" onclick="toggleRowMenu('ev-menu-7',event)" title="More actions">···</button>
+                    <div class="eem-row-dropdown" id="ev-menu-7" role="menu">
+                      <a class="eem-row-dd-item" role="menuitem" href="#">Edit Event</a>
+                      <a class="eem-row-dd-item" role="menuitem" href="#" target="_blank" rel="noopener">View Event</a>
+                      <a class="eem-row-dd-item" role="menuitem" href="#">View Reservations</a>
+                      <a class="eem-row-dd-item eem-row-dd-danger" role="menuitem" href="#">Move to Trash</a>
+                    </div>
+                  </div>
                 </div>
               </td>
-              <td><span class="date-val-empty">—</span></td>
-              <td><span class="venue-val-empty">—</span></td>
-              <td><span class="producer-val-empty">—</span></td>
-              <td><span class="ev-status ev-status-muted">—</span></td>
+            </tr>
+            <!-- Draft event — no date, no venue: lifecycle badge renders muted dash -->
+            <tr>
               <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
+                <a class="eem-venue-name" href="#">Late Summer Barrel Bash (EEMDEMO)</a>
+                <span class="eem-draft-tag">Draft</span>
+              </td>
+              <td><span class="eem-venue-muted">—</span></td>
+              <td><span class="eem-venue-muted">—</span></td>
+              <td><span class="eem-venue-muted">—</span></td>
+              <td><span class="eem-venue-muted">—</span></td>
+              <td>
+                <div class="eem-actions-cell">
+                  <div class="eem-row-menu-wrap">
+                    <button type="button" class="eem-more-btn" onclick="toggleRowMenu('ev-menu-8',event)" title="More actions">···</button>
+                    <div class="eem-row-dropdown" id="ev-menu-8" role="menu">
+                      <a class="eem-row-dd-item" role="menuitem" href="#">Edit Event</a>
+                      <a class="eem-row-dd-item" role="menuitem" href="#">View Reservations</a>
+                      <a class="eem-row-dd-item eem-row-dd-danger" role="menuitem" href="#">Move to Trash</a>
+                    </div>
+                  </div>
                 </div>
               </td>
             </tr>
@@ -532,49 +499,52 @@ tbody tr:hover .event-row-actions{display:flex}
       </div>
 
       <!-- MOBILE CARDS -->
-      <div class="mobile-events">
-        <div class="mobile-event-card">
-          <a class="mob-ev-title" href="#">2026 Southeast Region Super Sort</a>
-          <div class="mob-ev-meta">
-            <span>Jun 14 – Jun 18, 2026</span>
-            <span>Georgia National Fairgrounds · NRHA Southeast</span>
-          </div>
-          <div class="mob-ev-bottom">
-            <span class="ev-status status-upcoming">Upcoming</span>
-            <div class="mob-ev-actions"><button class="more-btn">···</button></div>
-          </div>
+      <div class="eem-mobile-cards eem-mobile-venues">
+        <div class="eem-mobile-card">
+          <div class="eem-mobile-card-top"><a class="eem-mobile-card-id" href="#">2026 Southeast Region Super Sort</a></div>
+          <div class="eem-mobile-card-sub">Jun 14 – Jun 18, 2026 — Georgia National Fairgrounds · NRHA Southeast</div>
+          <div class="eem-mobile-card-bottom"><span class="eem-status-badge eem-status-upcoming">Upcoming</span></div>
         </div>
-        <div class="mobile-event-card">
-          <a class="mob-ev-title" href="#">2026 Gulf Coast Classic</a>
-          <div class="mob-ev-meta">
-            <span>Jul 3 – Jul 6, 2026</span>
-            <span>Katy Prairie Arena · Gulf Coast Equine Events</span>
-          </div>
-          <div class="mob-ev-bottom">
-            <span class="ev-status status-upcoming">Upcoming</span>
-            <div class="mob-ev-actions"><button class="more-btn">···</button></div>
-          </div>
+        <div class="eem-mobile-card">
+          <div class="eem-mobile-card-top"><a class="eem-mobile-card-id" href="#">2026 Gulf Coast Classic</a></div>
+          <div class="eem-mobile-card-sub">Jul 3 – Jul 6, 2026 — Katy Prairie Arena · Gulf Coast Equine Events</div>
+          <div class="eem-mobile-card-bottom"><span class="eem-status-badge eem-status-upcoming">Upcoming</span></div>
         </div>
-        <div class="mobile-event-card">
-          <a class="mob-ev-title" href="#">2026 Sunshine Dressage Classic</a>
-          <div class="mob-ev-meta">
-            <span>Sep 19 – Sep 21, 2026</span>
-            <span>Florida Horse Park</span>
-          </div>
-          <div class="mob-ev-bottom">
-            <span class="ev-status status-upcoming">Upcoming</span>
-            <div class="mob-ev-actions"><button class="more-btn">···</button></div>
-          </div>
+        <div class="eem-mobile-card">
+          <div class="eem-mobile-card-top"><a class="eem-mobile-card-id" href="#">2026 Sunshine Dressage Classic</a></div>
+          <div class="eem-mobile-card-sub">Sep 19 – Sep 21, 2026 — Florida Horse Park</div>
+          <div class="eem-mobile-card-bottom"><span class="eem-status-badge eem-status-upcoming">Upcoming</span></div>
         </div>
       </div>
 
       <!-- TABLE FOOTER -->
-      <div class="table-footer">
-        <div class="table-footer-info">Showing 1–8 of 8 events</div>
-        <div class="pagination">
-          <a class="page-btn disabled"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 2 3 6 8 10"/></svg></a>
-          <a class="page-btn active" href="#">1</a>
-          <a class="page-btn" href="#"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 2 9 6 4 10"/></svg></a>
+      <div class="eem-table-footer">
+        <span class="eem-table-footer-info">Showing 1–8 of 8 events</span>
+        <nav class="eem-pagination" aria-label="Events pagination">
+          <span class="eem-page-btn" aria-disabled="true">‹</span>
+          <span class="eem-page-btn active" aria-current="page">1</span>
+          <span class="eem-page-btn" aria-disabled="true">›</span>
+        </nav>
+      </div>
+
+      <!-- ══ COMING SOON OVERLAY ══
+           Shown when TEC or GEMS is the active event source in Settings.
+           Native Events list is a v2 feature; the page is gated behind this
+           overlay until Native Events is selected as the event source.
+           Toggle class "hidden" on this overlay to preview the list underneath. -->
+      <div class="eem-coming-soon-overlay" id="eem-coming-soon">
+        <div class="eem-coming-soon-card">
+          <div class="eem-coming-soon-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Coming Soon
+          </div>
+          <div class="eem-coming-soon-title">Native Events — v2 Feature</div>
+          <div class="eem-coming-soon-body">
+            Your site is currently using <strong>The Events Calendar</strong> as the event source.
+            The Native Events manager is a v2 feature and will be available in a future release.<br><br>
+            To manage events, use your connected event source.
+          </div>
+          <a class="eem-coming-soon-link" href="#">Go to Settings → Events</a>
         </div>
       </div>
 
@@ -584,14 +554,18 @@ tbody tr:hover .event-row-actions{display:flex}
 </div>
 
 <script>
-function toggleRowMenu(id,e){
+function toggleRowMenu(id, e) {
   e.stopPropagation();
-  var menu=document.getElementById(id);
-  document.querySelectorAll('.row-dropdown').forEach(function(d){if(d!==menu)d.classList.remove('open');});
+  var menu = document.getElementById(id);
+  document.querySelectorAll('.eem-row-dropdown').forEach(function(d) {
+    if (d !== menu) d.classList.remove('open');
+  });
   menu.classList.toggle('open');
 }
-document.addEventListener('click',function(){
-  document.querySelectorAll('.row-dropdown').forEach(function(d){d.classList.remove('open');});
+document.addEventListener('click', function() {
+  document.querySelectorAll('.eem-row-dropdown').forEach(function(d) {
+    d.classList.remove('open');
+  });
 });
 </script>
 

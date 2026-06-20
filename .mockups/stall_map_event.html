@@ -3,199 +3,542 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Stall Map — Customer (v4 mockup)</title>
+<title>Stall Map — Customer Picker (Pick Your Stalls)</title>
 <!--
-  v4 Stall Mapping — CUSTOMER stall-map view (mockup).
-  JUST the stall map — NOT the reservation form (that lives in event_page.html).
-  Multi-barn: each barn tab fetches its own CSV (montcrief.csv, burnett.csv),
-  the same per-tab data the real plugin pulls from each published barn tab.
-  Conventions: number = stall, blank = aisle/gap, text = marked area (drag-fill
-  the whole footprint → exact room via same-label rectangle merge).
-  Customer states: Available / Selected / Taken / Unavailable.
-  Mobile: full-screen; swipe to pan at a readable chip size — no pinch-zoom.
-  NOTE: served via the preview server so the relative CSV fetches resolve.
+  CUSTOMER stall map / picker (front-end stall selection).
+  Slug: public-stall-map. Customer-facing — public.css look, NO WP-admin shell.
+
+  Faithful to the live plugin render in
+  public/class-equine-event-manager-shortcodes.php :: render_stall_map_picker()
+
+  Key implementation details mirrored from PHP:
+  - Payload delivered via <script type="application/json" data-eem-map-payload>
+  - Grid uses aisle-collapsing track logic (rowCov/colCov arrays)
+  - Zoom: ±0.2, min 0.5, max 1.8; "Zoom" button resets to zoom=1 (not fit)
+  - didPan flag suppresses stall-select click after drag-to-pan
+  - Tack designate hidden when units.length === 0 (shown for any selection ≥1)
+  - Summary set to "" initially (syncForm fills it on init)
+  - selZone tracked per unit for RV surcharge path (noop for stalls)
+  - Per-rate-type stall mode (sameCheck / assignList) present but off by default
+  - Tab uses onclick= inline (per PHP renderTabs())
+  - fitZoom uses (scrollEl.clientWidth || 600) - 4
+
+  Class names copied verbatim from assets/css/public.css (.eem-map-* family).
+  Sample data: two small barns, reserved/blocked stalls + landmark rectangles.
+
+  States: Available (white) / Selected (electric) / Taken (grey) / Unavailable (hatched).
 -->
 <style>
   :root{
-    --navy:#031B4E; --ink:#18212f; --muted:#5f6f85; --line:#d9e2ec;
-    --bg:#eef2f8; --surface:#fff; --electric:#2563EB; --electric-soft:#eaf0ff;
-    --avail-border:#b9c6da; --reserved:#cbd5e1; --reserved-ink:#7c8ba0;
-    --blocked:#9aa6b6; --land:#e8edf4; --land-ink:#6a7890;
-    --chip:40px; --gap:4px; --radius:8px;
+    --navy:#031B4E; --ink:#18212f; --muted:#5f6f85; --line:#e2e8f0;
+    --bg:#eef2f8; --electric:#1668F2; --electric-soft:#eaf0ff;
+    --ctrl-border:#8c8f94; --eem-map-chip:40px;
     font-family:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
   }
   *{box-sizing:border-box}
-  html,body{height:100%;}
-  body{margin:0;background:var(--bg);color:var(--ink);display:flex;}
-  h2{font-family:"Space Grotesk","IBM Plex Sans",sans-serif;margin:0;}
-  .btn{appearance:none;border:0;border-radius:var(--radius);font-weight:700;font-size:14px;padding:11px 18px;cursor:pointer;}
-  .btn-ghost{background:#eef2f7;color:var(--ink);}
-  .btn-navy{background:var(--navy);color:#fff;}
-  .map-view{background:#fff;margin:auto;width:min(1100px,96vw);height:min(92vh,920px);
-    border-radius:14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(8,15,30,.18);}
-  .map-head{display:flex;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid var(--line);}
-  .map-head h2{font-size:17px;color:var(--navy);}
-  .map-head .spacer{flex:1;}
-  .map-close{appearance:none;border:0;background:#eef2f7;border-radius:8px;width:34px;height:34px;font-size:18px;cursor:pointer;color:var(--ink);}
-  .barn-tabs{display:flex;gap:4px;padding:10px 18px 0;flex-wrap:wrap;}
-  .barn-tab{appearance:none;border:1px solid var(--line);border-bottom:0;background:#f6f9fd;color:var(--muted);font-weight:700;font-size:13px;padding:8px 14px;border-radius:8px 8px 0 0;cursor:pointer;}
-  .barn-tab.active{background:#fff;color:var(--navy);box-shadow:inset 0 -2px 0 var(--electric);}
-  .legend{display:flex;gap:14px;flex-wrap:wrap;padding:10px 18px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted);}
-  .legend span{display:inline-flex;align-items:center;gap:6px;}
-  .swatch{width:14px;height:14px;border-radius:4px;border:1px solid var(--line);display:inline-block;}
-  .sw-avail{background:#fff;border-color:var(--avail-border);}
-  .sw-sel{background:var(--electric);border-color:var(--electric);}
-  .sw-res{background:var(--reserved);border-color:var(--reserved);}
-  .sw-block{background:var(--blocked);border-color:var(--blocked);}
-  .swipe-hint{display:none;font-size:12px;color:var(--muted);padding:6px 18px;background:#f6f9fd;border-bottom:1px solid var(--line);}
-  .map-scroll{flex:1;overflow:auto;padding:18px;background:#fbfcfe;-webkit-overflow-scrolling:touch;}
-  .map-grid{display:grid;gap:var(--gap);width:max-content;}
-  .cell{width:var(--chip);height:var(--chip);}
-  .stall{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:1px solid var(--avail-border);border-radius:5px;background:#fff;color:var(--navy);cursor:pointer;user-select:none;line-height:1;}
-  .stall:hover{background:var(--electric-soft);border-color:var(--electric);}
-  .stall.reserved{background:var(--reserved);border-color:var(--reserved);color:var(--reserved-ink);cursor:not-allowed;}
-  .stall.blocked{background:repeating-linear-gradient(45deg,#9aa6b6,#9aa6b6 3px,#8593a5 3px,#8593a5 6px);border-color:var(--blocked);color:transparent;cursor:not-allowed;}
-  .stall.selected{background:var(--electric);border-color:var(--electric);color:#fff;}
-  .landmark{display:flex;align-items:center;justify-content:center;text-align:center;font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--land-ink);background:var(--land);border:1px dashed #c4cedd;border-radius:5px;padding:2px;line-height:1.1;}
-  .map-foot{display:flex;align-items:center;gap:12px;padding:14px 18px;border-top:1px solid var(--line);background:#fff;}
-  .map-foot .count{font-size:14px;flex:1;}
-  .map-foot .count strong{color:var(--navy);}
-  @media (max-width:680px){
-    .map-view{width:100vw;height:100vh;max-height:100vh;border-radius:0;margin:0;}
-    .map-scroll{padding:10px;}
-    :root{--chip:44px;}
-    .swipe-hint{display:block;}
+  body{margin:0;background:var(--bg);color:var(--ink);padding:24px;}
+  .eem-event-page{max-width:1080px;margin:0 auto;}
+
+  /* Customer page header */
+  .eem-event-hero{background:#fff;border:1px solid var(--line);border-radius:8px;padding:20px 22px;margin-bottom:16px;}
+  .eem-event-hero h1{font-family:"Space Grotesk","IBM Plex Sans",sans-serif;margin:0 0 4px;font-size:22px;color:var(--navy);}
+  .eem-event-hero .meta{font-size:13px;color:var(--muted);}
+  .eem-section-card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:18px 20px;}
+  .eem-section-card__title{display:flex;align-items:center;gap:9px;font-family:"Space Grotesk","IBM Plex Sans",sans-serif;text-transform:uppercase;letter-spacing:.04em;font-size:14px;color:var(--navy);font-weight:800;margin:0 0 4px;}
+  .eem-section-card__title svg{width:18px;height:18px;color:var(--electric);}
+  .eem-section-card__sub{font-size:13px;color:var(--muted);margin:0 0 14px;}
+
+  /* ── .eem-map-* family, from assets/css/public.css ── */
+  .eem-map-instance,.eem-map-inline .eem-map-pick{min-width:0;max-width:100%;}
+  .eem-map-pick{--eem-map-chip:40px;margin:0 0 12px;}
+  .eem-map-inline .eem-map-pick{border:1px solid var(--line);border-radius:6px;padding:12px;background:#fff;margin-top:10px;}
+  .eem-map-inline-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px;}
+  .eem-map-inline .eem-map-tabs{padding:0;}
+  .eem-map-tabs{display:flex;gap:4px;flex-wrap:wrap;}
+  .eem-map-tab{appearance:none;border:1px solid var(--line);border-bottom:0;background:#f6f9fd;color:var(--muted);font-weight:700;font-size:13px;padding:8px 14px;border-radius:6px 6px 0 0;cursor:pointer;font-family:inherit;}
+  .eem-map-tab.active{background:#fff;color:var(--navy);box-shadow:inset 0 -2px 0 var(--electric);}
+  .eem-event-page .eem-map-tab:hover{background:#eef4ff;color:var(--electric);}
+  .eem-event-page .eem-map-tab.active:hover{color:var(--navy);}
+  .eem-map-tab-surcharge{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;background:#eef4ff;color:var(--electric);font-size:11px;font-weight:800;vertical-align:middle;}
+  .eem-map-tab.active .eem-map-tab-surcharge{background:var(--electric);color:#fff;}
+
+  .eem-map-zoom{display:inline-flex;border:1px solid var(--ctrl-border);border-radius:3px;overflow:hidden;flex:none;}
+  .eem-map-zoom-btn{appearance:none;border:0;border-left:1px solid var(--line);background:#fff;color:var(--navy);font-weight:700;font-size:14px;padding:7px 12px;cursor:pointer;line-height:1;font-family:inherit;}
+  .eem-map-zoom-btn:first-child{border-left:0;}
+  .eem-event-page .eem-map-zoom-btn:hover{background:#eef4ff;color:var(--electric);}
+
+  .eem-map-legend{display:flex;gap:14px;flex-wrap:wrap;padding:6px 0 10px;font-size:12px;color:var(--muted);}
+  .eem-map-legend span{display:inline-flex;align-items:center;gap:6px;}
+  .eem-map-sw{width:14px;height:14px;border-radius:3px;border:1px solid #cbd5e1;display:inline-block;}
+  .eem-map-sw--avail{background:#fff;border-color:#b9c6da;}
+  .eem-map-sw--sel{background:var(--electric);border-color:var(--electric);}
+  .eem-map-sw--res{background:#cbd5e1;border-color:#cbd5e1;}
+  .eem-map-sw--block{background:#9aa6b6;border-color:#9aa6b6;}
+
+  .eem-map-inline .eem-map-scroll{max-height:460px;overflow:auto;padding:14px;background:#fbfcfe;border:1px solid var(--line);border-radius:6px;-webkit-overflow-scrolling:touch;min-width:0;max-width:100%;cursor:grab;}
+  .eem-map-inline .eem-map-scroll.is-panning{cursor:grabbing;}
+  .eem-map-grid{display:grid;gap:4px;width:max-content;}
+  .eem-map-cell{width:var(--eem-map-chip,40px);height:var(--eem-map-chip,40px);}
+  .eem-map-stall{display:flex;align-items:center;justify-content:center;font-size:clamp(6px,calc(var(--eem-map-chip,40px) * 0.28),12px);font-weight:700;border:1px solid #b9c6da;border-radius:3px;background:#fff;color:var(--navy);cursor:pointer;user-select:none;line-height:1;overflow:hidden;}
+  .eem-map-stall:hover{background:var(--electric-soft);border-color:var(--electric);}
+  .eem-map-stall.is-reserved{background:#cbd5e1;border-color:#cbd5e1;color:#7c8ba0;cursor:not-allowed;}
+  .eem-map-stall.is-blocked{background:repeating-linear-gradient(45deg,#9aa6b6,#9aa6b6 3px,#8593a5 3px,#8593a5 6px);border-color:#9aa6b6;color:transparent;cursor:not-allowed;}
+  .eem-map-stall.is-sel{background:var(--electric);border-color:var(--electric);color:#fff;}
+  .eem-map-land{display:flex;align-items:center;justify-content:center;text-align:center;width:auto;height:auto;font-size:clamp(7px,calc(var(--eem-map-chip,40px) * 0.22),11px);font-weight:700;letter-spacing:.02em;color:#b45309;background:#fff7e6;border:1px solid #fde4bf;border-radius:3px;padding:2px;line-height:1.15;overflow:hidden;}
+
+  .eem-map-inline .eem-map-summary{margin-top:10px;font-size:14px;color:#2b3648;font-weight:600;min-height:20px;}
+  .eem-map-summary strong{color:var(--navy);}
+  .eem-map-warn{color:#b93742;font-weight:700;}
+
+  /* tack designation */
+  .stall-tack-designate.eem-map-tack{margin-top:12px;padding:12px 14px;background:#f0f4fb;border:1px solid #d9e2f2;border-radius:6px;}
+  .stall-tack-designate__label{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px;color:var(--navy);}
+  .stall-tack-designate__dot{width:12px;height:12px;border-radius:3px;background:#8b5cf6;display:inline-block;}
+  .stall-tack-designate__select{margin-top:8px;width:100%;max-width:360px;padding:8px 10px;border:1px solid var(--ctrl-border);border-radius:3px;font-size:14px;font-family:inherit;background:#fff;}
+  .stall-tack-designate__hint{margin:6px 0 0;font-size:12px;color:var(--muted);}
+
+  /* checkout action bar */
+  .eem-form-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:18px;}
+  .eem-btn-primary{appearance:none;border:0;border-radius:3px;background:var(--electric);color:#fff;font-weight:800;font-size:15px;padding:13px 26px;cursor:pointer;font-family:inherit;}
+  .eem-btn-primary:hover{background:#1457cf;}
+
+  @media(max-width:680px){
+    body{padding:0;}
+    .eem-event-page{max-width:100%;}
+    .eem-event-hero,.eem-section-card{border-radius:0;border-left:0;border-right:0;}
+    .eem-map-pick{--eem-map-chip:44px;}
+    .eem-map-inline .eem-map-scroll{max-height:60vh;}
   }
 </style>
 </head>
 <body>
-<div class="map-view">
-  <div class="map-head">
-    <h2>Choose Your Stalls</h2>
-    <span class="spacer"></span>
-    <button class="map-close" aria-label="Close">&times;</button>
+<!-- Standalone mockup: wraps in .eem-reservation-form so the inline JS can
+     find the form context it needs (matches the live shortcode's form wrapper). -->
+<form class="eem-reservation-form" method="post">
+<div class="eem-event-page">
+
+  <div class="eem-event-hero">
+    <h1>NTR Spring Classic — Stall Reservations</h1>
+    <div class="meta">May 14–18, 2026 · NTR Arena, Waco TX</div>
   </div>
-  <div class="barn-tabs" data-barn-tabs></div>
-  <div class="legend">
-    <span><i class="swatch sw-avail"></i> Available</span>
-    <span><i class="swatch sw-sel"></i> Selected</span>
-    <span><i class="swatch sw-res"></i> Taken</span>
-    <span><i class="swatch sw-block"></i> Unavailable</span>
+
+  <div class="eem-section-card">
+    <h2 class="eem-section-card__title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg>
+      Choose Your Stalls
+    </h2>
+    <p class="eem-section-card__sub">Tap available (white) stalls on the facility map. Greyed stalls are taken.</p>
+
+    <!-- PHP: render_stall_map_picker() output begins here -->
+    <div class="eem-map-instance eem-map-inline">
+    <div class="eem-map-pick" data-eem-map-pick>
+      <div class="eem-map-inline-bar">
+        <div class="eem-map-tabs" data-eem-map-tabs></div>
+        <div class="eem-map-zoom" role="group" aria-label="Zoom">
+          <button type="button" class="eem-map-zoom-btn" data-eem-map-zoom="out" aria-label="Zoom out">&minus;</button>
+          <button type="button" class="eem-map-zoom-btn" data-eem-map-zoom="fit">Zoom</button>
+          <button type="button" class="eem-map-zoom-btn" data-eem-map-zoom="in" aria-label="Zoom in">+</button>
+        </div>
+      </div>
+      <div class="eem-map-legend">
+        <span><i class="eem-map-sw eem-map-sw--avail"></i> Available</span>
+        <span><i class="eem-map-sw eem-map-sw--sel"></i> Selected</span>
+        <span><i class="eem-map-sw eem-map-sw--res"></i> Taken</span>
+        <span><i class="eem-map-sw eem-map-sw--block"></i> Unavailable</span>
+      </div>
+      <div class="eem-map-scroll" data-eem-map-scroll><div class="eem-map-grid" data-eem-map-grid></div></div>
+      <div class="eem-map-summary" data-eem-map-summary></div>
+      <!-- tack_enabled=true: tack designation block rendered -->
+      <div class="stall-tack-designate eem-map-tack" data-eem-tack-designate hidden>
+        <label class="stall-tack-designate__label" for="eem-map-tack-select">
+          <span class="stall-tack-designate__dot" aria-hidden="true"></span>
+          Using one for tack? (optional)
+        </label>
+        <select class="stall-tack-designate__select" id="eem-map-tack-select" name="preferred_tack_stall" data-eem-tack-select data-eem-map-tack-select>
+          <option value="">No tack stall — we'll treat them all the same</option>
+        </select>
+        <p class="stall-tack-designate__hint">Pick which stall you plan to use for tack and storage. It is excluded from required shavings.</p>
+      </div>
+      <div data-eem-map-picks hidden></div>
+      <!-- hidden qty field driven by map JS -->
+      <input type="hidden" name="stall_qty" value="0">
+      <!-- Payload delivered as JSON blob; inline JS reads it -->
+      <script type="application/json" data-eem-map-payload>
+      {
+        "barns": [
+          {
+            "name": "Main Barn",
+            "grid": [
+              [{"type":"stall","label":"100"},{"type":"stall","label":"101"},{"type":"stall","label":"102"},{"type":"stall","label":"103"},{"type":"stall","label":"104"},{"type":"stall","label":"105"},{"type":"stall","label":"106"},{"type":"stall","label":"107"},{"type":"stall","label":"108"},{"type":"stall","label":"109"},{"type":"stall","label":"110"},{"type":"stall","label":"111"}],
+              [{"type":"gap","label":""},{"type":"gap","label":""},{"type":"gap","label":""},{"type":"gap","label":""},{"type":"gap","label":""},{"type":"gap","label":""},{"type":"gap","label":""},{"type":"gap","label":""},{"type":"gap","label":""},{"type":"gap","label":""},{"type":"landmark","label":"WASH RACK"},{"type":"landmark","label":"WASH RACK"}],
+              [{"type":"stall","label":"112"},{"type":"stall","label":"113"},{"type":"stall","label":"114"},{"type":"stall","label":"115"},{"type":"stall","label":"116"},{"type":"stall","label":"117"},{"type":"stall","label":"118"},{"type":"stall","label":"119"},{"type":"stall","label":"120"},{"type":"stall","label":"121"},{"type":"stall","label":"122"},{"type":"stall","label":"123"}]
+            ]
+          },
+          {
+            "name": "Burnett Barn",
+            "grid": [
+              [{"type":"stall","label":"B1"},{"type":"stall","label":"B2"},{"type":"stall","label":"B3"},{"type":"stall","label":"B4"},{"type":"stall","label":"B5"},{"type":"stall","label":"B6"},{"type":"landmark","label":"TACK"},{"type":"landmark","label":"TACK"}],
+              [{"type":"gap","label":""},{"type":"gap","label":""},{"type":"gap","label":""},{"type":"gap","label":""},{"type":"gap","label":""},{"type":"gap","label":""},{"type":"landmark","label":"TACK"},{"type":"landmark","label":"TACK"}],
+              [{"type":"stall","label":"B7"},{"type":"stall","label":"B8"},{"type":"stall","label":"B9"},{"type":"stall","label":"B10"},{"type":"stall","label":"B11"},{"type":"stall","label":"B12"},{"type":"gap","label":""},{"type":"gap","label":""}]
+            ]
+          }
+        ],
+        "reserved": ["101","103","108","115","119","B2","B5","B9"],
+        "blocked":  ["106","B11"],
+        "maxPer": 4,
+        "tack": true,
+        "unitField": "preferred_stall_units",
+        "qtyField": "stall_qty",
+        "zoneQualified": false,
+        "prefix": "#",
+        "zoneSurcharge": {},
+        "unitSurcharge": {},
+        "rateTypes": []
+      }
+      </script>
+    </div>
+
+    <script>
+    (function(){
+      // Scope to THIS picker instance.
+      var script = document.currentScript;
+      var root = script.closest('.eem-map-instance') || script.parentNode;
+      var form = script.closest('.eem-reservation-form') || document.querySelector('.eem-reservation-form');
+      if (!form) { return; }
+      var payloadEl = root.querySelector('[data-eem-map-payload]');
+      if (!payloadEl) { return; }
+      var P; try { P = JSON.parse(payloadEl.textContent); } catch(e){ return; }
+
+      var reserved = {}; P.reserved.forEach(function(l){ reserved[l]=1; });
+      var blocked  = {}; P.blocked.forEach(function(l){ blocked[l]=1; });
+      var selected = {};
+      var selZone  = {};
+      var activeBarn = 0;
+
+      // Per-rate-type mode (only active when rateTypes has entries).
+      var rateTypes = P.rateTypes || [];
+      var perRateMode = false;
+      var perRateSelected = {};
+      var perRateZone = {};
+      var activeRateType = rateTypes.length ? rateTypes[0] : '';
+      rateTypes.forEach(function(rt){ perRateSelected[rt] = {}; perRateZone[rt] = {}; });
+      var sameCheck  = form.querySelector('[data-eem-same-stall-check]');
+      var assignList = form.querySelector('[data-eem-assign-list]');
+      var assignHint = form.querySelector('[data-eem-assign-hint]');
+
+      function switchToPerRate(){
+        perRateMode = true;
+        if (assignList) assignList.classList.add('is-active');
+        var first = rateTypes[0];
+        if (first) { perRateSelected[first] = JSON.parse(JSON.stringify(selected)); perRateZone[first] = JSON.parse(JSON.stringify(selZone)); }
+        activeRateType = first || '';
+        selected = perRateSelected[activeRateType] || {};
+        selZone  = perRateZone[activeRateType]  || {};
+        updateAssignUI(); refreshCellStates(); syncForm();
+      }
+      function switchToShared(){
+        perRateMode = false;
+        if (assignList) assignList.classList.remove('is-active');
+        selected = {}; selZone = {};
+        rateTypes.forEach(function(rt){
+          var s = perRateSelected[rt] || {}, z = perRateZone[rt] || {};
+          Object.keys(s).forEach(function(u){ selected[u] = 1; selZone[u] = z[u] || ''; });
+        });
+        updateAssignUI(); refreshCellStates(); syncForm();
+      }
+      function switchRateType(rt){
+        if (!perRateMode) return;
+        perRateSelected[activeRateType] = selected;
+        perRateZone[activeRateType] = selZone;
+        activeRateType = rt;
+        selected = perRateSelected[rt] || {};
+        selZone  = perRateZone[rt]  || {};
+        updateAssignUI(); refreshCellStates(); syncForm();
+      }
+      function updateAssignUI(){
+        if (!assignList) return;
+        assignList.querySelectorAll('[data-assign-rate]').forEach(function(row){
+          var rt = row.getAttribute('data-assign-rate');
+          row.classList.toggle('is-active', perRateMode && rt === activeRateType);
+          var valEl = row.querySelector('[data-assign-value]');
+          if (!valEl) return;
+          var rtUnits = Object.keys(perRateMode ? (perRateSelected[rt] || {}) : selected);
+          valEl.textContent = rtUnits.length ? rtUnits.map(function(u){ return pre + u; }).join(', ') : '—';
+        });
+        if (assignHint){
+          assignHint.textContent = perRateMode
+            ? 'Click a stay type above, then pick stalls on the map for that period.'
+            : 'Select stalls on the map below. They will apply to all stay types.';
+        }
+      }
+      function refreshCellStates(){
+        gridEl.querySelectorAll('.eem-map-stall').forEach(function(cell){
+          var u = cell.getAttribute('data-unit');
+          cell.classList.toggle('is-sel', !!selected[u]);
+        });
+      }
+      if (sameCheck) { sameCheck.addEventListener('change', function(){ if (sameCheck.checked) switchToShared(); else switchToPerRate(); }); }
+      if (assignList) { assignList.addEventListener('click', function(ev){ var row = ev.target.closest('[data-assign-rate]'); if (row) switchRateType(row.getAttribute('data-assign-rate')); }); }
+
+      var didPan = false;
+      var pre = P.prefix || '';
+
+      var pickEl   = root.querySelector('[data-eem-map-pick]');
+      var gridEl   = root.querySelector('[data-eem-map-grid]');
+      var tabsEl   = root.querySelector('[data-eem-map-tabs]');
+      var scrollEl = root.querySelector('[data-eem-map-scroll]');
+      var summary  = root.querySelector('[data-eem-map-summary]');
+      var picksEl  = root.querySelector('[data-eem-map-picks]');
+      var tackWrap = root.querySelector('[data-eem-tack-designate]');
+      var tackSel  = root.querySelector('[data-eem-map-tack-select]');
+
+      var BASE = 40, zoom = 1;
+      function applyZoom(){ pickEl.style.setProperty('--eem-map-chip', (BASE * zoom).toFixed(1) + 'px'); }
+      function fitZoom(){
+        var g = P.barns[activeBarn] ? P.barns[activeBarn].grid : [];
+        var cols = g.length ? g[0].length : 1;
+        var avail = (scrollEl.clientWidth || 600) - 4;
+        var chip = Math.max(20, Math.min(48, Math.floor(avail / Math.max(1, cols)) - 4));
+        zoom = chip / BASE; applyZoom();
+      }
+
+      function unitOf(label){ return P.zoneQualified ? (P.barns[activeBarn].name + ' ' + label) : label; }
+      function statusOf(u){ if (blocked[u]) return 'blocked'; if (reserved[u]) return 'reserved'; return 'available'; }
+      function selCount(){ return Object.keys(selected).length; }
+      function getMapCap(){
+        if (rateTypes.length){
+          var rt = perRateMode ? activeRateType : rateTypes[0];
+          var q = form.querySelector('[name="stall_qty_' + rt + '"]');
+          if (q){ var v = parseInt(q.value, 10); if (v > 0) return v; }
+        }
+        return P.maxPer || 0;
+      }
+
+      function renderGrid(){
+        var g = P.barns[activeBarn] ? P.barns[activeBarn].grid : [];
+        var rows = g.length, cols = rows ? g[0].length : 0;
+        gridEl.innerHTML = '';
+        var used = g.map(function(r){ return r.map(function(){ return false; }); });
+        // Aisle-collapsing: track which rows/cols have sellable or landmark cells.
+        var rowCov = []; for (var ri=0;ri<rows;ri++){ rowCov.push(false); }
+        var colCov = []; for (var ci=0;ci<cols;ci++){ colCov.push(false); }
+        for (var r=0;r<rows;r++){ for (var c=0;c<cols;c++){
+          if (used[r][c]) continue;
+          var cell = g[r][c];
+          if (cell.type === 'gap'){ used[r][c]=true; continue; }
+          if (cell.type === 'stall'){
+            used[r][c]=true; rowCov[r]=true; colCov[c]=true;
+            var unit = unitOf(cell.label);
+            var st = statusOf(unit);
+            var d = document.createElement('div');
+            d.className = 'eem-map-cell eem-map-stall' + (st!=='available'?(' is-'+st):'') + (selected[unit]?' is-sel':'');
+            d.textContent = cell.label;
+            d.setAttribute('data-unit', unit);
+            d.setAttribute('data-status', st);
+            d.style.gridColumn = (c+1); d.style.gridRow = (r+1);
+            gridEl.appendChild(d);
+            continue;
+          }
+          // landmark rectangle merge
+          var label=cell.label, w=1, h=1, ok=true;
+          while (c+w<cols && g[r][c+w].type==='landmark' && g[r][c+w].label===label && !used[r][c+w]) w++;
+          while (r+h<rows && ok){ for (var k=0;k<w;k++){ var cc=g[r+h][c+k]; if(!(cc.type==='landmark'&&cc.label===label&&!used[r+h][c+k])){ ok=false; break; } } if(ok) h++; }
+          for (var i=0;i<h;i++) for (var j=0;j<w;j++){ used[r+i][c+j]=true; rowCov[r+i]=true; colCov[c+j]=true; }
+          var lm = document.createElement('div');
+          lm.className = 'eem-map-cell eem-map-land';
+          lm.style.gridColumn = (c+1) + ' / span ' + w;
+          lm.style.gridRow    = (r+1) + ' / span ' + h;
+          if (h>w){ lm.style.writingMode='vertical-rl'; lm.style.textOrientation='mixed'; }
+          lm.textContent = label;
+          gridEl.appendChild(lm);
+        }}
+        // Covered tracks = full chip; aisle (gap-only) tracks = collapsed 12px.
+        var chip = 'var(--eem-map-chip, 40px)', aisle = '12px';
+        gridEl.style.gridTemplateColumns = colCov.map(function(v){ return v ? chip : aisle; }).join(' ');
+        gridEl.style.gridTemplateRows    = rowCov.map(function(v){ return v ? chip : aisle; }).join(' ');
+      }
+
+      function renderTabs(){
+        tabsEl.innerHTML = '';
+        P.barns.forEach(function(b, i){
+          var t = document.createElement('button');
+          t.type = 'button';
+          t.className = 'eem-map-tab' + (i===activeBarn?' active':'');
+          t.textContent = b.name;
+          var sc = zoneSurcharge(b.name);
+          if (sc > 0){ var badge = document.createElement('span'); badge.className = 'eem-map-tab-surcharge'; badge.textContent = '+' + money(sc); t.appendChild(badge); }
+          // PHP uses onclick= inline per renderTabs()
+          t.onclick = function(){ activeBarn=i; renderTabs(); renderGrid(); applyZoom(); };
+          tabsEl.appendChild(t);
+        });
+      }
+
+      function zoneSurcharge(zoneName){
+        var zs = (P.zoneSurcharge || {})[(zoneName || '').toLowerCase().trim()];
+        if (!zs) return 0;
+        var rvStayTypeVal = ((form.querySelector('[name="rv_stay_type"]') || {}).value) || '';
+        var useWeekend = rvStayTypeVal === 'weekend' || rvStayTypeVal === 'weekly';
+        return (+(useWeekend ? zs.weekend : zs.nightly)) || 0;
+      }
+      function money(n){ return '$' + (n % 1 === 0 ? n : n.toFixed(2)); }
+
+      function syncForm(){
+        var units = Object.keys(selected);
+        picksEl.innerHTML = '';
+        if (perRateMode && rateTypes.length){
+          rateTypes.forEach(function(rt){
+            var rtUnits = Object.keys(perRateSelected[rt] || {});
+            rtUnits.forEach(function(u){
+              var inp = document.createElement('input'); inp.type='hidden'; inp.name=P.unitField+'_'+rt+'[]'; inp.value=u; picksEl.appendChild(inp);
+            });
+            var qtyField = form.querySelector('[name="stall_qty_'+rt+'"]');
+            if (qtyField && rtUnits.length > 0){ qtyField.value = rtUnits.length; qtyField.dispatchEvent(new Event('input',{bubbles:true})); qtyField.dispatchEvent(new Event('change',{bubbles:true})); }
+          });
+          var allUnits = {};
+          rateTypes.forEach(function(rt){ Object.keys(perRateSelected[rt]||{}).forEach(function(u){ allUnits[u]=1; }); });
+          Object.keys(allUnits).forEach(function(u){ var inp=document.createElement('input'); inp.type='hidden'; inp.name=P.unitField+'[]'; inp.value=u; picksEl.appendChild(inp); });
+          units = Object.keys(allUnits);
+        } else {
+          units.forEach(function(u){ var inp=document.createElement('input'); inp.type='hidden'; inp.name=P.unitField+'[]'; inp.value=u; picksEl.appendChild(inp); });
+        }
+        var qty = form.querySelector('[name="'+P.qtyField+'"]');
+        if (qty){ qty.value = units.length; qty.dispatchEvent(new Event('input',{bubbles:true})); qty.dispatchEvent(new Event('change',{bubbles:true})); }
+        if (!perRateMode && rateTypes.length){
+          rateTypes.forEach(function(rt){
+            var rtQty = form.querySelector('[name="stall_qty_'+rt+'"]');
+            if (rtQty && units.length > 0){ rtQty.value = units.length; rtQty.dispatchEvent(new Event('input',{bubbles:true})); rtQty.dispatchEvent(new Event('change',{bubbles:true})); }
+          });
+        }
+        var txt = units.length
+          ? units.length + ' selected: ' + units.map(function(v){ return pre+v; }).join(', ')
+          : 'None selected yet';
+        if (summary) summary.textContent = txt;
+        syncTack(units);
+        syncSurcharge(units);
+        filterAddonsByZone(units);
+        updateAssignUI();
+      }
+
+      function filterAddonsByZone(units){
+        if (!P.zoneQualified) return;
+        var wraps = form.querySelectorAll('[data-eem-addon-zones]');
+        if (!wraps.length) return;
+        var zoneSet = {};
+        units.forEach(function(u){ if (selZone[u]) zoneSet[selZone[u]] = 1; });
+        wraps.forEach(function(wrap){
+          var allowed = (wrap.getAttribute('data-eem-addon-zones') || '').split('|').filter(Boolean);
+          var show = allowed.length === 0 || allowed.some(function(z){ return zoneSet[z]; });
+          wrap.style.display = show ? '' : 'none';
+          if (!show){ var cb = wrap.querySelector('input[type="checkbox"]'); if (cb && cb.checked){ cb.checked=false; cb.dispatchEvent(new Event('change',{bubbles:true})); } }
+        });
+      }
+
+      function unitSurchargeFor(unit){
+        var u = (P.unitSurcharge || {})[unit]; if (!u) return 0;
+        var st = (((form.querySelector('[name="rv_stay_type"]') || {}).value) || '');
+        var isPkg = st.indexOf('pkg_') === 0;
+        return (+(isPkg ? u.pkg : u.nightly)) || 0;
+      }
+      function syncSurcharge(units){
+        var nNight = root.querySelector('[data-eem-map-surcharge="nightly"]');
+        var nWeek  = root.querySelector('[data-eem-map-surcharge="weekend"]');
+        if (!nNight || !nWeek) return;
+        var sum = 0; units.forEach(function(u){ sum += unitSurchargeFor(u); });
+        nNight.value = sum.toFixed(2); nWeek.value = sum.toFixed(2);
+        var qty = form.querySelector('[name="'+P.qtyField+'"]');
+        if (qty){ qty.dispatchEvent(new Event('input',{bubbles:true})); }
+      }
+
+      // syncTack: rebuild the tack <select> from current picks.
+      // Tack wrap shown whenever units.length > 0 (shown for ANY selection).
+      function syncTack(units){
+        if (!tackWrap || !tackSel) return;
+        var prev = tackSel.value;
+        var keep = units.indexOf(prev) !== -1 ? prev : '';
+        var noneLabel = tackSel.options.length ? tackSel.options[0].textContent : '';
+        tackSel.innerHTML = '';
+        var none = document.createElement('option'); none.value = ''; none.textContent = noneLabel; tackSel.appendChild(none);
+        units.forEach(function(u){ var o = document.createElement('option'); o.value=u; o.textContent=pre+u; tackSel.appendChild(o); });
+        tackSel.value = keep;
+        tackWrap.hidden = units.length === 0;
+      }
+
+      // Click a stall to select/deselect it.
+      gridEl.addEventListener('click', function(ev){
+        if (didPan) { return; }
+        var s = ev.target.closest('.eem-map-stall'); if (!s) return;
+        if (s.getAttribute('data-status') !== 'available') return;
+        var u = s.getAttribute('data-unit');
+        if (selected[u]){ delete selected[u]; delete selZone[u]; s.classList.remove('is-sel'); }
+        else {
+          var cap = getMapCap();
+          if (cap > 0 && selCount() >= cap){ if (summary){ summary.innerHTML = '<span class="eem-map-warn">Limit reached</span>'; } return; }
+          selected[u] = 1; s.classList.add('is-sel');
+          selZone[u] = ((P.barns[activeBarn] && P.barns[activeBarn].name) || '').toLowerCase().trim();
+        }
+        syncForm();
+      });
+
+      // Zoom controls: ±0.2, min 0.5, max 1.8; "Zoom" button resets zoom=1.
+      root.querySelectorAll('[data-eem-map-zoom]').forEach(function(b){
+        b.addEventListener('click', function(){
+          var k = b.getAttribute('data-eem-map-zoom');
+          if (k === 'in'){ zoom = Math.min(1.8, zoom + 0.2); applyZoom(); }
+          else if (k === 'out'){ zoom = Math.max(0.5, zoom - 0.2); applyZoom(); }
+          else { zoom = 1; applyZoom(); }
+        });
+      });
+
+      // Click-and-drag to pan. didPan suppresses the stall-select click after drag.
+      var panning = false, panMoved = false, panX = 0, panY = 0, panL = 0, panT = 0;
+      scrollEl.addEventListener('mousedown', function(ev){
+        if (ev.button !== 0) return;
+        panning = true; panMoved = false; didPan = false;
+        panX = ev.clientX; panY = ev.clientY; panL = scrollEl.scrollLeft; panT = scrollEl.scrollTop;
+        scrollEl.classList.add('is-panning');
+      });
+      document.addEventListener('mousemove', function(ev){
+        if (!panning) return;
+        var dx = ev.clientX - panX, dy = ev.clientY - panY;
+        if (!panMoved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)){ panMoved = true; }
+        if (panMoved){ scrollEl.scrollLeft = panL - dx; scrollEl.scrollTop = panT - dy; }
+      });
+      document.addEventListener('mouseup', function(){
+        if (!panning) return;
+        panning = false;
+        didPan = panMoved;
+        scrollEl.classList.remove('is-panning');
+        if (panMoved){ setTimeout(function(){ didPan = false; }, 0); }
+      });
+
+      // Tack change → nudge qty so live totals recompute.
+      if (tackSel){ tackSel.addEventListener('change', function(){ var q = form.querySelector('[name="'+P.qtyField+'"]'); if (q){ q.dispatchEvent(new Event('input',{bubbles:true})); q.dispatchEvent(new Event('change',{bubbles:true})); } }); }
+
+      // Re-render tab surcharges + resync picked-lot surcharge on RV stay type change.
+      if ((P.zoneSurcharge && Object.keys(P.zoneSurcharge).length) || (P.unitSurcharge && Object.keys(P.unitSurcharge).length)){
+        var stayField = form.querySelector('[name="rv_stay_type"]');
+        if (stayField){ stayField.addEventListener('change', function(){ renderTabs(); syncSurcharge(Object.keys(selected)); }); }
+      }
+
+      // Init — map is always visible inline (no modal).
+      renderTabs(); renderGrid(); applyZoom(); syncForm();
+
+      // Re-run zone filter after page finishes parsing (zone-restricted add-ons).
+      if (P.zoneQualified){
+        if (document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', function(){ filterAddonsByZone(Object.keys(selected)); }); }
+        else { filterAddonsByZone(Object.keys(selected)); }
+      }
+      if (window.ResizeObserver){ try { new ResizeObserver(function(){}).observe(scrollEl); } catch(e){} }
+    })();
+    </script>
+    </div><!-- /.eem-map-instance -->
+
+    <div class="eem-form-actions">
+      <button type="submit" class="eem-btn-primary">Continue to Checkout</button>
+    </div>
   </div>
-  <div class="swipe-hint">Swipe to scroll the full map ←→ ↑↓</div>
-  <div class="map-scroll"><div class="map-grid" data-map-grid></div></div>
-  <div class="map-foot">
-    <span class="count"><strong data-count>0</strong> selected — <span data-chosen-inline>none yet</span></span>
-    <button class="btn btn-ghost">Cancel</button>
-    <button class="btn btn-navy">Done</button>
-  </div>
+
 </div>
-
-<script>
-var BARNS = ['Montcrief','Burnett'];   // each barn tab = its own published sheet tab
-var grid = [];
-var selected = {};
-
-function parseGrid(csv){
-  var rows = csv.replace(/\r/g,'').split('\n').map(function(line){ return line.split(','); });
-  if(rows.length && rows[rows.length-1].length===1 && rows[rows.length-1][0]==='') rows.pop();
-  var maxc = rows.reduce(function(m,r){ return Math.max(m,r.length); },0);
-  return rows.map(function(r){
-    var out=[];
-    for(var c=0;c<maxc;c++){
-      var v=(r[c]||'').trim();
-      if(v==='') out.push({type:'gap',label:''});
-      else if(/^\d+$/.test(v)||/^[A-Za-z]{0,3}-?\d+$/.test(v)) out.push({type:'stall',label:v});
-      else out.push({type:'landmark',label:v});
-    }
-    return out;
-  });
-}
-function seedStatus(label){
-  var n=parseInt(String(label).replace(/\D/g,''),10)||0;
-  var h=(n*2654435761)%97;
-  if(h<24) return 'reserved';
-  if(h===30) return 'blocked';
-  return 'available';
-}
-
-/* explicit grid placement + same-label RECTANGLE merge (exact rooms) */
-function renderGrid(){
-  var host=document.querySelector('[data-map-grid]');
-  var rows=grid.length, cols=grid[0]?grid[0].length:0;
-  host.style.gridTemplateColumns='repeat('+cols+', var(--chip))';
-  host.style.gridTemplateRows='repeat('+rows+', var(--chip))';
-  host.innerHTML='';
-  var used=grid.map(function(r){return r.map(function(){return false;});});
-  for(var r=0;r<rows;r++){
-    for(var c=0;c<cols;c++){
-      if(used[r][c]) continue;
-      var cell=grid[r][c];
-      if(cell.type==='gap'){ used[r][c]=true; continue; }
-      if(cell.type==='stall'){
-        used[r][c]=true;
-        var s=document.createElement('div');
-        var st=seedStatus(cell.label);
-        s.className='cell stall '+(st==='available'?'':st);
-        if(selected[cell.label]) s.classList.add('selected');
-        s.textContent=cell.label;
-        s.title='Stall '+cell.label+(st!=='available'?' ('+st+')':'');
-        s.dataset.label=cell.label; s.dataset.status=st;
-        s.style.gridColumn=(c+1); s.style.gridRow=(r+1);
-        host.appendChild(s);
-        continue;
-      }
-      var label=cell.label, w=1, h=1, ok=true;
-      while(c+w<cols && grid[r][c+w].type==='landmark' && grid[r][c+w].label===label && !used[r][c+w]) w++;
-      while(r+h<rows && ok){
-        for(var k=0;k<w;k++){ var cc=grid[r+h][c+k]; if(!(cc.type==='landmark'&&cc.label===label&&!used[r+h][c+k])){ ok=false; break; } }
-        if(ok) h++;
-      }
-      for(var i=0;i<h;i++) for(var j=0;j<w;j++) used[r+i][c+j]=true;
-      var d=document.createElement('div');
-      d.className='landmark';
-      d.style.gridColumn=(c+1)+' / span '+w;
-      d.style.gridRow=(r+1)+' / span '+h;
-      // tall-narrow blocks get vertical text so long labels fit (no clipping)
-      if(h>w){ d.style.writingMode='vertical-rl'; d.style.textOrientation='mixed'; }
-      d.textContent=label;
-      host.appendChild(d);
-    }
-  }
-}
-function refreshSummary(){
-  var labels=Object.keys(selected);
-  document.querySelector('[data-count]').textContent=labels.length;
-  document.querySelector('[data-chosen-inline]').textContent = labels.length? labels.join(', ') : 'none yet';
-}
-function loadBarn(name){
-  return fetch('./'+name.toLowerCase()+'.csv').then(function(r){return r.text();}).then(function(csv){
-    grid=parseGrid(csv); renderGrid();
-  });
-}
-
-/* build barn tabs */
-var tabHost=document.querySelector('[data-barn-tabs]');
-BARNS.forEach(function(b,i){
-  var t=document.createElement('button');
-  t.className='barn-tab'+(i===0?' active':''); t.dataset.barn=b; t.textContent=b;
-  tabHost.appendChild(t);
-});
-tabHost.addEventListener('click',function(ev){
-  var t=ev.target.closest('.barn-tab'); if(!t) return;
-  document.querySelectorAll('.barn-tab').forEach(function(b){b.classList.toggle('active',b===t);});
-  loadBarn(t.dataset.barn);
-});
-document.querySelector('[data-map-grid]').addEventListener('click',function(ev){
-  var s=ev.target.closest('.stall'); if(!s) return;
-  if(s.dataset.status!=='available') return;
-  var l=s.dataset.label;
-  if(selected[l]){ delete selected[l]; s.classList.remove('selected'); }
-  else { selected[l]=true; s.classList.add('selected'); }
-  refreshSummary();
-});
-
-loadBarn('Montcrief');
-</script>
+</form>
 </body>
 </html>

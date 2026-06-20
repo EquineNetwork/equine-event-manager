@@ -3,400 +3,505 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Equine Event Manager – Stall & RV Charts</title>
+<title>Equine Event Manager – Stall &amp; RV Charts</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Stall & RV Charts – LIST page (admin.php?page=equine-event-manager-stall-charts)
+   The event/reservation picker: each reservation that has stall or RV inventory
+   appears as a row; clicking the reservation name opens that reservation's stall
+   chart detail. No separate "View Chart" button in the desktop table — the name
+   link IS the chart link. Mobile cards have an "Edit Reservation" ghost button.
+   Curated mockup reflecting the LIVE page render
+   (EEM_Admin::render_stall_charts_list_page) as of 2026-06-20.
+   Stats labels are Title Case (capitalised) per the PHP i18n strings:
+   "Available", "Reserved", "Blocked", "Not yet configured".
+   Brand tokens: electric #1668F2, navy #031B4E, control border #8c8f94,
+   light-blue band #f0f4fb / #d9e2f2, radius 3px.
+   Curated to 5 sample reservations (mix of stall-only, RV-only, both);
+   NTR 6519 (National Team Roping) is the primary test reservation.
+   ───────────────────────────────────────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
-
-/* Universal hover convention — color only, NEVER underline */
+svg{flex-shrink:0}
 a{text-decoration:none}
 a:hover{text-decoration:none}
 
-/* ── WP SHELL ── */
+/* ── WP SHELL STUB ── */
 .wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
 .wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
 .wp-admin-bar span.site{color:#fff;font-weight:600}
 .wp-body{display:flex;flex:1}
 .wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
-.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
-.wp-sidebar-item:hover{background:#2c3338;color:#fff}
-.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer}
 .wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
 .wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
 .wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
-.wp-sidebar-sub:hover{color:#fff}
 .wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
-
-/* ── CONTENT ── */
 .wp-content{flex:1;padding:12px 20px 40px;min-width:0}
-.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+
+/* ── Breadcrumb + logo ── */
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
 .breadcrumb-sep{font-size:13px;color:#8c8f94}
-.breadcrumb-page{font-size:13px;font-weight:600;color:#1d2327}
+.breadcrumb-page{font-size:13px;color:#031B4E;font-weight:600}
 
-/* ── PLUGIN WRAP ── */
-.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+/* ── PAGE SHELL ── */
+.eem-page{display:block}
+.eem-page-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+.eem-page-header{padding:18px 22px;border-bottom:1px solid #dcdcde;background:#fff}
+.eem-page-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2}
+.eem-page-subtitle{font-size:13px;color:#64748b;margin-top:4px}
+.eem-page-body{background:#fff}
 
-/* Page header inside card (matches shipped reservations_page pattern) */
-.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.plugin-header-left{flex:1;min-width:0}
-.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
-.plugin-subtitle{font-size:13px;color:#6B7A99;line-height:1.45}
+/* ── Notice (invalid reservation) ── */
+.notice{background:#fff;border:1px solid #dcdcde;border-left:4px solid #dba617;padding:10px 14px;margin:14px 22px 0;font-size:13px;color:#1d2327;border-radius:0 3px 3px 0}
 
-/* Status tabs (DEC-4 — matches shipped reservations_page) */
-.status-tabs{padding:10px 18px 0;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:0;flex-wrap:wrap}
-.status-tab{font-size:13px;color:#50575e;padding:6px 10px 8px;cursor:pointer;border-bottom:2px solid transparent;text-decoration:none;white-space:nowrap}
-.status-tab:hover{color:#031B4E}
-.status-tab.active{color:#031B4E;font-weight:600;border-bottom-color:#1668F2}
-.status-tab-count{color:#8c8f94;font-weight:400;margin-left:3px}
-.status-tab-sep{color:#8c8f94;font-size:12px;padding:6px 4px}
+/* ── BUTTON PRIMITIVES ── */
+.eem-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;border:1px solid transparent;text-decoration:none;line-height:1.4}
+.eem-btn-amber,a.eem-btn-amber{background:#dba617;color:#fff;border-color:#dba617}
+.eem-btn-amber:hover,a.eem-btn-amber:hover{background:#b88a0f;color:#fff}
+.eem-btn-ghost,a.eem-btn-ghost{background:#fff;color:#031B4E;border-color:#c3c4c7}
+.eem-btn-ghost:hover,a.eem-btn-ghost:hover{background:#f6f7f7;color:#031B4E}
 
-/* Toolbar */
-.toolbar{padding:12px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f3f4f5}
-.toolbar-left{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
-.toolbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.toolbar-select{padding:6px 28px 6px 10px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none}
-.search-wrap{position:relative;flex:1;min-width:140px;max-width:280px}
-.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94}
-.search-input{width:100%;padding:6px 10px 6px 28px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
-.search-input::placeholder{color:#b0b0b0}
-.item-count{font-size:13px;color:#50575e;white-space:nowrap}
+/* ── TOOLBAR (date filter + search + count) ── */
+.eem-sc-list-toolbar,.eem-list-toolbar.eem-sc-list-toolbar{padding:12px 18px;border-bottom:1px solid #dcdcde;background:#f0f4fb;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.eem-list-toolbar-left{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
+.eem-list-toolbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.eem-list-count{font-size:13px;color:#646970;white-space:nowrap}
+.eem-toolbar-select,.toolbar-select{font-size:13px;border:1px solid #8c8f94;border-radius:3px;padding:6px 8px;background:#fff;font-family:inherit;color:#1d2327}
+.eem-search-wrap{display:flex;align-items:center;gap:6px;border:1px solid #8c8f94;border-radius:3px;background:#fff;padding:0 8px;min-width:200px}
+.eem-search-wrap svg{color:#8c8f94}
+.eem-search-input{border:0;outline:none;padding:6px 0;font-size:13px;font-family:inherit;background:transparent;flex:1;color:#1d2327}
 
-/* ── TABLE ── */
-table{width:100%;border-collapse:collapse}
-thead tr{border-bottom:1px solid #dcdcde;background:#f3f4f5}
-thead th{padding:11px 14px;font-size:13px;font-weight:600;color:#1d2327;text-align:left;white-space:nowrap}
-thead th.sortable{cursor:pointer;color:#1668F2}
-thead th.sortable:hover{color:#1257d1}
-.sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:4px;vertical-align:middle;opacity:.5}
-.sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
-.sort-icon span:first-child{border-bottom:4px solid currentColor}
-.sort-icon span:last-child{border-top:4px solid currentColor}
+/* ── DESKTOP TABLE ── */
+.eem-sc-list-desktop{overflow-x:auto}
+.eem-sc-list-table{width:100%;border-collapse:collapse}
+.eem-sc-list-table thead tr{border-bottom:1px solid #c3c4c7;background:#f8fafc}
+.eem-sc-list-table thead th{padding:11px 14px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#031B4E;text-align:left;white-space:nowrap}
+.eem-sc-list-table tbody tr{border-bottom:1px solid #f0f0f1}
+.eem-sc-list-table tbody tr:last-child{border-bottom:none}
+.eem-sc-list-table tbody tr:hover{background:#f6f7f7}
+.eem-sc-list-table td{padding:14px;font-size:13.5px;color:#031B4E;vertical-align:middle}
+th.sortable{cursor:pointer;white-space:nowrap}
+.sort-icon{opacity:.5;font-size:11px;margin-left:3px}
 
-tbody tr{border-bottom:1px solid #f0f0f1}
-tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:#f6f7f7}
-td{padding:14px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
+/* Reservation name cell */
+a.eem-sc-res-name{font-weight:700;color:#031B4E;font-size:14px;display:block;text-decoration:none}
+a.eem-sc-res-name:hover{color:#1668F2}
+.eem-sc-res-dates,.res-dates{font-size:12.5px;color:#6B7A99;margin-top:2px}
 
-.res-name{font-weight:700;color:#031B4E;font-size:14px;display:block;text-decoration:none}
-.res-name:hover{color:#1668F2}
-.res-dates{font-size:12.5px;color:#6B7A99;margin-top:2px}
+/* Availability column — label + bold tone-colored count.
+   Stat labels are Title Case per PHP __() strings:
+   "Available", "Reserved", "Blocked", "Not yet configured". */
+.eem-sc-availability{display:flex;flex-wrap:wrap;gap:14px}
+.eem-sc-avail-stat{font-size:12.5px;color:#6B7A99;white-space:nowrap}
+.eem-sc-avail-stat strong{font-weight:700;font-size:14px;margin-right:1px}
+.eem-sc-avail-stat--available strong{color:#15803d}
+.eem-sc-avail-stat--reserved strong{color:#1668F2}
+.eem-sc-avail-stat--blocked strong{color:#64748b}
+.eem-sc-avail-stat--none{color:#6B7A99;font-style:italic}
 
-/* Empty / no-data placeholder (shipped pattern from reservations_page) */
-.event-dates-empty{color:#8c8f94;font-size:13px}
+/* Barn / RV zone tag chips */
+.eem-sc-empty-dash{color:#6B7A99;font-size:13px}
+.eem-sc-barn-tags{display:flex;gap:5px;flex-wrap:wrap}
+.eem-sc-barn-tag{padding:3px 9px;border-radius:3px;font-size:11.5px;font-weight:600;background:#F0F4FB;color:#031B4E;border:1px solid #D9E2F2}
+.eem-sc-rv-lot-tag{padding:3px 9px;border-radius:3px;font-size:11.5px;font-weight:600;background:#F5F3FF;color:#6d28d9;border:1px solid #ddd6fe;display:inline-block}
 
-/* Barn tags */
-.barn-tags{display:flex;gap:5px;flex-wrap:wrap}
-.barn-tag{padding:3px 9px;border-radius:4px;font-size:11.5px;font-weight:600;background:#F0F4FB;color:#031B4E;border:1px solid #D9E2F2}
-.rv-lot-tag{padding:3px 9px;border-radius:4px;font-size:11.5px;font-weight:600;background:#F5F3FF;color:#6d28d9;border:1px solid #ddd6fe;display:inline-block}
+/* ── MOBILE CARDS ── */
+.eem-sc-list-mobile{display:none;padding:12px 14px}
+.eem-sc-mobile-card{background:#fff;border:1px solid #c3c4c7;border-radius:3px;padding:14px;margin-bottom:8px}
+.eem-sc-mob-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:8px}
+a.eem-sc-mob-res-name{font-size:14px;font-weight:700;color:#031B4E;text-decoration:none;display:block}
+a.eem-sc-mob-res-name:hover{color:#1668F2}
+.eem-sc-mob-card-body{margin-bottom:10px}
+.eem-sc-mob-card-dates{font-size:12.5px;color:#6B7A99;margin-bottom:6px}
+.eem-sc-mob-card-bottom{display:flex;align-items:center;justify-content:flex-start;gap:8px;flex-wrap:wrap}
 
-/* Status (UPPERCASE per DEC-2) */
-.chart-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 10px;border-radius:12px;white-space:nowrap;font-family:'IBM Plex Sans',sans-serif;line-height:1.5}
-.chart-status::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.status-configured{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
-.status-configured::before{background:#22c55e}
-.status-partial{background:#FFFBEB;color:#b45309;border:1px solid #fde68a}
-.status-partial::before{background:#f59e0b}
-.status-empty{background:#f3f4f5;color:#52525b;border:1px solid #dcdcde}
-.status-empty::before{background:#94a3b8}
+/* ── EMPTY-STATE CTA (no reservations with inventory yet) ── */
+.eem-empty-cta{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:48px 20px}
+.eem-empty-cta__icon{color:#dba617}
+.eem-empty-cta__title{margin:0;font-size:16px;font-weight:600;color:#031B4E}
+.eem-empty-cta__text{margin:0;max-width:460px;font-size:13px;color:#6B7A99}
+.eem-empty-cta .eem-btn{margin-top:6px}
 
-/* Actions */
-.actions-cell{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.action-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:4px;font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;border:1px solid}
-.action-btn svg{width:13px;height:13px}
-.btn-view-chart{background:#1668F2;color:#fff;border-color:#1668F2}
-.btn-view-chart:hover{background:#1257d1;border-color:#1257d1}
-.btn-edit-res{background:#fff;color:#031B4E;border-color:#c3c4c7}
-.btn-edit-res:hover{background:#f6f7f7}
-
-/* Stats row */
-.chart-stats{display:flex;gap:12px;flex-wrap:wrap;margin-top:3px}
-.chart-stat{font-size:12px;color:#6B7A99;display:flex;align-items:center;gap:4px}
-.chart-stat span{font-weight:600;color:#031B4E}
-.stat-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-
-/* Pagination */
-.pagination-row{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid #dcdcde;background:#f3f4f5;flex-wrap:wrap;gap:8px}
+/* ── PAGINATION FOOTER ── */
+.pagination-row,.pagination-row.eem-sc-pagination-row{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:#f8fafc;border-top:none;min-height:53px;box-sizing:border-box;flex-wrap:wrap;gap:8px}
 .pagination-info{font-size:13px;color:#50575e}
-.pagination{display:flex;align-items:center;gap:3px}
-.page-btn{width:28px;height:28px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans',sans-serif}
-.page-btn.active{background:#1668F2;color:#fff;border-color:#1668F2}
-.page-btn svg{width:12px;height:12px}
+.pagination{display:flex;gap:4px}
+.page-btn{border:1px solid #c3c4c7;background:#fff;border-radius:4px;padding:4px 10px;font-size:13px;cursor:pointer;font-family:inherit;color:#50575e;min-width:28px}
+.page-btn--active,.page-btn.active{background:#1668F2;color:#fff;border-color:#1668F2}
+.page-btn[disabled]{opacity:.4;cursor:default}
 
-/* Mobile cards */
-.mobile-list{display:none;padding:12px 14px}
-.mobile-card{background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:14px;margin-bottom:8px}
-.mob-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:8px}
-.mob-res-name{font-size:14px;font-weight:700;color:#031B4E;text-decoration:none;display:block}
-.mob-res-name:hover{color:#1668F2}
-.mob-card-body{margin-bottom:10px}
-.mob-card-dates{font-size:12.5px;color:#6B7A99;margin-bottom:6px}
-.mob-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-
-/* ════ TABLET ════ */
-@media(max-width:960px){
-  .wp-sidebar{display:none}
-  .wp-content{padding:10px 14px 40px}
-}
-/* ════ MOBILE ════ */
-@media(max-width:767px){
-  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
-  .wp-content{padding:8px 10px 32px}
-  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
-  .plugin-header{padding:14px;flex-direction:column;align-items:stretch;gap:10px}
-  .plugin-title{font-size:18px}
-  .plugin-subtitle{font-size:12.5px}
-  .status-tabs{overflow-x:auto;flex-wrap:nowrap;padding:8px 14px 0;-webkit-overflow-scrolling:touch}
-  .status-tab{font-size:12px;padding:5px 8px 7px;white-space:nowrap}
-  .toolbar{flex-direction:column;align-items:stretch;padding:10px 12px;gap:8px}
-  .toolbar-left{flex-direction:column;gap:8px}
-  .search-wrap{max-width:100%;min-width:unset}
-  .desktop-table{display:none}
-  .mobile-list{display:block}
-  .pagination-row{padding:10px 12px}
-  .actions-cell{gap:5px}
-  .action-btn{padding:5px 10px;font-size:12px}
+/* ── Responsive ── */
+@media (max-width:1100px){.wp-sidebar{display:none}}
+@media (max-width:767px){
+  .eem-sc-list-desktop{display:none}
+  .eem-sc-list-mobile{display:block}
+  .eem-sc-list-toolbar{flex-direction:column;align-items:stretch;padding:10px 12px}
+  .eem-list-toolbar-left{flex-direction:column}
+  .eem-search-wrap{max-width:100%;min-width:unset}
 }
 </style>
 </head>
 <body>
 
+<!-- ══════════ WP ADMIN SHELL STUB ══════════ -->
 <div class="wp-admin-bar">
-  <span>&#9776;</span>
-  <span class="site">My Equestrian Site</span>
+  <span class="site">Equine Network</span>
   <span>+ New</span>
-  <span style="margin-left:auto">Howdy, Whitney Mitchell</span>
+  <span style="margin-left:auto">Howdy, Whitney</span>
 </div>
-
 <div class="wp-body">
   <nav class="wp-sidebar">
     <div class="wp-sidebar-item">Dashboard</div>
     <div class="wp-sidebar-item">Media</div>
     <div class="wp-sidebar-item">Posts</div>
-    <div class="wp-sidebar-item">Pages</div>
     <div class="wp-sidebar-sep"></div>
     <div class="wp-sidebar-label">Event Manager</div>
+    <div class="wp-sidebar-sub">Dashboard</div>
     <div class="wp-sidebar-sub">Orders</div>
     <div class="wp-sidebar-sub">Reservations</div>
     <div class="wp-sidebar-sub active">Stall &amp; RV Charts</div>
-    <div class="wp-sidebar-sub">Invoicing</div>
+    <div class="wp-sidebar-sub">Daily Movement</div>
     <div class="wp-sidebar-sub">Reports</div>
     <div class="wp-sidebar-sub">Settings</div>
   </nav>
 
   <main class="wp-content">
+
+    <!-- ══════════ BREADCRUMB + LOGO ══════════ -->
     <div class="breadcrumb">
-      <div class="breadcrumb-logo-box">Plugin Logo</div>
+      <img class="breadcrumb-logo-box" src="Equine Event Manager Logo.png" alt="Equine Event Manager">
       <span class="breadcrumb-sep">/</span>
-      <span class="breadcrumb-page">Stall & RV Charts</span>
+      <span class="breadcrumb-page">Stall &amp; RV Charts</span>
     </div>
 
-    <div class="plugin-wrap">
+    <!-- ══════════ PAGE CARD ══════════ -->
+    <div class="eem-page">
+      <div class="eem-page-wrap">
 
-      <header class="plugin-header">
-        <div class="plugin-header-left">
-          <h1 class="plugin-title">Stall &amp; RV Charts</h1>
-          <div class="plugin-subtitle">View and manage stall assignments for each reservation. Click a reservation name to open its assignment board.</div>
+        <!-- Page header -->
+        <div class="eem-page-header">
+          <div class="eem-page-title">Stall &amp; RV Charts</div>
+          <div class="eem-page-subtitle">View and manage stall assignments for each reservation.</div>
         </div>
-      </header>
 
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <select class="toolbar-select">
-            <option>All dates</option>
-            <option>May 2026</option>
-            <option>June 2026</option>
-          </select>
-          <div class="search-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input class="search-input" type="text" placeholder="Search">
-          </div>
-        </div>
-        <div class="toolbar-right">
-          <span class="item-count">3 reservations</span>
-        </div>
-      </div>
+        <div class="eem-page-body">
+        <div class="eem-stall-charts-list">
 
-      <!-- Desktop Table -->
-      <div class="desktop-table">
-        <table>
-          <thead>
-            <tr>
-              <th class="sortable">Reservation <span class="sort-icon"><span></span><span></span></span></th>
-              <th>Barns</th>
-              <th>RV Lots</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <a class="res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=42">2026 Southeast Region Super Sort</a>
-                <div class="res-dates">May 8, 2026 – May 10, 2026</div>
-                <div class="chart-stats">
-                  <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>82 Available</div>
-                  <div class="chart-stat"><div class="stat-dot" style="background:#dc2626"></div>28 Reserved</div>
-                  <div class="chart-stat"><div class="stat-dot" style="background:#94a3b8"></div>10 Blocked</div>
-                </div>
-              </td>
-              <td>
-                <div class="barn-tags">
-                  <span class="barn-tag">Red Barn</span>
-                  <span class="barn-tag">Blue Barn</span>
-                  <span class="barn-tag">Green Barn</span>
-                </div>
-              </td>
-              <td>
-                <div class="barn-tags">
-                  <span class="rv-lot-tag">Red Lot</span>
-                  <span class="rv-lot-tag">Blue Lot</span>
-                  <span class="rv-lot-tag">Green Lot</span>
-                </div>
-              </td>
-              <td>
-                <div class="actions-cell">
-                  <button class="action-btn btn-view-chart">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                    View Chart
-                  </button>
-                  <button class="action-btn btn-edit-res">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    Edit Reservation
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <a class="res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=45">2026 Gulf Coast Classic</a>
-                <div class="res-dates">Jun 5, 2026 – Jun 7, 2026</div>
-                <div class="chart-stats">
-                  <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>44 Available</div>
-                  <div class="chart-stat"><div class="stat-dot" style="background:#dc2626"></div>12 Reserved</div>
-                </div>
-              </td>
-              <td><div class="barn-tags"><span class="barn-tag">North Barn</span><span class="barn-tag">South Barn</span></div></td>
-              <td><span class="event-dates-empty">—</span></td>
-              <td>
-                <div class="actions-cell">
-                  <button class="action-btn btn-view-chart">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                    View Chart
-                  </button>
-                  <button class="action-btn btn-edit-res">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    Edit Reservation
-                  </button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <a class="res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=47">2026 Pacific Northwest Classic</a>
-                <div class="res-dates">Jul 10, 2026 – Jul 12, 2026</div>
-                <div class="chart-stats">
-                  <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>55 Available</div>
-                  <div class="chart-stat"><div class="stat-dot" style="background:#dc2626"></div>20 Reserved</div>
-                  <div class="chart-stat"><div class="stat-dot" style="background:#94a3b8"></div>5 Blocked</div>
-                </div>
-              </td>
-              <td>
-                <div class="barn-tags">
-                  <span class="barn-tag">East Barn</span>
-                  <span class="barn-tag">West Barn</span>
-                </div>
-              </td>
-              <td>
-                <div class="barn-tags">
-                  <span class="rv-lot-tag">North Lot</span>
-                </div>
-              </td>
-              <td>
-                <div class="actions-cell">
-                  <button class="action-btn btn-view-chart">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                    View Chart
-                  </button>
-                  <button class="action-btn btn-edit-res">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    Edit Reservation
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+          <!--
+            Conditional invalid-reservation notice — shown when ?reservation_id is
+            passed but the post does not exist or is not an en_reservation.
+            Renders as a WP notice-warning above the toolbar.
+          -->
+          <!-- <div class="notice">That stall chart could not be loaded — the reservation may not exist. Choose another below.</div> -->
 
-      <!-- Mobile Cards -->
-      <div class="mobile-list">
-        <div class="mobile-card">
-          <div class="mob-card-top">
-            <a class="mob-res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=42">2026 Southeast Region Super Sort</a>
-          </div>
-          <div class="mob-card-body">
-            <div class="mob-card-dates">May 8, 2026 – May 10, 2026</div>
-            <div class="barn-tags" style="margin-bottom:6px"><span class="barn-tag">Red Barn</span><span class="barn-tag">Blue Barn</span><span class="barn-tag">Green Barn</span></div>
-            <div class="barn-tags" style="margin-bottom:6px"><span class="rv-lot-tag">Red Lot</span><span class="rv-lot-tag">Blue Lot</span><span class="rv-lot-tag">Green Lot</span></div>
-            <div class="chart-stats">
-              <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>82 Available</div>
-              <div class="chart-stat"><div class="stat-dot" style="background:#dc2626"></div>28 Reserved</div>
+          <!-- Toolbar: date filter dropdown + search box + count.
+               PHP class list: eem-list-toolbar eem-sc-list-toolbar toolbar eem-toolbar-controls
+               Date options are derived from reservation start timestamps via gmdate('Y-m').
+               Count text uses _n() singular/plural: "1 reservation" / "N reservations". -->
+          <div class="eem-list-toolbar eem-sc-list-toolbar">
+            <div class="eem-list-toolbar-left">
+              <select class="toolbar-select eem-toolbar-select eem-sc-date-filter" id="eem-sc-date-filter" data-eem-input-action="sc-list-date-filter">
+                <option value="all">All dates</option>
+                <option value="2026-04">April 2026</option>
+                <option value="2026-05">May 2026</option>
+                <option value="2026-06">June 2026</option>
+                <option value="2026-07">July 2026</option>
+              </select>
+              <div class="eem-search-wrap search-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input class="eem-search-input" type="search" placeholder="Search" data-eem-input-action="sc-list-search">
+              </div>
+            </div>
+            <div class="eem-list-toolbar-right">
+              <span class="eem-list-count item-count" id="eem-sc-list-count">5 reservations</span>
             </div>
           </div>
-          <div class="mob-card-bottom">
-            <button class="action-btn btn-view-chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>View Chart</button>
-            <button class="action-btn btn-edit-res"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</button>
+
+          <!--
+            Desktop table.
+            Columns: Reservation (sortable) | Availability | Barns | RV Lots
+            - "Reservation" column: .eem-sc-res-name link → chart detail URL
+              (?page=equine-event-manager-stall-charts&reservation_id=N)
+              Below name: .eem-sc-res-dates date range from get_reservation_date_range_label()
+            - "Availability" column: .eem-sc-avail-stat spans, tone classes drive color.
+              Stats are ONLY shown for "configured" charts (stall_rows or rv_zone_names present).
+              For unconfigured/partial charts a single tone="none" stat "Not yet configured" shows.
+              Stat labels are Title Case per PHP __() i18n strings.
+            - "Barns" column: .eem-sc-barn-tag chips from stall_rows[*]['name']. Empty → em dash.
+            - "RV Lots" column: .eem-sc-rv-lot-tag chips from rv_rows[*]['name']. Empty → em dash.
+            No "View Chart" action button in the table — the reservation name IS the chart link.
+          -->
+          <div class="eem-sc-list-desktop">
+            <table class="eem-sc-list-table">
+              <thead>
+                <tr>
+                  <th class="sortable" data-eem-action="sc-sort" data-sort-key="title">Reservation <span class="sort-icon">&#8597;</span></th>
+                  <th>Availability</th>
+                  <th>Barns</th>
+                  <th>RV Lots</th>
+                </tr>
+              </thead>
+              <tbody id="eem-sc-list-tbody">
+
+                <!-- Row 1 — NTR 6519 (primary test reservation): stalls + RV -->
+                <tr data-sc-title="national team roping">
+                  <td>
+                    <a class="eem-sc-res-name" href="admin.php?page=equine-event-manager-stall-charts&reservation_id=6519">National Team Roping</a>
+                    <div class="eem-sc-res-dates res-dates">Jun 5 – Jun 8, 2026</div>
+                  </td>
+                  <td>
+                    <div class="eem-sc-availability">
+                      <span class="eem-sc-avail-stat eem-sc-avail-stat--available"><strong>54</strong> Available</span>
+                      <span class="eem-sc-avail-stat eem-sc-avail-stat--reserved"><strong>38</strong> Reserved</span>
+                      <span class="eem-sc-avail-stat eem-sc-avail-stat--blocked"><strong>4</strong> Blocked</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="eem-sc-barn-tags">
+                      <span class="eem-sc-barn-tag">Barn A</span>
+                      <span class="eem-sc-barn-tag">Barn B</span>
+                      <span class="eem-sc-barn-tag">Y Row</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="eem-sc-barn-tags">
+                      <span class="eem-sc-rv-lot-tag">North Lot</span>
+                      <span class="eem-sc-rv-lot-tag">South Lot</span>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Row 2 — stalls only -->
+                <tr data-sc-title="cattlemen's roundup">
+                  <td>
+                    <a class="eem-sc-res-name" href="admin.php?page=equine-event-manager-stall-charts&reservation_id=6112">Cattlemen's Roundup</a>
+                    <div class="eem-sc-res-dates res-dates">May 8 – May 10, 2026</div>
+                  </td>
+                  <td>
+                    <div class="eem-sc-availability">
+                      <span class="eem-sc-avail-stat eem-sc-avail-stat--available"><strong>20</strong> Available</span>
+                      <span class="eem-sc-avail-stat eem-sc-avail-stat--reserved"><strong>28</strong> Reserved</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="eem-sc-barn-tags">
+                      <span class="eem-sc-barn-tag">Main Barn</span>
+                    </div>
+                  </td>
+                  <td><span class="eem-sc-empty-dash">—</span></td>
+                </tr>
+
+                <!-- Row 3 — RV only -->
+                <tr data-sc-title="high desert rv rally">
+                  <td>
+                    <a class="eem-sc-res-name" href="admin.php?page=equine-event-manager-stall-charts&reservation_id=6240">High Desert RV Rally</a>
+                    <div class="eem-sc-res-dates res-dates">May 22 – May 25, 2026</div>
+                  </td>
+                  <td>
+                    <div class="eem-sc-availability">
+                      <span class="eem-sc-avail-stat eem-sc-avail-stat--available"><strong>14</strong> Available</span>
+                      <span class="eem-sc-avail-stat eem-sc-avail-stat--reserved"><strong>30</strong> Reserved</span>
+                    </div>
+                  </td>
+                  <td><span class="eem-sc-empty-dash">—</span></td>
+                  <td>
+                    <div class="eem-sc-barn-tags">
+                      <span class="eem-sc-rv-lot-tag">Zone 1</span>
+                      <span class="eem-sc-rv-lot-tag">Zone 2</span>
+                      <span class="eem-sc-rv-lot-tag">Overflow</span>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Row 4 — stalls + RV configured but no assignments yet.
+                     Availability stats still show (configured = stall_rows present);
+                     all units available, none reserved. -->
+                <tr data-sc-title="summer youth showcase">
+                  <td>
+                    <a class="eem-sc-res-name" href="admin.php?page=equine-event-manager-stall-charts&reservation_id=6355">Summer Youth Showcase</a>
+                    <div class="eem-sc-res-dates res-dates">Jul 11 – Jul 13, 2026</div>
+                  </td>
+                  <td>
+                    <div class="eem-sc-availability">
+                      <span class="eem-sc-avail-stat eem-sc-avail-stat--available"><strong>40</strong> Available</span>
+                      <span class="eem-sc-avail-stat eem-sc-avail-stat--reserved"><strong>0</strong> Reserved</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="eem-sc-barn-tags">
+                      <span class="eem-sc-barn-tag">Barn C</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="eem-sc-barn-tags">
+                      <span class="eem-sc-rv-lot-tag">West Lot</span>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Row 5 — stall inventory enabled but no stall_rows or rv_rows configured yet.
+                     PHP outputs tone="none", count=null, name="Not yet configured". -->
+                <tr data-sc-title="ranch horse futurity">
+                  <td>
+                    <a class="eem-sc-res-name" href="admin.php?page=equine-event-manager-stall-charts&reservation_id=6401">Ranch Horse Futurity</a>
+                    <div class="eem-sc-res-dates res-dates">Jul 24 – Jul 27, 2026</div>
+                  </td>
+                  <td>
+                    <div class="eem-sc-availability">
+                      <span class="eem-sc-avail-stat eem-sc-avail-stat--none">Not yet configured</span>
+                    </div>
+                  </td>
+                  <td><span class="eem-sc-empty-dash">—</span></td>
+                  <td><span class="eem-sc-empty-dash">—</span></td>
+                </tr>
+
+              </tbody>
+            </table>
           </div>
-        </div>
-        <div class="mobile-card">
-          <div class="mob-card-top">
-            <a class="mob-res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=45">2026 Gulf Coast Classic</a>
+
+          <!--
+            Mobile cards (shown < 768px via CSS display:none / display:block).
+            Each card: reservation name link → chart URL; optional dates; barn tags;
+            RV lot tags; availability stats; ghost "Edit Reservation" button → editor URL.
+            PHP does NOT render a "View Chart" button here — the name is the link.
+          -->
+          <div class="eem-sc-list-mobile">
+
+            <div class="eem-sc-mobile-card" data-sc-title="national team roping">
+              <div class="eem-sc-mob-card-top">
+                <a class="eem-sc-mob-res-name" href="admin.php?page=equine-event-manager-stall-charts&reservation_id=6519">National Team Roping</a>
+              </div>
+              <div class="eem-sc-mob-card-body">
+                <div class="eem-sc-mob-card-dates">Jun 5 – Jun 8, 2026</div>
+                <div class="eem-sc-barn-tags" style="margin-bottom:6px">
+                  <span class="eem-sc-barn-tag">Barn A</span>
+                  <span class="eem-sc-barn-tag">Barn B</span>
+                  <span class="eem-sc-barn-tag">Y Row</span>
+                </div>
+                <div class="eem-sc-barn-tags" style="margin-bottom:6px">
+                  <span class="eem-sc-rv-lot-tag">North Lot</span>
+                  <span class="eem-sc-rv-lot-tag">South Lot</span>
+                </div>
+                <div class="eem-sc-availability">
+                  <span class="eem-sc-avail-stat eem-sc-avail-stat--available"><strong>54</strong> Available</span>
+                  <span class="eem-sc-avail-stat eem-sc-avail-stat--reserved"><strong>38</strong> Reserved</span>
+                  <span class="eem-sc-avail-stat eem-sc-avail-stat--blocked"><strong>4</strong> Blocked</span>
+                </div>
+              </div>
+              <div class="eem-sc-mob-card-bottom">
+                <a class="eem-btn eem-btn-ghost" href="admin.php?page=equine-event-manager-reservation-editor&reservation_id=6519">Edit Reservation</a>
+              </div>
+            </div>
+
+            <div class="eem-sc-mobile-card" data-sc-title="high desert rv rally">
+              <div class="eem-sc-mob-card-top">
+                <a class="eem-sc-mob-res-name" href="admin.php?page=equine-event-manager-stall-charts&reservation_id=6240">High Desert RV Rally</a>
+              </div>
+              <div class="eem-sc-mob-card-body">
+                <div class="eem-sc-mob-card-dates">May 22 – May 25, 2026</div>
+                <div class="eem-sc-barn-tags" style="margin-bottom:6px">
+                  <span class="eem-sc-rv-lot-tag">Zone 1</span>
+                  <span class="eem-sc-rv-lot-tag">Zone 2</span>
+                  <span class="eem-sc-rv-lot-tag">Overflow</span>
+                </div>
+                <div class="eem-sc-availability">
+                  <span class="eem-sc-avail-stat eem-sc-avail-stat--available"><strong>14</strong> Available</span>
+                  <span class="eem-sc-avail-stat eem-sc-avail-stat--reserved"><strong>30</strong> Reserved</span>
+                </div>
+              </div>
+              <div class="eem-sc-mob-card-bottom">
+                <a class="eem-btn eem-btn-ghost" href="admin.php?page=equine-event-manager-reservation-editor&reservation_id=6240">Edit Reservation</a>
+              </div>
+            </div>
+
+            <div class="eem-sc-mobile-card" data-sc-title="ranch horse futurity">
+              <div class="eem-sc-mob-card-top">
+                <a class="eem-sc-mob-res-name" href="admin.php?page=equine-event-manager-stall-charts&reservation_id=6401">Ranch Horse Futurity</a>
+              </div>
+              <div class="eem-sc-mob-card-body">
+                <div class="eem-sc-mob-card-dates">Jul 24 – Jul 27, 2026</div>
+                <div class="eem-sc-availability">
+                  <span class="eem-sc-avail-stat eem-sc-avail-stat--none">Not yet configured</span>
+                </div>
+              </div>
+              <div class="eem-sc-mob-card-bottom">
+                <a class="eem-btn eem-btn-ghost" href="admin.php?page=equine-event-manager-reservation-editor&reservation_id=6401">Edit Reservation</a>
+              </div>
+            </div>
+
           </div>
-          <div class="mob-card-body">
-            <div class="mob-card-dates">Jun 5, 2026 – Jun 7, 2026</div>
-            <div class="barn-tags" style="margin-bottom:6px"><span class="barn-tag">North Barn</span><span class="barn-tag">South Barn</span></div>
-            <div class="chart-stats">
-              <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>44 Available</div>
-              <div class="chart-stat"><div class="stat-dot" style="background:#dc2626"></div>12 Reserved</div>
+
+          <!-- No-match state (shown by JS when search hides every row) -->
+          <div class="eem-empty-state eem-sc-no-match" id="eem-sc-no-match" style="display:none;padding:48px 24px;text-align:center;">
+            <p style="font-size:13px;color:#6B7A99;margin:0;line-height:1.6;">No reservations match your filters.</p>
+          </div>
+
+          <!-- Pagination footer -->
+          <div class="pagination-row eem-sc-pagination-row">
+            <span class="pagination-info">Showing 1&ndash;5 of 5 reservations</span>
+            <div class="pagination">
+              <button type="button" class="page-btn" disabled aria-label="Previous page">&lsaquo;</button>
+              <button type="button" class="page-btn page-btn--active active" aria-current="page">1</button>
+              <button type="button" class="page-btn" disabled aria-label="Next page">&rsaquo;</button>
             </div>
           </div>
-          <div class="mob-card-bottom">
-            <button class="action-btn btn-view-chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>View Chart</button>
-            <button class="action-btn btn-edit-res"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</button>
-          </div>
-        </div>
-        <div class="mobile-card">
-          <div class="mob-card-top">
-            <a class="mob-res-name" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=47">2026 Pacific Northwest Classic</a>
-          </div>
-          <div class="mob-card-body">
-            <div class="mob-card-dates">Jul 10, 2026 – Jul 12, 2026</div>
-            <div class="barn-tags" style="margin-bottom:6px"><span class="barn-tag">East Barn</span><span class="barn-tag">West Barn</span></div>
-            <div class="barn-tags" style="margin-bottom:6px"><span class="rv-lot-tag">North Lot</span></div>
-            <div class="chart-stats">
-              <div class="chart-stat"><div class="stat-dot" style="background:#22c55e"></div>55 Available</div>
-              <div class="chart-stat"><div class="stat-dot" style="background:#dc2626"></div>20 Reserved</div>
+
+          <!--
+            ══════════ EMPTY STATE (alternate render — no reservations have stall/RV inventory) ══════════
+            PHP: replaces the toolbar + table entirely when get_stall_charts_list_data() returns [].
+            Triggered when EEM_Reservation_Config::with_stalls_or_rv() returns an empty array —
+            i.e. no en_reservation posts have stalls_enabled or rv_enabled sections active.
+
+          <div class="eem-empty-cta">
+            <div class="eem-empty-cta__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
             </div>
+            <h3 class="eem-empty-cta__title">No stall charts yet</h3>
+            <p class="eem-empty-cta__text">Stall charts come from reservations. Create a reservation and enable its stall or RV reservations, and its chart will appear here ready to assign.</p>
+            <a class="eem-btn eem-btn-amber" href="post-new.php?post_type=en_reservation">Create a Reservation</a>
           </div>
-          <div class="mob-card-bottom">
-            <button class="action-btn btn-view-chart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>View Chart</button>
-            <button class="action-btn btn-edit-res"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation</button>
-          </div>
-        </div>
-      </div>
+          ══════════ /EMPTY STATE ══════════ -->
 
-      <div class="pagination-row">
-        <span class="pagination-info">Showing 1–3 of 3 reservations</span>
-        <div class="pagination">
-          <button class="page-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
-          <button class="page-btn active">1</button>
-          <button class="page-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
-        </div>
-      </div>
+        </div><!-- /.eem-stall-charts-list -->
+        </div><!-- /.eem-page-body -->
 
-    </div><!-- /plugin-wrap -->
+      </div><!-- /.eem-page-wrap -->
+    </div><!-- /.eem-page -->
+
   </main>
-</div><!-- /wp-body -->
+</div>
+
+<script>
+// Minimal client behavior mirror: search filters rows + mobile cards by data-sc-title and
+// updates the count. Mirrors the live page's data-eem-input-action="sc-list-search" handler.
+(function () {
+  var search  = document.querySelector('.eem-search-input');
+  var rows    = Array.prototype.slice.call(document.querySelectorAll('#eem-sc-list-tbody tr'));
+  var cards   = Array.prototype.slice.call(document.querySelectorAll('.eem-sc-mobile-card'));
+  var countEl = document.getElementById('eem-sc-list-count');
+  var noMatch = document.getElementById('eem-sc-no-match');
+
+  function apply() {
+    var q = (search.value || '').trim().toLowerCase();
+    var shown = 0;
+    rows.forEach(function (r) {
+      var hit = !q || (r.getAttribute('data-sc-title') || '').indexOf(q) !== -1;
+      r.style.display = hit ? '' : 'none';
+      if (hit) shown++;
+    });
+    cards.forEach(function (c) {
+      var hit = !q || (c.getAttribute('data-sc-title') || '').indexOf(q) !== -1;
+      c.style.display = hit ? '' : 'none';
+    });
+    countEl.textContent = shown + (shown === 1 ? ' reservation' : ' reservations');
+    if (noMatch) noMatch.style.display = shown === 0 ? 'block' : 'none';
+  }
+  if (search) search.addEventListener('input', apply);
+})();
+</script>
+
 </body>
 </html>

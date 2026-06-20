@@ -3,72 +3,92 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pre-Entries — Print View</title>
+<title>Division Entrants — Print View</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+/*
+  PRINT VIEW — Division Entrants (single division entrant roster).
+  Source of truth: EEM_Entries::render_detail() in includes/class-eem-entries.php
+  KPI cards: Entered / Spots / Spots Left (oversold note when over cap).
+  Roster columns: Customer, Qty, Order, Date, Status.
+  Print views = page-own <style> block. No WP admin sidebar.
+  Tokens: electric #1668F2, navy #031B4E, control border #8c8f94,
+          light-blue band #f0f4fb / borders #d9e2f2, radius 3px.
+*/
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;font-size:14px;line-height:1.5}
 a{text-decoration:none;color:inherit}
 
-/* ── ON-SCREEN TOOLBAR ── */
+/* ── ON-SCREEN TOOLBAR (screen only) ── */
 .pv-topbar{background:#f3f4f5;border-bottom:1px solid #dcdcde;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:10}
 .pv-topbar-left{display:flex;align-items:center;gap:10px;min-width:0}
 .pv-topbar-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E}
 .pv-topbar-sub{font-size:12px;color:#6B7A99;margin-top:1px}
 .pv-topbar-btns{display:flex;gap:8px;flex-shrink:0}
-.btn-pv-print{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:8px 16px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn-pv-print{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:8px 16px;border-radius:3px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .btn-pv-print:hover{background:#1257d1;border-color:#1257d1}
 .btn-pv-print svg{width:13px;height:13px}
-.btn-pv-exit{background:#fff;color:#1d2327;border:1px solid #c3c4c7;padding:8px 14px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.btn-pv-exit{background:#fff;color:#1d2327;border:1px solid #c3c4c7;padding:8px 14px;border-radius:3px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
 .btn-pv-exit:hover{background:#f6f7f7}
 
 /* ── BODY ── */
-.pv-body{padding:22px 28px;max-width:1100px;margin:0 auto}
+.pv-body{padding:22px 28px;max-width:1000px;margin:0 auto}
 
-/* Compact hotel-itinerary header */
+/* Compact header */
 .pv-header{margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #031B4E}
 .pv-header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.pv-eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#1668F2;margin-bottom:4px}
 .pv-header-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;margin-bottom:6px}
 .pv-meta{font-size:13px;color:#4a5a7a;display:flex;gap:24px;flex-wrap:wrap}
 .pv-meta strong{color:#031B4E;font-weight:600}
-.pv-header-right{text-align:right;font-size:12px;color:#6B7A99}
+.pv-header-right{text-align:right;font-size:12px;color:#6B7A99;white-space:nowrap}
 .pv-header-right strong{display:block;color:#031B4E;font-size:13px;font-weight:600;margin-bottom:2px}
 
-/* Filter summary band */
-.pv-filters{background:#F0F4FB;border:1px solid #D9E2F2;border-radius:4px;padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:#4a5a7a;display:flex;gap:18px;flex-wrap:wrap}
-.pv-filters strong{color:#031B4E;font-weight:600}
+/* Event context band — mirrors the eem-res-linked-event style */
+.pv-event-band{background:#F0F4FB;border:1px solid #D9E2F2;border-radius:3px;padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:#4a5a7a;display:flex;gap:18px;flex-wrap:wrap}
+.pv-event-band strong{color:#031B4E;font-weight:600}
+
+/* KPI stat cards — mirror EEM_Entries::render_detail() .eem-scs-card output */
+.pv-stats{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.pv-stat{flex:1;min-width:130px;border:1px solid #D9E2F2;border-radius:3px;padding:12px 14px;background:#FAFBFE;display:flex;flex-direction:column;gap:2px}
+.pv-stat-icon{font-size:14px;color:#1668F2;line-height:1}
+.pv-stat-num{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#031B4E;line-height:1.1}
+.pv-stat-label{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#8a9ab8}
+/* Spots-left tone: green=available, orange=sold out, red=oversold */
+.pv-stat--green .pv-stat-num{color:#15803d}
+.pv-stat--green .pv-stat-icon{color:#15803d}
+.pv-stat--orange .pv-stat-num{color:#b45309}
+.pv-stat--orange .pv-stat-icon{color:#b45309}
+.pv-stat--red .pv-stat-num{color:#b91c1c}
+.pv-stat--red .pv-stat-icon{color:#b91c1c}
+.pv-stat-oversold{display:block;font-size:10px;font-weight:600;color:#b91c1c;margin-top:2px}
 
 /* Table */
-.pv-table-wrap{border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:18px}
+.pv-table-wrap{border:1px solid #e5e7eb;border-radius:3px;overflow:hidden;margin-bottom:18px}
 .pv-table{width:100%;border-collapse:collapse;background:#fff}
 .pv-table thead tr{background:#f3f4f5;border-bottom:1px solid #dcdcde}
 .pv-table thead th{padding:10px 12px;font-size:13px;font-weight:600;color:#1d2327;text-align:left}
 .pv-table thead th.c{text-align:center}
 .pv-table tbody tr{border-bottom:1px solid #f0f0f1}
 .pv-table tbody tr:last-child{border-bottom:none}
-.pv-table tbody tr:nth-child(even){background:#f3f4f5}
+.pv-table tbody tr:nth-child(even){background:#f9fafb}
 .pv-table td{padding:9px 12px;font-size:13px;vertical-align:middle;color:#1d2327}
 .pv-table td.c{text-align:center}
 
 .pv-customer{font-weight:600;color:#031B4E}
-.pv-order{color:#1d2327;font-size:12.5px;font-variant-numeric:tabular-nums}
-.pv-event{color:#4a5a7a}
-.pv-event-sub{color:#6B7A99;font-size:11.5px}
-.pv-division{color:#4a5a7a}
+.pv-order{color:#1668F2;font-size:12.5px;font-variant-numeric:tabular-nums}
+.pv-date{color:#4a5a7a;font-size:12.5px}
 .pv-qty{font-variant-numeric:tabular-nums;font-weight:600;text-align:center}
 
-/* Status pills */
+/* Status badges — mirror admin.css .eem-status-{X} */
 .pv-status{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;border:1px solid}
 .pv-status-paid{background:#F0FDF4;color:#15803d;border-color:#bbf7d0}
+.pv-status-unpaid{background:#FFFBEB;color:#a16207;border-color:#fde68a}
 .pv-status-refunded{background:#FEF2F2;color:#b91c1c;border-color:#fecaca}
-.pv-status-pending{background:#FFFBEB;color:#a16207;border-color:#fde68a}
-.pv-status-partial{background:#EEF4FF;color:#1668F2;border-color:#c0d8ff}
+.pv-status-cancelled{background:#F3F4F6;color:#6b7280;border-color:#d1d5db}
 
-/* Summary block at bottom of page */
-.pv-summary{background:#FAFBFE;border:1px solid #D9E2F2;border-radius:4px;padding:14px 18px;margin-bottom:18px;display:flex;gap:32px;flex-wrap:wrap;font-size:13px}
-.pv-summary-item{}
-.pv-summary-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8a9ab8;margin-bottom:3px}
-.pv-summary-val{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#031B4E}
+/* Empty table row */
+.pv-table-empty{color:#6B7A99;font-style:italic;text-align:center;padding:24px 12px}
 
 /* Footer */
 .pv-footer{margin-top:18px;padding-top:12px;border-top:1px solid #e8eaf0;display:flex;justify-content:space-between;font-size:12px;color:#6B7A99;flex-wrap:wrap;gap:8px}
@@ -83,6 +103,9 @@ a{text-decoration:none;color:inherit}
   .pv-meta{gap:10px;font-size:12px}
   .pv-header-top{flex-direction:column;gap:8px}
   .pv-header-right{text-align:left}
+  .pv-stats{gap:8px}
+  .pv-stat{min-width:0;flex:1 1 30%}
+  .pv-stat-num{font-size:20px}
 }
 
 /* ── PRINT MEDIA ── */
@@ -92,24 +115,22 @@ a{text-decoration:none;color:inherit}
   body{background:#fff;font-size:11px}
   .pv-header-title{font-size:18px}
   .pv-meta{font-size:11px}
-  .pv-filters{font-size:10.5px;padding:8px 10px;break-after:avoid}
+  .pv-event-band{font-size:10.5px;padding:8px 10px;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pv-stats{break-after:avoid}
+  .pv-stat{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pv-stat-num{font-size:18px}
   .pv-table thead{display:table-header-group}
   .pv-table thead tr{background:#f3f4f5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .pv-table tbody tr{page-break-inside:avoid;break-inside:avoid}
   .pv-table td{padding:6px 8px;font-size:11px}
   .pv-status{font-size:9.5px;padding:1px 6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .pv-summary{break-before:avoid;page-break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .pv-footer{position:running(footer);font-size:9.5px}
   @page{
     margin:0.6in 0.5in 0.7in 0.5in;
-    @bottom-center{
-      content:element(footer);
-    }
+    @bottom-center{content:element(footer);}
     @bottom-right{
       content:"Page " counter(page) " of " counter(pages);
-      font-family:'IBM Plex Sans',sans-serif;
-      font-size:9.5px;
-      color:#6B7A99;
+      font-family:'IBM Plex Sans',sans-serif;font-size:9.5px;color:#6B7A99;
     }
   }
 }
@@ -121,8 +142,8 @@ a{text-decoration:none;color:inherit}
 <div class="pv-topbar">
   <div class="pv-topbar-left">
     <div>
-      <div class="pv-topbar-title">Print View — Pre-Entries</div>
-      <div class="pv-topbar-sub">14 pre-entries · 3 events · Apr 1 – May 31, 2026</div>
+      <div class="pv-topbar-title">Print View — Division Entrants</div>
+      <div class="pv-topbar-sub">#9.5 Division &middot; 14 entered &middot; NTR 6519 — 2026 North Texas Rodeo</div>
     </div>
   </div>
   <div class="pv-topbar-btns">
@@ -130,7 +151,7 @@ a{text-decoration:none;color:inherit}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
       Print / Save PDF
     </button>
-    <button class="btn-pv-exit" onclick="window.close()">✕ Close</button>
+    <button class="btn-pv-exit" onclick="window.close()">&#x2715; Close</button>
   </div>
 </div>
 
@@ -141,140 +162,143 @@ a{text-decoration:none;color:inherit}
   <div class="pv-header">
     <div class="pv-header-top">
       <div>
-        <div class="pv-header-title">Pre-Entries Report</div>
+        <div class="pv-eyebrow">Entries &middot; Division Entrants</div>
+        <div class="pv-header-title">#9.5 Division</div>
         <div class="pv-meta">
-          <span><strong>Period:</strong> Apr 1 – May 31, 2026</span>
-          <span><strong>Events:</strong> All</span>
-          <span><strong>Status:</strong> All</span>
+          <span><strong>Entry fee:</strong> $35.00 per spot</span>
+          <span><strong>Spots:</strong> 20 total</span>
+          <span><strong>Entered:</strong> 14</span>
         </div>
       </div>
       <div class="pv-header-right">
         <strong>Equine Event Manager</strong>
-        Printed May 31, 2026 12:14 PM
+        Printed June 20, 2026 9:41 AM
       </div>
     </div>
   </div>
 
-  <!-- SUMMARY -->
-  <div class="pv-summary">
-    <div class="pv-summary-item">
-      <div class="pv-summary-label">Total Pre-Entries</div>
-      <div class="pv-summary-val">14</div>
+  <!-- EVENT CONTEXT BAND -->
+  <div class="pv-event-band">
+    <span><strong>Event:</strong> 2026 North Texas Rodeo</span>
+    <span><strong>Dates:</strong> Jul 10 – 12, 2026</span>
+    <span><strong>Venue:</strong> North Texas Equestrian Center</span>
+    <span><strong>Reservation:</strong> NTR 6519</span>
+  </div>
+
+  <!-- KPI STAT CARDS — mirrors EEM_Entries::render_detail() .eem-scs-card output -->
+  <div class="pv-stats">
+    <div class="pv-stat">
+      <span class="pv-stat-icon" aria-hidden="true">&#10003;</span>
+      <span class="pv-stat-num">14</span>
+      <span class="pv-stat-label">Entered</span>
     </div>
-    <div class="pv-summary-item">
-      <div class="pv-summary-label">Paid</div>
-      <div class="pv-summary-val">9</div>
+    <div class="pv-stat">
+      <span class="pv-stat-icon" aria-hidden="true">&#9638;</span>
+      <span class="pv-stat-num">20</span>
+      <span class="pv-stat-label">Spots</span>
     </div>
-    <div class="pv-summary-item">
-      <div class="pv-summary-label">Pending</div>
-      <div class="pv-summary-val">1</div>
-    </div>
-    <div class="pv-summary-item">
-      <div class="pv-summary-label">Refunded</div>
-      <div class="pv-summary-val">2</div>
-    </div>
-    <div class="pv-summary-item">
-      <div class="pv-summary-label">Partially Refunded</div>
-      <div class="pv-summary-val">2</div>
-    </div>
-    <div class="pv-summary-item">
-      <div class="pv-summary-label">Total Quantity</div>
-      <div class="pv-summary-val">18</div>
+    <div class="pv-stat pv-stat--green">
+      <span class="pv-stat-icon" aria-hidden="true">&#9711;</span>
+      <span class="pv-stat-num">6</span>
+      <span class="pv-stat-label">Spots Left</span>
     </div>
   </div>
 
-  <!-- TABLE -->
+  <!-- ENTRANT ROSTER — columns match render_detail(): Customer / Qty / Order / Date / Status -->
   <div class="pv-table-wrap">
     <table class="pv-table">
       <thead>
         <tr>
           <th>Customer</th>
-          <th>Order #</th>
-          <th>Event</th>
-          <th>Division / Class</th>
           <th class="c">Qty</th>
+          <th>Order</th>
+          <th>Date</th>
           <th class="c">Status</th>
         </tr>
       </thead>
       <tbody>
         <tr>
           <td class="pv-customer">Anderson, Lisa</td>
-          <td class="pv-order">#00019</td>
-          <td><div class="pv-event">2026 Spring Classic</div><div class="pv-event-sub">Apr 15 – 17, 2026</div></td>
-          <td class="pv-division">7.5 Saddle Up 2-Steer</td>
-          <td class="pv-qty">4</td>
+          <td class="pv-qty">2</td>
+          <td class="pv-order">#00041</td>
+          <td class="pv-date">Jun 3, 2026</td>
+          <td class="c"><span class="pv-status pv-status-paid">Paid</span></td>
+        </tr>
+        <tr>
+          <td class="pv-customer">Baxter, Donna</td>
+          <td class="pv-qty">1</td>
+          <td class="pv-order">#00044</td>
+          <td class="pv-date">Jun 5, 2026</td>
           <td class="c"><span class="pv-status pv-status-paid">Paid</span></td>
         </tr>
         <tr>
           <td class="pv-customer">Chen, James</td>
-          <td class="pv-order">#00015</td>
-          <td><div class="pv-event">2026 Gulf Coast Classic</div><div class="pv-event-sub">Mar 20 – 22, 2026</div></td>
-          <td class="pv-division">9.5 Red, White & Blue</td>
           <td class="pv-qty">1</td>
+          <td class="pv-order">#00039</td>
+          <td class="pv-date">Jun 1, 2026</td>
           <td class="c"><span class="pv-status pv-status-paid">Paid</span></td>
         </tr>
         <tr>
-          <td class="pv-customer">Doe, Jane</td>
-          <td class="pv-order">#00030</td>
-          <td><div class="pv-event">2026 Southeast Region Super Sort</div><div class="pv-event-sub">Jun 26 – 28, 2026</div></td>
-          <td class="pv-division">8.5 WSTR</td>
-          <td class="pv-qty">3</td>
-          <td class="c"><span class="pv-status pv-status-pending">Pending</span></td>
+          <td class="pv-customer">Gutierrez, Rosa</td>
+          <td class="pv-qty">1</td>
+          <td class="pv-order">#00052</td>
+          <td class="pv-date">Jun 10, 2026</td>
+          <td class="c"><span class="pv-status pv-status-unpaid">Unpaid</span></td>
         </tr>
         <tr>
           <td class="pv-customer">Henderson, Bobby</td>
-          <td class="pv-order">#00018</td>
-          <td><div class="pv-event">2026 Gulf Coast Classic</div><div class="pv-event-sub">Mar 20 – 22, 2026</div></td>
-          <td class="pv-division">8.5 Red, White & Blue</td>
           <td class="pv-qty">2</td>
+          <td class="pv-order">#00042</td>
+          <td class="pv-date">Jun 4, 2026</td>
           <td class="c"><span class="pv-status pv-status-paid">Paid</span></td>
         </tr>
         <tr>
           <td class="pv-customer">Lacroix, Devon</td>
-          <td class="pv-order">#00029</td>
-          <td><div class="pv-event">2026 Southeast Region Super Sort</div><div class="pv-event-sub">Jun 26 – 28, 2026</div></td>
-          <td class="pv-division">9.5 Legends High Roller 40+</td>
           <td class="pv-qty">1</td>
-          <td class="c"><span class="pv-status pv-status-refunded">Refunded</span></td>
+          <td class="pv-order">#00055</td>
+          <td class="pv-date">Jun 12, 2026</td>
+          <td class="c"><span class="pv-status pv-status-unpaid">Unpaid</span></td>
         </tr>
         <tr>
           <td class="pv-customer">Mitchell, Sarah</td>
-          <td class="pv-order">#00017</td>
-          <td><div class="pv-event">2026 Gulf Coast Classic</div><div class="pv-event-sub">Mar 20 – 22, 2026</div></td>
-          <td class="pv-division">All Megabucks</td>
           <td class="pv-qty">1</td>
+          <td class="pv-order">#00043</td>
+          <td class="pv-date">Jun 4, 2026</td>
           <td class="c"><span class="pv-status pv-status-refunded">Refunded</span></td>
         </tr>
         <tr>
           <td class="pv-customer">Mitchell, Whitney</td>
-          <td class="pv-order">#00028</td>
-          <td><div class="pv-event">2026 Southeast Region Super Sort</div><div class="pv-event-sub">Jun 26 – 28, 2026</div></td>
-          <td class="pv-division">10.5 WSTR</td>
           <td class="pv-qty">2</td>
+          <td class="pv-order">#00047</td>
+          <td class="pv-date">Jun 7, 2026</td>
+          <td class="c"><span class="pv-status pv-status-paid">Paid</span></td>
+        </tr>
+        <tr>
+          <td class="pv-customer">Nguyen, Linh</td>
+          <td class="pv-qty">1</td>
+          <td class="pv-order">#00049</td>
+          <td class="pv-date">Jun 8, 2026</td>
           <td class="c"><span class="pv-status pv-status-paid">Paid</span></td>
         </tr>
         <tr>
           <td class="pv-customer">Reynolds, Tom</td>
-          <td class="pv-order">#00021</td>
-          <td><div class="pv-event">2026 Spring Classic</div><div class="pv-event-sub">Apr 15 – 17, 2026</div></td>
-          <td class="pv-division">10.5 Red, White & Blue</td>
           <td class="pv-qty">1</td>
+          <td class="pv-order">#00045</td>
+          <td class="pv-date">Jun 6, 2026</td>
           <td class="c"><span class="pv-status pv-status-paid">Paid</span></td>
         </tr>
         <tr>
           <td class="pv-customer">Thomas, Karen</td>
-          <td class="pv-order">#00022</td>
-          <td><div class="pv-event">2026 Spring Classic</div><div class="pv-event-sub">Apr 15 – 17, 2026</div></td>
-          <td class="pv-division">11.5 Megabucks (No Caps)</td>
-          <td class="pv-qty">2</td>
-          <td class="c"><span class="pv-status pv-status-partial">Partially refunded</span></td>
+          <td class="pv-qty">1</td>
+          <td class="pv-order">#00046</td>
+          <td class="pv-date">Jun 6, 2026</td>
+          <td class="c"><span class="pv-status pv-status-cancelled">Cancelled</span></td>
         </tr>
         <tr>
           <td class="pv-customer">Trevino, Marcus</td>
-          <td class="pv-order">#00024</td>
-          <td><div class="pv-event">2026 Southeast Region Super Sort</div><div class="pv-event-sub">Jun 26 – 28, 2026</div></td>
-          <td class="pv-division">9.5 Megabucks 21+</td>
           <td class="pv-qty">1</td>
+          <td class="pv-order">#00051</td>
+          <td class="pv-date">Jun 9, 2026</td>
           <td class="c"><span class="pv-status pv-status-paid">Paid</span></td>
         </tr>
       </tbody>
@@ -283,8 +307,8 @@ a{text-decoration:none;color:inherit}
 
   <!-- FOOTER -->
   <div class="pv-footer">
-    <span>Pre-Entries Report · Period Apr 1 – May 31, 2026</span>
-    <span>Equine Event Manager · Printed May 31, 2026 12:14 PM</span>
+    <span>#9.5 Division &middot; 2026 North Texas Rodeo (NTR 6519)</span>
+    <span>Equine Event Manager &middot; Printed June 20, 2026 9:41 AM</span>
   </div>
 
 </div>

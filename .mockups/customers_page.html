@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Customers</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Customers LIST – admin page (admin.php?page=equine-event-manager-customers)
+   Curated mockup of the LIVE page rendered by EEM_Customers_List_Page::render().
+   A read-only, aggregate-by-email index of every customer who has interacted
+   with the plugin. Columns: Customer (Last, First — sortable) | Email |
+   Total Orders | Total Spent | Last Activity. Search + sortable headers +
+   pagination (20/page). Rows link to the read-only Customer Profile page.
+   All class names + CSS values copied verbatim from assets/css/admin.css.
+   Brand tokens: electric #1668F2, navy #031B4E, control border #8c8f94,
+   light-blue band #f0f4fb / borders #d9e2f2, radius 3px.
+   Curated to 8 sample customers; "Total Spent" column shown as active sort.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root{
+  --eem-electric:#1668F2; --eem-navy:#031B4E; --eem-control-border:#8c8f94;
+  --eem-border-card:#dcdcde; --eem-border-soft:#dcdcde; --eem-surface:#fff;
+  --eem-text:#1d2327; --eem-text-secondary:#50575e; --eem-text-muted:#8c8f94;
+  --eem-text-on-navy:#fff; --eem-radius:3px; --eem-gray-50:#f8fafc;
+  --eem-font-ui:'IBM Plex Sans',sans-serif; --eem-space-2:8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+svg{flex-shrink:0}
+a{text-decoration:none}
+a:hover{text-decoration:none}
+
+/* ── WP SHELL STUB ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+
+/* ── Breadcrumb + logo ── */
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.breadcrumb-sep{font-size:13px;color:#8c8f94}
+.breadcrumb-page{font-size:13px;color:#031B4E;font-weight:600}
+
+/* ── PAGE SHELL (page-wrap = single bordered card) ── */
+.eem-page{display:block}
+.eem-page-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+.eem-page-header{padding:18px 22px;border-bottom:1px solid #dcdcde;background:#fff}
+.eem-page-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2}
+.eem-page-subtitle{font-size:13px;color:#64748b;margin-top:4px}
+.eem-page-body{background:#fff}
+
+/* ── TOOLBAR (search only) ── */
+.eem-customers-toolbar{padding:14px 18px;border-bottom:1px solid var(--eem-border-card);background:#f0f4fb}
+.eem-customers-toolbar .eem-search-wrap{max-width:360px}
+.eem-search-wrap{position:relative;flex:1;min-width:150px;max-width:280px}
+.eem-search-wrap .eem-search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--eem-text-muted);pointer-events:none}
+.eem-search-input{width:100%;padding:6px 10px 6px 25px;border:1px solid var(--eem-control-border);border-radius:var(--eem-radius);font-size:13px;font-family:var(--eem-font-ui);color:var(--eem-text);background:var(--eem-surface);outline:none}
+.eem-search-input::placeholder{color:#b0b0b0}
+.eem-search-input:focus{border-color:var(--eem-electric)}
+
+/* ── TABLE ── */
+.eem-customers-table-wrap{overflow-x:auto}
+.eem-table{width:100%;border-collapse:collapse}
+.eem-table thead tr{border-bottom:1px solid #d9e2f2;background:var(--eem-gray-50)}
+.eem-table thead th{padding:10px 14px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--eem-navy);text-align:left;white-space:nowrap}
+.eem-table thead th.sortable{cursor:pointer}
+.eem-table thead th.sortable a{display:inline-flex;align-items:center;color:inherit}
+.eem-table thead th.sortable:hover{color:var(--eem-text)}
+.eem-table tbody tr{border-bottom:1px solid var(--eem-border-soft)}
+.eem-table tbody tr:last-child{border-bottom:none}
+.eem-table tbody tr:hover{background:#f6f7f7}
+.eem-table td{padding:12px 14px;font-size:13.5px;color:var(--eem-text);vertical-align:middle}
+.eem-table-c{text-align:center}
+.eem-table-r{text-align:right}
+
+/* Sort indicator (CSS-only paired triangles) */
+.eem-sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:3px;vertical-align:middle;opacity:.45}
+.eem-sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
+.eem-sort-icon span:first-child{border-bottom:4px solid currentColor}
+.eem-sort-icon span:last-child{border-top:4px solid currentColor}
+.eem-table thead th.sortable.is-sorted .eem-sort-icon{opacity:1;color:var(--eem-electric)}
+.eem-table thead th.sortable.is-sorted--asc .eem-sort-icon span:last-child{opacity:.3}
+.eem-table thead th.sortable.is-sorted--desc .eem-sort-icon span:first-child{opacity:.3}
+
+/* Cell links */
+.eem-customers-name{color:var(--eem-navy);font-weight:700;text-decoration:none}
+.eem-customers-name:hover{color:var(--eem-electric)}
+.eem-customers-email{color:var(--eem-text-secondary);text-decoration:none}
+.eem-customers-email:hover{color:var(--eem-electric)}
+.eem-customers-empty{padding:32px 14px;text-align:center;color:var(--eem-text-muted)}
+
+/* ── FOOTER + PAGINATION ── */
+.eem-table-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;min-height:53px;box-sizing:border-box;background:var(--eem-gray-50);flex-wrap:wrap;gap:8px}
+.eem-table-footer-info{font-size:13px;color:#50575e}
+.eem-pagination-controls{display:flex;align-items:center;gap:3px}
+.eem-page-btn{width:28px;height:28px;border-radius:var(--eem-radius);border:1px solid var(--eem-border-card);background:var(--eem-surface);color:#50575e;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--eem-font-ui);padding:0;text-decoration:none}
+.eem-page-btn:hover{background:#f0f0f1}
+.eem-page-btn.active{background:var(--eem-electric);color:var(--eem-text-on-navy);border-color:var(--eem-electric)}
+.eem-page-btn--disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
+.eem-page-ellipsis{padding:0 4px;color:var(--eem-text-muted);font-size:13px;align-self:center}
+
+/* ── MOBILE CARDS ── */
+.eem-mobile-cards{display:none}
+.eem-mobile-card{background:var(--eem-surface);border:1px solid #dcdcde;border-radius:var(--eem-radius);padding:14px;margin-bottom:8px}
+.eem-mobile-card-top{display:flex;justify-content:space-between;margin-bottom:6px}
+.eem-mobile-card-id{font-weight:700;color:var(--eem-electric);font-size:14px;text-decoration:none}
+.eem-mobile-card-meta{font-size:12px;color:var(--eem-text-muted)}
+.eem-mobile-card-sub{font-size:12.5px;color:#50575e;margin-bottom:8px}
+.eem-mobile-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:var(--eem-space-2);flex-wrap:wrap}
+
+@media (max-width:767px){
+  .eem-customers-table-wrap{display:none}
+  .eem-mobile-cards.eem-customers-mobile{display:block;padding:12px 14px}
+}
+@media (max-width:782px){
+  .wp-sidebar{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="wp-admin-bar">
+  <span class="site">Equine Network</span>
+  <span>+ New</span>
+</div>
+
+<div class="wp-body">
+  <nav class="wp-sidebar">
+    <div class="wp-sidebar-item">Dashboard</div>
+    <div class="wp-sidebar-item">Media</div>
+    <div class="wp-sidebar-item">Posts</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-label">Event Manager</div>
+    <div class="wp-sidebar-sub">Dashboard</div>
+    <div class="wp-sidebar-sub">Orders</div>
+    <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub active">Customers</div>
+    <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
+    <div class="wp-sidebar-sub">Daily Movement</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub">Settings</div>
+  </nav>
+
+  <main class="wp-content">
+
+    <!-- Breadcrumb (logo / Customers) -->
+    <div class="breadcrumb">
+      <img class="breadcrumb-logo-box" src="Equine Event Manager Logo.png" alt="Equine Event Manager">
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page">Customers</span>
+    </div>
+
+    <div class="eem-page">
+      <div class="eem-page-wrap">
+
+        <header class="eem-page-header">
+          <h1 class="eem-page-title">Customers</h1>
+          <p class="eem-page-subtitle">142 customers</p>
+        </header>
+
+        <div class="eem-page-body">
+
+          <!-- TOOLBAR: search (GET form) -->
+          <div class="eem-customers-toolbar">
+            <form class="eem-search-wrap" method="get" action="admin.php" onsubmit="return false">
+              <input type="hidden" name="page" value="equine-event-manager-customers">
+              <svg class="eem-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="search" name="s" class="eem-search-input" value="" placeholder="Search">
+            </form>
+          </div>
+
+          <!-- DESKTOP TABLE (Total Spent shown as active descending sort) -->
+          <div class="eem-customers-table-wrap">
+            <table class="eem-table eem-customers-table">
+              <thead>
+                <tr>
+                  <th class="sortable">
+                    <a href="?page=equine-event-manager-customers&orderby=last_name&order=asc">Customer<span class="eem-sort-icon" aria-hidden="true"><span></span><span></span></span></a>
+                  </th>
+                  <th>Email</th>
+                  <th class="sortable eem-table-c">
+                    <a href="?page=equine-event-manager-customers&orderby=orders&order=desc">Total Orders<span class="eem-sort-icon" aria-hidden="true"><span></span><span></span></span></a>
+                  </th>
+                  <th class="sortable eem-table-r is-sorted is-sorted--desc">
+                    <a href="?page=equine-event-manager-customers&orderby=spent&order=asc">Total Spent<span class="eem-sort-icon" aria-hidden="true"><span></span><span></span></span></a>
+                  </th>
+                  <th class="sortable">
+                    <a href="?page=equine-event-manager-customers&orderby=activity&order=desc">Last Activity<span class="eem-sort-icon" aria-hidden="true"><span></span><span></span></span></a>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><a class="eem-customers-name" href="?page=equine-event-manager-customer&customer_email=jbridges%40example.com">Bridges, Jamie</a></td>
+                  <td><a class="eem-customers-email" href="mailto:jbridges@example.com">jbridges@example.com</a></td>
+                  <td class="eem-table-c">7</td>
+                  <td class="eem-table-r">$4,820.00</td>
+                  <td>Jun 18, 2026</td>
+                </tr>
+                <tr>
+                  <td><a class="eem-customers-name" href="?page=equine-event-manager-customer&customer_email=mhollister%40ranchmail.com">Hollister, Maria</a></td>
+                  <td><a class="eem-customers-email" href="mailto:mhollister@ranchmail.com">mhollister@ranchmail.com</a></td>
+                  <td class="eem-table-c">5</td>
+                  <td class="eem-table-r">$3,275.50</td>
+                  <td>Jun 16, 2026</td>
+                </tr>
+                <tr>
+                  <td><a class="eem-customers-name" href="?page=equine-event-manager-customer&customer_email=dcarr%40example.com">Carr, Devon</a></td>
+                  <td><a class="eem-customers-email" href="mailto:dcarr@example.com">dcarr@example.com</a></td>
+                  <td class="eem-table-c">4</td>
+                  <td class="eem-table-r">$2,940.00</td>
+                  <td>Jun 12, 2026</td>
+                </tr>
+                <tr>
+                  <td><a class="eem-customers-name" href="?page=equine-event-manager-customer&customer_email=sallenby%40example.com">Allenby, Sarah</a></td>
+                  <td><a class="eem-customers-email" href="mailto:sallenby@example.com">sallenby@example.com</a></td>
+                  <td class="eem-table-c">3</td>
+                  <td class="eem-table-r">$1,860.00</td>
+                  <td>Jun 9, 2026</td>
+                </tr>
+                <tr>
+                  <td><a class="eem-customers-name" href="?page=equine-event-manager-customer&customer_email=tnakamura%40example.com">Nakamura, Tomoko</a></td>
+                  <td><a class="eem-customers-email" href="mailto:tnakamura@example.com">tnakamura@example.com</a></td>
+                  <td class="eem-table-c">3</td>
+                  <td class="eem-table-r">$1,425.00</td>
+                  <td>Jun 5, 2026</td>
+                </tr>
+                <tr>
+                  <td><a class="eem-customers-name" href="?page=equine-event-manager-customer&customer_email=rkelley%40example.com">Kelley, Rob</a></td>
+                  <td><a class="eem-customers-email" href="mailto:rkelley@example.com">rkelley@example.com</a></td>
+                  <td class="eem-table-c">2</td>
+                  <td class="eem-table-r">$980.00</td>
+                  <td>May 28, 2026</td>
+                </tr>
+                <tr>
+                  <td><a class="eem-customers-name" href="?page=equine-event-manager-customer&customer_email=pgomez%40example.com">Gomez, Patricia</a></td>
+                  <td><a class="eem-customers-email" href="mailto:pgomez@example.com">pgomez@example.com</a></td>
+                  <td class="eem-table-c">1</td>
+                  <td class="eem-table-r">$640.00</td>
+                  <td>May 21, 2026</td>
+                </tr>
+                <tr>
+                  <td><a class="eem-customers-name" href="?page=equine-event-manager-customer&customer_email=wkline%40example.com">Kline, Walt</a></td>
+                  <td><a class="eem-customers-email" href="mailto:wkline@example.com">wkline@example.com</a></td>
+                  <td class="eem-table-c">1</td>
+                  <td class="eem-table-r">$310.00</td>
+                  <td>May 14, 2026</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- MOBILE CARDS (shown < 768px) -->
+          <div class="eem-mobile-cards eem-customers-mobile">
+            <div class="eem-mobile-card">
+              <div class="eem-mobile-card-top">
+                <a class="eem-mobile-card-id" href="?page=equine-event-manager-customer&customer_email=jbridges%40example.com">Bridges, Jamie</a>
+                <span class="eem-mobile-card-meta">Jun 18, 2026</span>
+              </div>
+              <div class="eem-mobile-card-sub">jbridges@example.com</div>
+              <div class="eem-mobile-card-bottom">
+                <span class="eem-mobile-card-meta">7 orders</span>
+                <span class="eem-mobile-card-meta">$4,820.00</span>
+              </div>
+            </div>
+            <div class="eem-mobile-card">
+              <div class="eem-mobile-card-top">
+                <a class="eem-mobile-card-id" href="?page=equine-event-manager-customer&customer_email=mhollister%40ranchmail.com">Hollister, Maria</a>
+                <span class="eem-mobile-card-meta">Jun 16, 2026</span>
+              </div>
+              <div class="eem-mobile-card-sub">mhollister@ranchmail.com</div>
+              <div class="eem-mobile-card-bottom">
+                <span class="eem-mobile-card-meta">5 orders</span>
+                <span class="eem-mobile-card-meta">$3,275.50</span>
+              </div>
+            </div>
+            <div class="eem-mobile-card">
+              <div class="eem-mobile-card-top">
+                <a class="eem-mobile-card-id" href="?page=equine-event-manager-customer&customer_email=dcarr%40example.com">Carr, Devon</a>
+                <span class="eem-mobile-card-meta">Jun 12, 2026</span>
+              </div>
+              <div class="eem-mobile-card-sub">dcarr@example.com</div>
+              <div class="eem-mobile-card-bottom">
+                <span class="eem-mobile-card-meta">4 orders</span>
+                <span class="eem-mobile-card-meta">$2,940.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- FOOTER + PAGINATION (page 1 of 8, 142 customers) -->
+          <div class="eem-table-footer">
+            <div class="eem-table-footer-info">Showing 1–20 of 142</div>
+            <div class="eem-pagination-controls">
+              <span class="eem-page-btn eem-page-btn--disabled" aria-disabled="true">‹</span>
+              <span class="eem-page-btn active" aria-current="page">1</span>
+              <a class="eem-page-btn" href="?page=equine-event-manager-customers&paged=2">2</a>
+              <a class="eem-page-btn" href="?page=equine-event-manager-customers&paged=3">3</a>
+              <span class="eem-page-ellipsis">…</span>
+              <a class="eem-page-btn" href="?page=equine-event-manager-customers&paged=8">8</a>
+              <a class="eem-page-btn" href="?page=equine-event-manager-customers&paged=2" aria-label="Next page">›</a>
+            </div>
+          </div>
+
+        </div><!-- /.eem-page-body -->
+      </div><!-- /.eem-page-wrap -->
+    </div><!-- /.eem-page -->
+
+  </main>
+</div>
+</body>
+</html>

@@ -3,611 +3,787 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Equine Event Manager – Reservations</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>Reservations — Equine Event Manager (Mockup)</title>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
-
-/* Universal hover convention — color only, NEVER underline */
-a{text-decoration:none}
-a:hover{text-decoration:none}
-
-/* ── WP SHELL ── */
-.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
-.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
-.wp-admin-bar span.site{color:#fff;font-weight:600}
-.wp-body{display:flex;flex:1}
-.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
-.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
-.wp-sidebar-item:hover{background:#2c3338;color:#fff}
-.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
-.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
-.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
-.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
-.wp-sidebar-sub:hover{color:#fff}
-.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
-
-/* ── CONTENT ── */
-.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
-
-/* Logo + breadcrumb */
-.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
-.breadcrumb-sep{font-size:13px;color:#8c8f94}
-.breadcrumb-page{font-size:13px;color:#1d2327;font-weight:600}
-
-/* ── PLUGIN-WRAP (single bordered card containing entire page per VIS-3) ── */
-.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
-
-/* PAGE HEADER (inside plugin-wrap per VIS-3) */
-.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.plugin-header-left{flex:1;min-width:0}
-.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
-.plugin-subtitle{font-size:13px;color:#6B7A99;line-height:1.45}
-
-/* Primary CTA (VIS-4 — Electric Blue) */
-.btn-primary{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:9px 18px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;text-decoration:none}
-.btn-primary:hover{background:#1257d1;border-color:#1257d1;color:#fff}
-.btn-primary svg{width:13px;height:13px}
-
-/* ── STATUS TABS ── */
-.status-tabs{padding:10px 18px 0;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:0;flex-wrap:wrap}
-.status-tab{font-size:13px;color:#50575e;padding:6px 10px 8px;cursor:pointer;border-bottom:2px solid transparent;text-decoration:none;white-space:nowrap}
-.status-tab:hover{color:#031B4E}
-.status-tab.active{color:#031B4E;font-weight:600;border-bottom-color:#1668F2}
-.status-tab-count{color:#8c8f94;font-weight:400;margin-left:3px}
-.status-tab-sep{color:#8c8f94;font-size:12px;padding:6px 4px}
-
-/* ── TOOLBAR ── */
-.toolbar{padding:12px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff}
-.toolbar-left{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
-.toolbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.toolbar-select{padding:6px 28px 6px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none;cursor:pointer;min-width:130px}
-.toolbar-btn{padding:6px 14px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer;white-space:nowrap}
-.toolbar-btn:hover{background:#f6f7f7}
-.search-wrap{position:relative;min-width:160px;max-width:240px;flex:1}
-.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94}
-.search-input{width:100%;padding:6px 10px 6px 28px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
-.search-input:focus{border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
-.search-input::placeholder{color:#b0b0b0}
-.item-count{font-size:13px;color:#50575e;white-space:nowrap}
-
-/* ── TABLE (desktop) ── */
-.desktop-table{overflow-x:auto}
-table{width:100%;border-collapse:collapse}
-thead{background:#f3f4f5;border-bottom:1px solid #dcdcde}
-thead th{padding:11px 14px;font-size:13px;font-weight:600;color:#1d2327;text-align:left;white-space:nowrap}
-thead th.col-cb{width:36px;padding:11px 8px 11px 18px}
-thead th.sortable{cursor:pointer;color:#1668F2}
-thead th.sortable:hover{color:#1257d1}
-.sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:4px;vertical-align:middle;opacity:.5}
-.sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
-.sort-icon span:first-child{border-bottom:4px solid currentColor}
-.sort-icon span:last-child{border-top:4px solid currentColor}
-
-tbody tr{border-bottom:1px solid #f0f0f1;transition:background .1s}
-tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:#f6f7f7}
-td{padding:14px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
-td.col-cb{padding:14px 8px 14px 18px;width:36px}
-
-/* Reservation name link (navy bold default, Electric Blue hover, no underline) */
-.res-name{font-weight:700;color:#031B4E;font-size:14px;text-decoration:none}
-.res-name:hover{color:#1668F2}
-
-/* Event dates */
-.event-dates{color:#50575e;font-size:13px}
-.event-dates-empty{color:#8c8f94;font-size:13px}
-
-/* Type badges (FLAT — small radius, not pill) */
-.type-badges{display:flex;gap:5px;flex-wrap:wrap}
-.type-badge{padding:3px 9px;border-radius:3px;font-size:11.5px;font-weight:600;white-space:nowrap;display:inline-block;line-height:1.5}
-.type-stall{background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
-.type-rv{background:#F5F3FF;color:#6d28d9;border:1px solid #ddd6fe}
-.type-addon{background:#FFF7ED;color:#c2410c;border:1px solid #fed7aa}
-.type-group{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
-
-/* Status badges (Reservations use UPPERCASE per shipped state) */
-.res-status{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-family:'IBM Plex Sans',sans-serif;line-height:1.5;white-space:nowrap}
-.res-status::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.res-status.status-active{background:#dcfce7;color:#15803d}
-.res-status.status-active::before{background:#16a34a}
-.res-status.status-draft{background:#fef3c7;color:#a16207}
-.res-status.status-draft::before{background:#ca8a04}
-.res-status.status-archived{background:#e5e7eb;color:#52525b}
-.res-status.status-archived::before{background:#71717a}
-.res-status.status-trashed{background:#fee2e2;color:#b91c1c}
-.res-status.status-trashed::before{background:#dc2626}
-
-/* Orders count cell */
-.orders-count{font-size:14px;font-weight:700;color:#031B4E;font-family:'IBM Plex Sans',sans-serif}
-.orders-count-zero{color:#8c8f94;font-weight:400}
-
-/* Actions cell (meatballs + row action links — 2.3.43) */
-.actions-cell{display:flex;align-items:center;gap:5px;justify-content:flex-end}
-.more-btn{width:30px;height:30px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;letter-spacing:.05em;line-height:1}
-.more-btn:hover{background:#f0f0f1;color:#1d2327;border-color:#8c8f94}
-
-/* Row menu dropdown */
-.row-menu-wrap{position:relative;display:inline-block}
-.row-dropdown{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid #c3c4c7;border-radius:4px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:210px;z-index:100;overflow:hidden}
-.row-dropdown.open{display:block}
-.row-dd-item{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:13px;color:#1d2327;cursor:pointer;border-bottom:1px solid #f0f0f1;white-space:nowrap;text-decoration:none}
-.row-dd-item:last-child{border-bottom:none}
-.row-dd-item:hover{background:#f6f7f7;color:#1d2327}
-.row-dd-item svg{width:13px;height:13px;color:#6B7A99;flex-shrink:0}
-.row-dd-danger{color:#b91c1c}
-.row-dd-danger svg{color:#fca5a5}
-.row-dd-danger:hover{background:#fef2f2;color:#b91c1c}
-/* Disabled meatball item (FIX 4 — 2.3.43) */
-.row-dd-item--disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
-
-/* ── ROW ACTION TEXT LINKS (FIX 3 — 2.3.43, WP-native pattern) ── */
-.row-actions{visibility:hidden;font-size:12px;color:#6b7a99;margin-top:4px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;white-space:nowrap}
-tr:hover .row-actions{visibility:visible}
-.row-actions a{color:#1668F2;font-size:12px;text-decoration:none}
-.row-actions a:hover{color:#1257d1}
-.row-action-sep{color:#c3c4c7;user-select:none}
-.row-action-danger a{color:#b91c1c}
-
-/* ── TABLE FOOTER ── */
-.table-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid #dcdcde;background:#f3f4f5;flex-wrap:wrap;gap:8px}
-.table-footer-info{font-size:13px;color:#50575e}
-.pagination{display:flex;align-items:center;gap:3px}
-.page-btn{width:28px;height:28px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans',sans-serif;text-decoration:none}
-.page-btn:hover{background:#f6f7f7}
-.page-btn.active{background:#1668F2;color:#fff;border-color:#1668F2}
-.page-btn.disabled{opacity:.45;cursor:not-allowed}
-
-/* ── MOBILE CARDS (hidden on desktop) ── */
-.mobile-reservations{display:none;padding:12px 14px}
-.mobile-res-card{background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:14px;margin-bottom:8px}
-.mobile-res-card:last-child{margin-bottom:0}
-.mob-res-name{font-size:14px;font-weight:700;color:#031B4E;margin-bottom:4px;text-decoration:none;display:block}
-.mob-res-name:hover{color:#1668F2}
-.mob-res-dates{font-size:12.5px;color:#50575e;margin-bottom:8px}
-.mob-res-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.mob-res-badges{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
-.mob-res-actions{display:flex;gap:5px}
-
-/* ── QUICK EDIT ROW (FIX 5 — 2.3.42) ── */
-.quick-edit-row > td{padding:0;background:#f7f9fc;border-bottom:2px solid #1668F2}
-.quick-edit-row:hover{background:transparent}
-.qe-inner{padding:14px 18px;display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap}
-.qe-fields{display:flex;flex:1;gap:24px;flex-wrap:wrap}
-.qe-field{flex:1;min-width:200px}
-.qe-label{display:block;font-size:12px;font-weight:600;color:#031B4E;margin-bottom:5px;font-family:'IBM Plex Sans',sans-serif}
-.qe-input{width:100%;padding:7px 10px;border:1.5px solid #D9E2F2;border-radius:3px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
-.qe-input:focus{border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
-.qe-hint{font-size:11.5px;color:#8c8f94;margin-top:4px}
-.slug-wrap{display:flex;align-items:stretch;border:1.5px solid #D9E2F2;border-radius:3px;overflow:hidden}
-.slug-prefix{display:flex;align-items:center;padding:0 10px;background:#f3f4f5;border-right:1px solid #D9E2F2;font-size:13px;color:#8c8f94;white-space:nowrap;flex-shrink:0}
-.slug-wrap .qe-input{border:none;border-radius:0;flex:1;min-width:0}
-.slug-wrap .qe-input:focus{box-shadow:none;border:none;outline:2px solid #1668F2;outline-offset:-2px}
-.qe-actions{display:flex;flex-direction:column;gap:8px;padding-top:22px;flex-shrink:0}
-.qe-save{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:8px 18px;border-radius:3px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
-.qe-save:hover{background:#1355cc}
-.qe-cancel{background:#fff;color:#50575e;border:1px solid #c3c4c7;padding:8px 18px;border-radius:3px;font-size:13px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
-.qe-cancel:hover{background:#f6f7f7}
-
-/* ── TABLET ── */
-@media(max-width:960px){
-  .wp-sidebar{display:none}
-  .wp-content{padding:10px 14px 40px}
+/* ============================================================
+   Equine Event Manager — Reservations list page mockup
+   Faithful to admin.css + the live render of
+   EEM_Reservations_List_Page::render().
+   Brand tokens: electric #1668F2, navy #031B4E, border #8c8f94,
+   light band #f0f4fb / #d9e2f2, radius 3px.
+   ============================================================ */
+:root{
+  --eem-electric:#1668F2;
+  --eem-navy:#031B4E;
+  --eem-border:#8c8f94;
+  --eem-border-soft:#d9e2f2;
+  --eem-band:#f0f4fb;
+  --eem-radius:3px;
+  --eem-radius-lg:6px;
+  --eem-ink:#1d2327;
+  --eem-muted:#646970;
 }
+/* --- WP admin shell stub (just enough to frame the page) --- */
+body{margin:0;background:#f0f0f1;color:var(--eem-ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;}
+.wp-shell{display:flex;min-height:100vh;}
+.wp-adminbar{position:fixed;top:0;left:0;right:0;height:32px;background:#1d2327;z-index:99;}
+.wp-sidebar{width:160px;background:#1d2327;color:#c3c4c7;padding-top:40px;flex-shrink:0;}
+.wp-sidebar .item{padding:8px 12px;font-size:13px;}
+.wp-sidebar .item.active{background:var(--eem-electric);color:#fff;font-weight:600;}
+.wp-content{flex:1;padding:40px 24px 60px;min-width:0;}
 
-/* ── MOBILE ── */
-@media(max-width:767px){
-  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
-  .wp-content{padding:8px 10px 32px}
-  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
-  .plugin-header{padding:14px;flex-direction:column;align-items:stretch;gap:10px}
-  .plugin-title{font-size:18px}
-  .plugin-subtitle{font-size:12.5px}
-  .btn-primary{justify-content:center;padding:8px 14px;font-size:12px}
-  .status-tabs{overflow-x:auto;flex-wrap:nowrap;padding:8px 14px 0;-webkit-overflow-scrolling:touch}
-  .status-tab{font-size:12px;padding:5px 8px 7px;white-space:nowrap}
-  .toolbar{flex-direction:column;align-items:stretch;padding:10px 14px;gap:8px}
-  .toolbar-left{display:flex;flex-direction:row;gap:6px;flex-wrap:nowrap}
-  .toolbar-left .toolbar-select{flex:1;min-width:0}
-  .toolbar-right{display:flex;flex-direction:row;gap:6px;align-items:center}
-  .search-wrap{flex:1;max-width:100%}
-  .item-count{font-size:12px}
-  .desktop-table{display:none}
-  .mobile-reservations{display:block}
-  .table-footer{padding:10px 14px}
+/* ============================ page shell ============================ */
+.eem-page{max-width:1240px;}
+.eem-page *,.eem-page *::before,.eem-page *::after{box-sizing:border-box;}
+.eem-page h1{margin:0;}
+.eem-page a{color:var(--eem-electric);text-decoration:none;}
+.eem-page a:hover{color:var(--eem-navy);text-decoration:none;}
+
+.eem-breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.eem-breadcrumb-logo{display:inline-flex;align-items:center;height:30px;}
+.eem-breadcrumb-logo img{height:30px;width:auto;display:block;}
+.eem-breadcrumb-logo .logo-fallback{display:inline-flex;align-items:center;height:30px;padding:0 10px;
+  background:var(--eem-navy);color:#fff;font-weight:700;letter-spacing:.5px;border-radius:var(--eem-radius);font-size:13px;}
+.eem-breadcrumb-sep{color:#a7aaad;}
+.eem-breadcrumb-segment{color:var(--eem-muted);font-weight:600;}
+
+.eem-page-wrap{background:#fff;border:1px solid #dcdcde;border-radius:var(--eem-radius-lg);overflow:hidden;}
+.eem-page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;
+  padding:22px 24px;border-bottom:1px solid #e6e8eb;}
+.eem-page-title{font-size:22px;font-weight:700;color:var(--eem-navy);line-height:1.2;
+  font-family:"Space Grotesk",-apple-system,sans-serif;}
+.eem-page-subtitle{margin:6px 0 0;color:var(--eem-muted);font-size:13px;max-width:640px;}
+.eem-page-actions{flex-shrink:0;}
+.eem-page-body{padding:18px 24px 24px;}
+
+/* ============================ buttons ============================ */
+.eem-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--eem-radius);
+  font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid transparent;
+  font-family:inherit;text-decoration:none;line-height:1.2;}
+.eem-btn-electric{background:var(--eem-electric);color:#fff;border-color:var(--eem-electric);}
+.eem-btn-electric:hover{background:#0f53c9;color:#fff;}
+.eem-btn-primary{background:var(--eem-electric);color:#fff;border-color:var(--eem-electric);}
+.eem-btn-primary:hover{background:#0f53c9;color:#fff;}
+.eem-btn-secondary{background:#fff;color:var(--eem-navy);border-color:#c3c4c7;}
+.eem-btn-secondary:hover{background:#f6f7f7;color:var(--eem-navy);}
+
+/* ============================ toolbars ============================ */
+.eem-list-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px;}
+.eem-list-toolbar-left,.eem-list-toolbar-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.eem-toolbar-controls{margin-top:0;}
+
+.eem-toolbar-select{padding:7px 28px 7px 10px;border:1px solid var(--eem-border);border-radius:var(--eem-radius);
+  font-size:13px;font-family:inherit;color:var(--eem-ink);background:#fff;outline:none;line-height:1.4;cursor:pointer;}
+.eem-toolbar-select:focus{border-color:var(--eem-electric);box-shadow:0 0 0 2px rgba(22,104,242,.12);}
+.eem-toolbar-btn{padding:7px 14px;border:1px solid #c3c4c7;border-radius:var(--eem-radius);background:#fff;
+  color:var(--eem-navy);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
+.eem-toolbar-btn:hover{background:#f6f7f7;}
+.eem-toolbar-btn--danger{color:#b32d2e;border-color:#c3c4c7;}
+.eem-toolbar-btn--danger:hover{background:#fdecec;border-color:#d63638;}
+
+/* --- status filter tabs --- */
+.eem-filter-tabs{display:inline-flex;align-items:center;gap:2px;background:#f6f7f7;
+  border:1px solid #e0e2e4;border-radius:var(--eem-radius);padding:2px;}
+.eem-filter-tab{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:2px;
+  font-size:13px;font-weight:600;color:var(--eem-muted);text-decoration:none;}
+.eem-filter-tab:hover{color:var(--eem-navy);}
+.eem-filter-tab.active{background:#fff;color:var(--eem-navy);box-shadow:0 1px 2px rgba(0,0,0,.08);}
+.eem-filter-tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:18px;
+  padding:0 6px;background:#e6e8eb;color:var(--eem-muted);border-radius:9px;font-size:11px;font-weight:700;}
+.eem-filter-tab.active .eem-filter-tab-count{background:var(--eem-band);color:var(--eem-electric);}
+
+/* --- bulk actions form --- */
+.eem-bulk-form{display:flex;align-items:center;gap:8px;}
+
+/* --- search --- */
+.eem-search-form{display:flex;align-items:center;}
+.eem-search-wrap{position:relative;display:flex;align-items:center;}
+.eem-search-wrap svg{position:absolute;left:9px;width:15px;height:15px;color:#a7aaad;pointer-events:none;}
+.eem-search-input{padding:7px 10px 7px 30px;border:1px solid var(--eem-border);border-radius:var(--eem-radius);
+  font-size:13px;font-family:inherit;width:220px;outline:none;}
+.eem-search-input:focus{border-color:var(--eem-electric);box-shadow:0 0 0 2px rgba(22,104,242,.12);}
+.eem-item-count{color:var(--eem-muted);font-size:13px;white-space:nowrap;}
+
+/* ============================ table ============================ */
+.eem-desktop-table{border:1px solid #e6e8eb;border-radius:var(--eem-radius-lg);overflow:hidden;}
+.eem-table{width:100%;border-collapse:collapse;font-size:13px;}
+.eem-table thead th{background:var(--eem-band);color:var(--eem-navy);text-align:left;font-weight:700;
+  font-size:12px;letter-spacing:.02em;padding:11px 14px;border-bottom:1px solid var(--eem-border-soft);white-space:nowrap;}
+.eem-table tbody td{padding:13px 14px;border-bottom:1px solid #f0f0f1;vertical-align:middle;}
+.eem-table tbody tr:last-child td{border-bottom:none;}
+.eem-table tbody tr:hover{background:#fafbfc;}
+.eem-col-cb{width:34px;}
+.eem-col-cb input{margin:0;}
+.eem-table-empty{color:var(--eem-muted);padding:28px 14px;text-align:center;}
+
+.eem-table th.sortable a{display:inline-flex;align-items:center;gap:6px;color:var(--eem-navy);font-weight:700;}
+.eem-table th.sortable a:hover{color:var(--eem-electric);}
+.eem-sort-icon{display:inline-flex;flex-direction:column;gap:1px;}
+.eem-sort-icon span{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;}
+.eem-sort-icon span:first-child{border-bottom:4px solid #c3c4c7;}
+.eem-sort-icon span:last-child{border-top:4px solid #c3c4c7;}
+.eem-table th.is-sorted--asc .eem-sort-icon span:first-child{border-bottom-color:var(--eem-electric);}
+.eem-table th.is-sorted--desc .eem-sort-icon span:last-child{border-top-color:var(--eem-electric);}
+
+.eem-res-name{font-weight:700;color:var(--eem-navy);font-size:14px;}
+.eem-res-name:hover{color:var(--eem-electric);}
+
+/* row hover actions — WP-native style text links under the title */
+.eem-row-actions{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:12px;visibility:hidden;}
+.eem-table tbody tr:hover .eem-row-actions{visibility:visible;}
+.eem-row-actions span{color:var(--eem-muted);}
+.eem-row-actions a{font-size:12px;}
+.eem-row-action-sep{color:#dcdcde;}
+.eem-row-action-danger a{color:#b32d2e;}
+.eem-row-action-danger a:hover{color:#8a1f20;}
+
+.eem-event-dates{color:var(--eem-ink);white-space:nowrap;}
+
+/* type badges */
+.eem-type-badges{display:flex;flex-wrap:wrap;gap:5px;}
+.eem-type-badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:11px;
+  font-size:11px;font-weight:700;letter-spacing:.02em;}
+.eem-type-badge--stall{background:#e8f0fe;color:#1453c4;}
+.eem-type-badge--rv{background:#e6f6ec;color:#1c7a43;}
+.eem-type-badge--group{background:#fdf0e3;color:#9a5b12;}
+.eem-type-badge--addon{background:#f3e9fb;color:#6f33a8;}
+.eem-type-badges-empty{color:#c3c4c7;}
+
+/* status pills */
+.eem-res-status{display:inline-flex;align-items:center;gap:6px;padding:3px 11px;border-radius:11px;
+  font-size:11px;font-weight:700;letter-spacing:.02em;}
+.eem-res-status::before{content:"";width:7px;height:7px;border-radius:50%;}
+.eem-res-status--active{background:#e6f6ec;color:#1c7a43;}
+.eem-res-status--active::before{background:#22a35a;}
+.eem-res-status--draft{background:#f0f0f1;color:#646970;}
+.eem-res-status--draft::before{background:#9aa0a6;}
+.eem-res-status--trashed{background:#fdecec;color:#b32d2e;}
+.eem-res-status--trashed::before{background:#d63638;}
+.eem-res-status--archived{background:#f5f0ff;color:#6f33a8;}
+.eem-res-status--archived::before{background:#8B5CF6;}
+
+/* orders count */
+.eem-orders-count{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;
+  padding:0 8px;background:var(--eem-band);color:var(--eem-electric);border-radius:12px;
+  font-weight:700;font-size:12px;text-decoration:none;}
+.eem-orders-count-link:hover{background:#e1ebfb;color:var(--eem-navy);}
+.eem-orders-count.is-zero{background:#f6f7f7;color:#a7aaad;}
+
+/* actions cell */
+.eem-actions-cell{display:flex;align-items:center;gap:6px;justify-content:flex-end;}
+.eem-action-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+  border:1px solid #dcdcde;border-radius:var(--eem-radius);background:#fff;color:var(--eem-muted);}
+.eem-action-icon-btn svg{width:15px;height:15px;}
+.eem-action-icon-btn:hover{border-color:var(--eem-electric);color:var(--eem-electric);background:var(--eem-band);}
+
+/* row dropdown */
+.eem-row-menu-wrap{position:relative;}
+.eem-more-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+  border:1px solid #dcdcde;border-radius:var(--eem-radius);background:#fff;color:var(--eem-muted);
+  cursor:pointer;font-size:16px;letter-spacing:1px;line-height:1;}
+.eem-more-btn:hover{border-color:var(--eem-electric);color:var(--eem-electric);background:var(--eem-band);}
+.eem-row-dropdown{position:absolute;right:0;top:calc(100% + 4px);min-width:200px;background:#fff;
+  border:1px solid #dcdcde;border-radius:var(--eem-radius-lg);box-shadow:0 6px 24px rgba(3,27,78,.16);
+  padding:5px;z-index:20;display:none;}
+.eem-row-menu-wrap.open .eem-row-dropdown{display:block;}
+.eem-row-dd-item{display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border:none;background:none;
+  border-radius:var(--eem-radius);font-size:13px;font-weight:500;color:var(--eem-ink);text-align:left;
+  cursor:pointer;font-family:inherit;text-decoration:none;}
+.eem-row-dd-item svg{width:15px;height:15px;color:var(--eem-muted);flex-shrink:0;}
+.eem-row-dd-item:hover{background:var(--eem-band);color:var(--eem-navy);}
+.eem-row-dd-item:hover svg{color:var(--eem-electric);}
+.eem-row-dd-item--disabled{color:#c3c4c7;cursor:not-allowed;}
+.eem-row-dd-item--disabled svg{color:#dcdcde;}
+.eem-row-dd-item--disabled:hover{background:none;color:#c3c4c7;}
+.eem-row-dd-danger{color:#b32d2e;}
+.eem-row-dd-danger svg{color:#b32d2e;}
+.eem-row-dd-danger:hover{background:#fdecec;color:#8a1f20;}
+.eem-row-dd-danger:hover svg{color:#8a1f20;}
+
+/* pagination */
+.eem-table-footer{display:flex;align-items:center;justify-content:space-between;margin-top:14px;}
+.eem-table-footer-info{color:var(--eem-muted);font-size:13px;}
+.eem-pagination{display:flex;align-items:center;gap:4px;}
+.eem-page-btn{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;
+  padding:0 8px;border:1px solid #dcdcde;border-radius:var(--eem-radius);background:#fff;
+  color:var(--eem-navy);font-size:13px;font-weight:600;text-decoration:none;cursor:pointer;}
+.eem-page-btn svg{width:15px;height:15px;}
+.eem-page-btn:hover{border-color:var(--eem-electric);color:var(--eem-electric);}
+.eem-page-btn.active{background:var(--eem-electric);border-color:var(--eem-electric);color:#fff;}
+.eem-page-btn[aria-disabled="true"]{color:#c3c4c7;cursor:default;pointer-events:none;}
+
+/* ============================ action notice ============================ */
+.eem-action-notice{margin-bottom:12px;border-left:4px solid;padding:10px 14px;border-radius:var(--eem-radius);
+  background:#f0f6fc;border-color:var(--eem-electric);}
+.eem-action-notice.notice-success{background:#f0faf4;border-color:#22C55E;}
+.eem-action-notice.notice-error{background:#fdf2f2;border-color:#EF4444;}
+.eem-action-notice.notice-warning{background:#fffbf0;border-color:#F5A623;}
+
+/* ============================ mobile cards (hidden on desktop) ============================ */
+.eem-mobile-reservations{display:none;}
+.eem-mobile-res-card{background:#fff;border:1px solid #e6e8eb;border-radius:var(--eem-radius-lg);padding:14px;margin-bottom:12px;}
+.eem-mob-res-name{display:block;font-weight:700;color:var(--eem-navy);font-size:15px;}
+.eem-mob-res-dates{color:var(--eem-muted);font-size:12px;margin:4px 0 10px;}
+.eem-mob-res-bottom{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between;}
+.eem-mob-res-badges{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.eem-mob-res-actions{margin-top:12px;}
+
+/* ============================ modal ============================ */
+.eem-modal{position:fixed;inset:0;background:rgba(3,27,78,.45);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+.eem-modal.open{display:flex;}
+.eem-modal-card{background:#fff;border-radius:var(--eem-radius-lg);width:100%;max-width:520px;box-shadow:0 20px 60px rgba(3,27,78,.3);overflow:hidden;}
+.eem-modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e6e8eb;}
+.eem-modal-title{margin:0;font-size:17px;font-weight:700;color:var(--eem-navy);}
+.eem-modal-close{background:none;border:none;font-size:22px;line-height:1;color:var(--eem-muted);cursor:pointer;}
+.eem-modal-close:hover{color:var(--eem-navy);}
+.eem-modal-body{padding:18px 20px;}
+.eem-modal-foot{display:flex;align-items:center;gap:10px;padding:14px 20px;border-top:1px solid #e6e8eb;background:#fafbfc;}
+.eem-modal-foot--split{justify-content:space-between;}
+.eem-email-customers-summary{margin:0;color:var(--eem-muted);background:var(--eem-band);
+  border:1px solid var(--eem-border-soft);border-radius:var(--eem-radius);padding:9px 12px;font-size:13px;}
+.eem-field-row{margin-bottom:14px;}
+.eem-field-label{display:block;font-weight:600;color:var(--eem-navy);font-size:13px;margin-bottom:5px;}
+.eem-field-control{position:relative;}
+.eem-field-input,.eem-field-textarea{width:100%;padding:8px 10px;border:1px solid var(--eem-border);
+  border-radius:var(--eem-radius);font-size:13px;font-family:inherit;outline:none;color:var(--eem-ink);}
+.eem-field-input:focus,.eem-field-textarea:focus{border-color:var(--eem-electric);box-shadow:0 0 0 2px rgba(22,104,242,.12);}
+.eem-field-textarea{resize:vertical;}
+.eem-field-hint{margin:5px 0 0;color:var(--eem-muted);font-size:12px;}
+
+/* ============================ delete-permanently typed-confirm modal ============================ */
+.eem-delete-confirm-input{margin-top:10px;}
+.eem-delete-confirm-warning{color:#b32d2e;font-size:13px;margin:0 0 12px;}
+.eem-btn-danger{background:#b32d2e;color:#fff;border-color:#b32d2e;}
+.eem-btn-danger:hover{background:#8a1f20;color:#fff;}
+.eem-btn-danger:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ============================ responsive ============================ */
+@media (max-width:900px){
+  .wp-sidebar{display:none;}
+  .wp-content{padding:40px 14px 60px;}
+  .eem-desktop-table{display:none;}
+  .eem-mobile-reservations{display:block;}
+  .eem-list-toolbar-right,.eem-list-toolbar-left{width:100%;}
+  .eem-filter-tabs{width:100%;overflow-x:auto;}
 }
 </style>
 </head>
 <body>
-
-<!-- WP shell stub -->
-<div class="wp-admin-bar">
-  <span>&#9776;</span>
-  <span class="site">My Equestrian Site</span>
-  <span>+ New</span>
-  <span style="margin-left:auto">Howdy, whitney</span>
-</div>
-
-<div class="wp-body">
+<div class="wp-shell">
+  <div class="wp-adminbar"></div>
   <nav class="wp-sidebar">
-    <div class="wp-sidebar-item">Dashboard</div>
-    <div class="wp-sidebar-item">Media</div>
-    <div class="wp-sidebar-item">Posts</div>
-    <div class="wp-sidebar-item">Pages</div>
-    <div class="wp-sidebar-sep"></div>
-    <div class="wp-sidebar-label">Event Manager</div>
-    <div class="wp-sidebar-sub">Orders</div>
-    <div class="wp-sidebar-sub active">Reservations</div>
-    <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
-    <div class="wp-sidebar-sub">Reports</div>
-    <div class="wp-sidebar-sub">Settings</div>
+    <div class="item">Dashboard</div>
+    <div class="item active">Reservations</div>
+    <div class="item">Orders</div>
+    <div class="item">Stall &amp; RV Charts</div>
+    <div class="item">Reports</div>
+    <div class="item">Settings</div>
   </nav>
-
   <main class="wp-content">
 
-    <!-- Logo + breadcrumb -->
-    <div class="breadcrumb">
-      <div class="breadcrumb-logo-box">Plugin Logo</div>
-      <span class="breadcrumb-sep">/</span>
-      <span class="breadcrumb-page">Reservations</span>
+    <div class="eem-page">
+      <nav class="eem-breadcrumb" aria-label="Breadcrumb">
+        <a class="eem-breadcrumb-logo" href="#" aria-label="Equine Event Manager dashboard">
+          <span class="logo-fallback">EQUINE</span>
+        </a>
+        <span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+        <span class="eem-breadcrumb-segment" aria-current="page">Reservations</span>
+      </nav>
+
+      <div class="eem-page-wrap">
+        <header class="eem-page-header">
+          <div class="eem-page-header-left">
+            <h1 class="eem-page-title">Reservations</h1>
+            <p class="eem-page-subtitle">Manage reservation setups for your events. Each setup defines the stay types, capacity, pricing, and add-ons customers see at checkout.</p>
+          </div>
+          <div class="eem-page-actions">
+            <a class="eem-btn eem-btn-electric" href="#">+ New Reservation</a>
+          </div>
+        </header>
+
+        <div class="eem-page-body">
+
+          <!-- Toolbar Row 1: date filter (left) + status filter tabs (right) -->
+          <!-- Note: date filter auto-submits onchange (no Filter button) -->
+          <div class="eem-list-toolbar">
+            <div class="eem-list-toolbar-left">
+              <form class="eem-date-filter-form" onsubmit="return false">
+                <select class="eem-toolbar-select" name="eem_date" onchange="this.form.submit()">
+                  <option value="">All dates</option>
+                  <option value="2026-07">July 2026</option>
+                  <option value="2026-06" selected>June 2026</option>
+                  <option value="2025-10">October 2025</option>
+                </select>
+              </form>
+            </div>
+            <div class="eem-list-toolbar-right">
+              <nav class="eem-filter-tabs" data-eem-reservations-list role="tablist" aria-label="Filter by status">
+                <a class="eem-filter-tab active" href="#" role="tab" aria-selected="true" aria-current="page">
+                  All <span class="eem-filter-tab-count">3</span>
+                </a>
+                <a class="eem-filter-tab" href="#" role="tab" aria-selected="false">
+                  Published <span class="eem-filter-tab-count">2</span>
+                </a>
+                <a class="eem-filter-tab" href="#" role="tab" aria-selected="false">
+                  Draft <span class="eem-filter-tab-count">1</span>
+                </a>
+                <a class="eem-filter-tab" href="#" role="tab" aria-selected="false">
+                  Trash <span class="eem-filter-tab-count">0</span>
+                </a>
+              </nav>
+            </div>
+          </div>
+
+          <!-- Toolbar Row 2: bulk actions (left) + search + item count (right) -->
+          <!-- Bulk action options are context-sensitive to the active tab.
+               On non-Trash tabs: Publish | Switch to Draft | Move to Trash.
+               On Trash tab: Restore | Delete Permanently + Empty Trash button. -->
+          <div class="eem-list-toolbar eem-toolbar-controls">
+            <div class="eem-list-toolbar-left">
+              <form class="eem-bulk-form" onsubmit="return false">
+                <select class="eem-toolbar-select" name="bulk_action">
+                  <option value="">Bulk actions</option>
+                  <option value="publish">Publish</option>
+                  <option value="draft">Switch to Draft</option>
+                  <option value="trash">Move to Trash</option>
+                  <!-- On Trash tab instead: -->
+                  <!-- <option value="restore">Restore</option> -->
+                  <!-- <option value="delete_permanently">Delete Permanently</option> -->
+                </select>
+                <button type="submit" class="eem-toolbar-btn">Apply</button>
+              </form>
+              <!-- Empty Trash button — only shown on the Trash tab: -->
+              <!-- <button type="button" class="eem-toolbar-btn eem-toolbar-btn--danger">Empty Trash</button> -->
+            </div>
+            <div class="eem-list-toolbar-right">
+              <form class="eem-search-form" role="search" onsubmit="return false">
+                <div class="eem-search-wrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input class="eem-search-input" type="search" name="s" placeholder="Search" />
+                </div>
+              </form>
+              <span class="eem-item-count">3 items</span>
+            </div>
+          </div>
+
+          <!-- Desktop table -->
+          <div class="eem-desktop-table">
+            <table class="eem-table">
+              <thead>
+                <tr>
+                  <th class="eem-col-cb"><input type="checkbox" aria-label="Select all" /></th>
+                  <th class="sortable"><a href="#">Reservation <span class="eem-sort-icon" aria-hidden="true"><span></span><span></span></span></a></th>
+                  <th class="sortable is-sorted is-sorted--asc"><a href="#">Event Dates <span class="eem-sort-icon" aria-hidden="true"><span></span><span></span></span></a></th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th class="sortable"><a href="#">Orders <span class="eem-sort-icon" aria-hidden="true"><span></span><span></span></span></a></th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+
+                <!--
+                  ROW 1: Published reservation with stall+RV+add-on types.
+                  Has a frontend URL → View on Frontend enabled in meatballs.
+                  Has a stall chart enabled → shows the chart icon button.
+                  Is published → meatballs shows "Move to Draft".
+                  Row hover actions: Edit | Duplicate | Trash | View
+                -->
+                <tr data-reservation-id="5990">
+                  <td class="eem-col-cb"><input type="checkbox" aria-label="Select 2026 Southeast Region Super Sort" /></td>
+                  <td>
+                    <a class="eem-res-name" href="#">2026 Southeast Region Super Sort</a>
+                    <div class="eem-row-actions">
+                      <span><a href="#">Edit</a></span>
+                      <span class="eem-row-action-sep" aria-hidden="true">|</span>
+                      <span><a href="#" data-eem-action="reservation-duplicate-ajax" data-reservation-id="5990">Duplicate</a></span>
+                      <span class="eem-row-action-sep" aria-hidden="true">|</span>
+                      <span class="eem-row-action-danger"><a href="#" data-eem-action="reservation-trash" data-reservation-id="5990">Trash</a></span>
+                      <span class="eem-row-action-sep" aria-hidden="true">|</span>
+                      <span><a href="#" target="_blank" rel="noopener">View</a></span>
+                    </div>
+                  </td>
+                  <td><span class="eem-event-dates">Jun 26, 2026 – Jun 28, 2026</span></td>
+                  <td>
+                    <div class="eem-type-badges">
+                      <span class="eem-type-badge eem-type-badge--stall">Stall</span>
+                      <span class="eem-type-badge eem-type-badge--rv">RV</span>
+                      <span class="eem-type-badge eem-type-badge--addon">Add-On</span>
+                    </div>
+                  </td>
+                  <td><span class="eem-res-status eem-res-status--active">Active</span></td>
+                  <td><a class="eem-orders-count eem-orders-count-link" href="#">7</a></td>
+                  <td>
+                    <div class="eem-actions-cell">
+                      <!-- Stall chart icon: only shown when _en_stall_chart_enabled meta is set -->
+                      <a class="eem-action-icon-btn eem-action-icon-btn--stall-chart" href="#" title="Stall Chart" aria-label="Stall Chart">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                      </a>
+                      <div class="eem-row-menu-wrap">
+                        <button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="eem-res-menu-5990" title="More actions">···</button>
+                        <div class="eem-row-dropdown" id="eem-res-menu-5990" role="menu">
+                          <!-- Non-trashed secondary actions only (CRUD moved to hover row-action text links) -->
+                          <a class="eem-row-dd-item" href="#" target="_blank" rel="noopener" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            View on Frontend
+                          </a>
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+                            View Orders
+                          </a>
+                          <!-- Email Customers: enabled (7 orders exist) -->
+                          <button type="button" class="eem-row-dd-item" data-eem-action="reservation-email-customers" data-reservation-id="5990" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                            Email Customers
+                          </button>
+                          <!-- Move to Draft: only shown when reservation is published -->
+                          <button type="button" class="eem-row-dd-item" data-eem-action="reservation-set-draft" data-reservation-id="5990" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            Move to Draft
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+                <!--
+                  ROW 2: Published reservation — NTR 6519 (primary test reservation).
+                  RV only, no frontend URL (no en_reservation shortcode page found).
+                  Has a stall chart enabled. Is published → shows "Move to Draft".
+                  Row hover actions: Edit | Duplicate | Trash  (no View — no frontend URL)
+                -->
+                <tr data-reservation-id="6519">
+                  <td class="eem-col-cb"><input type="checkbox" aria-label="Select NTR- Rapid City, SD" /></td>
+                  <td>
+                    <a class="eem-res-name" href="#">NTR- Rapid City, SD</a>
+                    <div class="eem-row-actions">
+                      <span><a href="#">Edit</a></span>
+                      <span class="eem-row-action-sep" aria-hidden="true">|</span>
+                      <span><a href="#" data-eem-action="reservation-duplicate-ajax" data-reservation-id="6519">Duplicate</a></span>
+                      <span class="eem-row-action-sep" aria-hidden="true">|</span>
+                      <span class="eem-row-action-danger"><a href="#" data-eem-action="reservation-trash" data-reservation-id="6519">Trash</a></span>
+                      <!-- No "| View" because no frontend URL resolved -->
+                    </div>
+                  </td>
+                  <td><span class="eem-event-dates">Oct 2, 2025 – Oct 4, 2025</span></td>
+                  <td>
+                    <div class="eem-type-badges">
+                      <span class="eem-type-badge eem-type-badge--rv">RV</span>
+                    </div>
+                  </td>
+                  <td><span class="eem-res-status eem-res-status--active">Active</span></td>
+                  <td><a class="eem-orders-count eem-orders-count-link" href="#">8</a></td>
+                  <td>
+                    <div class="eem-actions-cell">
+                      <a class="eem-action-icon-btn eem-action-icon-btn--stall-chart" href="#" title="Stall Chart" aria-label="Stall Chart">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                      </a>
+                      <div class="eem-row-menu-wrap">
+                        <button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="eem-res-menu-6519" title="More actions">···</button>
+                        <div class="eem-row-dropdown" id="eem-res-menu-6519" role="menu">
+                          <!-- View on Frontend disabled: no public page found -->
+                          <span class="eem-row-dd-item eem-row-dd-item--disabled" aria-disabled="true" title="No public page found for this reservation" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            View on Frontend
+                          </span>
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+                            View Orders
+                          </a>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="reservation-email-customers" data-reservation-id="6519" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                            Email Customers
+                          </button>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="reservation-set-draft" data-reservation-id="6519" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            Move to Draft
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+                <!--
+                  ROW 3: Draft reservation — no linked event, no stall chart, 0 orders.
+                  No stall chart icon. No View on Frontend. Email Customers disabled (0 orders).
+                  Not published → no "Move to Draft" in meatballs.
+                  Row hover actions: Edit | Duplicate | Trash  (no View)
+                  Orders count: plain <span> (not a link) because count is 0.
+                -->
+                <tr data-reservation-id="15081">
+                  <td class="eem-col-cb"><input type="checkbox" aria-label="Select New Reservation" /></td>
+                  <td>
+                    <a class="eem-res-name" href="#">New Reservation</a>
+                    <div class="eem-row-actions">
+                      <span><a href="#">Edit</a></span>
+                      <span class="eem-row-action-sep" aria-hidden="true">|</span>
+                      <span><a href="#" data-eem-action="reservation-duplicate-ajax" data-reservation-id="15081">Duplicate</a></span>
+                      <span class="eem-row-action-sep" aria-hidden="true">|</span>
+                      <span class="eem-row-action-danger"><a href="#" data-eem-action="reservation-trash" data-reservation-id="15081">Trash</a></span>
+                    </div>
+                  </td>
+                  <td><span class="eem-event-dates">—</span></td>
+                  <td><span class="eem-type-badges-empty">—</span></td>
+                  <td><span class="eem-res-status eem-res-status--draft">Draft</span></td>
+                  <!-- 0 orders: plain span (no link), renders as "0" -->
+                  <td><span class="eem-orders-count is-zero">0</span></td>
+                  <td>
+                    <div class="eem-actions-cell">
+                      <!-- No stall chart icon (no _en_stall_chart_enabled meta) -->
+                      <div class="eem-row-menu-wrap">
+                        <button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="eem-res-menu-15081" title="More actions">···</button>
+                        <div class="eem-row-dropdown" id="eem-res-menu-15081" role="menu">
+                          <span class="eem-row-dd-item eem-row-dd-item--disabled" aria-disabled="true" title="No public page found for this reservation" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            View on Frontend
+                          </span>
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+                            View Orders
+                          </a>
+                          <!-- Email Customers disabled (0 orders) -->
+                          <span class="eem-row-dd-item eem-row-dd-item--disabled" aria-disabled="true" title="No orders for this reservation" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                            Email Customers
+                          </span>
+                          <!-- No "Move to Draft": reservation is already a draft, not published -->
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Mobile cards (shown at <=900px) -->
+          <div class="eem-mobile-reservations">
+            <div class="eem-mobile-res-card">
+              <a class="eem-mob-res-name" href="#">2026 Southeast Region Super Sort</a>
+              <div class="eem-mob-res-dates">Jun 26, 2026 – Jun 28, 2026</div>
+              <div class="eem-mob-res-bottom">
+                <div class="eem-mob-res-badges">
+                  <div class="eem-type-badges">
+                    <span class="eem-type-badge eem-type-badge--stall">Stall</span>
+                    <span class="eem-type-badge eem-type-badge--rv">RV</span>
+                    <span class="eem-type-badge eem-type-badge--addon">Add-On</span>
+                  </div>
+                  <span class="eem-res-status eem-res-status--active">Active</span>
+                  <a class="eem-orders-count eem-orders-count-link" href="#">7 orders</a>
+                </div>
+                <div class="eem-mob-res-actions">
+                  <div class="eem-actions-cell">
+                    <a class="eem-action-icon-btn eem-action-icon-btn--stall-chart" href="#" title="Stall Chart" aria-label="Stall Chart">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    </a>
+                    <div class="eem-row-menu-wrap">
+                      <button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" title="More actions">···</button>
+                      <div class="eem-row-dropdown" role="menu">
+                        <a class="eem-row-dd-item" href="#" target="_blank" rel="noopener" role="menuitem">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                          View on Frontend
+                        </a>
+                        <a class="eem-row-dd-item" href="#" role="menuitem">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+                          View Orders
+                        </a>
+                        <button type="button" class="eem-row-dd-item" data-eem-action="reservation-email-customers" data-reservation-id="5990" role="menuitem">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                          Email Customers
+                        </button>
+                        <button type="button" class="eem-row-dd-item" data-eem-action="reservation-set-draft" data-reservation-id="5990" role="menuitem">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                          Move to Draft
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="eem-mobile-res-card">
+              <a class="eem-mob-res-name" href="#">NTR- Rapid City, SD</a>
+              <div class="eem-mob-res-dates">Oct 2, 2025 – Oct 4, 2025</div>
+              <div class="eem-mob-res-bottom">
+                <div class="eem-mob-res-badges">
+                  <div class="eem-type-badges"><span class="eem-type-badge eem-type-badge--rv">RV</span></div>
+                  <span class="eem-res-status eem-res-status--active">Active</span>
+                  <a class="eem-orders-count eem-orders-count-link" href="#">8 orders</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="eem-mobile-res-card">
+              <a class="eem-mob-res-name" href="#">New Reservation</a>
+              <div class="eem-mob-res-dates">—</div>
+              <div class="eem-mob-res-bottom">
+                <div class="eem-mob-res-badges">
+                  <span class="eem-type-badges-empty">—</span>
+                  <span class="eem-res-status eem-res-status--draft">Draft</span>
+                  <span class="eem-orders-count is-zero">0 orders</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table footer: "Showing 1–3 of 3 reservations" + pagination (only shown when total > per_page=25) -->
+          <div class="eem-table-footer">
+            <span class="eem-table-footer-info">Showing 1–3 of 3 reservations</span>
+            <!-- Pagination — only shown when total > 25 per page. Example with 2 pages: -->
+            <!--
+            <nav class="eem-pagination" aria-label="Reservations pagination">
+              <span class="eem-page-btn" aria-disabled="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+              </span>
+              <span class="eem-page-btn active" aria-current="page">1</span>
+              <a class="eem-page-btn" href="#">2</a>
+              <a class="eem-page-btn" href="#">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              </a>
+            </nav>
+            -->
+          </div>
+
+        </div><!-- /.eem-page-body -->
+      </div><!-- /.eem-page-wrap -->
+
+      <!-- ============================================================
+           TRASH TAB STATE — what the page looks like on ?status=trash
+           (commented out; swap the main table above for this section
+           to preview the Trash view)
+           ============================================================
+      <div class="eem-page-wrap" style="margin-top:32px;">
+        <header class="eem-page-header">
+          <h1 class="eem-page-title">Reservations — Trash</h1>
+        </header>
+        <div class="eem-page-body">
+          Toolbar Row 2 on Trash tab shows:
+            Bulk actions: Restore | Delete Permanently
+            + Empty Trash danger button
+          Table row actions for trashed rows:
+            Hover row links: Restore | Delete Permanently (no Edit/Duplicate/Trash/View)
+            Meatballs: Restore + Delete Permanently (no View/Orders/Email/Draft)
+          Status pill: .eem-res-status--trashed "Trashed"
+      </div>
+      </div>
+      -->
+
+    </div><!-- /.eem-page -->
+
+    <!-- Email Customers modal (opens via data-eem-action="reservation-email-customers") -->
+    <!-- JS populates reservation_id + fetches recipient count via AJAX before opening -->
+    <div class="eem-modal" id="eem-email-customers-modal" role="dialog" aria-modal="true" aria-labelledby="eem-email-customers-title" aria-hidden="true">
+      <div class="eem-modal-card">
+        <header class="eem-modal-head">
+          <h2 class="eem-modal-title" id="eem-email-customers-title">Email Customers</h2>
+          <button type="button" class="eem-modal-close" data-eem-action="email-customers-close" aria-label="Close">&times;</button>
+        </header>
+        <form class="eem-modal-body" data-eem-email-customers-form onsubmit="return false">
+          <input type="hidden" name="reservation_id" value="" />
+          <!-- Summary loaded via AJAX when modal opens: "This will email N customers..." -->
+          <p class="eem-email-customers-summary" data-eem-recipient-summary>
+            This will email all 7 customers who have an order on this reservation.
+          </p>
+          <div class="eem-field-row" style="margin-top:14px;">
+            <label class="eem-field-label" for="eem-email-customers-subject">Subject</label>
+            <div class="eem-field-control">
+              <input class="eem-field-input" id="eem-email-customers-subject" type="text" name="subject" required maxlength="200" />
+            </div>
+          </div>
+          <div class="eem-field-row">
+            <label class="eem-field-label" for="eem-email-customers-body">Message</label>
+            <div class="eem-field-control">
+              <textarea class="eem-field-textarea" id="eem-email-customers-body" name="body" rows="8" required></textarea>
+              <p class="eem-field-hint">Plain text — line breaks are preserved. HTML is stripped before sending.</p>
+            </div>
+          </div>
+        </form>
+        <footer class="eem-modal-foot eem-modal-foot--split">
+          <button type="button" class="eem-btn eem-btn-secondary" data-eem-action="email-customers-close">Cancel</button>
+          <button type="button" class="eem-btn eem-btn-primary" data-eem-action="email-customers-send">Send to customers</button>
+        </footer>
+      </div>
     </div>
 
-    <!-- PLUGIN-WRAP (single bordered card per VIS-3) -->
-    <div class="plugin-wrap">
-
-      <!-- PAGE HEADER (inside card) -->
-      <header class="plugin-header">
-        <div class="plugin-header-left">
-          <h1 class="plugin-title">Reservations</h1>
-          <div class="plugin-subtitle">Manage reservation setups for your events. Each setup defines the stay types, capacity, pricing, and add-ons customers see at checkout.</div>
+    <!-- Delete Permanently typed-confirm modal.
+         Opens via data-eem-action="reservation-delete-permanently".
+         User must type "DELETE" (exact, case-sensitive) to enable the button.
+         Server also validates the typed confirmation_title === "DELETE". -->
+    <div class="eem-modal" id="eem-delete-permanently-modal" role="dialog" aria-modal="true" aria-labelledby="eem-delete-modal-title" aria-hidden="true">
+      <div class="eem-modal-card">
+        <header class="eem-modal-head">
+          <h2 class="eem-modal-title" id="eem-delete-modal-title">Delete Permanently</h2>
+          <button type="button" class="eem-modal-close" data-eem-action="delete-permanently-close" aria-label="Close">&times;</button>
+        </header>
+        <div class="eem-modal-body">
+          <p class="eem-delete-confirm-warning">This cannot be undone. All data for this reservation will be permanently deleted.</p>
+          <p style="margin:0 0 8px;font-size:13px;color:var(--eem-ink);">Type <strong>DELETE</strong> to confirm:</p>
+          <input class="eem-field-input eem-delete-confirm-input" type="text" id="eem-delete-confirm-input" placeholder="DELETE" autocomplete="off" />
         </div>
-        <a href="#" class="btn-primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New Reservation
-        </a>
-      </header>
-
-      <!-- STATUS TABS (with counts per shipped state) -->
-      <div class="status-tabs">
-        <a class="status-tab active" href="#">All <span class="status-tab-count">(6)</span></a>
-        <span class="status-tab-sep">|</span>
-        <a class="status-tab" href="#">Published <span class="status-tab-count">(3)</span></a>
-        <span class="status-tab-sep">|</span>
-        <a class="status-tab" href="#">Draft <span class="status-tab-count">(3)</span></a>
-        <span class="status-tab-sep">|</span>
-        <a class="status-tab" href="#">Trash <span class="status-tab-count">(1)</span></a>
+        <footer class="eem-modal-foot eem-modal-foot--split">
+          <button type="button" class="eem-btn eem-btn-secondary" data-eem-action="delete-permanently-close">Cancel</button>
+          <button type="button" class="eem-btn eem-btn-danger" id="eem-delete-confirm-btn" disabled data-eem-action="delete-permanently-submit">Delete Permanently</button>
+        </footer>
       </div>
-
-      <!-- TOOLBAR (matches shipped C4 layout) -->
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <select class="toolbar-select">
-            <option>Bulk actions</option>
-            <option>Edit</option>
-            <option>Move to Trash</option>
-          </select>
-          <button class="toolbar-btn">Apply</button>
-          <select class="toolbar-select">
-            <option>All dates</option>
-            <option>May 2026</option>
-            <option>April 2026</option>
-          </select>
-          <button class="toolbar-btn">Filter</button>
-        </div>
-        <div class="toolbar-right">
-          <div class="search-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input class="search-input" type="text" placeholder="Search">
-          </div>
-          <button class="toolbar-btn">Search Reservations</button>
-          <span class="item-count">5 items</span>
-        </div>
-      </div>
-
-      <!-- DESKTOP TABLE -->
-      <div class="desktop-table">
-        <table>
-          <thead>
-            <tr>
-              <th class="col-cb"><input type="checkbox"></th>
-              <th>Reservation</th>
-              <th class="sortable">Event Dates <span class="sort-icon"><span></span><span></span></span></th>
-              <th>Type</th>
-              <th>Status</th>
-              <th class="sortable">Orders <span class="sort-icon"><span></span><span></span></span></th>
-              <th style="text-align:right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Row 1 — resting state; row actions visible on hover; meatball = secondary actions only (FIX 3 + FIX 4 — 2.3.43) -->
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td>
-                <a class="res-name" href="#">2025 Spring Classic</a>
-                <!-- Row action text links (WP-native hover pattern) -->
-                <div class="row-actions">
-                  <span><a href="#">Edit</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span><a href="#" onclick="openMockupQE(1,event)">Quick Edit</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span><a href="#">Duplicate</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span class="row-action-danger"><a href="#">Trash</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span><a href="#" target="_blank">View</a></span>
-                </div>
-              </td>
-              <td><span class="event-dates-empty">—</span></td>
-              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div></td>
-              <td><span class="res-status status-active">Active</span></td>
-              <td><span class="orders-count">8</span></td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap">
-                    <button class="more-btn" onclick="toggleRowMenu('res-menu-1',event)" title="More actions">···</button>
-                    <!-- Meatball = secondary actions only: View on Frontend, View Orders, Email Customers -->
-                    <div class="row-dropdown" id="res-menu-1">
-                      <a class="row-dd-item" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View on Frontend</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Orders</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Customers</a>
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-            <!-- Quick Edit expanded state — shows inline below the row it was opened from -->
-            <tr class="quick-edit-row" id="mockup-qe-1" style="display:none">
-              <td colspan="7">
-                <div class="qe-inner">
-                  <div class="qe-fields">
-                    <div class="qe-field">
-                      <label class="qe-label" for="qe-name-1">Reservation Name</label>
-                      <input class="qe-input" id="qe-name-1" type="text" value="2025 Spring Classic" autocomplete="off">
-                      <p class="qe-hint">Clear to mirror linked event name.</p>
-                    </div>
-                    <div class="qe-field">
-                      <label class="qe-label" for="qe-slug-1">Slug</label>
-                      <div class="slug-wrap">
-                        <span class="slug-prefix">/reservation/</span>
-                        <input class="qe-input" id="qe-slug-1" type="text" value="" placeholder="auto-generated" autocomplete="off">
-                      </div>
-                      <p class="qe-hint">Clear to auto-generate from name.</p>
-                    </div>
-                  </div>
-                  <div class="qe-actions">
-                    <button class="qe-save">Save</button>
-                    <button class="qe-cancel" onclick="closeMockupQE(1)">Cancel</button>
-                  </div>
-                </div>
-              </td>
-            </tr>
-            <!-- Row 2 — has orders + linked event URL; both meatball items enabled -->
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td>
-                <a class="res-name" href="#">2026 Southeast Region Super Sort</a>
-                <div class="row-actions">
-                  <span><a href="#">Edit</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span><a href="#">Quick Edit</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span><a href="#">Duplicate</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span class="row-action-danger"><a href="#">Trash</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span><a href="#" target="_blank">View</a></span>
-                </div>
-              </td>
-              <td><span class="event-dates-empty">—</span></td>
-              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span><span class="type-badge type-addon">Add-On</span></div></td>
-              <td><span class="res-status status-active">Active</span></td>
-              <td><span class="orders-count">23</span></td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap">
-                    <button class="more-btn" onclick="toggleRowMenu('res-menu-2',event)">···</button>
-                    <div class="row-dropdown" id="res-menu-2">
-                      <a class="row-dd-item" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View on Frontend</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Orders</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Customers</a>
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-            <!-- Row 3 — has orders; no linked frontend URL → "View on Frontend" disabled in meatball -->
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td>
-                <a class="res-name" href="#">2026 Gulf Coast Classic</a>
-                <div class="row-actions">
-                  <span><a href="#">Edit</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span><a href="#">Quick Edit</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span><a href="#">Duplicate</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span class="row-action-danger"><a href="#">Trash</a></span>
-                </div>
-              </td>
-              <td><span class="event-dates-empty">—</span></td>
-              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span></div></td>
-              <td><span class="res-status status-active">Active</span></td>
-              <td><span class="orders-count">12</span></td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap">
-                    <button class="more-btn" onclick="toggleRowMenu('res-menu-3',event)">···</button>
-                    <!-- "View on Frontend" disabled — no frontend URL found for this reservation -->
-                    <div class="row-dropdown" id="res-menu-3">
-                      <span class="row-dd-item row-dd-item--disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View on Frontend</span>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Orders</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Customers</a>
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-            <!-- Row 4 — draft; 0 orders → "Email Customers" disabled; no frontend URL → "View on Frontend" disabled -->
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td>
-                <a class="res-name" href="#">2026 Sunshine Dressage</a>
-                <div class="row-actions">
-                  <span><a href="#">Edit</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span><a href="#">Quick Edit</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span><a href="#">Duplicate</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span class="row-action-danger"><a href="#">Trash</a></span>
-                </div>
-              </td>
-              <td><span class="event-dates-empty">—</span></td>
-              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span><span class="type-badge type-group">Group</span></div></td>
-              <td><span class="res-status status-draft">Draft</span></td>
-              <td><span class="orders-count orders-count-zero">0</span></td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap">
-                    <button class="more-btn" onclick="toggleRowMenu('res-menu-4',event)">···</button>
-                    <!-- Both disabled: no frontend URL, 0 orders -->
-                    <div class="row-dropdown" id="res-menu-4">
-                      <span class="row-dd-item row-dd-item--disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View on Frontend</span>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Orders</a>
-                      <span class="row-dd-item row-dd-item--disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Customers</span>
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-            <!-- Row 5 — draft; has orders; has frontend URL → all meatball items enabled -->
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td>
-                <a class="res-name" href="#">2026 Lone Star Invitational</a>
-                <div class="row-actions">
-                  <span><a href="#">Edit</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span><a href="#">Quick Edit</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span><a href="#">Duplicate</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span class="row-action-danger"><a href="#">Trash</a></span>
-                </div>
-              </td>
-              <td><span class="event-dates-empty">—</span></td>
-              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span><span class="type-badge type-addon">Add-On</span><span class="type-badge type-group">Group</span></div></td>
-              <td><span class="res-status status-draft">Draft</span></td>
-              <td><span class="orders-count">5</span></td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap">
-                    <button class="more-btn" onclick="toggleRowMenu('res-menu-5',event)">···</button>
-                    <div class="row-dropdown" id="res-menu-5">
-                      <a class="row-dd-item" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>View on Frontend</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Orders</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Email Customers</a>
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-            <!-- Row 6 — trashed; row actions = Restore | Delete Permanently; meatball mirrors same (FIX 3 + FIX 4 — 2.3.43) -->
-            <tr style="background:#fff8f8">
-              <td class="col-cb"><input type="checkbox"></td>
-              <td>
-                <a class="res-name" href="#" style="color:#8c8f94">2024 Fall Harvest Classic</a>
-                <div class="row-actions">
-                  <span><a href="#">Restore</a></span>
-                  <span class="row-action-sep">|</span>
-                  <span class="row-action-danger"><a href="#">Delete Permanently</a></span>
-                </div>
-              </td>
-              <td><span class="event-dates-empty">—</span></td>
-              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span></div></td>
-              <td><span class="res-status status-trashed">Trashed</span></td>
-              <td><span class="orders-count orders-count-zero">0</span></td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap">
-                    <button class="more-btn" onclick="toggleRowMenu('res-menu-6',event)">···</button>
-                    <div class="row-dropdown" id="res-menu-6">
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>Restore</a>
-                      <a class="row-dd-item row-dd-danger" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete Permanently</a>
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- MOBILE CARDS -->
-      <div class="mobile-reservations">
-        <div class="mobile-res-card">
-          <a class="mob-res-name" href="#">2025 Spring Classic</a>
-          <div class="mob-res-dates">—</div>
-          <div class="mob-res-bottom">
-            <div class="mob-res-badges">
-              <span class="type-badge type-stall">Stall</span>
-              <span class="type-badge type-addon">Add-On</span>
-              <span class="res-status status-active">Active</span>
-            </div>
-            <div class="mob-res-actions"><button class="more-btn">···</button></div>
-          </div>
-        </div>
-        <div class="mobile-res-card">
-          <a class="mob-res-name" href="#">2026 Southeast Region Super Sort</a>
-          <div class="mob-res-dates">—</div>
-          <div class="mob-res-bottom">
-            <div class="mob-res-badges">
-              <span class="type-badge type-stall">Stall</span>
-              <span class="type-badge type-rv">RV</span>
-              <span class="type-badge type-addon">Add-On</span>
-              <span class="res-status status-active">Active</span>
-            </div>
-            <div class="mob-res-actions"><button class="more-btn">···</button></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TABLE FOOTER -->
-      <div class="table-footer">
-        <div class="table-footer-info">Showing 1–5 of 5 reservations</div>
-      </div>
-
-    </div><!-- /plugin-wrap -->
+    </div>
 
   </main>
 </div>
 
 <script>
-function toggleRowMenu(id,e){
-  e.stopPropagation();
-  var menu=document.getElementById(id);
-  document.querySelectorAll('.row-dropdown').forEach(function(d){if(d!==menu)d.classList.remove('open');});
-  menu.classList.toggle('open');
-}
-document.addEventListener('click',function(){
-  document.querySelectorAll('.row-dropdown').forEach(function(d){d.classList.remove('open');});
+// Minimal interactivity to demo the mockup (mirrors EEM admin.js delegated bindings)
+document.addEventListener('click', function (e) {
+  // Meatballs dropdown toggle
+  var toggle = e.target.closest('[data-eem-action="dropdown-toggle"]');
+  if (toggle) {
+    var wrap = toggle.closest('.eem-row-menu-wrap');
+    var wasOpen = wrap.classList.contains('open');
+    document.querySelectorAll('.eem-row-menu-wrap.open').forEach(function (w) { w.classList.remove('open'); });
+    if (!wasOpen) { wrap.classList.add('open'); toggle.setAttribute('aria-expanded', 'true'); }
+    return;
+  }
+  // Email Customers modal open
+  if (e.target.closest('[data-eem-action="reservation-email-customers"]')) {
+    document.getElementById('eem-email-customers-modal').classList.add('open');
+    document.querySelectorAll('.eem-row-menu-wrap.open').forEach(function (w) { w.classList.remove('open'); });
+    return;
+  }
+  // Email Customers modal close
+  if (e.target.closest('[data-eem-action="email-customers-close"]')) {
+    document.getElementById('eem-email-customers-modal').classList.remove('open');
+    return;
+  }
+  // Delete Permanently modal open
+  if (e.target.closest('[data-eem-action="reservation-delete-permanently"]')) {
+    document.getElementById('eem-delete-permanently-modal').classList.add('open');
+    document.getElementById('eem-delete-confirm-input').value = '';
+    document.getElementById('eem-delete-confirm-btn').disabled = true;
+    document.querySelectorAll('.eem-row-menu-wrap.open').forEach(function (w) { w.classList.remove('open'); });
+    return;
+  }
+  // Delete Permanently modal close
+  if (e.target.closest('[data-eem-action="delete-permanently-close"]')) {
+    document.getElementById('eem-delete-permanently-modal').classList.remove('open');
+    return;
+  }
+  // Close dropdowns when clicking outside
+  if (!e.target.closest('.eem-row-menu-wrap')) {
+    document.querySelectorAll('.eem-row-menu-wrap.open').forEach(function (w) { w.classList.remove('open'); });
+  }
 });
-/* FIX 5 mockup helpers — open/close Quick Edit expanded row */
-function openMockupQE(n,e){
-  e.preventDefault();
-  document.querySelectorAll('.quick-edit-row').forEach(function(r){r.style.display='none';});
-  document.querySelectorAll('.row-dropdown').forEach(function(d){d.classList.remove('open');});
-  var qr=document.getElementById('mockup-qe-'+n);
-  if(qr){qr.style.display='';qr.querySelector('.qe-input').focus();}
-}
-function closeMockupQE(n){
-  var qr=document.getElementById('mockup-qe-'+n);
-  if(qr)qr.style.display='none';
+
+// Delete confirm input enables the button only when value === "DELETE"
+var deleteInput = document.getElementById('eem-delete-confirm-input');
+if (deleteInput) {
+  deleteInput.addEventListener('input', function () {
+    document.getElementById('eem-delete-confirm-btn').disabled = (this.value !== 'DELETE');
+  });
 }
 </script>
-
 </body>
 </html>

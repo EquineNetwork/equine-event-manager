@@ -6,505 +6,585 @@
 <title>Equine Event Manager – Venues</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Venues – admin page (admin.php?page=equine-event-manager-venues)
+   Curated mockup reflecting the LIVE page (EEM_Venues_Page) as of 2026-06-20.
+
+   LIST VIEW  — shows all en_venue posts (source-agnostic: TEC + GEMS in v1).
+               Venue name links to WP post edit screen (get_edit_post_link).
+               No stats strip in list view (render_list() does not call render_stats).
+               Facility Templates column: count + "View" link opens detail view.
+   DETAIL VIEW — ?venue_id=N — two cards: "Saved Layouts" + "Event Sources".
+               Shown below the list demo, toggled by the demo switch.
+
+   Meta keys: _equine_event_manager_venue_city / _state / _website.
+   Menu slug: equine-event-manager-venues (nested under Stall & RV Charts).
+   ───────────────────────────────────────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+svg{flex-shrink:0}
 a{text-decoration:none}
 a:hover{text-decoration:none}
 
-/* ── WP SHELL ── */
-.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;position:sticky;top:0;z-index:200;flex-shrink:0}
+/* ── WP SHELL STUB ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
 .wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
 .wp-admin-bar span.site{color:#fff;font-weight:600}
 .wp-body{display:flex;flex:1}
 .wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
-.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
-.wp-sidebar-item:hover{background:#2c3338;color:#fff}
-.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer}
 .wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
 .wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
 .wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
-.wp-sidebar-sub:hover{color:#fff}
 .wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
-
-/* ── CONTENT ── */
 .wp-content{flex:1;padding:12px 20px 40px;min-width:0}
 
-/* Breadcrumb */
-.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
-.breadcrumb-sep{font-size:13px;color:#8c8f94}
-.breadcrumb-page{font-size:13px;color:#1d2327;font-weight:600}
+/* ── PAGE SHELL ── */
+.eem-page{display:block}
+.eem-breadcrumb{display:flex;align-items:center;gap:8px;margin:0 0 10px;flex-wrap:wrap}
+.eem-breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.eem-breadcrumb-sep{font-size:13px;color:#8c8f94}
+.eem-breadcrumb-segment{font-size:13px;color:#031B4E;font-weight:600}
+.eem-breadcrumb-segment a{color:#031B4E;font-weight:600}
+.eem-breadcrumb-segment a:hover{color:#1668F2}
 
-/* ── PLUGIN-WRAP ── */
-.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+.eem-page-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:3px;overflow:hidden}
+.eem-page-header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.eem-page-header-left{min-width:0}
+.eem-page-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.3}
+.eem-page-subtitle{font-size:12.5px;color:#6B7A99;margin-top:2px;line-height:1.5}
+.eem-page-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.eem-page-body{padding:0}
 
-/* PAGE HEADER */
-.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.plugin-header-left{flex:1;min-width:0}
-.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
-.plugin-subtitle{font-size:13px;color:#6B7A99;line-height:1.45}
-.header-links{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
-.header-link{font-size:13px;color:#1668F2;font-weight:500}
-.header-link:hover{color:#1257d1}
-
-/* Primary CTA */
-.btn-primary{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:9px 18px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;text-decoration:none}
-.btn-primary:hover{background:#1257d1;border-color:#1257d1;color:#fff}
-.btn-primary svg{width:13px;height:13px}
-
-/* ── STATS CARDS ── */
-.stats-bar{padding:16px 22px;border-bottom:1px solid #dcdcde;background:#f9f9fa;display:flex;gap:12px;flex-wrap:wrap}
-.stat-card{background:#fff;border:1px solid #dcdcde;border-radius:6px;padding:14px 18px;flex:1;min-width:140px}
-.stat-card-label{font-size:10.5px;font-weight:700;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
-.stat-card-num{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:#031B4E;line-height:1}
-.stat-card-wide{flex:2;min-width:220px}
-.stat-card-rows{display:flex;flex-direction:column;gap:3px;margin-top:2px}
-.stat-card-row{font-size:13px;color:#1d2327}
-.stat-card-row strong{color:#031B4E;font-weight:600}
+/* ── BUTTONS ── */
+.eem-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:3px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;border:1px solid transparent;text-decoration:none;line-height:1.4}
+.eem-btn-electric{background:#1668F2;color:#fff}
+.eem-btn-electric:hover{background:#1355cc;color:#fff}
+.eem-btn-secondary{background:#fff;color:#031B4E;border-color:#c3c4c7}
+.eem-btn-secondary:hover{background:#f6f7f7}
+.eem-btn-primary{background:#031B4E;color:#fff}
+.eem-btn-primary:hover{background:#1668F2;color:#fff}
+.eem-btn-danger{background:#b91c1c;color:#fff}
+.eem-btn-danger:hover{background:#991b1b;color:#fff}
+.eem-btn-sm{padding:4px 9px;font-size:12px}
 
 /* ── STATUS TABS ── */
-.status-tabs{padding:10px 18px 0;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:0;flex-wrap:wrap}
-.status-tab{font-size:13px;color:#50575e;padding:6px 10px 8px;cursor:pointer;border-bottom:2px solid transparent;text-decoration:none;white-space:nowrap}
-.status-tab:hover{color:#031B4E}
-.status-tab.active{color:#031B4E;font-weight:600;border-bottom-color:#1668F2}
-.status-tab-count{color:#8c8f94;font-weight:400;margin-left:3px}
-.status-tab-sep{color:#8c8f94;font-size:12px;padding:6px 4px}
+.eem-status-tabs{padding:10px 16px 0;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:0;flex-wrap:wrap}
+.eem-status-tab{font-size:13px;color:#50575e;padding:6px 10px 8px;cursor:pointer;border-bottom:2px solid transparent;text-decoration:none;white-space:nowrap}
+.eem-status-tab:hover{color:#031B4E}
+.eem-status-tab.is-active{color:#031B4E;font-weight:600;border-bottom-color:#1668F2}
+.eem-status-tab-count{color:#8c8f94;font-weight:400;margin-left:3px}
+.eem-status-tab-sep{color:#8c8f94;font-size:12px;padding:6px 2px}
 
-/* ── TOOLBAR ── */
-.toolbar{padding:12px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff}
-.toolbar-left{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
-.toolbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
-.toolbar-select{padding:6px 28px 6px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none;cursor:pointer;min-width:130px}
-.toolbar-btn{padding:6px 14px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer;white-space:nowrap}
-.toolbar-btn:hover{background:#f6f7f7}
-.search-wrap{position:relative;min-width:160px;max-width:240px;flex:1}
-.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94}
-.search-input{width:100%;padding:6px 10px 6px 28px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
-.search-input:focus{border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
-.search-input::placeholder{color:#b0b0b0}
-.item-count{font-size:13px;color:#50575e;white-space:nowrap}
+/* ── LIST TOOLBAR ── */
+.eem-list-toolbar{padding:12px 16px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f0f4fb}
+.eem-list-toolbar-left{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
+.eem-list-toolbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.eem-search-form{display:flex;margin:0}
+.eem-search-wrap{position:relative;flex:1;min-width:150px;max-width:280px}
+.eem-search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94;pointer-events:none}
+.eem-search-input{width:100%;padding:0 10px 0 25px;border:1px solid #8c8f94;border-radius:3px;font-size:13px;font-family:inherit;color:#1d2327;background:#fff;outline:none;height:38px;margin:0}
+.eem-search-input::placeholder{color:#b0b0b0}
+.eem-search-input:focus{border-color:#1668F2}
+.eem-item-count{font-size:13px;color:#50575e;white-space:nowrap}
 
 /* ── TABLE ── */
-.desktop-table{overflow-x:auto}
-table{width:100%;border-collapse:collapse}
-thead{background:#f3f4f5;border-bottom:1px solid #dcdcde}
-thead th{padding:11px 14px;font-size:13px;font-weight:600;color:#1d2327;text-align:left;white-space:nowrap}
-thead th.col-cb{width:36px;padding:11px 8px 11px 18px}
-thead th.sortable{cursor:pointer;color:#1668F2}
-thead th.sortable:hover{color:#1257d1}
-.sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:4px;vertical-align:middle;opacity:.5}
-.sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
-.sort-icon span:first-child{border-bottom:4px solid currentColor}
-.sort-icon span:last-child{border-top:4px solid currentColor}
+.eem-desktop-table{display:block}
+.eem-table{width:100%;border-collapse:collapse}
+.eem-table thead tr{border-bottom:1px solid #d9e2f2;background:#f8fafc}
+.eem-table thead th{padding:10px 14px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#031B4E;text-align:left;white-space:nowrap}
+.eem-table thead th.sortable{cursor:pointer}
+.eem-table thead th.sortable a{display:inline-flex;align-items:center;color:inherit;text-decoration:none}
+.eem-table thead th.sortable:hover{color:#1d2327}
+.eem-table tbody tr{border-bottom:1px solid #f0f0f1}
+.eem-table tbody tr:last-child{border-bottom:none}
+.eem-table tbody tr:hover{background:#f6f7f7}
+.eem-table td{padding:12px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
+.eem-table-empty{text-align:center;padding:40px 16px;color:#8c8f94;font-size:13px}
+.eem-table-r{text-align:right}
 
-tbody tr{border-bottom:1px solid #f0f0f1}
-tbody tr:last-child{border-bottom:none}
-td{padding:14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
-td.col-cb{padding:14px 8px 14px 18px;width:36px}
+/* Sort icon (paired triangles) */
+.eem-sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:3px;vertical-align:middle;opacity:.45}
+.eem-sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
+.eem-sort-icon span:first-child{border-bottom:4px solid currentColor}
+.eem-sort-icon span:last-child{border-top:4px solid currentColor}
+th.sortable.is-sorted{color:#1668F2}
+th.sortable.is-sorted .eem-sort-icon{opacity:1;color:#1668F2}
+th.is-sorted--asc .eem-sort-icon span:last-child{opacity:.3}
+th.is-sorted--desc .eem-sort-icon span:first-child{opacity:.3}
 
-/* Venue name */
-.venue-title{font-weight:700;color:#031B4E;font-size:13.5px;text-decoration:none;display:block;margin-bottom:3px}
-.venue-title:hover{color:#1668F2}
-.venue-row-actions{display:none;gap:8px;margin-top:4px}
-tbody tr:hover .venue-row-actions{display:flex}
-.venue-row-action{font-size:12px;color:#1668F2;cursor:pointer}
-.venue-row-action:hover{color:#1257d1}
-.venue-row-action-sep{font-size:12px;color:#c3c4c7}
+/* Venue-specific cells */
+.eem-venue-name{font-weight:700;color:#031B4E;font-size:13.5px;display:block;text-decoration:none}
+.eem-venue-name:hover{color:#1668F2}
+.eem-venue-muted{font-size:13px;color:#8c8f94}
+.eem-tpl-count{font-family:'Space Grotesk',sans-serif;font-weight:700;color:#031B4E;font-size:15px}
+.eem-tpl-link{font-size:12px;color:#1668F2;margin-left:6px;text-decoration:none}
+.eem-tpl-link:hover{color:#1257d1}
 
-/* Location */
-.location-val{font-size:13px;color:#50575e}
-.location-val-empty{font-size:13px;color:#8c8f94}
+/* Row actions menu */
+.eem-actions-cell{display:flex;align-items:center;gap:5px;justify-content:flex-end}
+.eem-row-menu-wrap{position:relative;display:inline-block}
+.eem-more-btn{width:28px;height:28px;border-radius:3px;border:1px solid #c3c4c7;background:#fff;color:#50575e;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;letter-spacing:.05em;line-height:1;padding:0}
+.eem-more-btn:hover{background:#f0f0f1}
+.eem-row-dropdown{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid #c3c4c7;border-radius:3px;box-shadow:0 6px 16px rgba(3,27,78,.08);min-width:190px;z-index:100;overflow:hidden}
+.eem-row-menu-wrap.open .eem-row-dropdown{display:block}
+.eem-row-dd-item{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:13px;color:#1d2327;cursor:pointer;border-bottom:1px solid #f0f0f1;white-space:nowrap;background:transparent;width:100%;text-align:left;text-decoration:none}
+.eem-row-dd-item:last-child{border-bottom:none}
+.eem-row-dd-item:hover{background:#f6f7f7}
+.eem-row-dd-item svg{width:13px;height:13px;color:#6B7A99;flex-shrink:0}
+.eem-row-dd-danger{color:#b91c1c}
+.eem-row-dd-danger svg{color:#fca5a5}
+.eem-row-dd-danger:hover{background:#fef2f2}
 
-/* Facility templates count */
-.template-count{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#1d2327}
-.template-count-num{font-family:'Space Grotesk',sans-serif;font-weight:700;color:#031B4E;font-size:15px}
-.template-count-zero{color:#8c8f94;font-weight:400;font-size:13px}
-.template-link{font-size:12px;color:#1668F2;margin-left:4px}
-.template-link:hover{color:#1257d1}
+/* ── TABLE FOOTER + PAGINATION ── */
+.eem-table-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;min-height:53px;box-sizing:border-box;background:#f8fafc;flex-wrap:wrap;gap:8px}
+.eem-table-footer-info{font-size:13px;color:#50575e}
+.eem-pagination{display:flex;align-items:center;gap:6px}
+.eem-page-btn{width:28px;height:28px;border-radius:3px;border:1px solid #c3c4c7;background:#fff;color:#50575e;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;text-decoration:none}
+.eem-page-btn:hover{background:#f0f0f1}
+.eem-page-btn.active{background:#1668F2;color:#fff;border-color:#1668F2}
 
-/* Status badges */
-.ev-status{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:1.5;white-space:nowrap}
-.ev-status::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.status-published{background:#dcfce7;color:#15803d}
-.status-published::before{background:#16a34a}
-.status-draft{background:#fef3c7;color:#a16207}
-.status-draft::before{background:#ca8a04}
-.status-archived{background:#e5e7eb;color:#52525b}
-.status-archived::before{background:#71717a}
+/* ── VENUE CARDS (detail view) ── */
+.eem-venues{display:flex;flex-direction:column;gap:16px;padding:16px}
+.eem-card{background:#fff;border:1px solid #dcdcde;border-radius:3px;overflow:hidden}
+.eem-card-header{padding:12px 16px;border-bottom:1px solid #dcdcde;background:#f8fafc}
+.eem-card-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#031B4E}
+.eem-card-body{padding:16px}
+.eem-venue-empty-note{font-size:13px;color:#50575e;margin-bottom:12px;line-height:1.6}
+.eem-venue-empty-note:last-child{margin-bottom:0}
+.eem-venue-layouts-table .eem-table-r{display:flex;align-items:center;gap:6px;justify-content:flex-end}
 
-/* Actions */
-.actions-cell{display:flex;align-items:center;gap:5px;justify-content:flex-end}
-.more-btn{width:30px;height:30px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;letter-spacing:.05em;line-height:1}
-.more-btn:hover{background:#f0f0f1;border-color:#8c8f94}
-.row-menu-wrap{position:relative;display:inline-block}
-.row-dropdown{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid #c3c4c7;border-radius:4px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:210px;z-index:100;overflow:hidden}
-.row-dropdown.open{display:block}
-.row-dd-item{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:13px;color:#1d2327;cursor:pointer;border-bottom:1px solid #f0f0f1;white-space:nowrap;text-decoration:none}
-.row-dd-item:last-child{border-bottom:none}
-.row-dd-item:hover{background:#f6f7f7}
-.row-dd-item svg{width:13px;height:13px;color:#6B7A99;flex-shrink:0}
-.row-dd-danger{color:#b91c1c}
-.row-dd-danger svg{color:#fca5a5}
-.row-dd-danger:hover{background:#fef2f2}
-
-/* ── TABLE FOOTER ── */
-.table-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid #dcdcde;background:#f3f4f5;flex-wrap:wrap;gap:8px}
-.table-footer-info{font-size:13px;color:#50575e}
-.pagination{display:flex;align-items:center;gap:3px}
-.page-btn{width:28px;height:28px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
-.page-btn:hover{background:#f6f7f7}
-.page-btn.active{background:#1668F2;color:#fff;border-color:#1668F2}
-.page-btn.disabled{opacity:.45;cursor:not-allowed}
+/* Source badge */
+.eem-status-badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:11.5px;font-weight:600;background:#e0e7ef;color:#031B4E}
+.eem-venue-source-badge{background:#e0e7ef;color:#031B4E}
 
 /* ── MOBILE CARDS ── */
-.mobile-venues{display:none;padding:12px 14px}
-.mobile-venue-card{background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:14px;margin-bottom:8px}
-.mob-venue-title{font-size:14px;font-weight:700;color:#031B4E;margin-bottom:4px;text-decoration:none;display:block}
-.mob-venue-title:hover{color:#1668F2}
-.mob-venue-meta{font-size:12.5px;color:#50575e;margin-bottom:6px}
-.mob-venue-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
-.mob-venue-actions{display:flex;gap:5px}
+.eem-mobile-cards{display:none}
+.eem-mobile-card{background:#fff;border:1px solid #dcdcde;border-radius:3px;padding:14px;margin-bottom:8px}
+.eem-mobile-card-top{display:flex;justify-content:space-between;margin-bottom:6px}
+.eem-mobile-card-id{font-weight:700;color:#1668F2;font-size:14px;text-decoration:none}
+.eem-mobile-card-sub{font-size:12.5px;color:#50575e}
 
-/* ── RESPONSIVE ── */
-@media(max-width:960px){
-  .wp-sidebar{display:none}
-  .wp-content{padding:10px 14px 40px}
-}
-@media(max-width:767px){
-  .wp-content{padding:8px 10px 32px}
-  .plugin-header{padding:14px;flex-direction:column;align-items:stretch;gap:10px}
-  .plugin-title{font-size:18px}
-  .btn-primary{justify-content:center}
-  .stats-bar{padding:12px 14px;gap:8px}
-  .stat-card{flex:1 1 calc(50% - 6px);min-width:0}
-  .stat-card-wide{flex:1 1 100%}
-  .status-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
-  .toolbar{flex-direction:column;align-items:stretch;padding:10px 14px}
-  .toolbar-left{flex-wrap:nowrap}
-  .toolbar-left .toolbar-select{flex:1;min-width:0}
-  .search-wrap{flex:1;max-width:100%}
-  .desktop-table{display:none}
-  .mobile-venues{display:block}
-  .table-footer{padding:10px 14px}
+/* ── DEMO SWITCHER ── */
+.demo-switcher{background:#031B4E;color:#fff;padding:8px 16px;display:flex;align-items:center;gap:10px;font-size:12px}
+.demo-switcher button{padding:4px 10px;border-radius:3px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff}
+.demo-switcher button.active{background:#1668F2;border-color:#1668F2}
+.demo-view{display:none}
+.demo-view.active{display:block}
+
+@media (max-width:767px){
+	.wp-sidebar{display:none}
+	.wp-content{padding:12px 14px 40px}
+	.eem-desktop-table{display:none}
+	.eem-mobile-cards{display:block;padding:12px 14px}
 }
 </style>
 </head>
 <body>
 
+<!-- WP admin bar stub -->
 <div class="wp-admin-bar">
-  <span>&#9776;</span>
-  <span class="site">My Equestrian Site</span>
-  <span>+ New</span>
-  <span style="margin-left:auto">Howdy, whitney</span>
+	<span class="site">Equine Network</span>
+	<span>+ New</span>
+	<span style="margin-left:auto">Howdy, Whitney</span>
 </div>
 
 <div class="wp-body">
-  <nav class="wp-sidebar">
-    <div class="wp-sidebar-item">Dashboard</div>
-    <div class="wp-sidebar-item">Media</div>
-    <div class="wp-sidebar-item">Posts</div>
-    <div class="wp-sidebar-item">Pages</div>
-    <div class="wp-sidebar-sep"></div>
-    <div class="wp-sidebar-label">Event Manager</div>
-    <div class="wp-sidebar-sub">Events</div>
-    <div class="wp-sidebar-sub">Orders</div>
-    <div class="wp-sidebar-sub">Reservations</div>
-    <div class="wp-sidebar-sub">Stall Charts</div>
-    <div class="wp-sidebar-sub active">Venues</div>
-    <div class="wp-sidebar-sub">Producers</div>
-    <div class="wp-sidebar-sub">Reports</div>
-    <div class="wp-sidebar-sub">Settings</div>
-  </nav>
+	<!-- WP sidebar stub -->
+	<nav class="wp-sidebar">
+		<div class="wp-sidebar-item">Dashboard</div>
+		<div class="wp-sidebar-sep"></div>
+		<div class="wp-sidebar-label">Event Manager</div>
+		<div class="wp-sidebar-sub">Dashboard</div>
+		<div class="wp-sidebar-sub">Reservations</div>
+		<div class="wp-sidebar-sub">Orders</div>
+		<div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
+		<div class="wp-sidebar-sub active">&nbsp;&nbsp;Venues</div>
+		<div class="wp-sidebar-sub">Daily Movement</div>
+		<div class="wp-sidebar-sub">Reports</div>
+		<div class="wp-sidebar-sub">Settings</div>
+	</nav>
 
-  <main class="wp-content">
+	<main class="wp-content">
 
-    <div class="breadcrumb">
-      <div class="breadcrumb-logo-box">Plugin Logo</div>
-      <span class="breadcrumb-sep">/</span>
-      <span class="breadcrumb-page">Venues</span>
-    </div>
+		<!-- Demo state switcher (mockup-only UI) -->
+		<div class="demo-switcher">
+			<span>Demo state:</span>
+			<button class="active" onclick="showView('list')">List View</button>
+			<button onclick="showView('detail')">Detail View (venue with layouts)</button>
+		</div>
 
-    <div class="plugin-wrap">
+		<!-- ═══════════════════════════════════════════════════════════
+		     LIST VIEW  (render_list — default when no ?venue_id)
+		     Venue name → WP post edit URL (get_edit_post_link).
+		     "Facility Templates" column: count + "View" link → detail view.
+		     No stats strip (render_list() does not call render_stats).
+		     ═══════════════════════════════════════════════════════════ -->
+		<div id="view-list" class="demo-view active">
+			<div class="eem-page">
+				<nav class="eem-breadcrumb" aria-label="Breadcrumb">
+					<a class="eem-breadcrumb-logo-box" href="#" aria-label="Equine Event Manager dashboard">Plugin Logo</a>
+					<span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+					<span class="eem-breadcrumb-segment" aria-current="page">Venues</span>
+				</nav>
 
-      <!-- PAGE HEADER -->
-      <header class="plugin-header">
-        <div class="plugin-header-left">
-          <h1 class="plugin-title">Venues</h1>
-          <div class="plugin-subtitle">Manage the facilities where your events are held. Each venue can store facility templates for stall and RV layouts.</div>
-          <div class="header-links">
-            <a class="header-link" href="#">View Events</a>
-            <a class="header-link" href="#">View Producers</a>
-          </div>
-        </div>
-        <a href="#" class="btn-primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add Venue
-        </a>
-      </header>
+				<div class="eem-page-wrap">
+					<header class="eem-page-header">
+						<div class="eem-page-header-left">
+							<h1 class="eem-page-title">Venues</h1>
+							<p class="eem-page-subtitle">Manage the facilities where your events are held. Each venue can store facility templates for stall &amp; RV layouts.</p>
+						</div>
+						<div class="eem-page-actions">
+							<!-- Links to WP native post-new.php?post_type=en_venue -->
+							<a class="eem-btn eem-btn-electric" href="#">+ Add Venue</a>
+						</div>
+					</header>
 
-      <!-- STATS CARDS -->
-      <div class="stats-bar">
-        <div class="stat-card">
-          <div class="stat-card-label">Total</div>
-          <div class="stat-card-num">6</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-label">Published</div>
-          <div class="stat-card-num">5</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-label">In Use</div>
-          <div class="stat-card-num">4</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-label">With Website</div>
-          <div class="stat-card-num">3</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card-label">Facility Templates</div>
-          <div class="stat-card-num">11</div>
-        </div>
-      </div>
+					<div class="eem-page-body">
+						<!-- Status tabs — counts from en_venue post_status values -->
+						<nav class="eem-status-tabs" aria-label="Filter venues by status">
+							<a class="eem-status-tab is-active" href="#" aria-current="page">All <span class="eem-status-tab-count">(6)</span></a>
+							<span class="eem-status-tab-sep" aria-hidden="true">|</span>
+							<a class="eem-status-tab" href="#">Published <span class="eem-status-tab-count">(6)</span></a>
+							<span class="eem-status-tab-sep" aria-hidden="true">|</span>
+							<a class="eem-status-tab" href="#">Draft <span class="eem-status-tab-count">(0)</span></a>
+							<span class="eem-status-tab-sep" aria-hidden="true">|</span>
+							<a class="eem-status-tab" href="#">Trash <span class="eem-status-tab-count">(0)</span></a>
+						</nav>
 
-      <!-- STATUS TABS -->
-      <div class="status-tabs">
-        <a class="status-tab active" href="#">All <span class="status-tab-count">(6)</span></a>
-        <span class="status-tab-sep">|</span>
-        <a class="status-tab" href="#">Published <span class="status-tab-count">(5)</span></a>
-        <span class="status-tab-sep">|</span>
-        <a class="status-tab" href="#">Draft <span class="status-tab-count">(1)</span></a>
-        <span class="status-tab-sep">|</span>
-        <a class="status-tab" href="#">Trash <span class="status-tab-count">(0)</span></a>
-      </div>
+						<!-- Toolbar — search only (no bulk action; eem-list-toolbar-left is empty) -->
+						<div class="eem-list-toolbar">
+							<div class="eem-list-toolbar-left"></div>
+							<div class="eem-list-toolbar-right">
+								<form class="eem-search-form" role="search" method="get" action="#">
+									<input type="hidden" name="page" value="equine-event-manager-venues" />
+									<span class="eem-search-wrap">
+										<svg class="eem-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+										<input class="eem-search-input" type="search" name="s" placeholder="Search" />
+									</span>
+								</form>
+								<span class="eem-item-count">6 items</span>
+							</div>
+						</div>
 
-      <!-- TOOLBAR -->
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <select class="toolbar-select">
-            <option>Bulk actions</option>
-            <option>Edit</option>
-            <option>Move to Trash</option>
-          </select>
-          <button class="toolbar-btn">Apply</button>
-          <select class="toolbar-select">
-            <option>All dates</option>
-            <option>June 2026</option>
-            <option>May 2026</option>
-          </select>
-          <button class="toolbar-btn">Filter</button>
-        </div>
-        <div class="toolbar-right">
-          <div class="search-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input class="search-input" type="text" placeholder="Search venues...">
-          </div>
-          <button class="toolbar-btn">Search Venues</button>
-          <span class="item-count">6 items</span>
-        </div>
-      </div>
+						<!-- Desktop table -->
+						<div class="eem-desktop-table">
+							<table class="eem-table">
+								<thead>
+									<tr>
+										<!-- Sortable: title (default asc) and templates -->
+										<th class="sortable is-sorted is-sorted--asc"><a href="#">Venue Name <span class="eem-sort-icon" aria-hidden="true"><span></span><span></span></span></a></th>
+										<th>City / State</th>
+										<th class="sortable"><a href="#">Facility Templates <span class="eem-sort-icon" aria-hidden="true"><span></span><span></span></span></a></th>
+										<th style="text-align:right">Actions</th>
+									</tr>
+								</thead>
+								<tbody>
 
-      <!-- DESKTOP TABLE -->
-      <div class="desktop-table">
-        <table>
-          <thead>
-            <tr>
-              <th class="col-cb"><input type="checkbox"></th>
-              <th class="sortable">Venue Name <span class="sort-icon"><span></span><span></span></span></th>
-              <th>City / State</th>
-              <th class="sortable">Facility Templates <span class="sort-icon"><span></span><span></span></span></th>
-              <th style="text-align:right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td>
-                <a class="venue-title" href="#">Georgia National Fairgrounds</a>
-                <div class="venue-row-actions">
-                  <a class="venue-row-action" href="#">Edit</a>
-                  <span class="venue-row-action-sep">|</span>
-                  <a class="venue-row-action" href="#">View Events</a>
-                  <span class="venue-row-action-sep">|</span>
-                  <a class="venue-row-action" href="#">View</a>
-                </div>
-              </td>
-              <td><span class="location-val">Perry, GA</span></td>
-              <td>
-                <span class="template-count">
-                  <span class="template-count-num">3</span>
-                </span>
-                <a class="template-link" href="#">View</a>
-              </td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap">
-                    <button class="more-btn" onclick="toggleRowMenu('v-menu-1',event)">···</button>
-                    <div class="row-dropdown" id="v-menu-1">
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Venue</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Venue</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Facility Templates</a>
-                      <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Events</a>
-                      <a class="row-dd-item row-dd-danger" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash</a>
-                    </div>
-                  </div>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td>
-                <a class="venue-title" href="#">Katy Prairie Arena</a>
-                <div class="venue-row-actions">
-                  <a class="venue-row-action" href="#">Edit</a>
-                  <span class="venue-row-action-sep">|</span>
-                  <a class="venue-row-action" href="#">View Events</a>
-                  <span class="venue-row-action-sep">|</span>
-                  <a class="venue-row-action" href="#">View</a>
-                </div>
-              </td>
-              <td><span class="location-val">Katy, TX</span></td>
-              <td>
-                <span class="template-count">
-                  <span class="template-count-num">2</span>
-                </span>
-                <a class="template-link" href="#">View</a>
-              </td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td>
-                <a class="venue-title" href="#">Fort Worth Stockyards</a>
-                <div class="venue-row-actions">
-                  <a class="venue-row-action" href="#">Edit</a>
-                  <span class="venue-row-action-sep">|</span>
-                  <a class="venue-row-action" href="#">View Events</a>
-                  <span class="venue-row-action-sep">|</span>
-                  <a class="venue-row-action" href="#">View</a>
-                </div>
-              </td>
-              <td><span class="location-val">Fort Worth, TX</span></td>
-              <td>
-                <span class="template-count">
-                  <span class="template-count-num">4</span>
-                </span>
-                <a class="template-link" href="#">View</a>
-              </td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td>
-                <a class="venue-title" href="#">Florida Horse Park</a>
-                <div class="venue-row-actions">
-                  <a class="venue-row-action" href="#">Edit</a>
-                  <span class="venue-row-action-sep">|</span>
-                  <a class="venue-row-action" href="#">View</a>
-                </div>
-              </td>
-              <td><span class="location-val">Ocala, FL</span></td>
-              <td>
-                <span class="template-count">
-                  <span class="template-count-num">2</span>
-                </span>
-                <a class="template-link" href="#">View</a>
-              </td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td>
-                <a class="venue-title" href="#">Lancaster Event Center (EEMDEMO)</a>
-                <div class="venue-row-actions">
-                  <a class="venue-row-action" href="#">Edit</a>
-                  <span class="venue-row-action-sep">|</span>
-                  <a class="venue-row-action" href="#">View</a>
-                </div>
-              </td>
-              <td><span class="location-val">Lincoln, NE</span></td>
-              <td><span class="template-count-zero">—</span></td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td>
-                <a class="venue-title" href="#">Rushmore Plaza Civic Center (EEMDEMO)</a>
-                <div class="venue-row-actions">
-                  <a class="venue-row-action" href="#">Edit</a>
-                </div>
-              </td>
-              <td><span class="location-val-empty">—</span></td>
-              <td><span class="template-count-zero">—</span></td>
-              <td>
-                <div class="actions-cell">
-                  <div class="row-menu-wrap"><button class="more-btn">···</button></div>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+									<!-- Row 1 — no templates, no city/state (meta empty) -->
+									<tr>
+										<td><a class="eem-venue-name" href="#">CAM-PLEX</a></td>
+										<td>Gillette, WY</td>
+										<td><span class="eem-venue-muted">—</span></td>
+										<td>
+											<div class="eem-actions-cell">
+												<div class="eem-row-menu-wrap">
+													<button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="eem-venue-menu-1" title="More actions">···</button>
+													<div class="eem-row-dropdown" id="eem-venue-menu-1" role="menu">
+														<a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Venue</a>
+														<a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Events</a>
+														<a class="eem-row-dd-item eem-row-dd-danger" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash</a>
+													</div>
+												</div>
+											</div>
+										</td>
+									</tr>
 
-      <!-- MOBILE CARDS -->
-      <div class="mobile-venues">
-        <div class="mobile-venue-card">
-          <a class="mob-venue-title" href="#">Georgia National Fairgrounds</a>
-          <div class="mob-venue-meta">Perry, GA · 3 facility templates</div>
-          <div class="mob-venue-bottom">
-            <span class="ev-status status-published">Published</span>
-            <div class="mob-venue-actions"><button class="more-btn">···</button></div>
-          </div>
-        </div>
-        <div class="mobile-venue-card">
-          <a class="mob-venue-title" href="#">Katy Prairie Arena</a>
-          <div class="mob-venue-meta">Katy, TX · 2 facility templates</div>
-          <div class="mob-venue-bottom">
-            <span class="ev-status status-published">Published</span>
-            <div class="mob-venue-actions"><button class="more-btn">···</button></div>
-          </div>
-        </div>
-      </div>
+									<!-- Row 2 — no templates -->
+									<tr>
+										<td><a class="eem-venue-name" href="#">Central States Fairgrounds</a></td>
+										<td>Rapid City, SD</td>
+										<td><span class="eem-venue-muted">—</span></td>
+										<td>
+											<div class="eem-actions-cell">
+												<div class="eem-row-menu-wrap">
+													<button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="eem-venue-menu-2" title="More actions">···</button>
+													<div class="eem-row-dropdown" id="eem-venue-menu-2" role="menu">
+														<a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Venue</a>
+														<a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Events</a>
+														<a class="eem-row-dd-item eem-row-dd-danger" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash</a>
+													</div>
+												</div>
+											</div>
+										</td>
+									</tr>
 
-      <!-- TABLE FOOTER -->
-      <div class="table-footer">
-        <div class="table-footer-info">Showing 1–6 of 6 venues</div>
-        <div class="pagination">
-          <a class="page-btn disabled"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 2 3 6 8 10"/></svg></a>
-          <a class="page-btn active" href="#">1</a>
-          <a class="page-btn" href="#"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 2 9 6 4 10"/></svg></a>
-        </div>
-      </div>
+									<!-- Row 3 — 1 template; "Facility Templates" item in menu (only when tpl_vid > 0) -->
+									<tr>
+										<td><a class="eem-venue-name" href="#">Lancaster Event Center</a></td>
+										<td>Lincoln, NE</td>
+										<td><span class="eem-tpl-count">1</span><a class="eem-tpl-link" href="#">View</a></td>
+										<td>
+											<div class="eem-actions-cell">
+												<!-- Action menu OPEN for demo -->
+												<div class="eem-row-menu-wrap open">
+													<button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="true" aria-controls="eem-venue-menu-3" title="More actions">···</button>
+													<div class="eem-row-dropdown" id="eem-venue-menu-3" role="menu">
+														<a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Venue</a>
+														<!-- "Facility Templates" only rendered when tpl_url !== '' -->
+														<a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Facility Templates</a>
+														<a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Events</a>
+														<a class="eem-row-dd-item eem-row-dd-danger" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash</a>
+													</div>
+												</div>
+											</div>
+										</td>
+									</tr>
 
-    </div><!-- /plugin-wrap -->
+									<!-- Row 4 — 1 template -->
+									<tr>
+										<td><a class="eem-venue-name" href="#">Rushmore Plaza Civic Center</a></td>
+										<td>Rapid City, SD</td>
+										<td><span class="eem-tpl-count">1</span><a class="eem-tpl-link" href="#">View</a></td>
+										<td>
+											<div class="eem-actions-cell">
+												<div class="eem-row-menu-wrap">
+													<button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="eem-venue-menu-4" title="More actions">···</button>
+													<div class="eem-row-dropdown" id="eem-venue-menu-4" role="menu">
+														<a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Venue</a>
+														<a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Facility Templates</a>
+														<a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Events</a>
+														<a class="eem-row-dd-item eem-row-dd-danger" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash</a>
+													</div>
+												</div>
+											</div>
+										</td>
+									</tr>
 
-  </main>
+									<!-- Row 5 — 3 templates -->
+									<tr>
+										<td><a class="eem-venue-name" href="#">Will Rogers Memorial Coliseum</a></td>
+										<td>Fort Worth, TX</td>
+										<td><span class="eem-tpl-count">3</span><a class="eem-tpl-link" href="#">View</a></td>
+										<td>
+											<div class="eem-actions-cell">
+												<div class="eem-row-menu-wrap">
+													<button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="eem-venue-menu-5" title="More actions">···</button>
+													<div class="eem-row-dropdown" id="eem-venue-menu-5" role="menu">
+														<a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Venue</a>
+														<a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Facility Templates</a>
+														<a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Events</a>
+														<a class="eem-row-dd-item eem-row-dd-danger" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash</a>
+													</div>
+												</div>
+											</div>
+										</td>
+									</tr>
+
+									<!-- Row 6 — no city/state meta on this venue -->
+									<tr>
+										<td><a class="eem-venue-name" href="#">Tulsa Expo Square</a></td>
+										<td><span class="eem-venue-muted">—</span></td>
+										<td><span class="eem-venue-muted">—</span></td>
+										<td>
+											<div class="eem-actions-cell">
+												<div class="eem-row-menu-wrap">
+													<button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="eem-venue-menu-6" title="More actions">···</button>
+													<div class="eem-row-dropdown" id="eem-venue-menu-6" role="menu">
+														<a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Venue</a>
+														<a class="eem-row-dd-item" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>View Events</a>
+														<a class="eem-row-dd-item eem-row-dd-danger" role="menuitem" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash</a>
+													</div>
+												</div>
+											</div>
+										</td>
+									</tr>
+
+								</tbody>
+							</table>
+						</div>
+
+						<!-- Mobile cards -->
+						<div class="eem-mobile-cards eem-mobile-venues">
+							<div class="eem-mobile-card">
+								<div class="eem-mobile-card-top"><a class="eem-mobile-card-id" href="#">CAM-PLEX</a></div>
+								<div class="eem-mobile-card-sub">Gillette, WY · 0 facility templates</div>
+							</div>
+							<div class="eem-mobile-card">
+								<div class="eem-mobile-card-top"><a class="eem-mobile-card-id" href="#">Central States Fairgrounds</a></div>
+								<div class="eem-mobile-card-sub">Rapid City, SD · 0 facility templates</div>
+							</div>
+							<div class="eem-mobile-card">
+								<div class="eem-mobile-card-top"><a class="eem-mobile-card-id" href="#">Lancaster Event Center</a></div>
+								<div class="eem-mobile-card-sub">Lincoln, NE · 1 facility template</div>
+							</div>
+							<div class="eem-mobile-card">
+								<div class="eem-mobile-card-top"><a class="eem-mobile-card-id" href="#">Rushmore Plaza Civic Center</a></div>
+								<div class="eem-mobile-card-sub">Rapid City, SD · 1 facility template</div>
+							</div>
+							<div class="eem-mobile-card">
+								<div class="eem-mobile-card-top"><a class="eem-mobile-card-id" href="#">Will Rogers Memorial Coliseum</a></div>
+								<div class="eem-mobile-card-sub">Fort Worth, TX · 3 facility templates</div>
+							</div>
+							<div class="eem-mobile-card">
+								<div class="eem-mobile-card-top"><a class="eem-mobile-card-id" href="#">Tulsa Expo Square</a></div>
+								<div class="eem-mobile-card-sub">0 facility templates</div>
+							</div>
+						</div>
+
+						<!-- Footer (single page — no pagination controls) -->
+						<div class="eem-table-footer">
+							<span class="eem-table-footer-info">Showing 1–6 of 6 venues</span>
+						</div>
+					</div><!-- /.eem-page-body -->
+				</div><!-- /.eem-page-wrap -->
+			</div><!-- /.eem-page -->
+		</div><!-- /#view-list -->
+
+		<!-- ═══════════════════════════════════════════════════════════
+		     DETAIL VIEW  (?venue_id=N — render_detail)
+		     Breadcrumb: Stall & RV Charts / Venues / {Venue Name}
+		     Two cards: "Saved Layouts" (table with View/Rename/Delete buttons)
+		                "Event Sources" (source badge + source venue name + source ID)
+		     AJAX actions: venue-layout-view / venue-layout-rename / venue-layout-delete
+		     ═══════════════════════════════════════════════════════════ -->
+		<div id="view-detail" class="demo-view">
+			<div class="eem-page">
+				<nav class="eem-breadcrumb" aria-label="Breadcrumb">
+					<a class="eem-breadcrumb-logo-box" href="#" aria-label="Equine Event Manager dashboard">Plugin Logo</a>
+					<span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+					<span class="eem-breadcrumb-segment"><a href="#">Stall &amp; RV Charts</a></span>
+					<span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+					<span class="eem-breadcrumb-segment"><a href="#">Venues</a></span>
+					<span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+					<span class="eem-breadcrumb-segment" aria-current="page">Will Rogers Memorial Coliseum</span>
+				</nav>
+
+				<div class="eem-page-wrap">
+					<header class="eem-page-header">
+						<div class="eem-page-header-left">
+							<h1 class="eem-page-title">Will Rogers Memorial Coliseum</h1>
+							<p class="eem-page-subtitle">3 saved layouts</p>
+						</div>
+					</header>
+
+					<div class="eem-page-body">
+						<div class="eem-venues" data-venue-nonce="abc123nonce">
+
+							<!-- Card 1: Saved Layouts -->
+							<div class="eem-card eem-venue-card">
+								<div class="eem-card-header">
+									<h2 class="eem-card-title">Saved Layouts</h2>
+								</div>
+								<div class="eem-card-body">
+									<table class="eem-table eem-venue-layouts-table">
+										<thead>
+											<tr>
+												<th>Layout</th>
+												<th>Saved</th>
+												<th></th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr data-layout-id="101">
+												<td class="eem-venue-layout-name">2024 WRMC Stalls + RV East</td>
+												<td>Mar 12, 2024</td>
+												<td class="eem-table-r">
+													<button type="button" class="eem-btn eem-btn-primary eem-btn-sm" data-eem-action="venue-layout-view" data-layout-id="101" data-layout-name="2024 WRMC Stalls + RV East">View</button>
+													<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="venue-layout-rename" data-layout-id="101" data-layout-name="2024 WRMC Stalls + RV East">Rename</button>
+													<button type="button" class="eem-btn eem-btn-danger eem-btn-sm" data-eem-action="venue-layout-delete" data-layout-id="101" data-layout-name="2024 WRMC Stalls + RV East">Delete</button>
+												</td>
+											</tr>
+											<tr data-layout-id="102">
+												<td class="eem-venue-layout-name">2025 WRMC Full Complex</td>
+												<td>Jan 8, 2025</td>
+												<td class="eem-table-r">
+													<button type="button" class="eem-btn eem-btn-primary eem-btn-sm" data-eem-action="venue-layout-view" data-layout-id="102" data-layout-name="2025 WRMC Full Complex">View</button>
+													<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="venue-layout-rename" data-layout-id="102" data-layout-name="2025 WRMC Full Complex">Rename</button>
+													<button type="button" class="eem-btn eem-btn-danger eem-btn-sm" data-eem-action="venue-layout-delete" data-layout-id="102" data-layout-name="2025 WRMC Full Complex">Delete</button>
+												</td>
+											</tr>
+											<tr data-layout-id="103">
+												<td class="eem-venue-layout-name">2025 WRMC South Barn Only</td>
+												<td>Feb 3, 2025</td>
+												<td class="eem-table-r">
+													<button type="button" class="eem-btn eem-btn-primary eem-btn-sm" data-eem-action="venue-layout-view" data-layout-id="103" data-layout-name="2025 WRMC South Barn Only">View</button>
+													<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="venue-layout-rename" data-layout-id="103" data-layout-name="2025 WRMC South Barn Only">Rename</button>
+													<button type="button" class="eem-btn eem-btn-danger eem-btn-sm" data-eem-action="venue-layout-delete" data-layout-id="103" data-layout-name="2025 WRMC South Barn Only">Delete</button>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+
+							<!-- Card 2: Event Sources -->
+							<div class="eem-card eem-venue-card">
+								<div class="eem-card-header">
+									<h2 class="eem-card-title">Event Sources</h2>
+								</div>
+								<div class="eem-card-body">
+									<p class="eem-venue-empty-note">These event sources resolve to this venue. The same physical place reached through multiple sources or seasons unifies here.</p>
+									<table class="eem-table eem-venue-sources-table">
+										<thead>
+											<tr>
+												<th>Source</th>
+												<th>Source Venue Name</th>
+												<th>Source ID</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr>
+												<td><span class="eem-status-badge eem-venue-source-badge">The Events Calendar</span></td>
+												<td>Will Rogers Memorial Center</td>
+												<td>tec_venue_7</td>
+											</tr>
+											<tr>
+												<td><span class="eem-status-badge eem-venue-source-badge">GEMS</span></td>
+												<td>Will Rogers Memorial Coliseum</td>
+												<td>gems_44291</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+
+						</div><!-- /.eem-venues -->
+					</div><!-- /.eem-page-body -->
+				</div><!-- /.eem-page-wrap -->
+			</div><!-- /.eem-page -->
+		</div><!-- /#view-detail -->
+
+	</main>
 </div>
 
 <script>
-function toggleRowMenu(id,e){
-  e.stopPropagation();
-  var menu=document.getElementById(id);
-  document.querySelectorAll('.row-dropdown').forEach(function(d){if(d!==menu)d.classList.remove('open');});
-  menu.classList.toggle('open');
+// Demo switcher (mockup-only)
+function showView(name) {
+	document.querySelectorAll('.demo-view').forEach(function(v){ v.classList.remove('active'); });
+	document.getElementById('view-' + name).classList.add('active');
+	document.querySelectorAll('.demo-switcher button').forEach(function(b){ b.classList.remove('active'); });
+	event.target.classList.add('active');
 }
-document.addEventListener('click',function(){
-  document.querySelectorAll('.row-dropdown').forEach(function(d){d.classList.remove('open');});
+
+// Row action menu toggle — mirrors data-eem-action="dropdown-toggle" in admin.js
+document.addEventListener('click', function(e) {
+	var btn = e.target.closest('[data-eem-action="dropdown-toggle"]');
+	if (btn) {
+		e.stopPropagation();
+		var wrap = btn.closest('.eem-row-menu-wrap');
+		var open = wrap.classList.contains('open');
+		document.querySelectorAll('.eem-row-menu-wrap.open').forEach(function(w) {
+			w.classList.remove('open');
+			var b = w.querySelector('.eem-more-btn'); if (b) b.setAttribute('aria-expanded', 'false');
+		});
+		if (!open) { wrap.classList.add('open'); btn.setAttribute('aria-expanded', 'true'); }
+	} else {
+		document.querySelectorAll('.eem-row-menu-wrap.open').forEach(function(w) {
+			w.classList.remove('open');
+			var b = w.querySelector('.eem-more-btn'); if (b) b.setAttribute('aria-expanded', 'false');
+		});
+	}
 });
 </script>
 

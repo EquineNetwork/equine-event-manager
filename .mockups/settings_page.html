@@ -1,9 +1,21 @@
 <!DOCTYPE html>
 <!--
-  IMPLEMENTATION DELTA (2026-06-01, plugin 2.3.66): the global "Cancellation Policy"
-  field under Communications → Policies has been REMOVED — cancellation policy is now
-  per-reservation (see decisions.md C10-2). Terms & Conditions remains. This supersedes
-  the earlier "leave the global field in place during transition" note.
+  Equine Event Manager — Settings page mockup (refreshed 2026-06-20 from
+  EEM_Settings_Page::render() — all 7 panels represented: Integrations,
+  Branding, Communications, Shortcodes, Payments, Add-Ons, Uninstall.
+
+  Key changes from prior mockup:
+  - Native Events: now "Built-in" (not "Coming Soon") — listed first, selectable.
+  - Integrations: Native detail has Google Maps API key field; GEMS detail shows
+    Association + Test Connection (not a bare URL field).
+  - Onboarding prompt shown when no event source confirmed yet.
+  - Branding panel: logo upload (PNG only), support phone, support email.
+  - Communications: added BCC/Admin Copy Email row between toggle and From Name.
+  - Payments: Stripe shows Test + Live credential pairs (4 key fields + webhook).
+  - Authorize.net: Test + Live credential pairs (4 fields) + Test Connection btn.
+  - Add-Ons panel: Entries toggle + Sheets & Results toggle.
+  - Danger panel: "Erase all data" button (typed ERASE confirm) + delete-on-uninstall checkbox.
+  - Active tab in mockup: Integrations (TEC selected + confirmed).
 -->
 <html lang="en">
 <head>
@@ -12,1263 +24,1002 @@
 <title>Equine Event Manager – Settings</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+/* ── Brand tokens ───────────────────────────────────────────────────────── */
+:root{
+  --eem-navy:#031B4E; --eem-electric:#1668F2; --eem-electric-hover:#1355cc;
+  --eem-amber:#F5A623; --eem-red:#EF4444; --eem-green:#22C55E;
+  --eem-bg:#F7F9FC; --eem-bg-alt:#f3f4f5; --eem-surface:#FFFFFF;
+  --eem-border:#D9E2F2; --eem-border-soft:#f0f0f1; --eem-border-card:#c3c4c7;
+  --eem-control-border:#8c8f94; --eem-gray-50:#f8fafc;
+  --eem-text:#1d2327; --eem-text-on-navy:#fff; --eem-text-secondary:#6B7A99;
+  --eem-text-muted:#8c8f94; --eem-text-placeholder:#B0BDD4;
+  --eem-warn-bg:#FFFBEB; --eem-warn-border:#fde68a; --eem-warn-text:#b45309;
+  --eem-info-bg:#EEF4FF; --eem-info-border:#c0d8ff;
+  --eem-success-text:#0d9488; --eem-success-accent:#16a34a;
+  --eem-font-display:'Space Grotesk',system-ui,sans-serif;
+  --eem-font-ui:'IBM Plex Sans',system-ui,sans-serif;
+  --eem-space-1:4px; --eem-space-2:8px; --eem-space-3:12px; --eem-space-4:16px;
+  --eem-radius-sm:2px; --eem-radius:3px; --eem-radius-lg:6px;
+  --eem-select-height:38px;
+  --eem-border-input:1px solid var(--eem-control-border);
+  --eem-border-card-rule:1px solid var(--eem-border-card);
+  --eem-focus-ring:0 0 0 2px rgba(22,104,242,0.1);
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+body{font-family:var(--eem-font-ui);background:#f0f0f1;color:var(--eem-text);font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+a{text-decoration:none} a:hover{text-decoration:none}
+code{font-family:'IBM Plex Mono','SFMono-Regular',Menlo,monospace}
 
-/* Universal hover convention — color only, NEVER underline */
-a{text-decoration:none}
-a:hover{text-decoration:none}
-
-/* ── WP SHELL ── */
+/* ── WP admin shell stub ── */
 .wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
-.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7}
 .wp-admin-bar span.site{color:#fff;font-weight:600}
-.wp-body{display:flex;flex:1}
-.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
-.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
-.wp-sidebar-item:hover{background:#2c3338;color:#fff}
-.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
-.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
-.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
-.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
-.wp-sidebar-sub:hover{color:#fff}
-.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+.wp-body{display:flex;flex:1;min-height:0}
+.wp-sidebar{width:160px;background:#1d2327;flex-shrink:0;padding-top:8px}
+.wp-sidebar .item{padding:8px 12px;font-size:13px;color:#c3c4c7}
+.wp-sidebar .item.active{background:var(--eem-electric);color:#fff;font-weight:600}
+.wp-content{flex:1;min-width:0;padding:20px;overflow:auto}
 
-/* ── CONTENT ── */
-.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+/* ── page shell ── */
+.eem-page{max-width:1180px}
+.eem-breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:13px}
+.eem-breadcrumb-logo img{height:26px;display:block}
+.eem-breadcrumb-sep{color:var(--eem-text-muted)}
+.eem-breadcrumb-segment{color:var(--eem-navy);font-weight:600}
+.eem-page-wrap{background:var(--eem-surface);border:var(--eem-border-card-rule);border-radius:var(--eem-radius-lg);overflow:hidden}
+.eem-page-header{padding:18px 22px;border-bottom:1px solid #dcdcde}
+.eem-page-title{font-family:var(--eem-font-display);font-size:22px;font-weight:700;color:var(--eem-navy)}
+.eem-page-subtitle{font-size:13px;color:var(--eem-text-secondary);margin-top:4px}
+.eem-page-body{padding:0}
 
-.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
-.breadcrumb-sep{font-size:13px;color:#8c8f94}
-.breadcrumb-page{font-size:13px;font-weight:600;color:#1d2327}
+/* ── settings layout: vertical nav + panel ── */
+.eem-settings{display:grid;grid-template-columns:200px 1fr;gap:0;background:var(--eem-surface);overflow:hidden;align-items:stretch}
+.eem-settings-nav{background:#fafafa;border-right:1px solid #dcdcde;padding:8px 0}
+.eem-settings-nav ul{margin:0;padding:0;list-style:none}
+.eem-settings-nav-item{display:flex;align-items:center;gap:9px;padding:10px 16px;font-size:13.5px;color:#50575e;border-left:3px solid transparent;transition:background .1s,color .1s,border-color .1s}
+.eem-settings-nav-item:hover{background:#f0f0f1;color:var(--eem-text)}
+.eem-settings-nav-item.is-active{background:var(--eem-info-bg);color:var(--eem-electric);border-left-color:var(--eem-electric);font-weight:500}
+.eem-settings-nav-item .dashicon{width:15px;height:15px;flex-shrink:0;display:inline-block;text-align:center;font-size:14px}
+.eem-settings-panel{display:flex;flex-direction:column;gap:0;min-width:0;padding:0}
+.eem-settings-form{display:flex;flex-direction:column;gap:0}
 
-.page-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
-.page-subtitle{font-size:13px;color:#6B7A99;line-height:1.45}
+/* save bar */
+.eem-settings-save-bar{display:flex;align-items:center;gap:10px;padding:16px 28px;background:var(--eem-bg-alt);border-top:1px solid #dcdcde}
 
-/* ── PLUGIN-WRAP (single bordered card per VIS-3) ── */
-.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+/* settings flattens .eem-card into stacked sections */
+.eem-settings .eem-card{background:transparent;border:none;border-radius:0;border-bottom:1px solid #dcdcde;overflow:visible}
+.eem-settings .eem-card:last-of-type{border-bottom:none}
+.eem-settings .eem-card-header{padding:22px 28px 0;border-bottom:none;background:transparent;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.eem-settings .eem-card-body{padding:6px 28px 22px}
+.eem-card-title{font-family:var(--eem-font-display);font-size:14px;font-weight:700;color:var(--eem-navy);display:flex;align-items:center;gap:7px}
 
-/* Page header band inside plugin-wrap */
-.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde}
+/* danger card variant */
+.eem-card--danger .eem-card-title{color:var(--eem-red)}
 
-/* ── SETTINGS LAYOUT (grid inside plugin-wrap) ── */
-.settings-wrap{display:grid;grid-template-columns:200px 1fr;gap:0;background:#fff;overflow:hidden}
+/* ── form controls ── */
+.eem-field-row{display:grid;grid-template-columns:200px 1fr;gap:var(--eem-space-4);align-items:start;padding:var(--eem-space-3) 0;border-bottom:1px solid var(--eem-border-soft)}
+.eem-field-row:first-child{padding-top:0}
+.eem-field-row:last-child{border-bottom:none;padding-bottom:0}
+.eem-field-label{font-size:13px;font-weight:600;color:var(--eem-text);padding-top:9px;line-height:1.4}
+.eem-field-control{display:flex;flex-direction:column;gap:5px}
+input.eem-field-input,textarea.eem-field-textarea,select.eem-field-select{margin:0;padding:8px 11px;border:var(--eem-border-input);border-radius:var(--eem-radius);font-size:13.5px;font-family:var(--eem-font-ui);color:var(--eem-navy);background:var(--eem-surface);width:100%;outline:none}
+input.eem-field-input{height:var(--eem-select-height);box-sizing:border-box}
+input.eem-field-input:focus,textarea.eem-field-textarea:focus,select.eem-field-select:focus{border-color:var(--eem-electric);box-shadow:var(--eem-focus-ring)}
+.eem-field-textarea{resize:vertical;min-height:90px;line-height:1.6}
+select.eem-field-select{padding:8px 30px 8px 11px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7A99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.eem-field-hint{font-size:12px;color:var(--eem-text-secondary);line-height:1.6}
+.eem-field-hint code{background:#f0f0f1;padding:1px 5px;border-radius:var(--eem-radius-sm);font-size:11px}
+.eem-checkbox-row{display:flex;align-items:center;gap:var(--eem-space-2);cursor:pointer;padding:8px 0}
+.eem-checkbox-row span{font-size:13.5px;color:var(--eem-text)}
 
-/* Left nav */
-.settings-nav{border-right:1px solid #dcdcde;padding:8px 0;background:#f3f4f5}
-.settings-nav-item{display:flex;align-items:center;gap:9px;padding:10px 16px;font-size:13.5px;color:#50575e;cursor:pointer;border-left:3px solid transparent}
-.settings-nav-item:hover{background:#f0f0f1;color:#1d2327}
-.settings-nav-item.active{color:#1668F2;background:#EEF4FF;border-left-color:#1668F2;font-weight:500}
-.settings-nav-item svg{width:15px;height:15px;flex-shrink:0}
+/* % / $ prefix-affix field */
+.eem-price-wrap{display:flex;align-items:stretch;max-width:180px;height:var(--eem-select-height);border:1px solid var(--eem-control-border);border-radius:var(--eem-radius);background:#fff;overflow:hidden}
+.eem-price-wrap:focus-within{border-color:var(--eem-electric);box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.eem-price-symbol{padding:0 11px;background:#f0f4fb;border-right:1px solid var(--eem-control-border);font-size:13px;color:var(--eem-navy);font-weight:600;display:flex;align-items:center;order:2}
+input.eem-price-input{margin:0;padding:0 12px;height:100%;border:none;border-radius:0;font-size:13.5px;color:var(--eem-navy);background:transparent;min-width:0;flex:1;outline:none;order:1}
 
-/* Right content */
-.settings-content{padding:0;display:flex;flex-direction:column}
+/* ── buttons ── */
+.eem-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:var(--eem-radius);font-size:13px;font-weight:600;font-family:var(--eem-font-ui);cursor:pointer;white-space:nowrap;border:none;background:transparent;color:inherit;line-height:1.4;transition:background .15s,border-color .15s,color .15s}
+.eem-btn-electric{background:var(--eem-electric);color:var(--eem-text-on-navy)}
+.eem-btn-electric:hover{background:var(--eem-electric-hover)}
+.eem-btn-secondary{background:var(--eem-surface);border:1px solid var(--eem-control-border);color:var(--eem-navy)}
+.eem-btn-secondary:hover{border-color:var(--eem-electric);color:var(--eem-electric)}
+.eem-btn-danger{background:var(--eem-red);color:#fff}
+.eem-btn-danger:hover{background:#dc2626}
+.eem-btn-danger:disabled{background:#f87171;cursor:not-allowed}
 
-/* Section */
-.settings-section{padding:22px 28px;border-bottom:1px solid #dcdcde}
-.settings-section:last-of-type{border-bottom:none}
-.section-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E;margin-bottom:6px}
-.section-desc{font-size:13px;color:#6B7A99;line-height:1.6;margin-bottom:20px}
+/* ── source rows (radio-as-card picker) ── */
+.eem-source-group{display:flex;flex-direction:column;gap:var(--eem-space-2);margin-bottom:var(--eem-space-3)}
+.eem-source-row{display:flex;align-items:flex-start;gap:var(--eem-space-3);padding:14px 16px;border:1.5px solid var(--eem-border);border-radius:var(--eem-radius);background:var(--eem-surface);cursor:pointer;transition:border-color .12s,background .12s}
+.eem-source-row:hover{border-color:var(--eem-electric);background:#FAFBFE}
+.eem-source-row.is-selected{border-color:var(--eem-electric);background:var(--eem-info-bg)}
+.eem-source-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--eem-border-card);background:var(--eem-surface);flex-shrink:0;margin-top:2px;position:relative}
+.eem-source-row.is-selected .eem-source-radio{border-color:var(--eem-electric)}
+.eem-source-row.is-selected .eem-source-radio::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--eem-electric)}
+.eem-source-row-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.eem-source-row-head{display:flex;align-items:center;gap:var(--eem-space-2);flex-wrap:wrap}
+.eem-source-row-title{font-family:var(--eem-font-display);font-size:14px;font-weight:700;color:var(--eem-navy)}
+.eem-source-row-desc{font-size:12.5px;color:var(--eem-text-secondary);line-height:1.5}
+.eem-source-detail{margin-top:var(--eem-space-3);padding:var(--eem-space-4);background:#FAFBFE;border:1px solid #E5EAF2;border-radius:var(--eem-radius)}
+.eem-source-detail[hidden]{display:none}
+.eem-source-detail-title{font-family:var(--eem-font-display);font-size:13px;font-weight:700;color:var(--eem-navy);margin-bottom:var(--eem-space-3)}
+.eem-source-status{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.eem-source-status.is-active{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
+.eem-source-status.is-info{background:var(--eem-info-bg);color:var(--eem-electric);border:1px solid var(--eem-info-border)}
+.eem-source-status.is-warning{background:var(--eem-warn-bg);color:var(--eem-warn-text);border:1px solid var(--eem-warn-border)}
+.eem-source-status.is-soon{background:#f1f3f7;color:var(--eem-text-muted);border:1px solid var(--eem-border);letter-spacing:.04em;text-transform:uppercase}
 
-/* Sub-section (e.g. Stripe Connection) */
-.sub-section{border:1px solid #dcdcde;border-radius:4px;padding:18px 22px;margin-bottom:16px}
-.sub-section-title{font-size:14px;font-weight:600;color:#031B4E;margin-bottom:6px}
-.sub-section-desc{font-size:13px;color:#6B7A99;margin-bottom:16px}
+/* onboarding prompt */
+.eem-source-onboarding-prompt{background:var(--eem-warn-bg);border:1px solid var(--eem-warn-border);border-radius:var(--eem-radius);padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--eem-warn-text);line-height:1.5}
+.eem-source-onboarding-prompt strong{display:block;margin-bottom:4px}
 
-/* Field rows */
-.field-row{display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:start;padding:12px 0;border-bottom:1px solid #f0f0f1}
-.field-row:last-child{border-bottom:none}
-.field-label{font-size:13.5px;font-weight:600;color:#1d2327;padding-top:9px}
-.field-label-sub{font-size:12px;color:#6B7A99;font-weight:400;margin-top:2px}
-.field-control{display:flex;flex-direction:column;gap:6px}
-.field-input{padding:8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none;width:100%}
-.field-input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-.field-input::placeholder{color:#b0b0b0}
-.field-textarea{padding:8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none;width:100%;resize:vertical;min-height:80px;line-height:1.6}
-.field-textarea:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-.field-select{padding:8px 32px 8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none;width:auto;min-width:120px}
-.field-hint{font-size:12px;color:#6B7A99;line-height:1.6}
-.field-hint code{background:#f0f0f1;padding:1px 5px;border-radius:3px;font-size:11.5px;color:#1d2327;font-family:monospace}
+/* processor section (Payments) */
+.eem-processor-inactive-note{font-size:12px;font-weight:600;color:var(--eem-warn-text)}
 
-/* Toggle */
-.toggle{width:44px;height:24px;border-radius:12px;position:relative;cursor:pointer;flex-shrink:0}
-.toggle.on{background:#1668F2}
-.toggle.off{background:#c3c4c7}
-.toggle::after{content:'';position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:3px;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .15s}
-.toggle.on::after{left:23px}
-.toggle.off::after{left:3px}
+/* credential mode-group dimming */
+[data-eem-cred-mode]:not([data-eem-cred-mode=""]){opacity:0.45}
+[data-eem-cred-mode="test"]{opacity:1}
 
-/* Toggle field row */
-.toggle-row{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:14px 0;border-bottom:1px solid #f0f0f1}
-.toggle-row:last-child{border-bottom:none}
-.toggle-row-left{}
-.toggle-row-title{font-size:14px;font-weight:600;color:#1d2327;margin-bottom:4px}
-.toggle-row-desc{font-size:13px;color:#6B7A99;line-height:1.6;max-width:700px}
+/* ── placeholder reference + template cards (Communications) ── */
+.eem-placeholder-reference{background:#FAFBFE;border:1px solid #E5EAF2;border-radius:var(--eem-radius);padding:12px 14px;margin-bottom:var(--eem-space-4)}
+.eem-placeholder-ref-title{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--eem-navy);margin-bottom:var(--eem-space-2);display:flex;align-items:center;gap:var(--eem-space-3)}
+.eem-placeholder-ref-hint{font-weight:500;font-size:10.5px;color:var(--eem-text-secondary);text-transform:none}
+.eem-placeholder-chips{display:flex;flex-wrap:wrap;gap:6px}
+.eem-placeholder-chip{background:var(--eem-surface);border:1px solid var(--eem-border-card);color:var(--eem-navy);font-family:'IBM Plex Mono',Menlo,monospace;font-size:11.5px;padding:4px 9px;border-radius:var(--eem-radius-sm);cursor:pointer;font-weight:500;line-height:1.4}
+.eem-placeholder-chip:hover{border-color:var(--eem-electric);color:var(--eem-electric);background:var(--eem-info-bg)}
+.eem-template-cards{display:flex;flex-direction:column;gap:var(--eem-space-2)}
+.eem-template-card{background:var(--eem-surface);border:1px solid var(--eem-border-card);border-radius:var(--eem-radius);overflow:hidden}
+.eem-template-card-head{display:flex;align-items:center;justify-content:space-between;gap:var(--eem-space-3);padding:12px 14px;cursor:pointer;background:var(--eem-surface);user-select:none}
+.eem-template-card-head:hover{background:#FAFBFE}
+.eem-template-card-head-text{flex:1;min-width:0}
+.eem-template-card-title{font-family:var(--eem-font-display);font-size:14px;font-weight:700;color:var(--eem-navy);margin-bottom:2px}
+.eem-template-card-sub{font-size:12px;color:var(--eem-text-secondary);line-height:1.4}
+.eem-template-card-chevron{color:var(--eem-text-muted);font-size:16px;transition:transform .2s;flex-shrink:0}
+.eem-template-card.is-open .eem-template-card-chevron{transform:rotate(180deg)}
+.eem-template-card-body{display:none;padding:14px 16px 16px;border-top:1px solid #E5EAF2;background:#FAFBFE}
+.eem-template-card.is-open .eem-template-card-body{display:block}
+.eem-template-card-actions{display:flex;justify-content:flex-end;margin-top:var(--eem-space-3);padding-top:var(--eem-space-3);border-top:1px solid #E5EAF2}
 
-/* Radio source picker (Events tab, Payments active processor) */
-.source-row{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;border:1.5px solid #D9E2F2;border-radius:6px;margin-bottom:8px;cursor:pointer;background:#fff;transition:border-color .15s,background .15s}
-.source-row:hover{border-color:#B0BDD4}
-.source-row.selected{border-color:#1668F2;background:#F7FAFF}
-.source-row.disabled{cursor:not-allowed;opacity:.6;background:#FAFBFD}
-.source-row.disabled:hover{border-color:#D9E2F2}
-.source-radio{width:18px;height:18px;border:1.5px solid #B0BDD4;border-radius:50%;flex-shrink:0;margin-top:2px;position:relative;background:#fff;transition:border-color .15s}
-.source-row.selected .source-radio{border-color:#1668F2}
-.source-row.selected .source-radio::after{content:'';position:absolute;top:3px;left:3px;width:9px;height:9px;border-radius:50%;background:#1668F2}
-.source-row-body{flex:1;min-width:0}
-.source-row-head{display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap}
-.source-row-title{font-size:14px;font-weight:600;color:#031B4E}
-.source-row-desc{font-size:13px;color:#6B7A99;line-height:1.5}
+/* ── shortcodes panel ── */
+.eem-shortcode-row{display:grid;grid-template-columns:200px 1fr;gap:var(--eem-space-4);padding:var(--eem-space-3) 0;border-bottom:1px solid var(--eem-border-soft)}
+.eem-shortcode-row:last-child{border-bottom:none}
+.eem-shortcode-label{font-size:13px;font-weight:600;color:var(--eem-text);padding-top:8px}
+.eem-shortcode-body{display:flex;flex-direction:column;gap:5px}
+.eem-code-box{background:#f0f0f1;border:1px solid var(--eem-border-card);border-radius:var(--eem-radius);padding:7px 12px;font-family:'IBM Plex Mono',Menlo,monospace;font-size:12.5px;color:var(--eem-navy);cursor:pointer;text-align:left;line-height:1.5;width:100%}
+.eem-code-box:hover{border-color:var(--eem-electric);background:var(--eem-info-bg);color:var(--eem-electric)}
 
-/* Status pills (mixed-case per shipped state) */
-.status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:11px;font-size:11.5px;font-weight:600;white-space:nowrap;flex-shrink:0}
-.status-pill::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.status-active{background:#F0FDFA;color:#0d9488;border:1px solid #99f6e4}
-.status-active::before{background:#26D0B5}
-.status-inactive{background:#F7F9FC;color:#6B7A99;border:1px solid #D9E2F2}
-.status-inactive::before{background:#B0BDD4}
-.status-available{background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
-.status-available::before{background:#1668F2}
-.status-not-installed{background:#FEF2F2;color:#b91c1c;border:1px solid #fecaca}
-.status-not-installed::before{background:#dc2626}
-.status-not-configured{background:#FFFBEB;color:#b45309;border:1px solid #fde68a}
-.status-not-configured::before{background:#d97706}
+/* ── add-ons panel ── */
+.eem-addon-row{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--eem-border-soft)}
+.eem-addon-row:last-child{border-bottom:none}
+.eem-addon-row__text{display:flex;flex-direction:column;gap:3px}
+.eem-addon-row__title{font-size:14px;font-weight:600;color:var(--eem-navy)}
+.eem-addon-row__desc{font-size:12.5px;color:var(--eem-text-secondary);line-height:1.5}
+.eem-toggle{display:inline-flex;align-items:center;width:42px;height:24px;border-radius:12px;background:#c3c4c7;border:none;cursor:pointer;flex-shrink:0;position:relative;transition:background .2s;margin-top:1px}
+.eem-toggle.on{background:var(--eem-electric)}
+.eem-toggle::after{content:'';position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.eem-toggle.on::after{transform:translateX(18px)}
 
-/* Source detail panel — shown only when corresponding source is selected */
-.source-detail{margin-top:6px;padding:18px 20px;border:1px solid #D9E2F2;background:#F7FAFF;border-radius:6px;border-left:3px solid #1668F2}
-.source-detail-title{font-size:13px;font-weight:700;color:#031B4E;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
-.source-detail .field-row:first-child{padding-top:0;border-top:none}
-.source-detail .field-row:last-child{padding-bottom:0;border-bottom:none}
+/* ── danger panel ── */
+.eem-danger-summary{list-style:none;background:#fff5f5;border:1px solid #fecaca;border-radius:var(--eem-radius);padding:12px 16px;display:flex;flex-direction:column;gap:5px;margin:14px 0}
+.eem-danger-summary li{font-size:13.5px;color:var(--eem-text)}
+.eem-danger-summary strong{color:var(--eem-navy)}
 
-/* Shortcode rows */
-.shortcode-row{display:grid;grid-template-columns:220px 1fr;gap:16px;align-items:start;padding:12px 0;border-bottom:1px solid #f0f0f1}
-.shortcode-row:last-child{border-bottom:none}
-.shortcode-label{font-size:13.5px;font-weight:600;color:#1d2327;padding-top:9px}
-.shortcode-code{display:flex;flex-direction:column;gap:6px}
-.code-box{background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:8px 12px;font-family:monospace;font-size:13px;color:#1d2327;word-break:break-all}
+/* ── logo upload ── */
+.eem-logo-upload{display:flex;flex-direction:column;gap:10px}
+.eem-logo-preview{width:160px;height:80px;border:1px solid var(--eem-border-card);border-radius:var(--eem-radius);display:flex;align-items:center;justify-content:center;background:#fafafa;overflow:hidden}
+.eem-logo-preview img{max-width:100%;max-height:100%;object-fit:contain}
+.eem-logo-preview-empty{font-size:12px;color:var(--eem-text-muted);font-style:italic}
+.eem-logo-upload-actions{display:flex;gap:8px}
 
-/* Logo upload area */
-.logo-upload-area{border:1px solid #dcdcde;border-radius:4px;padding:14px;display:inline-flex;flex-direction:column;gap:10px;background:#f3f4f5}
-.logo-preview{max-height:60px;max-width:200px;object-fit:contain}
-.logo-preview-placeholder{width:160px;height:60px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb}
-.upload-btn-row{display:flex;gap:8px}
-.btn-upload{padding:6px 14px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer}
-.btn-remove{padding:6px 14px;border:1px solid #fca5a5;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#b91c1c;background:#fff;cursor:pointer}
+/* test result blocks */
+.eem-authnet-test-result,.eem-gems-test-result{padding:8px 12px;border-radius:var(--eem-radius);font-size:13px;margin-top:6px}
+.eem-authnet-test-result--ok,.eem-gems-test-result--ok{background:#F0FDF4;border:1px solid #bbf7d0;color:#15803d}
+.eem-authnet-test-result--fail,.eem-gems-test-result--fail{background:#fff5f5;border:1px solid #fecaca;color:#b91c1c}
 
-/* Checkbox */
-.checkbox-row{display:flex;align-items:center;gap:8px;padding:10px 0}
-.checkbox-row input[type=checkbox]{width:16px;height:16px;accent-color:#1668F2;cursor:pointer;flex-shrink:0}
-.checkbox-row label{font-size:13.5px;color:#1d2327;cursor:pointer}
+/* tab panel visibility */
+[data-panel]{display:none}
+[data-panel].is-shown{display:flex;flex-direction:column}
 
-/* Empty state */
-.empty-state{background:#f6f7f7;border:1px solid #dcdcde;border-radius:4px;padding:20px 16px;text-align:center}
-.empty-state-title{font-size:13.5px;font-weight:600;color:#1d2327;margin-bottom:4px}
-.empty-state-desc{font-size:13px;color:#6B7A99}
-
-/* Test button */
-.btn-test{padding:7px 16px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer;margin-top:6px;display:inline-block}
-.btn-test:hover{background:#f6f7f7}
-
-/* Save bar */
-.save-bar{padding:16px 28px;border-top:1px solid #dcdcde;background:#f3f4f5;display:flex;align-items:center;gap:10px}
-.btn-save{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:9px 24px;border-radius:4px;font-size:13.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
-.btn-save:hover{background:#1257d1;border-color:#1257d1}
-
-/* Save success toast */
-.toast-wrap{position:fixed;top:48px;right:20px;z-index:500;display:flex;flex-direction:column;gap:8px;pointer-events:none}
-.toast{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #d1f0e8;border-left:4px solid #26D0B5;border-radius:6px;padding:11px 14px 11px 12px;box-shadow:0 8px 24px rgba(3,27,78,.12);min-width:240px;max-width:340px;font-size:13.5px;color:#031B4E;pointer-events:auto;opacity:0;transform:translateX(20px);transition:opacity .25s ease,transform .25s ease}
-.toast.show{opacity:1;transform:translateX(0)}
-.toast-icon{width:24px;height:24px;border-radius:50%;background:#26D0B5;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700}
-.toast-body{flex:1;min-width:0}
-.toast-title{font-weight:600;color:#031B4E;line-height:1.3}
-.toast-sub{font-size:12px;color:#6B7A99;margin-top:1px}
-.toast-close{background:none;border:none;color:#8c8f94;cursor:pointer;padding:2px 4px;font-size:16px;line-height:1;flex-shrink:0}
-.toast-close:hover{color:#031B4E}
-@media(max-width:767px){
-  .toast-wrap{top:auto;bottom:16px;right:12px;left:12px}
-  .toast{max-width:none}
-}
-
-/* Tab panels */
-.tab-panel{display:none}
-.tab-panel.active{display:block}
-
-/* ════════ TABLET 960px ════════ */
-@media(max-width:960px){
+@media (max-width:782px){
+  .eem-settings{grid-template-columns:1fr}
+  .eem-settings-nav{border-right:none;border-bottom:1px solid #dcdcde}
+  .eem-settings-nav ul{display:flex;flex-wrap:wrap;gap:4px;padding:6px}
+  .eem-settings-nav-item{flex:1 1 auto;justify-content:center;border-left:none;border-radius:var(--eem-radius-sm)}
+  .eem-field-row{grid-template-columns:1fr}
+  .eem-shortcode-row{grid-template-columns:1fr}
   .wp-sidebar{display:none}
-  .wp-content{padding:10px 14px 40px}
-  .settings-wrap{grid-template-columns:170px 1fr}
-  .field-row{grid-template-columns:180px 1fr}
-  .shortcode-row{grid-template-columns:180px 1fr}
 }
-
-/* ════════ MOBILE 767px ════════ */
-@media(max-width:767px){
-  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
-  .wp-content{padding:8px 10px 32px}
-  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
-  .page-title{font-size:18px;margin-bottom:10px}
-
-  /* Settings layout stacks vertically */
-  .settings-wrap{grid-template-columns:1fr}
-
-  /* Nav becomes horizontal scroll strip */
-  .settings-nav{
-    border-right:none;
-    border-bottom:1px solid #dcdcde;
-    display:flex;
-    flex-direction:row;
-    overflow-x:auto;
-    overflow-y:hidden;
-    -webkit-overflow-scrolling:touch;
-    padding:0;
-    scroll-snap-type:x mandatory;
-    background:#f3f4f5;
-  }
-  .settings-nav::-webkit-scrollbar{display:none}
-  .settings-nav-item{
-    flex-shrink:0;
-    white-space:nowrap;
-    border-left:none;
-    border-bottom:3px solid transparent;
-    padding:12px 14px;
-    font-size:13px;
-    scroll-snap-align:start;
-    display:flex;
-    align-items:center;
-    gap:6px;
-  }
-  .settings-nav-item.active{
-    border-left:none;
-    border-bottom-color:#1668F2;
-    background:#EEF4FF;
-    color:#1668F2;
-  }
-  .settings-nav-item svg{width:14px;height:14px}
-
-  /* Field rows stack vertically */
-  .field-row{grid-template-columns:1fr;gap:6px;padding:10px 0}
-  .field-label{padding-top:0}
-  .shortcode-row{grid-template-columns:1fr;gap:6px;padding:10px 0}
-  .shortcode-label{padding-top:0;font-size:13px}
-
-  /* Toggle rows */
-  .toggle-row{flex-wrap:wrap;gap:10px}
-  .toggle-row .toggle{flex-shrink:0}
-
-  .settings-section{padding:14px}
-  .sub-section{padding:12px 14px;margin-bottom:12px}
-  .save-bar{padding:12px 14px}
-
-  /* Inputs full width on mobile */
-  .field-input,.field-textarea,.field-select{max-width:100%!important;width:100%!important}
-}
-
-/* ── Placeholder reference panel (for email templates) ── */
-.placeholder-reference{background:#FAFBFE;border:1px solid #E5EAF2;border-radius:4px;padding:12px 14px;margin-bottom:16px}
-.placeholder-ref-title{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#031B4E;margin-bottom:8px;display:flex;align-items:center;gap:10px}
-.placeholder-ref-hint{font-weight:500;font-size:10.5px;color:#6B7A99;letter-spacing:.02em;text-transform:none}
-.placeholder-chips{display:flex;flex-wrap:wrap;gap:6px}
-.placeholder-chip{background:#fff;border:1px solid #c3c4c7;color:#031B4E;font-family:'IBM Plex Mono','SFMono-Regular',Menlo,monospace;font-size:11.5px;padding:4px 9px;border-radius:3px;cursor:pointer;font-weight:500}
-.placeholder-chip:hover{border-color:#1668F2;color:#1668F2;background:#EEF4FF}
-
-/* ── Template cards (collapsible email template editors) ── */
-.template-card{background:#fff;border:1px solid #c3c4c7;border-radius:4px;margin-bottom:8px;overflow:hidden}
-.template-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;cursor:pointer;background:#fff;transition:background .12s}
-.template-card-head:hover{background:#FAFBFE}
-.template-card-head-left{display:flex;align-items:flex-start;gap:12px;flex:1;min-width:0}
-.template-card-head-left > svg{width:18px;height:18px;color:#1668F2;flex-shrink:0;margin-top:2px}
-.template-card-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E;margin-bottom:2px}
-.template-card-sub{font-size:12px;color:#6B7A99;line-height:1.4}
-.template-chevron{width:14px;height:14px;color:#6B7A99;flex-shrink:0;transition:transform .15s}
-.template-card.open .template-chevron{transform:rotate(180deg)}
-.template-card-body{display:none;padding:14px 16px 16px;border-top:1px solid #E5EAF2;background:#FAFBFE}
-.template-card.open .template-card-body{display:block}
-.template-card-actions{display:flex;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid #E5EAF2}
-.btn-test-email{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #1668F2;color:#1668F2;padding:7px 14px;border-radius:4px;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer}
-.btn-test-email:hover{background:#EEF4FF}
-.btn-test-email svg{width:13px;height:13px}
-
-/* ── Rich text editor (mock) ── */
-.rte-toolbar{display:flex;align-items:center;gap:2px;padding:6px 8px;background:#fff;border:1px solid #c3c4c7;border-bottom:none;border-radius:4px 4px 0 0;flex-wrap:wrap}
-.rte-btn{background:transparent;border:none;color:#4a5a7a;width:28px;height:28px;border-radius:3px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-family:inherit;font-size:13px;padding:0}
-.rte-btn:hover{background:#EEF4FF;color:#1668F2}
-.rte-btn svg{width:13px;height:13px}
-.rte-divider{width:1px;height:18px;background:#E5EAF2;margin:0 4px}
-.rte-editor{background:#fff;border:1px solid #c3c4c7;border-radius:0 0 4px 4px;padding:12px 14px;min-height:140px;font-size:13.5px;line-height:1.55;color:#1d2327;font-family:'IBM Plex Sans',sans-serif;outline:none}
-.rte-editor:focus{border-color:#1668F2;box-shadow:0 0 0 3px rgba(22,104,242,.08)}
-
-/* ── Tax rate input ── */
-.tax-rate-wrap{display:inline-flex;align-items:center;position:relative;max-width:160px}
-.tax-rate-input{padding-right:30px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;width:100%}
-.tax-rate-suffix{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:600;color:#6B7A99;pointer-events:none}
-
-/* Mobile */
-@media(max-width:767px){
-  .template-card-head{padding:12px}
-  .template-card-head-left{align-items:center}
-  .template-card-head-left > svg{display:none}
-  .template-card-body{padding:12px}
-  .placeholder-chip{font-size:11px;padding:3px 7px}
-  .rte-toolbar{padding:4px 6px}
-  .rte-btn{width:24px;height:24px}
-}
-
 </style>
-<script>
-function showTab(tabId) {
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.settings-nav-item').forEach(n => n.classList.remove('active'));
-  document.getElementById('panel-' + tabId).classList.add('active');
-  document.getElementById('nav-' + tabId).classList.add('active');
-}
-
-/* Source row picker (Events tab, Payments active processor)
-   - One row in a group is "selected"
-   - Disabled rows can't be picked
-   - Selecting a row updates the status pills in the group:
-     selected → Active, others (if previously Active) → Inactive */
-function pickSource(row){
-  if(row.classList.contains('disabled')) return;
-  const group = row.parentElement;
-  group.querySelectorAll('.source-row').forEach(r => {
-    if(r === row) return;
-    r.classList.remove('selected');
-    // Demote the previously-active one
-    const pill = r.querySelector('.status-pill.status-active');
-    if(pill){
-      pill.classList.remove('status-active');
-      pill.classList.add('status-inactive');
-      pill.textContent = 'Inactive';
-    }
-  });
-  row.classList.add('selected');
-  // Promote this one if it was Available or Inactive
-  const pill = row.querySelector('.status-pill');
-  if(pill && (pill.classList.contains('status-available') || pill.classList.contains('status-inactive'))){
-    pill.classList.remove('status-available','status-inactive');
-    pill.classList.add('status-active');
-    pill.textContent = 'Active';
-  }
-  // Show/hide source detail panels by data-detail-for attribute
-  const groupKey = group.dataset.group;
-  if(groupKey){
-    document.querySelectorAll('[data-detail-for]').forEach(panel => {
-      if(panel.dataset.detailFor.startsWith(groupKey + ':')){
-        const key = panel.dataset.detailFor.split(':')[1];
-        panel.style.display = (key === row.dataset.value) ? '' : 'none';
-      }
-    });
-  }
-  // Sync sub-section status pills (Payments tab)
-  if(groupKey === 'payment-processor'){
-    syncPaymentPills(row.dataset.value);
-  }
-}
-function syncPaymentPills(active){
-  const stripeSection  = document.querySelector('#panel-payments .sub-section:nth-of-type(1)');
-  const authnetSection = document.querySelector('#panel-payments .sub-section:nth-of-type(2)');
-  [['stripe',stripeSection],['authnet',authnetSection]].forEach(([key, sect]) => {
-    if(!sect) return;
-    const pill = sect.querySelector('.status-pill');
-    if(!pill) return;
-    pill.classList.remove('status-active','status-inactive');
-    if(key === active){ pill.classList.add('status-active'); pill.textContent = 'Active'; }
-    else { pill.classList.add('status-inactive'); pill.textContent = 'Inactive'; }
-  });
-}
-
-/* Save success toast */
-function showSaveToast(message){
-  message = message || 'Settings saved';
-  let wrap = document.querySelector('.toast-wrap');
-  if(!wrap){
-    wrap = document.createElement('div');
-    wrap.className = 'toast-wrap';
-    document.body.appendChild(wrap);
-  }
-  const t = document.createElement('div');
-  t.className = 'toast';
-  t.innerHTML = '<div class="toast-icon">✓</div>' +
-                '<div class="toast-body"><div class="toast-title">' + message + '</div>' +
-                '<div class="toast-sub">Your changes have been applied.</div></div>' +
-                '<button class="toast-close" onclick="dismissToast(this.parentNode)" aria-label="Dismiss">×</button>';
-  wrap.appendChild(t);
-  requestAnimationFrame(() => t.classList.add('show'));
-  setTimeout(() => dismissToast(t), 3200);
-}
-function dismissToast(t){
-  if(!t || !t.classList.contains('show')) return;
-  t.classList.remove('show');
-  setTimeout(() => t.remove(), 300);
-}
-
-// Toggle template card open/closed
-function toggleTemplate(headerEl) {
-  const card = headerEl.closest('.template-card');
-  card.classList.toggle('open');
-}
-// Copy placeholder chip text to clipboard
-function copyChip(btn) {
-  const text = btn.textContent;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(() => {
-      const orig = btn.textContent;
-      btn.textContent = '✓ Copied';
-      setTimeout(() => { btn.textContent = orig; }, 1200);
-    });
-  }
-}
-</script>
 </head>
 <body>
 
 <div class="wp-admin-bar">
-  <span>&#9776;</span>
-  <span class="site">My Equestrian Site</span>
-  <span>+ New</span>
-  <span style="margin-left:auto">Howdy, Whitney Mitchell</span>
+  <span class="site">⚡ Equine Network</span>
+  <span>＋ New</span>
+  <span style="margin-left:auto">Howdy, Whitney</span>
 </div>
 
 <div class="wp-body">
-  <div class="wp-sidebar">
-    <div class="wp-sidebar-item">&#9632; Dashboard</div>
-    <div class="wp-sidebar-item">&#9632; Posts</div>
-    <div class="wp-sidebar-item">&#9632; Pages</div>
-    <div class="wp-sidebar-sep"></div>
-    <div class="wp-sidebar-label">Equine EM</div>
-    <div class="wp-sidebar-item active">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-      Settings
-    </div>
-    <div class="wp-sidebar-sub">Dashboard</div>
-    <div class="wp-sidebar-sub">Events</div>
-    <div class="wp-sidebar-sub">Orders</div>
-    <div class="wp-sidebar-sub">Reservations</div>
-    <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
-    <div class="wp-sidebar-sub">Reports</div>
-    <div class="wp-sidebar-sub active">Settings</div>
-    <div class="wp-sidebar-sep"></div>
-    <div class="wp-sidebar-item">&#9632; Plugins</div>
-    <div class="wp-sidebar-item">&#9632; Settings</div>
-  </div>
+  <nav class="wp-sidebar">
+    <div class="item">Dashboard</div>
+    <div class="item">Reservations</div>
+    <div class="item">Orders</div>
+    <div class="item">Stall &amp; RV Charts</div>
+    <div class="item">Reports</div>
+    <div class="item active">Settings</div>
+  </nav>
 
-  <div class="wp-content">
-    <div class="breadcrumb">
-      <div class="breadcrumb-logo-box">Plugin Logo</div>
-      <span class="breadcrumb-sep">/</span>
-      <span class="breadcrumb-page">Settings</span>
-    </div>
+  <main class="wp-content">
+    <div class="eem-page">
+      <nav class="eem-breadcrumb" aria-label="Breadcrumb">
+        <a class="eem-breadcrumb-logo" href="#" aria-label="Equine Event Manager dashboard">
+          <img src="Equine Event Manager Logo.png" alt="Equine Event Manager">
+        </a>
+        <span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+        <span class="eem-breadcrumb-segment" aria-current="page">Settings</span>
+      </nav>
 
-    <div class="plugin-wrap">
+      <div class="eem-page-wrap">
+        <header class="eem-page-header">
+          <h1 class="eem-page-title">Settings</h1>
+          <p class="eem-page-subtitle">Configure event source integrations, branding, communications, shortcodes, payments, and add-ons.</p>
+        </header>
 
-      <!-- PAGE HEADER (inside plugin-wrap per VIS-3) -->
-      <header class="plugin-header">
-        <h1 class="page-title">Settings</h1>
-        <div class="page-subtitle">Configure event source integrations, branding, communications, shortcodes, payments, and add-ons.</div>
-      </header>
+        <div class="eem-page-body">
+          <div class="eem-settings">
 
-      <div class="settings-wrap">
+            <!-- ── Left vertical nav ── -->
+            <aside class="eem-settings-nav" role="navigation" aria-label="Settings sections">
+              <ul>
+                <li><a class="eem-settings-nav-item is-active" href="#" data-tab="integrations"><span class="dashicon">🔌</span><span>Integrations</span></a></li>
+                <li><a class="eem-settings-nav-item" href="#" data-tab="branding"><span class="dashicon">🎨</span><span>Branding</span></a></li>
+                <li><a class="eem-settings-nav-item" href="#" data-tab="communications"><span class="dashicon">✉️</span><span>Communications</span></a></li>
+                <li><a class="eem-settings-nav-item" href="#" data-tab="shortcodes"><span class="dashicon">&lt;/&gt;</span><span>Shortcodes</span></a></li>
+                <li><a class="eem-settings-nav-item" href="#" data-tab="payments"><span class="dashicon">💲</span><span>Payments</span></a></li>
+                <li><a class="eem-settings-nav-item" href="#" data-tab="addons"><span class="dashicon">🧩</span><span>Add-Ons</span></a></li>
+                <li><a class="eem-settings-nav-item" href="#" data-tab="danger"><span class="dashicon">⚠️</span><span>Uninstall</span></a></li>
+              </ul>
+            </aside>
 
-      <!-- Left nav -->
-      <div class="settings-nav">
-        <div class="settings-nav-item active" id="nav-integrations" onclick="showTab('integrations')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-          Integrations
-        </div>
-        <div class="settings-nav-item" id="nav-branding" onclick="showTab('branding')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          Branding
-        </div>
-        <div class="settings-nav-item" id="nav-communications" onclick="showTab('communications')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          Communications
-        </div>
-        <div class="settings-nav-item" id="nav-shortcodes" onclick="showTab('shortcodes')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-          Shortcodes
-        </div>
-        <div class="settings-nav-item" id="nav-payments" onclick="showTab('payments')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Payments
-        </div>
-        <div class="settings-nav-item" id="nav-addons" onclick="showTab('addons')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
-          Add-Ons
+            <!-- ── Right panel ── -->
+            <section class="eem-settings-panel">
+
+              <!-- ════════════ INTEGRATIONS ════════════ -->
+              <form class="eem-settings-form is-shown" data-panel="integrations" onsubmit="return false">
+
+                <section class="eem-card">
+                  <header class="eem-card-header"><h2 class="eem-card-title">Event Source</h2></header>
+                  <div class="eem-card-body">
+                    <p class="eem-field-hint" style="margin-bottom:14px;">Choose where reservations get their events from. Only one source can be active at a time.</p>
+
+                    <!-- Onboarding prompt: shown when no source has been confirmed yet -->
+                    <!-- <div class="eem-source-onboarding-prompt" role="status">
+                      <strong>Connect your events to get started.</strong>
+                      Select your event source below, then click Save. The Events Calendar is the recommended source — once connected, you can search and link live events when building reservations.
+                    </div> -->
+
+                    <div class="eem-source-group" id="int-source-group">
+                      <!-- Native Events — "Built-in" (no longer Coming Soon as of v3/2.7.234) -->
+                      <label class="eem-source-row" data-source-value="native">
+                        <input type="radio" name="payload[source]" value="native" hidden>
+                        <span class="eem-source-radio" aria-hidden="true"></span>
+                        <span class="eem-source-row-body">
+                          <span class="eem-source-row-head">
+                            <span class="eem-source-row-title">Native Events</span>
+                            <span class="eem-source-status is-info">Built-in</span>
+                          </span>
+                          <span class="eem-source-row-desc">Use Equine Event Manager as the main event system with native events, categories, venues, producers, a frontend calendar (list / month / map), and the shared event template.</span>
+                        </span>
+                      </label>
+
+                      <!-- The Events Calendar — available (TEC plugin detected) -->
+                      <label class="eem-source-row is-selected" data-source-value="tec">
+                        <input type="radio" name="payload[source]" value="tec" checked hidden>
+                        <span class="eem-source-radio" aria-hidden="true"></span>
+                        <span class="eem-source-row-body">
+                          <span class="eem-source-row-head">
+                            <span class="eem-source-row-title">The Events Calendar (TEC)</span>
+                            <span class="eem-source-status is-active">Available</span>
+                          </span>
+                          <span class="eem-source-row-desc">When the TEC plugin is active, reservations can search and link to live TEC events directly.</span>
+                        </span>
+                      </label>
+
+                      <!-- GEMS Integration — connected -->
+                      <label class="eem-source-row" data-source-value="feed">
+                        <input type="radio" name="payload[source]" value="feed" hidden>
+                        <span class="eem-source-radio" aria-hidden="true"></span>
+                        <span class="eem-source-row-body">
+                          <span class="eem-source-row-head">
+                            <span class="eem-source-row-title">GEMS Integration</span>
+                            <span class="eem-source-status is-active">Connected</span>
+                          </span>
+                          <span class="eem-source-row-desc">Pull events from your GEMS Web Data connection (via the GEMS for WordPress plugin). Reservations search and link to live GEMS events, just like The Events Calendar.</span>
+                        </span>
+                      </label>
+                    </div>
+
+                    <!-- Native Events detail (hidden when TEC is active source) -->
+                    <div class="eem-source-detail" id="int-detail-native" hidden>
+                      <div class="eem-source-detail-title">Native Events Settings</div>
+                      <p class="eem-field-hint" style="margin-bottom:12px;">Native events are managed under <strong>EEM → Events</strong> in the admin sidebar. Producers, venues, and categories are managed there too.</p>
+                      <div class="eem-field-row">
+                        <label class="eem-field-label" for="eem-gmaps-key">Google Maps API Key</label>
+                        <div class="eem-field-control">
+                          <input class="eem-field-input" id="eem-gmaps-key" type="password" placeholder="AIza…" autocomplete="off" style="max-width:360px;">
+                          <p class="eem-field-hint">Optional. Powers the events map view and auto-converts venue addresses to map pins. Create a key in Google Cloud Console with the Maps JavaScript API and Geocoding API enabled. Leave blank to use list + month views only.</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- TEC detail (visible — TEC is the active source) -->
+                    <div class="eem-source-detail" id="int-detail-tec">
+                      <div class="eem-source-detail-title">The Events Calendar Connection</div>
+                      <div class="eem-field-row">
+                        <label class="eem-field-label" for="eem-tec-category">Event Category Filter</label>
+                        <div class="eem-field-control">
+                          <input class="eem-field-input" id="eem-tec-category" type="text" placeholder="e.g. equestrian" value="" style="max-width:300px;">
+                          <p class="eem-field-hint">Optional. Only TEC events with this category will be searchable when linking to a reservation. Leave blank to allow all events.</p>
+                        </div>
+                      </div>
+                      <div class="eem-field-row">
+                        <span class="eem-field-label">Connection Status</span>
+                        <div class="eem-field-control">
+                          <span>
+                            <span class="eem-source-status is-active">Available</span>
+                            <span style="margin-left:8px;font-size:13px;color:var(--eem-text);">TEC plugin detected and responding.</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- GEMS detail (hidden when TEC is active source) -->
+                    <div class="eem-source-detail" id="int-detail-feed" hidden>
+                      <div class="eem-source-detail-title">GEMS Connection</div>
+                      <p class="eem-field-hint" style="margin-bottom:14px;">EEM reads events from the same GEMS Web Data connection the GEMS for WordPress plugin uses (Association ID + JWT token). Manage those credentials on the GEMS Events → Integrations page.</p>
+                      <div class="eem-field-row">
+                        <span class="eem-field-label">Association</span>
+                        <div class="eem-field-control">
+                          <strong>AQHA</strong>
+                        </div>
+                      </div>
+                      <div class="eem-field-row">
+                        <span class="eem-field-label">Connection</span>
+                        <div class="eem-field-control">
+                          <span style="display:flex;align-items:center;gap:10px;">
+                            <button type="button" class="eem-btn eem-btn-secondary">Test Connection</button>
+                          </span>
+                          <p class="eem-field-hint">Fetches the GEMS schedule and reports how many events are available. Saves nothing.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="eem-card">
+                  <header class="eem-card-header"><h2 class="eem-card-title">Email Delivery</h2></header>
+                  <div class="eem-card-body">
+                    <p class="eem-field-hint" style="margin-bottom:14px;">Optional. Paste a SendGrid API key to send all customer receipts, payment-link, and refund emails through SendGrid. Leave blank to use the site's default WordPress mailer (wp_mail).</p>
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-sendgrid">SendGrid API Key</label>
+                      <div class="eem-field-control">
+                        <input class="eem-field-input" id="eem-sendgrid" type="password" value="SG.l4Ujtor••••••••••••••••••••••" placeholder="SG.xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+                        <p class="eem-field-hint">Use a key restricted to "Mail Send" only. From / Reply-To come from the Communications panel; the From-address domain must be authenticated in your SendGrid account.</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <div class="eem-settings-save-bar">
+                  <button type="submit" class="eem-btn eem-btn-electric">Save Integrations Settings</button>
+                </div>
+              </form>
+
+              <!-- ════════════ BRANDING ════════════ -->
+              <form class="eem-settings-form" data-panel="branding" onsubmit="return false">
+                <section class="eem-card">
+                  <header class="eem-card-header"><h2 class="eem-card-title">Branding</h2></header>
+                  <div class="eem-card-body">
+                    <p class="eem-field-hint" style="margin-bottom:14px;">Branding details used on receipts, PDFs, and customer-facing communications.</p>
+
+                    <div class="eem-field-row">
+                      <span class="eem-field-label">Business Logo</span>
+                      <div class="eem-field-control">
+                        <div class="eem-logo-upload">
+                          <div class="eem-logo-preview">
+                            <span class="eem-logo-preview-empty">No logo set</span>
+                          </div>
+                          <div class="eem-logo-upload-actions">
+                            <button type="button" class="eem-btn eem-btn-secondary">Upload Logo</button>
+                            <button type="button" class="eem-btn eem-btn-danger" disabled>Remove</button>
+                          </div>
+                        </div>
+                        <p class="eem-field-hint"><strong>PNG only.</strong> A transparent-background PNG works best. WebP, SVG, and other formats are not supported — they appear broken in many email clients (e.g. Outlook) and on PDF receipts. Used on PDF receipts and email branding; not the plugin admin header.</p>
+                      </div>
+                    </div>
+
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-brand-phone">Support Phone</label>
+                      <div class="eem-field-control">
+                        <input class="eem-field-input" id="eem-brand-phone" type="tel" value="(940) 555-0100" style="max-width:280px;">
+                        <p class="eem-field-hint">General support number. Reservation-specific messaging can override it in the Communications panel.</p>
+                      </div>
+                    </div>
+
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-brand-email">Support Email</label>
+                      <div class="eem-field-control">
+                        <input class="eem-field-input" id="eem-brand-email" type="email" value="events@equinenetwork.com" style="max-width:320px;">
+                        <p class="eem-field-hint">Default support email across messaging and receipt settings.</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <div class="eem-settings-save-bar">
+                  <button type="submit" class="eem-btn eem-btn-electric">Save Branding Settings</button>
+                </div>
+              </form>
+
+              <!-- ════════════ COMMUNICATIONS ════════════ -->
+              <form class="eem-settings-form" data-panel="communications" onsubmit="return false">
+
+                <!-- Email Sender Settings -->
+                <section class="eem-card">
+                  <header class="eem-card-header"><h2 class="eem-card-title">Email Sender Settings</h2></header>
+                  <div class="eem-card-body">
+                    <p class="eem-field-hint" style="margin-bottom:14px;">Sender identity and routing for all transactional emails. Applies to every template below.</p>
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-send-cust">Send Customer Emails</label>
+                      <div class="eem-field-control">
+                        <label class="eem-checkbox-row"><input type="checkbox" id="eem-send-cust" checked><span>Send transactional emails to customers (receipts, reminders, etc.)</span></label>
+                      </div>
+                    </div>
+                    <!-- BCC / Admin Copy Email — added in C3.B (render_communications_sender_section) -->
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-sender-bcc">Admin Copy Email</label>
+                      <div class="eem-field-control">
+                        <input class="eem-field-input" id="eem-sender-bcc" type="email" placeholder="admin@example.com" style="max-width:320px;">
+                        <p class="eem-field-hint">Optional. Sends an internal copy of every customer email to this address.</p>
+                      </div>
+                    </div>
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-from-name">From Name</label>
+                      <div class="eem-field-control"><input class="eem-field-input" id="eem-from-name" type="text" value="Equine Network Events"></div>
+                    </div>
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-from-email">From Email</label>
+                      <div class="eem-field-control"><input class="eem-field-input" id="eem-from-email" type="email" value="events@equinenetwork.com"></div>
+                    </div>
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-reply">Reply-To Email</label>
+                      <div class="eem-field-control">
+                        <input class="eem-field-input" id="eem-reply" type="email" value="support@equinenetwork.com">
+                        <p class="eem-field-hint">Where replies land. Often the same as From Email, or a monitored support inbox.</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Email Templates -->
+                <section class="eem-card">
+                  <header class="eem-card-header"><h2 class="eem-card-title">Email Templates</h2></header>
+                  <div class="eem-card-body">
+                    <p class="eem-field-hint" style="margin-bottom:14px;">Edit the subject and body for each transactional email. Use placeholders like <code>{{customer_name}}</code> to insert dynamic content. Click any chip below to copy the placeholder.</p>
+
+                    <div class="eem-placeholder-reference">
+                      <div class="eem-placeholder-ref-title">Available placeholders <span class="eem-placeholder-ref-hint">Click to copy</span></div>
+                      <div class="eem-placeholder-chips">
+                        <button type="button" class="eem-placeholder-chip">{{customer_name}}</button>
+                        <button type="button" class="eem-placeholder-chip">{{event_name}}</button>
+                        <button type="button" class="eem-placeholder-chip">{{event_venue}}</button>
+                        <button type="button" class="eem-placeholder-chip">{{event_dates}}</button>
+                        <button type="button" class="eem-placeholder-chip">{{order_number}}</button>
+                        <button type="button" class="eem-placeholder-chip">{{total}}</button>
+                        <button type="button" class="eem-placeholder-chip">{{balance}}</button>
+                        <button type="button" class="eem-placeholder-chip">{{payment_link}}</button>
+                        <button type="button" class="eem-placeholder-chip">{{stall_assignments}}</button>
+                        <button type="button" class="eem-placeholder-chip">{{cancellation_policy}}</button>
+                      </div>
+                    </div>
+
+                    <div class="eem-template-cards">
+                      <article class="eem-template-card is-open">
+                        <header class="eem-template-card-head" data-tmpl-toggle>
+                          <div class="eem-template-card-head-text">
+                            <div class="eem-template-card-title">Order Receipt</div>
+                            <div class="eem-template-card-sub">Sent immediately after a successful order and payment.</div>
+                          </div>
+                          <span class="eem-template-card-chevron" aria-hidden="true">▾</span>
+                        </header>
+                        <div class="eem-template-card-body">
+                          <div class="eem-field-row">
+                            <label class="eem-field-label">Subject</label>
+                            <div class="eem-field-control"><input class="eem-field-input" type="text" value="Your reservation is confirmed — Order #{{order_number}}"></div>
+                          </div>
+                          <div class="eem-field-row">
+                            <label class="eem-field-label">Body</label>
+                            <div class="eem-field-control"><textarea class="eem-field-textarea" rows="6">&lt;p&gt;Hi {{customer_name}},&lt;/p&gt;&lt;p&gt;Your reservation for {{event_name}} on {{event_dates}} is confirmed. Your total today was {{total}}.&lt;/p&gt;&lt;p&gt;{{stall_assignments}}&lt;/p&gt;</textarea></div>
+                          </div>
+                          <div class="eem-template-card-actions"><button type="button" class="eem-btn eem-btn-secondary">Send test email to me</button></div>
+                        </div>
+                      </article>
+
+                      <article class="eem-template-card">
+                        <header class="eem-template-card-head" data-tmpl-toggle>
+                          <div class="eem-template-card-head-text">
+                            <div class="eem-template-card-title">Payment Reminder</div>
+                            <div class="eem-template-card-sub">Sent for unpaid invoices, manually or via the Orders bulk action.</div>
+                          </div>
+                          <span class="eem-template-card-chevron" aria-hidden="true">▾</span>
+                        </header>
+                        <div class="eem-template-card-body">
+                          <div class="eem-field-row">
+                            <label class="eem-field-label">Subject</label>
+                            <div class="eem-field-control"><input class="eem-field-input" type="text" value="Reminder: balance due for Order #{{order_number}}"></div>
+                          </div>
+                          <div class="eem-field-row">
+                            <label class="eem-field-label">Body</label>
+                            <div class="eem-field-control"><textarea class="eem-field-textarea" rows="6">&lt;p&gt;Hi {{customer_name}},&lt;/p&gt;&lt;p&gt;Your reservation has a remaining balance of {{balance}}.&lt;/p&gt;&lt;p&gt;Pay now: {{payment_link}}&lt;/p&gt;</textarea></div>
+                          </div>
+                          <div class="eem-template-card-actions"><button type="button" class="eem-btn eem-btn-secondary">Send test email to me</button></div>
+                        </div>
+                      </article>
+
+                      <article class="eem-template-card">
+                        <header class="eem-template-card-head" data-tmpl-toggle>
+                          <div class="eem-template-card-head-text">
+                            <div class="eem-template-card-title">Refund Confirmation</div>
+                            <div class="eem-template-card-sub">Sent after a refund is processed (full or partial).</div>
+                          </div>
+                          <span class="eem-template-card-chevron" aria-hidden="true">▾</span>
+                        </header>
+                        <div class="eem-template-card-body">
+                          <div class="eem-field-row">
+                            <label class="eem-field-label">Subject</label>
+                            <div class="eem-field-control"><input class="eem-field-input" type="text" value="A refund has been processed for Order #{{order_number}}"></div>
+                          </div>
+                          <div class="eem-field-row">
+                            <label class="eem-field-label">Body</label>
+                            <div class="eem-field-control"><textarea class="eem-field-textarea" rows="5">&lt;p&gt;Hi {{customer_name}},&lt;/p&gt;&lt;p&gt;A refund of {{total}} has been processed for Order #{{order_number}}.&lt;/p&gt;</textarea></div>
+                          </div>
+                          <div class="eem-template-card-actions"><button type="button" class="eem-btn eem-btn-secondary">Send test email to me</button></div>
+                        </div>
+                      </article>
+
+                      <article class="eem-template-card">
+                        <header class="eem-template-card-head" data-tmpl-toggle>
+                          <div class="eem-template-card-head-text">
+                            <div class="eem-template-card-title">Cancellation</div>
+                            <div class="eem-template-card-sub">Sent when an order is cancelled by admin or by the customer.</div>
+                          </div>
+                          <span class="eem-template-card-chevron" aria-hidden="true">▾</span>
+                        </header>
+                        <div class="eem-template-card-body">
+                          <div class="eem-field-row">
+                            <label class="eem-field-label">Subject</label>
+                            <div class="eem-field-control"><input class="eem-field-input" type="text" value="Order #{{order_number}} has been cancelled"></div>
+                          </div>
+                          <div class="eem-field-row">
+                            <label class="eem-field-label">Body</label>
+                            <div class="eem-field-control"><textarea class="eem-field-textarea" rows="5">&lt;p&gt;Hi {{customer_name}},&lt;/p&gt;&lt;p&gt;Your order #{{order_number}} has been cancelled. {{cancellation_policy}}&lt;/p&gt;</textarea></div>
+                          </div>
+                          <div class="eem-template-card-actions"><button type="button" class="eem-btn eem-btn-secondary">Send test email to me</button></div>
+                        </div>
+                      </article>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Policies — Terms & Conditions only (cancellation policy is per-reservation) -->
+                <section class="eem-card">
+                  <header class="eem-card-header"><h2 class="eem-card-title">Policies</h2></header>
+                  <div class="eem-card-body">
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-terms">Terms &amp; Conditions</label>
+                      <div class="eem-field-control">
+                        <textarea class="eem-field-textarea" id="eem-terms" rows="8">By completing this reservation you agree to the terms and conditions of the event. All stall and RV assignments are subject to availability and may change prior to the event. Payments are processed securely through our payment processor. Refunds are subject to the cancellation policy listed in your confirmation email.</textarea>
+                        <p class="eem-field-hint">Shown at checkout; customer must acknowledge before paying. (Cancellation policy is set per-reservation in Edit Reservation — not here.)</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <div class="eem-settings-save-bar">
+                  <button type="submit" class="eem-btn eem-btn-electric">Save Communications Settings</button>
+                </div>
+              </form>
+
+              <!-- ════════════ SHORTCODES ════════════ -->
+              <form class="eem-settings-form" data-panel="shortcodes" onsubmit="return false">
+                <section class="eem-card">
+                  <header class="eem-card-header"><h2 class="eem-card-title">Event Display Shortcodes</h2></header>
+                  <div class="eem-card-body">
+                    <p class="eem-field-hint" style="margin-bottom:14px;">Use these in any page builder, classic editor, or theme content area. The plugin handles event source resolution and shared layout for you. Click any code box to copy.</p>
+
+                    <div class="eem-shortcode-row">
+                      <div class="eem-shortcode-label">Reservation Form</div>
+                      <div class="eem-shortcode-body">
+                        <button type="button" class="eem-code-box">[en_reservation id="123"]</button>
+                        <p class="eem-field-hint">Displays a reservation form by post ID. Useful in builder pages, landing pages, or manual reservation links.</p>
+                      </div>
+                    </div>
+                    <div class="eem-shortcode-row">
+                      <div class="eem-shortcode-label">Current Event Page</div>
+                      <div class="eem-shortcode-body">
+                        <button type="button" class="eem-code-box">[equine_event_manager_event]</button>
+                        <p class="eem-field-hint">Renders the current event using the shared single-event layout. Works on native event pages, TEC event pages, and reservation-backed routes.</p>
+                      </div>
+                    </div>
+                    <div class="eem-shortcode-row">
+                      <div class="eem-shortcode-label">Single Event by Event ID</div>
+                      <div class="eem-shortcode-body">
+                        <button type="button" class="eem-code-box">[equine_event_manager_event id="123"]</button>
+                        <p class="eem-field-hint">Targets a native or TEC event post directly by its post ID.</p>
+                      </div>
+                    </div>
+                    <div class="eem-shortcode-row">
+                      <div class="eem-shortcode-label">Single Event by Reservation</div>
+                      <div class="eem-shortcode-body">
+                        <button type="button" class="eem-code-box">[equine_event_manager_event reservation="123"]</button>
+                        <p class="eem-field-hint">Displays a reservation-backed event source (Event Feed or External) using the same shared template.</p>
+                      </div>
+                    </div>
+                    <div class="eem-shortcode-row">
+                      <div class="eem-shortcode-label">All Events — List View</div>
+                      <div class="eem-shortcode-body">
+                        <button type="button" class="eem-code-box">[equine_event_manager_events view="list"]</button>
+                        <p class="eem-field-hint">Displays a mixed-source event list using the Event Manager card layout.</p>
+                      </div>
+                    </div>
+                    <div class="eem-shortcode-row">
+                      <div class="eem-shortcode-label">All Events — Calendar View</div>
+                      <div class="eem-shortcode-body">
+                        <button type="button" class="eem-code-box">[equine_event_manager_events view="calendar"]</button>
+                        <p class="eem-field-hint">Same mixed event collection in a calendar view.</p>
+                      </div>
+                    </div>
+                    <div class="eem-shortcode-row">
+                      <div class="eem-shortcode-label">Filter by Source</div>
+                      <div class="eem-shortcode-body">
+                        <button type="button" class="eem-code-box">[equine_event_manager_events view="list" source="native,tec"]</button>
+                        <p class="eem-field-hint">Comma-separated source filter: native, tec, feed, or external.</p>
+                      </div>
+                    </div>
+                    <div class="eem-shortcode-row">
+                      <div class="eem-shortcode-label">Lock to a Specific Month</div>
+                      <div class="eem-shortcode-body">
+                        <button type="button" class="eem-code-box">[equine_event_manager_events view="calendar" month="2026-05"]</button>
+                        <p class="eem-field-hint">Use the month attribute in YYYY-MM format to lock the calendar to a specific month.</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+                <!-- no save bar — read-only reference -->
+              </form>
+
+              <!-- ════════════ PAYMENTS ════════════ -->
+              <form class="eem-settings-form" data-panel="payments" onsubmit="return false">
+
+                <section class="eem-card">
+                  <header class="eem-card-header"><h2 class="eem-card-title">Tax Rate</h2></header>
+                  <div class="eem-card-body">
+                    <p class="eem-field-hint" style="margin-bottom:14px;">Default sales tax applied at checkout. Each reservation can override this in its own settings.</p>
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-tax-apply">Apply Tax</label>
+                      <div class="eem-field-control">
+                        <label class="eem-checkbox-row"><input type="checkbox" id="eem-tax-apply"><span>Charge sales tax on orders</span></label>
+                        <p class="eem-field-hint">Uncheck if you handle tax outside the plugin. Disabling hides tax lines from checkout and receipts.</p>
+                      </div>
+                    </div>
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-tax-rate">Default Tax Rate</label>
+                      <div class="eem-field-control">
+                        <div class="eem-price-wrap">
+                          <input class="eem-price-input" id="eem-tax-rate" type="number" step="0.01" min="0" max="100" value="8.25">
+                          <span class="eem-price-symbol">%</span>
+                        </div>
+                        <p class="eem-field-hint">Applied to all reservations unless overridden. Shown as a line item on checkout and receipts.</p>
+                      </div>
+                    </div>
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-tax-label">Tax Label</label>
+                      <div class="eem-field-control">
+                        <input class="eem-field-input" id="eem-tax-label" type="text" value="Sales Tax" style="max-width:280px;">
+                        <p class="eem-field-hint">How tax appears on checkout and receipts (e.g. "Sales Tax", "VAT", "GST").</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="eem-card">
+                  <header class="eem-card-header"><h2 class="eem-card-title">Active Payment Processor</h2></header>
+                  <div class="eem-card-body">
+                    <p class="eem-field-hint" style="margin-bottom:14px;">Customers check out using the active processor only. You can configure both below and switch at any time.</p>
+                    <div class="eem-source-group" id="pay-processor-group">
+                      <label class="eem-source-row" data-gateway="stripe">
+                        <input type="radio" name="payload[selected_gateway]" value="stripe" hidden>
+                        <span class="eem-source-radio" aria-hidden="true"></span>
+                        <span class="eem-source-row-body">
+                          <span class="eem-source-row-head">
+                            <span class="eem-source-row-title">Stripe</span>
+                            <span class="eem-source-status is-info">Inactive</span>
+                          </span>
+                          <span class="eem-source-row-desc">Modern card processor with built-in webhooks. Recommended for most setups.</span>
+                        </span>
+                      </label>
+                      <label class="eem-source-row is-selected" data-gateway="authorize_net">
+                        <input type="radio" name="payload[selected_gateway]" value="authorize_net" checked hidden>
+                        <span class="eem-source-radio" aria-hidden="true"></span>
+                        <span class="eem-source-row-body">
+                          <span class="eem-source-row-head">
+                            <span class="eem-source-row-title">Authorize.net</span>
+                            <span class="eem-source-status is-active">Active</span>
+                          </span>
+                          <span class="eem-source-row-desc">Legacy processor for merchants with existing Authorize.net accounts. Refunds and capture both supported.</span>
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Stripe connection (inactive → inactive note shown) -->
+                <section class="eem-card">
+                  <header class="eem-card-header">
+                    <h2 class="eem-card-title">Stripe Connection</h2>
+                    <span class="eem-processor-inactive-note">Inactive — select Stripe as the active processor above to edit these fields.</span>
+                  </header>
+                  <div class="eem-card-body" style="opacity:.55;pointer-events:none;">
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-stripe-mode">Mode</label>
+                      <div class="eem-field-control">
+                        <select class="eem-field-select" id="eem-stripe-mode" style="max-width:160px;"><option>Test</option><option>Live</option></select>
+                      </div>
+                    </div>
+                    <!-- Test credentials (shown when mode=test) -->
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-stripe-test-pub">Test Publishable Key</label>
+                      <div class="eem-field-control"><input class="eem-field-input" id="eem-stripe-test-pub" type="text" value="" placeholder="pk_test_…" autocomplete="off"></div>
+                    </div>
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-stripe-test-secret">Test Secret Key</label>
+                      <div class="eem-field-control"><input class="eem-field-input" id="eem-stripe-test-secret" type="password" value="" placeholder="sk_test_…" autocomplete="off"></div>
+                    </div>
+                    <!-- Live credentials (shown when mode=live) -->
+                    <div class="eem-field-row" style="opacity:.45;">
+                      <label class="eem-field-label" for="eem-stripe-live-pub">Live Publishable Key</label>
+                      <div class="eem-field-control"><input class="eem-field-input" id="eem-stripe-live-pub" type="text" value="" placeholder="pk_live_…" autocomplete="off"></div>
+                    </div>
+                    <div class="eem-field-row" style="opacity:.45;">
+                      <label class="eem-field-label" for="eem-stripe-live-secret">Live Secret Key</label>
+                      <div class="eem-field-control"><input class="eem-field-input" id="eem-stripe-live-secret" type="password" value="" placeholder="sk_live_…" autocomplete="off"></div>
+                    </div>
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-stripe-webhook">Webhook Signing Secret</label>
+                      <div class="eem-field-control">
+                        <input class="eem-field-input" id="eem-stripe-webhook" type="password" value="" autocomplete="off">
+                        <p class="eem-field-hint">Found in your Stripe Dashboard under Developers → Webhooks. Required to verify payment events.</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Authorize.net connection (active) -->
+                <section class="eem-card">
+                  <header class="eem-card-header"><h2 class="eem-card-title">Authorize.net Connection</h2></header>
+                  <div class="eem-card-body">
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-an-mode">Mode</label>
+                      <div class="eem-field-control">
+                        <select class="eem-field-select" id="eem-an-mode" style="max-width:160px;"><option>Test</option><option selected>Live</option></select>
+                      </div>
+                    </div>
+                    <!-- Test credentials (dimmed — live mode active) -->
+                    <div class="eem-field-row" style="opacity:.45;">
+                      <label class="eem-field-label" for="eem-an-test-login">Test API Login ID</label>
+                      <div class="eem-field-control"><input class="eem-field-input" id="eem-an-test-login" type="text" value="" placeholder="Test login ID" autocomplete="off"></div>
+                    </div>
+                    <div class="eem-field-row" style="opacity:.45;">
+                      <label class="eem-field-label" for="eem-an-test-key">Test Transaction Key</label>
+                      <div class="eem-field-control"><input class="eem-field-input" id="eem-an-test-key" type="password" value="" placeholder="Test transaction key" autocomplete="off"></div>
+                    </div>
+                    <!-- Live credentials (active mode) -->
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-an-live-login">Live API Login ID</label>
+                      <div class="eem-field-control"><input class="eem-field-input" id="eem-an-live-login" type="text" value="9V8kGNw2278" autocomplete="off"></div>
+                    </div>
+                    <div class="eem-field-row">
+                      <label class="eem-field-label" for="eem-an-live-key">Live Transaction Key</label>
+                      <div class="eem-field-control"><input class="eem-field-input" id="eem-an-live-key" type="password" value="9p86F9fd57jS4pYM" autocomplete="off"></div>
+                    </div>
+                    <div class="eem-field-row">
+                      <span class="eem-field-label">Verify</span>
+                      <div class="eem-field-control">
+                        <button type="button" class="eem-btn eem-btn-secondary" style="align-self:flex-start;">Test Connection</button>
+                        <p class="eem-field-hint">Pings Authorize.net with the selected mode's credentials (no charge) and shows the gateway's actual response, so you can verify a credential set before saving.</p>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <div class="eem-settings-save-bar">
+                  <button type="submit" class="eem-btn eem-btn-electric">Save Payment Settings</button>
+                </div>
+              </form>
+
+              <!-- ════════════ ADD-ONS ════════════ -->
+              <form class="eem-settings-form" data-panel="addons" onsubmit="return false">
+                <section class="eem-card">
+                  <header class="eem-card-header"><h2 class="eem-card-title">Optional Features</h2></header>
+                  <div class="eem-card-body">
+                    <p class="eem-field-hint" style="margin-bottom:16px;">Turn optional features on or off for this site. Turning one off hides it everywhere — its menu, editor sections, customer-facing pages, and buttons — without deleting any data. Turn it back on any time to restore it exactly as it was.</p>
+
+                    <div class="eem-addon-row">
+                      <button type="button" class="eem-toggle off" role="switch" aria-checked="false" aria-label="Entries"></button>
+                      <span class="eem-addon-row__text">
+                        <span class="eem-addon-row__title">Entries</span>
+                        <span class="eem-addon-row__desc">Sell entry spots in divisions/classes and track who has entered. When off: the Entries menu, the customer checkout entries section, and the Create Order entries fold are hidden.</span>
+                      </span>
+                    </div>
+
+                    <div class="eem-addon-row">
+                      <button type="button" class="eem-toggle on" role="switch" aria-checked="true" aria-label="Sheets &amp; Results"></button>
+                      <span class="eem-addon-row__text">
+                        <span class="eem-addon-row__title">Sheets &amp; Results</span>
+                        <span class="eem-addon-row__desc">Upload draw sheets and result PDFs per event. When off: the Sheets &amp; Results menu, the event-editor section, the public per-event page, and the event-card buttons are hidden.</span>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="eem-settings-save-bar">
+                    <button type="submit" class="eem-btn eem-btn-electric">Save Features</button>
+                  </div>
+                </section>
+              </form>
+
+              <!-- ════════════ DANGER ZONE / UNINSTALL ════════════ -->
+              <div data-panel="danger" style="display:none;flex-direction:column;">
+
+                <!-- Erase all data -->
+                <section class="eem-card eem-card--danger">
+                  <header class="eem-card-header">
+                    <h2 class="eem-card-title">Erase all data &amp; start fresh</h2>
+                  </header>
+                  <div class="eem-card-body">
+                    <p class="eem-field-hint" style="margin-bottom:14px;">Permanently delete everything this plugin has stored and return it to a clean, just-installed state — handy for testing the new-customer setup experience from scratch. This cannot be undone.</p>
+                    <ul class="eem-danger-summary">
+                      <li><strong>3</strong> Reservations</li>
+                      <li><strong>7</strong> Orders</li>
+                      <li><strong>0</strong> Native events</li>
+                      <li><strong>0</strong> Venues</li>
+                      <li><strong>0</strong> Producers</li>
+                      <li><strong>42</strong> Activity-log entries</li>
+                    </ul>
+                    <p class="eem-field-hint" style="margin:14px 0;">Also removed: all plugin settings, uploaded report exports, and the reservation/order database tables. The Events Calendar (TEC) events and your WordPress media library are never touched.</p>
+                    <button type="button" class="eem-btn eem-btn-danger" id="erase-btn">Erase all data &amp; start fresh</button>
+                  </div>
+                </section>
+
+                <!-- Typed ERASE confirm modal (shown after clicking the button above) -->
+                <div id="erase-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:center;justify-content:center;">
+                  <div style="background:#fff;border-radius:6px;padding:28px 32px;max-width:440px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.18);">
+                    <h3 style="font-family:var(--eem-font-display);font-size:17px;color:var(--eem-red);margin-bottom:10px;">Confirm: Erase all data</h3>
+                    <p style="font-size:13.5px;color:var(--eem-text);line-height:1.6;margin-bottom:16px;">This will permanently delete all reservations, orders, settings, and plugin data. Type <strong>ERASE</strong> to confirm.</p>
+                    <input id="erase-confirm-input" type="text" class="eem-field-input" placeholder="Type ERASE here" autocomplete="off" style="margin-bottom:14px;">
+                    <div style="display:flex;justify-content:flex-end;gap:10px;">
+                      <button type="button" class="eem-btn eem-btn-secondary" id="erase-cancel">Cancel</button>
+                      <button type="button" class="eem-btn eem-btn-danger" id="erase-confirm" disabled>Erase everything</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Delete on uninstall -->
+                <form class="eem-settings-form" onsubmit="return false">
+                  <section class="eem-card">
+                    <header class="eem-card-header">
+                      <h2 class="eem-card-title">Delete data when the plugin is removed</h2>
+                    </header>
+                    <div class="eem-card-body">
+                      <label class="eem-checkbox-row" style="display:flex;gap:10px;align-items:flex-start;padding:0;">
+                        <input type="checkbox" style="margin-top:2px;">
+                        <span>Also delete all data when this plugin is deleted from the Plugins screen</span>
+                      </label>
+                      <p class="eem-field-hint" style="margin-top:10px;">Off by default: deleting the plugin keeps your reservations, orders, and settings, so reinstalling restores everything. Turn this on only if you want deleting the plugin to also wipe its data.</p>
+                    </div>
+                    <div class="eem-settings-save-bar">
+                      <button type="submit" class="eem-btn eem-btn-electric">Save Changes</button>
+                    </div>
+                  </section>
+                </form>
+              </div>
+
+            </section>
+          </div>
         </div>
       </div>
+    </div>
+  </main>
+</div>
 
-      <!-- Right content panels -->
-      <div class="settings-content">
+<script>
+// Tab switching
+document.querySelectorAll('.eem-settings-nav-item').forEach(function(item){
+  item.addEventListener('click', function(e){
+    e.preventDefault();
+    var tab = item.getAttribute('data-tab');
+    document.querySelectorAll('.eem-settings-nav-item').forEach(function(n){n.classList.remove('is-active');});
+    item.classList.add('is-active');
+    document.querySelectorAll('[data-panel]').forEach(function(p){
+      var show = p.getAttribute('data-panel') === tab;
+      if(show){ p.style.display='flex'; p.classList.add('is-shown'); }
+      else { p.style.display='none'; p.classList.remove('is-shown'); }
+    });
+  });
+});
 
-        <!-- INTEGRATIONS -->
-        <div class="tab-panel active" id="panel-integrations">
-          <div class="settings-section">
-            <div class="section-title">Event Source</div>
-            <div class="section-desc">Choose where reservations get their events from. Only one source can be active at a time.</div>
+// Source-row radio selection (Integrations + Payments)
+document.querySelectorAll('.eem-source-group').forEach(function(group){
+  group.querySelectorAll('.eem-source-row').forEach(function(row){
+    row.addEventListener('click', function(){
+      group.querySelectorAll('.eem-source-row').forEach(function(r){r.classList.remove('is-selected');});
+      row.classList.add('is-selected');
+      var input = row.querySelector('input[type=radio]'); if(input){input.checked=true;}
 
-            <div class="source-group" data-group="event-source">
-              <!-- Native Events (currently selected/active) -->
-              <div class="source-row selected" data-value="native" onclick="pickSource(this)">
-                <div class="source-radio"></div>
-                <div class="source-row-body">
-                  <div class="source-row-head">
-                    <div class="source-row-title">Native Events</div>
-                    <span class="status-pill status-active">Active</span>
-                  </div>
-                  <div class="source-row-desc">Use Equine Event Manager as the main event system with native events, categories, venues, producers, widgets, and the shared frontend event template.</div>
-                </div>
-              </div>
+      // Show/hide Integrations source details
+      var src = row.getAttribute('data-source-value');
+      if(src){
+        ['native','tec','feed'].forEach(function(s){
+          var det = document.getElementById('int-detail-'+s);
+          if(det){ if(s===src){ det.removeAttribute('hidden'); } else { det.setAttribute('hidden',''); } }
+        });
+      }
+    });
+  });
+});
 
-              <!-- TEC -->
-              <div class="source-row" data-value="tec" onclick="pickSource(this)">
-                <div class="source-radio"></div>
-                <div class="source-row-body">
-                  <div class="source-row-head">
-                    <div class="source-row-title">The Events Calendar (TEC)</div>
-                    <span class="status-pill status-available">Available</span>
-                  </div>
-                  <div class="source-row-desc">The Events Calendar plugin is installed. When active, reservations can search and link to live TEC events directly.</div>
-                </div>
-              </div>
+// Template card collapse/expand
+document.querySelectorAll('[data-tmpl-toggle]').forEach(function(head){
+  head.addEventListener('click', function(){ head.closest('.eem-template-card').classList.toggle('is-open'); });
+});
 
-              <!-- External Feed -->
-              <div class="source-row" data-value="feed" onclick="pickSource(this)">
-                <div class="source-radio"></div>
-                <div class="source-row-body">
-                  <div class="source-row-head">
-                    <div class="source-row-title">External Feed URL</div>
-                    <span class="status-pill status-available">Available</span>
-                  </div>
-                  <div class="source-row-desc">Pull events from an external JSON or XML endpoint. Reservations inherit the feed URL automatically when this source is active.</div>
-                </div>
-              </div>
-            </div>
+// Placeholder chip copy
+document.querySelectorAll('.eem-placeholder-chip').forEach(function(chip){
+  chip.addEventListener('click', function(){
+    var t=chip.textContent; chip.textContent='Copied!';
+    setTimeout(function(){chip.textContent=t;},900);
+  });
+});
 
-            <!-- Native Events detail (visible when Native is selected) -->
-            <div class="source-detail" data-detail-for="event-source:native">
-              <div class="source-detail-title">Native Events Settings</div>
-              <p class="field-hint" style="margin-bottom:0">Native events are managed under <a href="#" style="color:#1668F2;font-weight:600">EEM → Events</a> in the admin sidebar. Producers, venues, and categories are managed there too.</p>
-            </div>
+// Code box copy
+document.querySelectorAll('.eem-code-box').forEach(function(box){
+  box.addEventListener('click', function(){
+    var t=box.textContent.trim(); box.textContent='Copied!';
+    setTimeout(function(){box.textContent=t;},900);
+  });
+});
 
-            <!-- TEC detail (hidden until TEC is selected) -->
-            <div class="source-detail" data-detail-for="event-source:tec" style="display:none">
-              <div class="source-detail-title">The Events Calendar Connection</div>
-              <div class="field-row">
-                <div class="field-label">Event Category Filter</div>
-                <div class="field-control">
-                  <input class="field-input" type="text" placeholder="e.g. equestrian" style="max-width:300px">
-                  <p class="field-hint">Optional. Only TEC events with this category will be searchable when linking to a reservation. Leave blank to allow all events.</p>
-                </div>
-              </div>
-              <div class="field-row">
-                <div class="field-label">Connection Status</div>
-                <div class="field-control">
-                  <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:#031B4E"><span class="status-pill status-active">Connected</span> TEC plugin detected and responding.</div>
-                </div>
-              </div>
-            </div>
+// Toggle buttons (Add-Ons)
+document.querySelectorAll('.eem-toggle').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var on = btn.classList.toggle('on');
+    btn.classList.toggle('off',!on);
+    btn.setAttribute('aria-checked', on?'true':'false');
+  });
+});
 
-            <!-- Feed detail (hidden until Feed is selected) -->
-            <div class="source-detail" data-detail-for="event-source:feed" style="display:none">
-              <div class="source-detail-title">External Feed URL</div>
-              <div class="field-row">
-                <div class="field-label">Feed URL</div>
-                <div class="field-control">
-                  <input class="field-input" style="max-width:500px" type="url" value="https://globalroping.com/patriot/schedule.aspx">
-                  <p class="field-hint">JSON or XML-style event endpoints are both supported. Use the Test Feed URL button to verify the response.</p>
-                </div>
-              </div>
-              <div class="field-row" style="border-bottom:none">
-                <div class="field-label">Test Connection</div>
-                <div class="field-control">
-                  <button class="btn-test">Test Feed URL</button>
-                  <p class="field-hint">Fetches the feed and validates the response structure. Saves nothing.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-section">
-            <div class="section-title">Email Delivery</div>
-            <div class="section-desc">Optionally route customer receipts and payment-link emails through SendGrid instead of the default WordPress mailer.</div>
-            <div class="field-row">
-              <div class="field-label">SendGrid API Key</div>
-              <div class="field-control">
-                <input class="field-input" type="password" placeholder="SG.xxxxxxxxxxxxxxxxxxxx" style="max-width:400px">
-                <p class="field-hint">When this API key is saved, Equine Event Manager will use SendGrid for customer receipt emails and payment-link invoice emails. Leave blank to keep using the site's default WordPress mail configuration.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="save-bar">
-            <button class="btn-save" onclick="showSaveToast()">Save Settings</button>
-          </div>
-        </div>
-
-        <!-- BRANDING -->
-        <div class="tab-panel" id="panel-branding">
-          <div class="settings-section">
-            <div class="section-title">Branding</div>
-            <div class="section-desc">Set the branding details used on receipts, PDFs, and customer-facing communications.</div>
-
-            <div class="field-row">
-              <div>
-                <div class="field-label">Business Logo</div>
-              </div>
-              <div class="field-control">
-                <div class="logo-upload-area">
-                  <div class="logo-preview-placeholder">Logo Preview</div>
-                  <div class="upload-btn-row">
-                    <button class="btn-upload">Upload Logo</button>
-                    <button class="btn-remove">Remove</button>
-                  </div>
-                </div>
-                <p class="field-hint">This logo is used on printable PDF receipts and email receipt branding. It is not used in the plugin admin header. PNG with a transparent background works best.</p>
-              </div>
-            </div>
-
-            <div class="field-row">
-              <div class="field-label">Support Phone</div>
-              <div class="field-control">
-                <input class="field-input" type="tel" value="555-555-5555" style="max-width:280px">
-                <p class="field-hint">Use this as your general support number. Reservation-specific messaging can override it in the Communications tab.</p>
-              </div>
-            </div>
-
-            <div class="field-row">
-              <div class="field-label">Support Email</div>
-              <div class="field-control">
-                <input class="field-input" type="email" value="office@rsnc.us" style="max-width:320px">
-                <p class="field-hint">Shown as your default support email across messaging and receipt settings unless you override it below.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="save-bar">
-            <button class="btn-save" onclick="showSaveToast()">Save Settings</button>
-          </div>
-        </div>
-
-        <!-- COMMUNICATIONS -->
-        <div class="tab-panel" id="panel-communications">
-          <div class="settings-section">
-            <div class="section-title">Reservation Form</div>
-            <div class="section-desc">Manage the reservation form helper text and the messages customers see when reservations are not currently available.</div>
-
-            <div class="field-row">
-              <div>
-                <div class="field-label">Special Requests Description</div>
-              </div>
-              <div class="field-control">
-                <textarea class="field-textarea">Please let us know if you have any special requests for your stay including stallion accommodations, preferred contestant proximity stalling, etc.</textarea>
-                <p class="field-hint">This appears above the Special Requests field on the front-end reservation form.</p>
-              </div>
-            </div>
-
-            <div class="field-row">
-              <div>
-                <div class="field-label">Reservation Support Phone</div>
-              </div>
-              <div class="field-control">
-                <input class="field-input" type="tel" value="444-444-4444" style="max-width:280px">
-                <p class="field-hint">Used in the reservation open and closed messages. Leave blank to fall back to the company support phone.</p>
-              </div>
-            </div>
-
-            <div class="field-row">
-              <div>
-                <div class="field-label">Reservation Support Email</div>
-              </div>
-              <div class="field-control">
-                <input class="field-input" type="email" value="office@rsnc.us" style="max-width:320px">
-                <p class="field-hint">Used in reservation notices when you include the [email] placeholder. Leave blank to fall back to the company support email.</p>
-              </div>
-            </div>
-
-            <div class="field-row">
-              <div>
-                <div class="field-label">Pre-Open Reservation Message</div>
-              </div>
-              <div class="field-control">
-                <textarea class="field-textarea">Reservations for [event_name] will open on [open_date_time]. If you have questions please call [phone].</textarea>
-                <p class="field-hint">Shown before reservations open. Available placeholders: [event_name], [open_date_time], [close_date_time], [phone], [email].</p>
-              </div>
-            </div>
-
-            <div class="field-row">
-              <div>
-                <div class="field-label">Closed Reservation Message</div>
-              </div>
-              <div class="field-control">
-                <textarea class="field-textarea">Reservations for [event_name] are now closed. Please call [phone] for assistance.</textarea>
-                <p class="field-hint">Shown after reservations close. Available placeholders: [event_name], [open_date_time], [close_date_time], [phone], [email].</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-section">
-            <div class="section-title">Email Sender Settings</div>
-            <div class="section-desc">Sender identity and routing for all transactional emails. Applies to every template below.</div>
-
-            <div class="field-row">
-              <div class="field-label">Send Customer Emails</div>
-              <div class="field-control">
-                <div class="checkbox-row">
-                  <input type="checkbox" id="send-receipt" checked>
-                  <label for="send-receipt">Send transactional emails to customers (receipts, reminders, etc.)</label>
-                </div>
-              </div>
-            </div>
-
-            <div class="field-row">
-              <div class="field-label">Admin Copy Email</div>
-              <div class="field-control">
-                <input class="field-input" type="email" value="wmitchell@equinenetwork.com" style="max-width:360px">
-                <p class="field-hint">Optional. Send an internal copy of each customer email to this address.</p>
-              </div>
-            </div>
-
-            <div class="field-row">
-              <div class="field-label">From Name</div>
-              <div class="field-control">
-                <input class="field-input" type="text" value="Equine Event Manager" style="max-width:300px">
-              </div>
-            </div>
-
-            <div class="field-row">
-              <div class="field-label">From Email</div>
-              <div class="field-control">
-                <input class="field-input" type="email" value="office@rsnc.us" style="max-width:320px">
-              </div>
-            </div>
-
-            <div class="field-row">
-              <div class="field-label">Reply-To Email</div>
-              <div class="field-control">
-                <input class="field-input" type="email" value="office@rsnc.us" style="max-width:320px">
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-section">
-            <div class="section-title">Email Templates</div>
-            <div class="section-desc">Edit the subject and body for each transactional email customers receive. Use placeholders like <code>{{customer_name}}</code> to insert dynamic content. Use the toolbar for bold, italics, and links.</div>
-
-            <!-- Placeholder reference panel -->
-            <div class="placeholder-reference">
-              <div class="placeholder-ref-title">Available placeholders <span class="placeholder-ref-hint">Click to copy</span></div>
-              <div class="placeholder-chips">
-                <button class="placeholder-chip" onclick="copyChip(this)">{{customer_name}}</button>
-                <button class="placeholder-chip" onclick="copyChip(this)">{{event_name}}</button>
-                <button class="placeholder-chip" onclick="copyChip(this)">{{event_dates}}</button>
-                <button class="placeholder-chip" onclick="copyChip(this)">{{order_number}}</button>
-                <button class="placeholder-chip" onclick="copyChip(this)">{{total}}</button>
-                <button class="placeholder-chip" onclick="copyChip(this)">{{balance}}</button>
-                <button class="placeholder-chip" onclick="copyChip(this)">{{payment_link}}</button>
-                <button class="placeholder-chip" onclick="copyChip(this)">{{stall_assignments}}</button>
-                <button class="placeholder-chip" onclick="copyChip(this)">{{support_phone}}</button>
-                <button class="placeholder-chip" onclick="copyChip(this)">{{support_email}}</button>
-                <button class="placeholder-chip" onclick="copyChip(this)">{{cancellation_policy}}</button>
-              </div>
-            </div>
-
-            <!-- Template: Order Receipt -->
-            <div class="template-card">
-              <div class="template-card-head" onclick="toggleTemplate(this)">
-                <div class="template-card-head-left">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></svg>
-                  <div>
-                    <div class="template-card-title">Order Receipt</div>
-                    <div class="template-card-sub">Sent immediately after a successful order/payment.</div>
-                  </div>
-                </div>
-                <svg class="template-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
-              <div class="template-card-body">
-                <div class="field-row">
-                  <div class="field-label">Subject</div>
-                  <div class="field-control">
-                    <input class="field-input" type="text" value="Your reservation receipt for {{event_name}}">
-                  </div>
-                </div>
-                <div class="field-row">
-                  <div class="field-label">Body</div>
-                  <div class="field-control">
-                    <!-- Mock rich text editor -->
-                    <div class="rte-toolbar">
-                      <button class="rte-btn" title="Bold"><strong>B</strong></button>
-                      <button class="rte-btn" title="Italic"><em>I</em></button>
-                      <button class="rte-btn" title="Underline"><span style="text-decoration:underline">U</span></button>
-                      <span class="rte-divider"></span>
-                      <button class="rte-btn" title="Link">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                      </button>
-                      <button class="rte-btn" title="Bulleted list">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-                      </button>
-                    </div>
-                    <div class="rte-editor" contenteditable="true">Hi {{customer_name}},<br><br>Thank you for your reservation for <strong>{{event_name}}</strong>. Your order number is <strong>{{order_number}}</strong> and the total amount was <strong>{{total}}</strong>.<br><br>Your stall assignments:<br>{{stall_assignments}}<br><br>If you have questions, please contact us at {{support_phone}} or {{support_email}}.</div>
-                  </div>
-                </div>
-                <div class="template-card-actions">
-                  <button class="btn-test-email">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    Send test email to me
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Template: Payment Reminder -->
-            <div class="template-card">
-              <div class="template-card-head" onclick="toggleTemplate(this)">
-                <div class="template-card-head-left">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  <div>
-                    <div class="template-card-title">Payment Reminder</div>
-                    <div class="template-card-sub">Sent for unpaid invoices (bulk reminder from Orders page or per-order).</div>
-                  </div>
-                </div>
-                <svg class="template-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
-              <div class="template-card-body">
-                <div class="field-row">
-                  <div class="field-label">Subject</div>
-                  <div class="field-control">
-                    <input class="field-input" type="text" value="Reminder: Payment due for {{event_name}}">
-                  </div>
-                </div>
-                <div class="field-row">
-                  <div class="field-label">Body</div>
-                  <div class="field-control">
-                    <div class="rte-toolbar">
-                      <button class="rte-btn"><strong>B</strong></button>
-                      <button class="rte-btn"><em>I</em></button>
-                      <button class="rte-btn"><span style="text-decoration:underline">U</span></button>
-                      <span class="rte-divider"></span>
-                      <button class="rte-btn">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                      </button>
-                    </div>
-                    <div class="rte-editor" contenteditable="true">Hi {{customer_name}},<br><br>This is a friendly reminder that your reservation for <strong>{{event_name}}</strong> has an outstanding balance of <strong>{{balance}}</strong>.<br><br>Please pay at your convenience using this secure link: {{payment_link}}<br><br>Thanks!</div>
-                  </div>
-                </div>
-                <div class="template-card-actions">
-                  <button class="btn-test-email">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    Send test email to me
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Template: Refund Confirmation -->
-            <div class="template-card">
-              <div class="template-card-head" onclick="toggleTemplate(this)">
-                <div class="template-card-head-left">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
-                  <div>
-                    <div class="template-card-title">Refund Confirmation</div>
-                    <div class="template-card-sub">Sent after a refund is processed (full or partial).</div>
-                  </div>
-                </div>
-                <svg class="template-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
-              <div class="template-card-body">
-                <div class="field-row">
-                  <div class="field-label">Subject</div>
-                  <div class="field-control">
-                    <input class="field-input" type="text" value="Refund processed for {{event_name}}">
-                  </div>
-                </div>
-                <div class="field-row">
-                  <div class="field-label">Body</div>
-                  <div class="field-control">
-                    <div class="rte-toolbar">
-                      <button class="rte-btn"><strong>B</strong></button>
-                      <button class="rte-btn"><em>I</em></button>
-                      <button class="rte-btn"><span style="text-decoration:underline">U</span></button>
-                    </div>
-                    <div class="rte-editor" contenteditable="true">Hi {{customer_name}},<br><br>Your refund for order <strong>{{order_number}}</strong> has been processed. Please allow 5–10 business days for it to appear on your statement.<br><br>If you have questions, please contact us at {{support_phone}} or {{support_email}}.</div>
-                  </div>
-                </div>
-                <div class="template-card-actions">
-                  <button class="btn-test-email">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    Send test email to me
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Template: Cancellation -->
-            <div class="template-card">
-              <div class="template-card-head" onclick="toggleTemplate(this)">
-                <div class="template-card-head-left">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                  <div>
-                    <div class="template-card-title">Cancellation</div>
-                    <div class="template-card-sub">Sent when an order is cancelled (by admin or by customer).</div>
-                  </div>
-                </div>
-                <svg class="template-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
-              <div class="template-card-body">
-                <div class="field-row">
-                  <div class="field-label">Subject</div>
-                  <div class="field-control">
-                    <input class="field-input" type="text" value="Your reservation for {{event_name}} has been cancelled">
-                  </div>
-                </div>
-                <div class="field-row">
-                  <div class="field-label">Body</div>
-                  <div class="field-control">
-                    <div class="rte-toolbar">
-                      <button class="rte-btn"><strong>B</strong></button>
-                      <button class="rte-btn"><em>I</em></button>
-                      <button class="rte-btn"><span style="text-decoration:underline">U</span></button>
-                    </div>
-                    <div class="rte-editor" contenteditable="true">Hi {{customer_name}},<br><br>Your reservation for <strong>{{event_name}}</strong> (order <strong>{{order_number}}</strong>) has been cancelled.<br><br>{{cancellation_policy}}<br><br>If this was unexpected, please contact us at {{support_phone}} or {{support_email}}.</div>
-                  </div>
-                </div>
-                <div class="template-card-actions">
-                  <button class="btn-test-email">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    Send test email to me
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Template: Custom Welcome -->
-            <div class="template-card">
-              <div class="template-card-head" onclick="toggleTemplate(this)">
-                <div class="template-card-head-left">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                  <div>
-                    <div class="template-card-title">Custom Welcome</div>
-                    <div class="template-card-sub">Sent to new customers. Use it for first-time-buyer welcomes or VIP greetings.</div>
-                  </div>
-                </div>
-                <svg class="template-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
-              <div class="template-card-body">
-                <div class="field-row">
-                  <div class="field-label">Subject</div>
-                  <div class="field-control">
-                    <input class="field-input" type="text" value="Welcome to {{event_name}}, {{customer_name}}!">
-                  </div>
-                </div>
-                <div class="field-row">
-                  <div class="field-label">Body</div>
-                  <div class="field-control">
-                    <div class="rte-toolbar">
-                      <button class="rte-btn"><strong>B</strong></button>
-                      <button class="rte-btn"><em>I</em></button>
-                      <button class="rte-btn"><span style="text-decoration:underline">U</span></button>
-                    </div>
-                    <div class="rte-editor" contenteditable="true">Hi {{customer_name}},<br><br>Welcome to <strong>{{event_name}}</strong>! We're excited to have you. Event dates: {{event_dates}}.<br><br>If you have questions before the event, please contact us at {{support_phone}} or {{support_email}}.</div>
-                  </div>
-                </div>
-                <div class="template-card-actions">
-                  <button class="btn-test-email">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    Send test email to me
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-section">
-            <div class="section-title">Policies</div>
-            <div class="section-desc">Legal-ish text shown to customers at checkout and on receipts. Customers must acknowledge before checkout.</div>
-
-            <div class="field-row">
-              <div class="field-label">Cancellation Policy</div>
-              <div class="field-control">
-                <textarea class="field-textarea" style="min-height:120px">Cancellations made more than 14 days before the event will receive a full refund. Cancellations within 14 days of the event are non-refundable. Cancellations within 48 hours of the event will forfeit stall and lot deposits. Please contact the event office for any extenuating circumstances.</textarea>
-                <p class="field-hint">Shown at checkout and on cancellation emails. Available placeholder: <code>{{cancellation_policy}}</code> in email templates.</p>
-              </div>
-            </div>
-
-            <div class="field-row">
-              <div class="field-label">Terms &amp; Conditions</div>
-              <div class="field-control">
-                <textarea class="field-textarea" style="min-height:200px">By completing this reservation, you agree to the following terms:
-
-1. All horses must have proof of negative Coggins (EIA) test within 12 months, available upon arrival.
-2. Stall assignments are subject to change at the event organizer's discretion.
-3. Damage to stalls, lots, or facilities will be charged to the responsible customer.
-4. The event organizer is not responsible for personal property loss or injury.
-5. By participating, you grant the event organizer permission to use event photography for promotional purposes.
-6. Disputes will be resolved under the laws of [state/jurisdiction].</textarea>
-                <p class="field-hint">Shown at checkout. Customer must acknowledge by checking a box before paying.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="save-bar">
-            <button class="btn-save" onclick="showSaveToast()">Save Settings</button>
-          </div>
-        </div>
-
-        <!-- SHORTCODES -->
-        <div class="tab-panel" id="panel-shortcodes">
-          <div class="settings-section">
-            <div class="section-title">Event Display Shortcodes</div>
-            <div class="section-desc">Use these shortcodes in any page builder, classic editor, shortcode block, or theme content area. The plugin handles the event source and shared layout for you.</div>
-
-            <div class="shortcode-row">
-              <div class="shortcode-label">Reservation Form</div>
-              <div class="shortcode-code">
-                <div class="code-box">[en_reservation id="123"]</div>
-                <p class="field-hint">Displays a reservation form directly when you know the reservation post ID. Useful in builder pages, landing pages, or manual reservation links.</p>
-              </div>
-            </div>
-
-            <div class="shortcode-row">
-              <div class="shortcode-label">Current Event Page</div>
-              <div class="shortcode-code">
-                <div class="code-box">[equine_event_manager_event]</div>
-                <p class="field-hint">Displays the current event in the shared Event Manager single-event layout. Works on native event pages, The Events Calendar event pages, and reservation-backed event routes.</p>
-              </div>
-            </div>
-
-            <div class="shortcode-row">
-              <div class="shortcode-label">Single Event By Event ID</div>
-              <div class="shortcode-code">
-                <div class="code-box">[equine_event_manager_event id="123"]</div>
-                <p class="field-hint">Targets a native or The Events Calendar event post directly when you know the event post ID.</p>
-              </div>
-            </div>
-
-            <div class="shortcode-row">
-              <div class="shortcode-label">Single Event By Reservation</div>
-              <div class="shortcode-code">
-                <div class="code-box">[equine_event_manager_event reservation="123"]</div>
-                <p class="field-hint">Displays a reservation-backed event source such as Event Feed or External using the same shared event template.</p>
-              </div>
-            </div>
-
-            <div class="shortcode-row">
-              <div class="shortcode-label">All Events List</div>
-              <div class="shortcode-code">
-                <div class="code-box">[equine_event_manager_events view="list"]</div>
-                <p class="field-hint">Displays a mixed-source event list using the Event Manager card layout.</p>
-              </div>
-            </div>
-
-            <div class="shortcode-row">
-              <div class="shortcode-label">All Events Calendar</div>
-              <div class="shortcode-code">
-                <div class="code-box">[equine_event_manager_events view="calendar"]</div>
-                <p class="field-hint">Displays the same mixed event collection in a calendar view.</p>
-              </div>
-            </div>
-
-            <div class="shortcode-row">
-              <div class="shortcode-label">Source Examples</div>
-              <div class="shortcode-code">
-                <div class="code-box">[equine_event_manager_events view="list" source="native,tec"]</div>
-                <p class="field-hint">Filter by source using <code>native</code>, <code>tec</code>, <code>feed</code>, or <code>external</code>, or combine multiple sources with commas.</p>
-              </div>
-            </div>
-
-            <div class="shortcode-row">
-              <div class="shortcode-label">Month Example</div>
-              <div class="shortcode-code">
-                <div class="code-box">[equine_event_manager_events view="calendar" month="2026-05"]</div>
-                <p class="field-hint">Use the optional <code>month</code> attribute in <code>YYYY-MM</code> format to lock a calendar to a specific month.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="save-bar">
-            <button class="btn-save" onclick="showSaveToast()">Save Settings</button>
-          </div>
-        </div>
-
-        <!-- PAYMENTS -->
-        <div class="tab-panel" id="panel-payments">
-          <div class="settings-section">
-            <div class="section-title">Tax Rate</div>
-            <div class="section-desc">Default sales tax applied to orders at checkout. Each reservation can override this in its own settings.</div>
-
-            <div class="field-row">
-              <div class="field-label">Apply Tax</div>
-              <div class="field-control">
-                <div class="checkbox-row">
-                  <input type="checkbox" id="apply-tax" checked>
-                  <label for="apply-tax">Charge sales tax on orders</label>
-                </div>
-                <p class="field-hint">Uncheck if you handle tax outside the plugin (e.g. through accounting software). Disabling hides tax lines from checkout and receipts.</p>
-              </div>
-            </div>
-
-            <div class="field-row">
-              <div class="field-label">Default Tax Rate</div>
-              <div class="field-control">
-                <div class="tax-rate-wrap">
-                  <input class="field-input tax-rate-input" type="number" step="0.01" min="0" max="100" value="7.50">
-                  <span class="tax-rate-suffix">%</span>
-                </div>
-                <p class="field-hint">Applied to all reservations unless an individual reservation overrides it. Shown to customers as a line item on checkout and receipts.</p>
-              </div>
-            </div>
-
-            <div class="field-row">
-              <div class="field-label">Tax Label</div>
-              <div class="field-control">
-                <input class="field-input" type="text" value="Sales Tax" style="max-width:280px">
-                <p class="field-hint">How tax appears on checkout and receipts (e.g. "Sales Tax", "VAT", "GST").</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-section">
-            <div class="section-title">Active Payment Processor</div>
-            <div class="section-desc">Customers will check out using the active processor only. You can configure both below and switch between them at any time.</div>
-
-            <div class="source-group" data-group="payment-processor">
-              <div class="source-row selected" data-value="stripe" onclick="pickSource(this)">
-                <div class="source-radio"></div>
-                <div class="source-row-body">
-                  <div class="source-row-head">
-                    <div class="source-row-title">Stripe</div>
-                    <span class="status-pill status-active">Active</span>
-                  </div>
-                  <div class="source-row-desc">Modern card processor with built-in webhooks. Recommended for most setups.</div>
-                </div>
-              </div>
-              <div class="source-row" data-value="authnet" onclick="pickSource(this)">
-                <div class="source-radio"></div>
-                <div class="source-row-body">
-                  <div class="source-row-head">
-                    <div class="source-row-title">Authorize.net</div>
-                    <span class="status-pill status-inactive">Inactive</span>
-                  </div>
-                  <div class="source-row-desc">Legacy processor support for merchants with existing Authorize.net accounts. Refunds and capture both supported.</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="settings-section">
-            <div class="sub-section">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-                <div class="sub-section-title" style="margin-bottom:0">Stripe Connection</div>
-                <span class="status-pill status-active">Active</span>
-              </div>
-              <div class="sub-section-desc">Stripe is the active payment processor. These keys are used for live checkout and webhook handling.</div>
-
-              <div class="field-row" style="border-top:1px solid #f0f0f1">
-                <div class="field-label">Mode</div>
-                <div class="field-control">
-                  <select class="field-select"><option selected>Test</option><option>Live</option></select>
-                </div>
-              </div>
-              <div class="field-row">
-                <div class="field-label">Test Publishable Key</div>
-                <div class="field-control">
-                  <input class="field-input" type="text" value="pk_test_51TNZinD87HH5XSeA6JZ0AxbxEncLB7J">
-                </div>
-              </div>
-              <div class="field-row">
-                <div class="field-label">Test Secret Key</div>
-                <div class="field-control">
-                  <input class="field-input" type="password" value="sk_test_placeholder">
-                </div>
-              </div>
-              <div class="field-row">
-                <div class="field-label">Live Publishable Key</div>
-                <div class="field-control">
-                  <input class="field-input" type="text" placeholder="pk_live_...">
-                </div>
-              </div>
-              <div class="field-row">
-                <div class="field-label">Live Secret Key</div>
-                <div class="field-control">
-                  <input class="field-input" type="password" placeholder="sk_live_...">
-                </div>
-              </div>
-              <div class="field-row">
-                <div class="field-label">Webhook Signing Secret</div>
-                <div class="field-control">
-                  <input class="field-input" type="password" placeholder="whsec_...">
-                  <p class="field-hint">Found in your Stripe Dashboard under Developers → Webhooks. Required to verify payment events.</p>
-                </div>
-              </div>
-              <div class="field-row" style="border-bottom:none">
-                <div class="field-label">Test Connection</div>
-                <div class="field-control">
-                  <button class="btn-test">Test Stripe Keys</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="sub-section">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-                <div class="sub-section-title" style="margin-bottom:0">Authorize.net Connection</div>
-                <span class="status-pill status-inactive">Inactive</span>
-              </div>
-              <div class="sub-section-desc">Store your Authorize.net credentials here. Selecting Authorize.net as the active processor above will route checkout through these credentials.</div>
-
-              <div class="field-row" style="border-top:1px solid #f0f0f1">
-                <div class="field-label">Mode</div>
-                <div class="field-control">
-                  <select class="field-select"><option>Test</option><option selected>Live</option></select>
-                </div>
-              </div>
-              <div class="field-row">
-                <div class="field-label">Test API Login ID</div>
-                <div class="field-control"><input class="field-input" type="text" placeholder=""></div>
-              </div>
-              <div class="field-row">
-                <div class="field-label">Test Transaction Key</div>
-                <div class="field-control"><input class="field-input" type="password" placeholder=""></div>
-              </div>
-              <div class="field-row">
-                <div class="field-label">Live API Login ID</div>
-                <div class="field-control"><input class="field-input" type="text" value="9V8kGNw2278"></div>
-              </div>
-              <div class="field-row">
-                <div class="field-label">Live Transaction Key</div>
-                <div class="field-control"><input class="field-input" type="password" value="placeholder"></div>
-              </div>
-              <div class="field-row" style="border-bottom:none">
-                <div class="field-label">Test Connection</div>
-                <div class="field-control">
-                  <button class="btn-test">Test Authorize.net Credentials</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="save-bar">
-            <button class="btn-save" onclick="showSaveToast()">Save Settings</button>
-          </div>
-        </div>
-
-        <!-- ADD-ONS -->
-        <div class="tab-panel" id="panel-addons">
-          <div class="settings-section">
-            <div class="section-title">Add-On Access</div>
-            <div class="section-desc">Future Equine Event Manager add-ons will appear here so you can enable and configure them from one place.</div>
-            <div class="empty-state">
-              <div class="empty-state-title">No add-ons available yet</div>
-              <div class="empty-state-desc">This tab is reserved for upcoming expansion modules so future add-ons can be enabled and configured from one place.</div>
-            </div>
-          </div>
-          <div class="save-bar">
-            <button class="btn-save" onclick="showSaveToast()">Save Settings</button>
-          </div>
-        </div>
-
-      </div><!-- /settings-content -->
-    </div><!-- /settings-wrap -->
-    </div><!-- /plugin-wrap -->
-  </div><!-- /wp-content -->
-</div><!-- /wp-body -->
+// Erase all data modal
+var eraseBtn = document.getElementById('erase-btn');
+var eraseModal = document.getElementById('erase-modal');
+var eraseCancel = document.getElementById('erase-cancel');
+var eraseInput = document.getElementById('erase-confirm-input');
+var eraseConfirm = document.getElementById('erase-confirm');
+if(eraseBtn && eraseModal){
+  eraseBtn.addEventListener('click', function(){ eraseModal.style.display='flex'; eraseInput.value=''; eraseConfirm.disabled=true; });
+  eraseCancel.addEventListener('click', function(){ eraseModal.style.display='none'; });
+  eraseInput.addEventListener('input', function(){ eraseConfirm.disabled = eraseInput.value !== 'ERASE'; });
+  eraseConfirm.addEventListener('click', function(){
+    if(eraseInput.value==='ERASE'){ alert('Data erased (mockup — no actual deletion).'); eraseModal.style.display='none'; }
+  });
+}
+</script>
 </body>
 </html>

@@ -3,163 +3,314 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EEM – Screen 4: Public Sheets &amp; Results Page</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>Public Sheets &amp; Results — Equine Event Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Sans',sans-serif;background:#f8f8f8;color:#1d2327;font-size:14px;line-height:1.5}
-a{text-decoration:none;color:inherit}
+/* ─────────────────────────────────────────────────────────────
+   Customer-facing page — public.css look, NO WP-admin shell.
+   Source: admin/class-eem-sheets-results-page.php render_public_page()
+   Brand tokens: electric #1668F2, navy #031B4E, light-blue #EEF4FF.
+   ───────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; }
+body { margin: 0; background: #f6f7f9; padding: 0; }
 
-/* Tabs */
-.doc-type-tabs{display:flex;border-bottom:2px solid #e5e7eb;margin-bottom:24px;background:#fff;padding:0 24px}
-.doc-type-tab{padding:14px 20px;font-size:14px;font-weight:600;color:#6B7A99;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;display:flex;align-items:center;gap:8px;white-space:nowrap}
-.doc-type-tab:hover{color:#031B4E}
-.doc-type-tab.active{color:#031B4E;border-bottom-color:#1668F2}
-.tab-count{font-size:11px;font-weight:700;background:#f0f0f1;color:#6B7A99;padding:2px 7px;border-radius:10px}
-.doc-type-tab.active .tab-count{background:#EEF4FF;color:#1668F2}
+.eem-sr-public { font-family: "IBM Plex Sans", system-ui, sans-serif; color: #1d2327; background: #fff; min-height: 100vh; }
 
-/* Body */
-.results-body{max-width:860px;margin:0 auto;padding:0 24px 40px}
+.eem-sr-public-head { max-width: 860px; margin: 0 auto; padding: 28px 24px 0; }
+.eem-sr-public-eyebrow {
+	font-size: 12.5px;
+	font-weight: 600;
+	color: #6B7A99;
+	letter-spacing: .02em;
+	margin-bottom: 8px;
+}
+.eem-sr-public-eyebrow a { color: #6B7A99; text-decoration: none; }
+.eem-sr-public-eyebrow a:hover { color: #1668F2; }
+.eem-sr-public-title {
+	font-family: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
+	font-size: 1.7rem;
+	font-weight: 700;
+	color: #031B4E;
+	margin: 0 0 8px;
+	text-transform: none;
+	line-height: 1.15;
+}
+.eem-sr-public-meta { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
+.eem-sr-public-meta span { font-size: 13.5px; color: #6B7A99; }
+.eem-sr-public-status { color: #031B4E; font-weight: 600; }
 
-/* Discipline group */
-.results-discipline{margin-bottom:28px}
-.results-discipline-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#6B7A99;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
-.results-discipline-title::after{content:'';flex:1;height:1px;background:#e5e7eb}
+/* Tabs — gray inactive, navy active with electric-blue underline. */
+.eem-sr-public-tabs { display: flex; gap: 0; margin-top: 18px; border-bottom: 1px solid #dcdcde; }
+.eem-sr-public-tab {
+	padding: 11px 20px;
+	font-size: 14px;
+	font-weight: 600;
+	color: #50575e;
+	background: transparent;
+	border: 0;
+	border-bottom: 3px solid transparent;
+	border-radius: 0;
+	outline: none;
+	box-shadow: none;
+	margin-bottom: -1px;
+	cursor: pointer;
+	font-family: inherit;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+.eem-sr-public-tab:hover,
+.eem-sr-public-tab:focus { color: #031B4E; }
+.eem-sr-public-tab.is-active { color: #031B4E; border-bottom-color: #1668F2; }
+.eem-sr-public-tab-count {
+	font-size: 11px;
+	font-weight: 700;
+	background: #f0f0f1;
+	color: #6B7A99;
+	padding: 2px 7px;
+	border-radius: 6px;
+}
+.eem-sr-public-tab.is-active .eem-sr-public-tab-count { background: #EEF4FF; color: #1668F2; }
 
-/* Day label */
-.day-label{font-size:12px;font-weight:700;color:#8c8f94;letter-spacing:.06em;text-transform:uppercase;padding:8px 0 4px;display:flex;align-items:center;gap:8px}
-.day-label::after{content:'';flex:1;height:1px;background:#f0f0f1}
-
-/* Result item */
-.result-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:1px solid #e5e7eb;border-radius:4px;margin-bottom:6px;text-decoration:none}
-.result-item:hover{border-color:#1668F2;background:#fafcff}
-.result-item-icon{width:34px;height:34px;background:#fee2e2;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.result-item-icon svg{width:16px;height:16px;color:#b91c1c}
-.result-item-info{flex:1;min-width:0}
-.result-item-name{font-size:13.5px;font-weight:600;color:#031B4E;display:block;margin-bottom:1px}
-.result-item-meta{font-size:12px;color:#6B7A99}
-.result-item-arrow{color:#c3c4c7;flex-shrink:0}
-.result-item-arrow svg{width:16px;height:16px}
-.result-item:hover .result-item-arrow{color:#1668F2}
-
-/* Empty state */
-.empty-state{text-align:center;padding:32px 20px;color:#8c8f94}
-.empty-state svg{width:32px;height:32px;color:#c3c4c7;margin:0 auto 10px;display:block}
-.empty-state strong{color:#50575e;font-size:14px;display:block;margin-bottom:4px}
-.empty-state p{font-size:13px}
+.eem-sr-public-body { max-width: 860px; margin: 0 auto; padding: 22px 24px 40px; }
+.eem-sr-pub-disc { margin-bottom: 26px; }
+.eem-sr-pub-disc-title {
+	font-family: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
+	font-size: 13px;
+	font-weight: 700;
+	color: #6B7A99;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+	margin-bottom: 12px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+.eem-sr-pub-disc-title::after { content: ""; flex: 1; height: 1px; background: #e5e7eb; }
+.eem-sr-pub-day {
+	font-size: 12px;
+	font-weight: 700;
+	color: #8c8f94;
+	letter-spacing: .04em;
+	text-transform: uppercase;
+	padding: 8px 0 4px;
+}
+.eem-sr-pub-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 11px 14px;
+	background: #fff;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+	margin-bottom: 6px;
+	text-decoration: none;
+}
+.eem-sr-pub-item:hover { border-color: #1668F2; background: #fafcff; }
+.eem-sr-pub-item--pending { opacity: .85; }
+.eem-sr-pub-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.eem-sr-pub-item-name { font-size: 14px; font-weight: 600; color: #031B4E; }
+.eem-sr-pub-item-meta { font-size: 12px; color: #6B7A99; }
+.eem-sr-pub-item-arrow { color: #c3c4c7; font-size: 20px; line-height: 1; flex-shrink: 0; }
+.eem-sr-pub-item:hover .eem-sr-pub-item-arrow { color: #1668F2; }
+.eem-sr-pub-soon {
+	font-size: 11px;
+	font-weight: 700;
+	color: #8c8f94;
+	background: #f3f4f5;
+	padding: 3px 9px;
+	border-radius: 6px;
+	white-space: nowrap;
+}
+/* Empty state — per-discipline and all-groups fallback (render_public_discipline_list). */
+.eem-sr-pub-empty {
+	text-align: center;
+	padding: 24px 16px;
+	color: #8c8f94;
+	font-size: 13px;
+	background: #fff;
+	border: 1px dashed #e5e7eb;
+	border-radius: 6px;
+}
+/* All-groups empty: rendered when $groups is completely empty. */
+.eem-sr-pub-empty--all {
+	margin-top: 8px;
+	font-size: 14px;
+}
 </style>
 </head>
 <body>
 
-<!-- TABS -->
-<div class="doc-type-tabs">
-  <div class="doc-type-tab active" id="s4-tab-drawsheets" onclick="switchTab('drawsheets')">
-    Draw Sheets <span class="tab-count">8</span>
-  </div>
-  <div class="doc-type-tab" id="s4-tab-results" onclick="switchTab('results')">
-    Results <span class="tab-count">7</span>
-  </div>
+<!-- Public per-event Sheets & Results page (Screen 4).
+     Rendered via shortcode on the front-end event page — no WP-admin shell.
+     Source: EEM_Sheets_Results_Page::render_public_page().
+     JS mirrors the inline IIFE in render_public_page() exactly, including
+     the document.currentScript sibling-lookup. -->
+<div class="eem-sr-public">
+	<div class="eem-sr-public-head">
+		<div class="eem-sr-public-eyebrow">
+			<a href="#">Events</a> /
+			<a href="#">Lone Star Barrel Bonanza</a> / Sheets &amp; Results
+		</div>
+		<h1 class="eem-sr-public-title">Lone Star Barrel Bonanza</h1>
+		<div class="eem-sr-public-meta">
+			<span>Jun 14–18, 2026</span>
+			<span>Will Rogers Memorial Center · Fort Worth, TX</span>
+			<span class="eem-sr-public-status">Ongoing — results update as rounds complete</span>
+		</div>
+		<div class="eem-sr-public-tabs">
+			<button type="button" class="eem-sr-public-tab is-active" data-eem-pub-tab="drawsheets">
+				Draw Sheets <span class="eem-sr-public-tab-count">5</span>
+			</button>
+			<button type="button" class="eem-sr-public-tab" data-eem-pub-tab="results">
+				Results <span class="eem-sr-public-tab-count">5</span>
+			</button>
+		</div>
+	</div>
+
+	<!-- ───── DRAW SHEETS TAB ───── -->
+	<div class="eem-sr-public-body" data-eem-pub-panel="drawsheets">
+
+		<div class="eem-sr-pub-disc">
+			<div class="eem-sr-pub-disc-title">Barrel Racing</div>
+
+			<div class="eem-sr-pub-day">Saturday, Jun 14</div>
+			<a class="eem-sr-pub-item" href="#" target="_blank" rel="noopener">
+				<div class="eem-sr-pub-item-info">
+					<span class="eem-sr-pub-item-name">Open 5D — Long Go</span>
+					<span class="eem-sr-pub-item-meta">1st Go · PDF</span>
+				</div>
+				<span class="eem-sr-pub-item-arrow" aria-hidden="true">&rsaquo;</span>
+			</a>
+			<a class="eem-sr-pub-item" href="#" target="_blank" rel="noopener">
+				<div class="eem-sr-pub-item-info">
+					<span class="eem-sr-pub-item-name">Youth 3D — Long Go</span>
+					<span class="eem-sr-pub-item-meta">1st Go · PDF</span>
+				</div>
+				<span class="eem-sr-pub-item-arrow" aria-hidden="true">&rsaquo;</span>
+			</a>
+
+			<div class="eem-sr-pub-day">Sunday, Jun 15</div>
+			<a class="eem-sr-pub-item" href="#" target="_blank" rel="noopener">
+				<div class="eem-sr-pub-item-info">
+					<span class="eem-sr-pub-item-name">Open 5D — Short Go</span>
+					<span class="eem-sr-pub-item-meta">Short Go · PDF</span>
+				</div>
+				<span class="eem-sr-pub-item-arrow" aria-hidden="true">&rsaquo;</span>
+			</a>
+		</div>
+
+		<div class="eem-sr-pub-disc">
+			<div class="eem-sr-pub-disc-title">Pole Bending</div>
+
+			<div class="eem-sr-pub-day">Monday, Jun 16</div>
+			<a class="eem-sr-pub-item" href="#" target="_blank" rel="noopener">
+				<div class="eem-sr-pub-item-info">
+					<span class="eem-sr-pub-item-name">Open Poles — Go 1</span>
+					<span class="eem-sr-pub-item-meta">1st Go · PDF</span>
+				</div>
+				<span class="eem-sr-pub-item-arrow" aria-hidden="true">&rsaquo;</span>
+			</a>
+			<a class="eem-sr-pub-item" href="#" target="_blank" rel="noopener">
+				<div class="eem-sr-pub-item-info">
+					<span class="eem-sr-pub-item-name">Senior Poles — Go 1</span>
+					<span class="eem-sr-pub-item-meta">1st Go · PDF</span>
+				</div>
+				<span class="eem-sr-pub-item-arrow" aria-hidden="true">&rsaquo;</span>
+			</a>
+		</div>
+
+		<div class="eem-sr-pub-disc">
+			<div class="eem-sr-pub-disc-title">Breakaway Roping</div>
+			<!-- No entries for this discipline: render_public_discipline_list emits empty state. -->
+			<div class="eem-sr-pub-empty">No draw sheets posted yet. Check back closer to the event.</div>
+		</div>
+	</div>
+
+	<!-- ───── RESULTS TAB ───── -->
+	<div class="eem-sr-public-body" data-eem-pub-panel="results" hidden>
+
+		<div class="eem-sr-pub-disc">
+			<div class="eem-sr-pub-disc-title">Barrel Racing</div>
+
+			<div class="eem-sr-pub-day">Saturday, Jun 14</div>
+			<!-- result_pdf > 0: renders as <a> link -->
+			<a class="eem-sr-pub-item" href="#" target="_blank" rel="noopener">
+				<div class="eem-sr-pub-item-info">
+					<span class="eem-sr-pub-item-name">Open 5D — Long Go</span>
+					<span class="eem-sr-pub-item-meta">1st Go · PDF</span>
+				</div>
+				<span class="eem-sr-pub-item-arrow" aria-hidden="true">&rsaquo;</span>
+			</a>
+			<!-- result_pdf = 0: renders as pending <div> with "Coming soon" pill -->
+			<div class="eem-sr-pub-item eem-sr-pub-item--pending">
+				<div class="eem-sr-pub-item-info">
+					<span class="eem-sr-pub-item-name">Youth 3D — Long Go</span>
+					<span class="eem-sr-pub-item-meta">1st Go · Not yet posted</span>
+				</div>
+				<span class="eem-sr-pub-soon">Coming soon</span>
+			</div>
+
+			<div class="eem-sr-pub-day">Sunday, Jun 15</div>
+			<div class="eem-sr-pub-item eem-sr-pub-item--pending">
+				<div class="eem-sr-pub-item-info">
+					<span class="eem-sr-pub-item-name">Open 5D — Short Go</span>
+					<span class="eem-sr-pub-item-meta">Short Go · Not yet posted</span>
+				</div>
+				<span class="eem-sr-pub-soon">Coming soon</span>
+			</div>
+		</div>
+
+		<div class="eem-sr-pub-disc">
+			<div class="eem-sr-pub-disc-title">Pole Bending</div>
+
+			<div class="eem-sr-pub-day">Monday, Jun 16</div>
+			<div class="eem-sr-pub-item eem-sr-pub-item--pending">
+				<div class="eem-sr-pub-item-info">
+					<span class="eem-sr-pub-item-name">Open Poles — Go 1</span>
+					<span class="eem-sr-pub-item-meta">1st Go · Not yet posted</span>
+				</div>
+				<span class="eem-sr-pub-soon">Coming soon</span>
+			</div>
+			<div class="eem-sr-pub-item eem-sr-pub-item--pending">
+				<div class="eem-sr-pub-item-info">
+					<span class="eem-sr-pub-item-name">Senior Poles — Go 1</span>
+					<span class="eem-sr-pub-item-meta">1st Go · Not yet posted</span>
+				</div>
+				<span class="eem-sr-pub-soon">Coming soon</span>
+			</div>
+		</div>
+
+		<div class="eem-sr-pub-disc">
+			<div class="eem-sr-pub-disc-title">Breakaway Roping</div>
+			<div class="eem-sr-pub-empty">No results posted yet. Check back as the event progresses.</div>
+		</div>
+	</div>
 </div>
 
-<!-- DRAW SHEETS CONTENT -->
-<div class="results-body" id="s4-drawsheets">
-
-  <div class="results-discipline">
-    <div class="results-discipline-title">Barrel Racing</div>
-    <div class="day-label">Friday, Jun 14</div>
-    <a class="result-item" href="#">
-      <div class="result-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-      <div class="result-item-info"><span class="result-item-name">Open 5D Draw Sheet</span><span class="result-item-meta">PDF</span></div>
-      <div class="result-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
-    </a>
-    <div class="day-label">Sunday, Jun 16</div>
-    <a class="result-item" href="#">
-      <div class="result-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-      <div class="result-item-info"><span class="result-item-name">19U Barrels Draw</span><span class="result-item-meta">PDF</span></div>
-      <div class="result-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
-    </a>
-  </div>
-
-  <div class="results-discipline">
-    <div class="results-discipline-title">Breakaway Roping</div>
-    <div class="day-label">Wednesday, Jun 12</div>
-    <a class="result-item" href="#">
-      <div class="result-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-      <div class="result-item-info"><span class="result-item-name">15U Breakaway Draw Sheet</span><span class="result-item-meta">PDF</span></div>
-      <div class="result-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
-    </a>
-  </div>
-
-  <div class="results-discipline">
-    <div class="results-discipline-title">Tie-Down Roping</div>
-    <div class="empty-state">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <strong>No draw sheets posted yet</strong>
-      <p>Check back closer to the event.</p>
-    </div>
-  </div>
-
-</div><!-- /s4-drawsheets -->
-
-<!-- RESULTS CONTENT -->
-<div class="results-body" id="s4-results" style="display:none">
-
-  <div class="results-discipline">
-    <div class="results-discipline-title">Barrel Racing</div>
-    <div class="day-label">Friday, Jun 14</div>
-    <a class="result-item" href="#">
-      <div class="result-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-      <div class="result-item-info"><span class="result-item-name">Open Long Go Results</span><span class="result-item-meta">1st Go · PDF</span></div>
-      <div class="result-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
-    </a>
-    <div class="day-label">Saturday, Jun 15</div>
-    <a class="result-item" href="#">
-      <div class="result-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-      <div class="result-item-info"><span class="result-item-name">Open 5D Final Round</span><span class="result-item-meta">Finals · PDF</span></div>
-      <div class="result-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
-    </a>
-    <div class="day-label">Sunday, Jun 16</div>
-    <a class="result-item" href="#" style="opacity:.55;pointer-events:none;cursor:default">
-      <div class="result-item-icon" style="background:#f3f4f5"><svg viewBox="0 0 24 24" fill="none" stroke="#c3c4c7" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-      <div class="result-item-info"><span class="result-item-name" style="color:#6B7A99">19U Barrels Finals</span><span class="result-item-meta">Finals · Not yet posted</span></div>
-      <span style="font-size:11px;font-weight:700;color:#8c8f94;background:#f3f4f5;padding:2px 8px;border-radius:10px;white-space:nowrap">Coming soon</span>
-    </a>
-  </div>
-
-  <div class="results-discipline">
-    <div class="results-discipline-title">Breakaway Roping</div>
-    <div class="day-label">Wednesday, Jun 12</div>
-    <a class="result-item" href="#">
-      <div class="result-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-      <div class="result-item-info"><span class="result-item-name">15U Breakaway Semi Finals Average</span><span class="result-item-meta">Average · PDF</span></div>
-      <div class="result-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
-    </a>
-    <div class="day-label">Sunday, Jun 16</div>
-    <a class="result-item" href="#">
-      <div class="result-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-      <div class="result-item-info"><span class="result-item-name">19U Breakaway Finals Round</span><span class="result-item-meta">Finals · PDF</span></div>
-      <div class="result-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></div>
-    </a>
-  </div>
-
-  <div class="results-discipline">
-    <div class="results-discipline-title">Tie-Down Roping</div>
-    <div class="empty-state">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <strong>No results posted yet</strong>
-      <p>Check back as the event progresses.</p>
-    </div>
-  </div>
-
-</div><!-- /s4-results -->
-
 <script>
-function switchTab(tab){
-  ['drawsheets','results'].forEach(function(t){
-    document.getElementById('s4-tab-'+t).classList.toggle('active', t===tab);
-    document.getElementById('s4-'+t).style.display = (t===tab) ? '' : 'none';
-  });
-}
+/* Tab switch — mirrors the inline IIFE in render_public_page() exactly,
+   including the document.currentScript sibling-lookup. */
+(function () {
+	var root = document.currentScript && document.currentScript.previousElementSibling && document.currentScript.previousElementSibling.classList.contains('eem-sr-public')
+		? document.currentScript.previousElementSibling
+		: document.querySelector('.eem-sr-public');
+	if (!root) { return; }
+	function show(tab) {
+		root.querySelectorAll('.eem-sr-public-tab').forEach(function (b) {
+			b.classList.toggle('is-active', b.getAttribute('data-eem-pub-tab') === tab);
+		});
+		root.querySelectorAll('[data-eem-pub-panel]').forEach(function (p) {
+			p.hidden = p.getAttribute('data-eem-pub-panel') !== tab;
+		});
+	}
+	root.addEventListener('click', function (ev) {
+		var t = ev.target.closest('[data-eem-pub-tab]');
+		if (t) { show(t.getAttribute('data-eem-pub-tab')); }
+	});
+	var params = new URLSearchParams(window.location.search);
+	if (params.get('tab') === 'results') { show('results'); }
+})();
 </script>
 </body>
 </html>

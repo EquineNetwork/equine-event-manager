@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Notifications</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Notifications – admin page (admin.php?page=equine-event-manager-notifications)
+   Source-derived mockup of the LIVE page (admin/class-eem-notifications-page.php).
+   Pick an event → build an audience (Include − Exclude + Payment) → live recipient
+   count → compose subject + message → send → recent-notifications history.
+   Event select uses data-eem-choices (Choices.js search) injected in admin.js.
+   Audience + compose sections start hidden; revealed after event is picked via
+   ajax_event_meta. Segments (EEM_Notifications::segment_options): All / Stall /
+   RV / Add-on / Group + division:{id} entrants injected per event by ajax_event_meta.
+   Brand tokens: electric #1668F2, navy #031B4E, control border #8c8f94,
+   light-blue band #f0f4fb / borders #d9e2f2, radius 3px.
+   ───────────────────────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+svg{flex-shrink:0}
+a{text-decoration:none}
+a:hover{text-decoration:none}
+
+/* ── WP SHELL STUB ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+
+/* ── Breadcrumb + logo ── */
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.breadcrumb-sep{font-size:13px;color:#8c8f94}
+.breadcrumb-page{font-size:13px;color:#031B4E;font-weight:600}
+
+/* ── PAGE SHELL (page-wrap = single bordered card) ── */
+.eem-page{display:block}
+.eem-page-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+.eem-page-header{padding:18px 22px;border-bottom:1px solid #dcdcde;background:#fff}
+.eem-page-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2}
+.eem-page-subtitle{font-size:13px;color:#64748b;margin-top:4px}
+.eem-page-body{background:#fff}
+
+/* ── FIELD / BUTTON PRIMITIVES ── */
+.eem-field-label{display:block;font-size:13px;font-weight:600;color:#1d2327;margin-bottom:6px}
+.eem-field-select{padding:7px 10px;border:1px solid #8c8f94;border-radius:3px;font-size:13px;font-family:inherit;color:#1d2327;background:#fff;outline:none;line-height:1.4;width:100%}
+.eem-field-select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.eem-field-input{padding:7px 10px;border:1px solid #8c8f94;border-radius:3px;font-size:13px;font-family:inherit;color:#1d2327;background:#fff;outline:none;line-height:1.4;width:100%}
+.eem-field-input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.eem-field-textarea{width:100%;resize:vertical;min-height:120px}
+.eem-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:4px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;border:1px solid;text-decoration:none}
+.eem-btn-electric{background:#1668F2;color:#fff;border-color:#1668F2}
+.eem-btn-electric:hover{background:#0d56d6;border-color:#0d56d6}
+
+/* ── STATUS BADGES ── */
+.eem-status-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;line-height:1.4;white-space:nowrap}
+.eem-status-active{background:#dff3e6;color:#0a7c42;border:1px solid #b7e3c8}
+.eem-status-refunded{background:#fde8e8;color:#b42318;border:1px solid #f5c2c0}
+
+/* ── NOTIFICATIONS PAGE ── */
+.eem-notifications{padding:18px}
+.eem-notif-grid{max-width:720px}
+.eem-notif-field{margin-bottom:16px}
+.eem-notif-field .eem-field-select{min-width:280px;max-width:100%}
+.eem-notif-audience{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-items:end;padding:16px 0 4px;border-top:1px solid #D9E2F2;margin-top:4px}
+.eem-notif-audience .eem-notif-field{margin-bottom:14px}
+.eem-notif-count{grid-column:1 / -1;display:flex;align-items:center;gap:8px;margin:2px 0 4px;font-size:13px;color:#64748b}
+.eem-notif-count [data-eem-notif-count-badge]{font-variant-numeric:tabular-nums}
+.eem-notif-compose{padding-top:14px;border-top:1px solid #D9E2F2}
+.eem-notif-actions{display:flex;align-items:center;gap:12px;margin-top:6px}
+.eem-notif-send-status{font-size:13px;color:#64748b}
+.eem-notif-history{margin-top:28px;padding-top:18px;border-top:1px solid #D9E2F2}
+.eem-notif-history-title{font-size:15px;font-weight:700;color:#031B4E;margin:0 0 12px}
+.eem-notif-history p.eem-table-empty{margin:0;padding:28px;text-align:center;color:#64748b;background:#fafafa;border:1px solid #D9E2F2;border-radius:3px}
+.eem-notif-history .eem-desktop-table{border:1px solid #D9E2F2;border-radius:3px;overflow:hidden}
+@media (max-width:782px){.eem-notif-audience{grid-template-columns:1fr}}
+
+/* ── TABLE ── */
+.eem-table{width:100%;border-collapse:collapse;font-size:13px}
+.eem-table thead th{text-align:left;padding:10px 14px;background:#f0f4fb;color:#031B4E;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #d9e2f2}
+.eem-table tbody td{padding:11px 14px;border-bottom:1px solid #eceff4;color:#1d2327;vertical-align:middle}
+.eem-table tbody tr:last-child td{border-bottom:none}
+.eem-table-empty{font-size:13px;color:#64748b}
+.eem-desktop-table{display:block}
+.eem-mobile-cards{display:none}
+
+@media (max-width:782px){
+  .eem-notifications{padding:12px}
+  .eem-desktop-table{display:none}
+  .eem-mobile-cards{display:block}
+}
+.eem-mobile-card{background:#fff;border:1px solid #d9e2f2;border-radius:3px;padding:12px 14px;margin-bottom:10px}
+.eem-mobile-card-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:4px}
+.eem-mobile-card-id{font-weight:700;color:#031B4E;font-size:14px}
+.eem-mobile-card-meta{font-size:12px;color:#64748b;white-space:nowrap}
+.eem-mobile-card-sub{font-size:12px;color:#646970;margin-bottom:8px}
+.eem-mobile-card-bottom{display:flex;justify-content:space-between;align-items:center}
+.eem-mobile-card-badges{display:flex;align-items:center;gap:8px}
+.eem-mobile-card-metric{font-size:12px;font-weight:600;color:#031B4E}
+</style>
+</head>
+<body>
+
+<!-- ── WP ADMIN SHELL STUB ── -->
+<div class="wp-admin-bar">
+  <span class="site">⊞ Equine Network</span>
+  <span>＋ New</span>
+  <span style="margin-left:auto">Howdy, Whitney ▾</span>
+</div>
+<div class="wp-body">
+  <nav class="wp-sidebar">
+    <div class="wp-sidebar-label">Event Manager</div>
+    <div class="wp-sidebar-sub">Dashboard</div>
+    <div class="wp-sidebar-sub">Orders</div>
+    <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
+    <div class="wp-sidebar-sub">Daily Movement</div>
+    <div class="wp-sidebar-sub active">Notifications</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub">Settings</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-item">Dashboard</div>
+    <div class="wp-sidebar-item">Posts</div>
+    <div class="wp-sidebar-item">Media</div>
+  </nav>
+
+  <main class="wp-content">
+
+    <!-- ── Breadcrumb + logo ── -->
+    <div class="breadcrumb">
+      <div class="breadcrumb-logo-box">EQUINE</div>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-page">Notifications</span>
+    </div>
+
+    <!-- ── PAGE SHELL ── -->
+    <div class="eem-page">
+      <div class="eem-page-wrap">
+        <div class="eem-page-header">
+          <div class="eem-page-title">Notifications</div>
+          <div class="eem-page-subtitle">Email customers for an event. Pick the event, build an audience, then compose and send.</div>
+        </div>
+        <div class="eem-page-body">
+
+          <div class="eem-notifications" data-eem-notifications data-nonce="MOCKUP">
+
+            <div class="eem-notif-grid">
+
+              <!-- 1 · Pick the event — uses data-eem-choices (Choices.js search) in real plugin -->
+              <div class="eem-notif-field">
+                <label class="eem-field-label" for="eem-notif-event">Event</label>
+                <select class="eem-field-select" id="eem-notif-event" data-eem-notif-event
+                        data-eem-choices data-eem-choices-search="Search events…">
+                  <option value="">Select an event…</option>
+                  <option value="6519" selected>NTR 6519 – National Team Roping 2026</option>
+                  <option value="5990">2026 Spring Classic Barrel Race – Burnett Arena</option>
+                  <option value="5812">Montcrief Stampede – Fall Series</option>
+                  <option value="5640">Winter Cutting Futurity 2025</option>
+                </select>
+              </div>
+
+              <!-- 2 · Build audience (hidden until event selected; revealed by ajax_event_meta) -->
+              <div class="eem-notif-audience" data-eem-notif-audience>
+                <div class="eem-notif-field">
+                  <label class="eem-field-label" for="eem-notif-include">Send to</label>
+                  <select class="eem-field-select" id="eem-notif-include" data-eem-notif-include>
+                    <option value="all">All customers</option>
+                    <option value="stall">Stall customers</option>
+                    <option value="rv" selected>RV customers</option>
+                    <option value="addon">Add-on customers</option>
+                    <option value="group">Group customers</option>
+                    <!-- division:{id} entrants injected per-event by ajax_event_meta -->
+                    <option value="division:9501">#9.5 Division entrants</option>
+                    <option value="division:9502">Open Division entrants</option>
+                  </select>
+                </div>
+                <div class="eem-notif-field">
+                  <label class="eem-field-label" for="eem-notif-exclude">But not</label>
+                  <select class="eem-field-select" id="eem-notif-exclude" data-eem-notif-exclude>
+                    <option value="">— no exclusion —</option>
+                    <!-- "all" segment omitted from exclude, matches PHP: if ( 'all' === $key ) continue -->
+                    <option value="stall" selected>Stall customers</option>
+                    <option value="rv">RV customers</option>
+                    <option value="addon">Add-on customers</option>
+                    <option value="group">Group customers</option>
+                    <option value="division:9501">#9.5 Division entrants</option>
+                    <option value="division:9502">Open Division entrants</option>
+                  </select>
+                </div>
+                <div class="eem-notif-field">
+                  <label class="eem-field-label" for="eem-notif-payment">Payment</label>
+                  <select class="eem-field-select" id="eem-notif-payment" data-eem-notif-payment>
+                    <option value="all">Any</option>
+                    <option value="paid" selected>Paid only</option>
+                    <option value="unpaid">Unpaid only</option>
+                  </select>
+                </div>
+
+                <!-- Live recipient count (updated via ajax_count on audience change; starts at 0) -->
+                <p class="eem-notif-count" data-eem-notif-count>
+                  <span class="eem-status-badge eem-status-active" data-eem-notif-count-badge>34</span>
+                  <span data-eem-notif-count-label>recipients</span>
+                </p>
+              </div>
+
+              <!-- 3 · Compose (hidden until event selected; revealed alongside audience) -->
+              <div class="eem-notif-compose" data-eem-notif-compose>
+                <div class="eem-notif-field">
+                  <label class="eem-field-label" for="eem-notif-subject">Subject</label>
+                  <input class="eem-field-input" id="eem-notif-subject" type="text" maxlength="200"
+                         data-eem-notif-subject value="RV parking gate code &amp; arrival reminder">
+                </div>
+                <div class="eem-notif-field">
+                  <label class="eem-field-label" for="eem-notif-body">Message</label>
+                  <textarea class="eem-field-input eem-field-textarea" id="eem-notif-body" rows="9"
+                            data-eem-notif-body>Hi there,
+
+Quick reminder for everyone with an RV spot at NTR 6519. The west gate code is 4827. RV check-in opens Thursday at noon — please pull straight through to Row C and a staff member will get you situated.
+
+See you soon!
+— Event Office</textarea>
+                </div>
+                <!-- Send status span starts empty; JS populates with "Sending X / Y…" progress -->
+                <div class="eem-notif-actions">
+                  <button type="button" class="eem-btn eem-btn-electric" data-eem-action="notifications-send">Send Notification</button>
+                  <span class="eem-notif-send-status" data-eem-notif-status></span>
+                </div>
+              </div>
+
+            </div><!-- /.eem-notif-grid -->
+
+            <!-- 4 · History (render_history(); empty state = "No notifications sent yet.") -->
+            <div class="eem-notif-history" data-eem-notif-history>
+              <h2 class="eem-notif-history-title">Recent notifications</h2>
+
+              <!-- Populated from EEM_Activity_Log::get_recent_by_type( NOTIFICATION_SENT, 25 ) -->
+              <!-- Columns: Sent · Event · Audience · Subject · Recipients -->
+              <div class="eem-desktop-table">
+                <table class="eem-table">
+                  <thead><tr>
+                    <th>Sent</th>
+                    <th>Event</th>
+                    <th>Audience</th>
+                    <th>Subject</th>
+                    <th>Recipients</th>
+                  </tr></thead>
+                  <tbody>
+                    <tr>
+                      <td>Jun 18, 2026 2:14pm</td>
+                      <td>NTR 6519 – National Team Roping 2026</td>
+                      <td>Stall customers · paid</td>
+                      <td>Stall row reassignment for Barn 2</td>
+                      <td>61 / 61</td>
+                    </tr>
+                    <tr>
+                      <td>Jun 14, 2026 9:02am</td>
+                      <td>NTR 6519 – National Team Roping 2026</td>
+                      <td>#9.5 Division entrants</td>
+                      <td>Draw posted — ride times attached</td>
+                      <td>48 / 48</td>
+                    </tr>
+                    <tr>
+                      <td>Jun 09, 2026 4:47pm</td>
+                      <td>2026 Spring Classic Barrel Race</td>
+                      <td>All customers (not RV customers)</td>
+                      <td>Schedule change: Saturday slack moved</td>
+                      <td>112 / 115 <span class="eem-status-badge eem-status-refunded">3 failed</span></td>
+                    </tr>
+                    <tr>
+                      <td>Jun 02, 2026 11:20am</td>
+                      <td>Winter Cutting Futurity 2025</td>
+                      <td>All customers · unpaid</td>
+                      <td>Balance due before arrival</td>
+                      <td>19 / 19</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Mobile cards — replace history table on phones (≤782px) -->
+              <div class="eem-mobile-cards">
+                <div class="eem-mobile-card">
+                  <div class="eem-mobile-card-top">
+                    <span class="eem-mobile-card-id">Stall row reassignment for Barn 2</span>
+                    <span class="eem-mobile-card-meta">Jun 18, 2026</span>
+                  </div>
+                  <div class="eem-mobile-card-sub">NTR 6519 – National Team Roping 2026 · Stall customers · paid</div>
+                  <div class="eem-mobile-card-bottom">
+                    <div class="eem-mobile-card-badges">
+                      <span class="eem-mobile-card-metric">61 / 61 sent</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="eem-mobile-card">
+                  <div class="eem-mobile-card-top">
+                    <span class="eem-mobile-card-id">Schedule change: Saturday slack moved</span>
+                    <span class="eem-mobile-card-meta">Jun 09, 2026</span>
+                  </div>
+                  <div class="eem-mobile-card-sub">2026 Spring Classic Barrel Race · All customers (not RV customers)</div>
+                  <div class="eem-mobile-card-bottom">
+                    <div class="eem-mobile-card-badges">
+                      <span class="eem-mobile-card-metric">112 / 115 sent</span>
+                      <span class="eem-status-badge eem-status-refunded">3 failed</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div><!-- /.eem-notif-history -->
+
+          </div><!-- /.eem-notifications -->
+
+        </div><!-- /.eem-page-body -->
+      </div><!-- /.eem-page-wrap -->
+    </div><!-- /.eem-page -->
+
+  </main>
+</div>
+
+<script>
+/* Mockup-only: mirrors the real data-eem-notif-* JS wiring.
+   Real flow: event change → ajax_event_meta (reveals audience+compose, injects
+   division options, sets initial count) → audience change → ajax_count (updates
+   badge) → send button → ajax_send_start → ajax_send_step batches (updates
+   data-eem-notif-status with "Sending X / Y…" progress, clears on done).
+   Audience + compose start hidden (PHP renders them with the `hidden` attribute);
+   event select triggers reveal. */
+(function(){
+  var ev   = document.querySelector('[data-eem-notif-event]');
+  var aud  = document.querySelector('[data-eem-notif-audience]');
+  var comp = document.querySelector('[data-eem-notif-compose]');
+  var badge = document.querySelector('[data-eem-notif-count-badge]');
+  var status = document.querySelector('[data-eem-notif-status]');
+
+  function refresh(){
+    var on = ev.value !== '';
+    aud.hidden  = !on;
+    comp.hidden = !on;
+    if ( on ) { badge.textContent = String( 20 + Math.floor( Math.random() * 40 ) ); }
+  }
+
+  /* Show sections immediately in the mockup since an event is pre-selected. */
+  refresh();
+
+  ev.addEventListener( 'change', refresh );
+
+  document.querySelectorAll('[data-eem-notif-include],[data-eem-notif-exclude],[data-eem-notif-payment]')
+    .forEach( function(s){ s.addEventListener( 'change', function(){
+      badge.textContent = String( 5 + Math.floor( Math.random() * 55 ) );
+    }); });
+
+  /* Mockup send — simulates batched progress then clears status. */
+  document.querySelector('[data-eem-action="notifications-send"]').addEventListener( 'click', function(){
+    var total = parseInt( badge.textContent, 10 ) || 30;
+    var sent  = 0;
+    var btn   = this;
+    btn.disabled = true;
+    function step(){
+      sent = Math.min( sent + 25, total );
+      status.textContent = sent < total ? 'Sending ' + sent + ' / ' + total + '…' : 'Sent ' + total + ' / ' + total;
+      if ( sent < total ) { setTimeout( step, 600 ); }
+      else { btn.disabled = false; }
+    }
+    step();
+  });
+})();
+</script>
+</body>
+</html>

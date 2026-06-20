@@ -3,497 +3,585 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EEM – Screen 1: Sheets &amp; Results Manager</title>
+<title>Equine Event Manager – Sheets &amp; Results</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Sheets & Results manager – admin page
+   (admin.php?page=equine-event-manager-sheets-results)
+   Source-derived from EEM_Sheets_Results_Page::render (+ render_event_selector,
+   render_body_inner, render_drawsheets, render_results, render_add_panel).
+
+   Page architecture (per source):
+     • eem-breadcrumb ABOVE the bordered card (rendered via eem_render_breadcrumb).
+     • .eem-plugin-wrap = one bordered card: header → event selector band
+       (#f0f4fb) → .eem-sr-body div → tabs → tab panels.
+     • Each Draw Sheets panel body = add-discipline bar → per-discipline groups.
+     • A group head = discipline name + count + Rename/Delete + "Add File" button.
+     • Inline add-file panel rendered as `hidden` by default; toggled via JS.
+     • Results tab group head = discipline name + upload count (NO Rename/Delete).
+     • Lifecycle badges: Upcoming, Ongoing (eem-status-active), Past Event
+       (eem-status-archived).
+     • Empty-events state: "No events yet" with Add Event CTA.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root{
+  --eem-navy:#031B4E;--eem-electric:#1668F2;--eem-electric-hover:#0d4fc4;
+  --eem-text:#1d2327;--eem-text-secondary:#50575e;--eem-text-muted:#646970;
+  --eem-border-card:#dcdcde;--eem-border-soft:#e8e8ea;--eem-gray-50:#f8fafc;
+  --eem-radius:3px;--eem-font-display:'Space Grotesk',sans-serif;--eem-font-ui:'IBM Plex Sans',sans-serif;
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5}
-a{text-decoration:none;color:inherit}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+svg{flex-shrink:0}
+a{text-decoration:none}
+a:hover{text-decoration:none}
 
-
-/* ── WP SHELL ── */
-.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0}
+/* ── WP SHELL STUB ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
 .wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
 .wp-admin-bar span.site{color:#fff;font-weight:600}
-.wp-body{display:flex;min-height:100vh}
-.wp-sidebar{width:160px;min-width:160px;background:#1d2327}
-.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
 .wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
 .wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
-.wp-sidebar-sub:hover{color:#fff}
 .wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
 .wp-content{flex:1;padding:12px 20px 40px;min-width:0}
 
-/* Breadcrumb */
-.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
-.breadcrumb-sep{font-size:13px;color:#8c8f94}
-.breadcrumb-page{font-size:13px;color:#50575e}
-.breadcrumb-page a{color:#50575e}
-.breadcrumb-page a:hover{color:#1668F2}
+/* ── Breadcrumb + logo ── */
+.eem-breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.eem-breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb}
+.eem-breadcrumb-sep{font-size:13px;color:#8c8f94}
+.eem-breadcrumb-segment{font-size:13px;color:#031B4E;font-weight:600}
 
-/* ── PLUGIN WRAP ── */
-.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
-.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.plugin-header-left{flex:1}
-.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;margin-bottom:4px}
-.plugin-subtitle{font-size:13px;color:#6B7A99}
+/* ── PLUGIN WRAP (single bordered card) ── */
+.eem-plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+.eem-plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.eem-plugin-header-left{flex:1;min-width:0}
+.eem-plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--eem-navy);line-height:1.2;margin-bottom:4px}
+.eem-plugin-subtitle{font-size:13px;color:var(--eem-text-muted);line-height:1.45;margin-bottom:0}
 
-/* ── BUTTONS ── */
-.btn-primary{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:9px 18px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;text-decoration:none}
-.btn-primary:hover{background:#1257d1;color:#fff}
-.btn-primary svg{width:13px;height:13px}
-.btn-secondary{background:#fff;color:#1d2327;border:1px solid #8c8f94;padding:8px 16px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.btn-secondary:hover{background:#f6f7f7}
+/* ── FIELD / BUTTON PRIMITIVES ── */
+input.eem-field-input,select.eem-field-select{padding:7px 10px;border:1px solid #8c8f94;border-radius:3px;font-size:13px;font-family:inherit;color:#1d2327;background:#fff;outline:none;line-height:1.4;width:100%}
+input.eem-field-input:focus,select.eem-field-select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+input.eem-field-input::placeholder{color:#8c8f94}
+.eem-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;border:1px solid;text-decoration:none}
+.eem-btn-electric{background:#1668F2;color:#fff;border-color:#1668F2}
+.eem-btn-electric:hover{background:#0d4fc4}
+.eem-btn-secondary{background:#fff;color:#031B4E;border-color:#c3c4c7}
+.eem-btn-secondary:hover{background:#f6f7f7}
+.eem-btn-upload{padding:7px 14px;border:1px solid #8c8f94;border-radius:var(--eem-radius);font-size:13px;font-weight:500;font-family:inherit;color:var(--eem-text);background:#fff;cursor:pointer}
+.eem-btn-upload:hover{background:#f6f7f7}
 
-/* ── CARDS / SECTIONS ── */
-.card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:14px}
-.section-header{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;background:#fff;border-bottom:1px solid #f0f0f1;gap:10px}
-.section-header-left{display:flex;align-items:center;gap:10px}
-.section-icon{width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.section-icon svg{width:14px;height:14px}
-.icon-blue{background:#EEF4FF;color:#1668F2}
-.icon-green{background:#F0FDF4;color:#15803d}
-.icon-orange{background:#FFF7ED;color:#c2410c}
-.icon-teal{background:#F0FDFA;color:#0d9488}
-.section-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E}
-.section-body{padding:16px 18px}
+/* ── Status badges ── */
+.eem-status-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;line-height:1.4}
+.eem-status-active{background:#dcfce7;color:#15803d}
+.eem-status-upcoming{background:#dbeafe;color:#1d4ed8}
+.eem-status-archived{background:#f3f4f6;color:#6b7280}
 
-/* Field rows */
-.field-row{display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start;padding:12px 0;border-bottom:1px solid #f0f0f1}
-.field-row:first-child{padding-top:0}
-.field-row:last-child{border-bottom:none;padding-bottom:0}
-.field-label{font-size:13.5px;font-weight:600;color:#1d2327;padding-top:9px}
-.field-label-sub{font-size:12px;color:#6B7A99;font-weight:400;margin-top:2px}
-.field-control{display:flex;flex-direction:column;gap:6px}
-.field-input{padding:8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;width:100%;outline:none}
-.field-input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-.field-hint{font-size:12px;color:#6B7A99;line-height:1.6}
-.field-select{padding:8px 28px 8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none;width:100%;outline:none;cursor:pointer}
-.field-select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+/* ── Event selector band ── */
+.eem-sr-selector{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 22px;border-bottom:1px solid var(--eem-border-card);background:#f0f4fb}
+.eem-sr-selector-label{font-size:13px;font-weight:600;color:var(--eem-text);white-space:nowrap}
+.eem-sr-event-select{flex:1;min-width:280px;max-width:420px}
+.eem-sr-meta-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#EEF4FF;border:1px solid #c0d8ff;border-radius:12px;font-size:12px;color:var(--eem-electric);font-weight:600;white-space:nowrap}
+.eem-sr-status-pill{white-space:nowrap}
 
-/* ════════════════════════════════
-   SCREEN 1 — ADMIN: RESULTS PAGE
-   ════════════════════════════════ */
+/* ── Body wrapper (PHP wraps tabs + panels in .eem-sr-body) ── */
+.eem-sr-body{/* structural wrapper; no visual styles */}
 
-/* Event selector card */
-.event-selector{padding:16px 22px;border-bottom:1px solid #dcdcde;background:#f9f9fa;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.event-selector-label{font-size:13px;font-weight:600;color:#1d2327;white-space:nowrap}
-.event-selector select{padding:8px 28px 8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none;min-width:320px;outline:none;cursor:pointer;flex:1;max-width:420px}
-.event-selector select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-.event-meta-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#EEF4FF;border:1px solid #c0d8ff;border-radius:12px;font-size:12px;color:#1668F2;font-weight:600;white-space:nowrap}
+/* ── Doc-type tabs ── */
+.eem-sr-tabs{display:flex;border-bottom:1px solid var(--eem-border-card)}
+.eem-sr-tab{padding:11px 22px;font-size:13.5px;font-weight:600;color:#50575e;cursor:pointer;border:none;background:transparent;border-bottom:3px solid transparent;display:flex;align-items:center;gap:8px;white-space:nowrap;font-family:var(--eem-font-ui)}
+.eem-sr-tab:hover{color:var(--eem-navy)}
+.eem-sr-tab.is-active{color:var(--eem-navy);border-bottom-color:var(--eem-electric)}
+.eem-sr-tab-count{font-size:11px;font-weight:700;background:var(--eem-border-soft);color:var(--eem-text-secondary);padding:2px 7px;border-radius:10px}
+.eem-sr-tab.is-active .eem-sr-tab-count{background:#EEF4FF;color:var(--eem-electric)}
 
-/* Document type tabs */
-.doc-tabs{display:flex;border-bottom:1px solid #dcdcde}
-.doc-tab{padding:11px 22px;font-size:13.5px;font-weight:600;color:#50575e;cursor:pointer;border-bottom:3px solid transparent;display:flex;align-items:center;gap:8px;white-space:nowrap}
-.doc-tab:hover{color:#031B4E}
-.doc-tab.active{color:#031B4E;border-bottom-color:#1668F2}
-.doc-tab-count{font-size:11px;font-weight:700;background:#f0f0f1;color:#6B7A99;padding:2px 7px;border-radius:10px}
-.doc-tab.active .doc-tab-count{background:#EEF4FF;color:#1668F2}
+/* ── Add-discipline bar ── */
+.eem-sr-add-discipline{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--eem-border-soft)}
+.eem-sr-discipline-input{flex:1;min-width:220px;max-width:380px}
 
-/* Discipline group */
-.discipline-group{margin-bottom:0}
-.discipline-header{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:#f9f9fa;border-bottom:1px solid #e5e7eb;border-top:1px solid #e5e7eb}
-.discipline-header:first-of-type{border-top:none}
-.discipline-name{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;display:flex;align-items:center;gap:8px}
-.discipline-count{font-size:11px;font-weight:600;color:#6B7A99;background:#e5e7eb;padding:2px 8px;border-radius:10px}
-.btn-add-doc{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border:1px dashed #c3c4c7;border-radius:4px;font-size:12px;font-weight:600;color:#1668F2;background:#fff;cursor:pointer;font-family:'IBM Plex Sans',sans-serif}
-.btn-add-doc:hover{border-color:#1668F2;border-style:solid;background:#EEF4FF}
-.btn-add-doc svg{width:11px;height:11px}
-/* Per-group actions (as-built 2.7.270): Rename + Delete discipline links sit beside Add File */
-.group-actions{display:flex;align-items:center;gap:14px}
-.group-link{font-size:12px;font-weight:600;color:#1668F2;background:none;border:none;cursor:pointer;padding:0;font-family:'IBM Plex Sans',sans-serif}
-.group-link:hover{color:#031B4E}
-.group-link.danger{color:#b91c1c}
-.group-link.danger:hover{color:#7f1d1d}
-/* Add-discipline bar (as-built 2.7.270): assign a new en_discipline term to this event */
-.add-discipline-bar{display:flex;align-items:center;gap:8px;padding:12px 0 18px}
-.add-discipline-bar input{flex:0 0 280px;padding:7px 10px;border:1px solid #dcdcde;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif}
-.add-discipline-bar button{padding:7px 14px;border:1px solid #1668F2;border-radius:4px;background:#1668F2;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans',sans-serif}
-.add-discipline-bar button:hover{background:#031B4E;border-color:#031B4E}
+/* ── Discipline group ── */
+.eem-sr-group-head{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:var(--eem-gray-50);border-bottom:1px solid #e5e7eb;border-top:1px solid #e5e7eb;gap:10px}
+.eem-sr-group-name{font-family:var(--eem-font-display);font-size:13px;font-weight:700;color:var(--eem-navy);display:flex;align-items:center;gap:8px}
+.eem-sr-group-count{font-size:11px;font-weight:600;color:var(--eem-text-secondary);background:var(--eem-border-soft);padding:2px 8px;border-radius:10px}
+.eem-sr-add-file-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border:1px dashed var(--eem-border-card);border-radius:var(--eem-radius);font-size:12px;font-weight:600;color:var(--eem-electric);background:#fff;cursor:pointer;font-family:var(--eem-font-ui)}
+.eem-sr-add-file-btn:hover{border-color:var(--eem-electric);border-style:solid;background:#EEF4FF}
+.eem-sr-group-actions{display:flex;align-items:center;gap:12px;flex-shrink:0}
+.eem-sr-group-link{border:none;background:transparent;color:var(--eem-electric);font-size:12px;font-weight:600;cursor:pointer;padding:4px 2px;font-family:var(--eem-font-ui)}
+.eem-sr-group-link:hover{color:var(--eem-electric-hover)}
+.eem-sr-group-link.is-danger{color:#b91c1c}
+.eem-sr-group-link.is-danger:hover{color:#991b1b}
 
-/* Document rows */
-.doc-row{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid #f0f0f1;flex-wrap:wrap}
-.doc-row:last-child{border-bottom:none}
-.doc-row-icon{width:32px;height:32px;background:#fee2e2;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.doc-row-icon svg{width:15px;height:15px;color:#b91c1c}
-.doc-row-info{flex:1;min-width:0}
-.doc-row-name{font-size:13.5px;font-weight:600;color:#031B4E;display:block;margin-bottom:1px}
-.doc-row-meta{font-size:12px;color:#6B7A99;display:flex;gap:10px;flex-wrap:wrap}
-.doc-row-actions{display:flex;gap:6px;flex-shrink:0}
-.doc-action-btn{width:30px;height:30px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#50575e}
-.doc-action-btn:hover{background:#f6f7f7}
-.doc-action-btn svg{width:13px;height:13px}
-.doc-action-btn.danger{border-color:#fecaca;color:#b91c1c}
-.doc-action-btn.danger:hover{background:#fef2f2}
-.doc-status{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;letter-spacing:.03em;white-space:nowrap}
-.doc-status::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
-.status-live{background:#dcfce7;color:#15803d}
-.status-live::before{background:#16a34a}
-.status-draft{background:#fef3c7;color:#a16207}
-.status-draft::before{background:#ca8a04}
+/* ── Document rows ── */
+.eem-sr-row{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--eem-border-soft);flex-wrap:wrap}
+.eem-sr-row--pending{background:#fffbeb}
+.eem-sr-row-icon{width:32px;height:32px;background:#fee2e2;border-radius:var(--eem-radius);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#b91c1c}
+.eem-sr-row-icon svg{width:15px;height:15px}
+.eem-sr-row-icon--pending{background:#fef3c7;color:#ca8a04}
+.eem-sr-row-info{flex:1;min-width:0}
+.eem-sr-row-name{font-size:13.5px;font-weight:600;color:var(--eem-navy);display:block;margin-bottom:1px}
+.eem-sr-row-meta{font-size:12px;color:var(--eem-text-secondary);display:flex;gap:10px;flex-wrap:wrap}
+.eem-sr-row-meta--pending{color:#ca8a04;font-weight:600}
+.eem-sr-live-badge{white-space:nowrap}
+.eem-sr-row-actions{display:flex;gap:6px;flex-shrink:0;align-items:center}
+.eem-sr-action-btn{width:30px;height:30px;border-radius:var(--eem-radius);border:1px solid var(--eem-border-card);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#50575e;text-decoration:none}
+.eem-sr-action-btn:hover{background:#f6f7f7}
+.eem-sr-action-btn svg{width:13px;height:13px}
+.eem-sr-action-btn.is-danger{border-color:#fecaca;color:#b91c1c}
+.eem-sr-action-btn.is-danger:hover{background:#fef2f2}
+.eem-sr-upload-result-btn{padding:7px 14px;border:1px solid #ca8a04;color:#a16207;background:#fefce8;font-size:13px;font-weight:600;border-radius:4px;font-family:inherit;cursor:pointer}
+.eem-sr-upload-result-btn:hover{background:#fef9c3;color:#a16207}
 
-/* Add document panel */
-.add-doc-panel{background:#f9f9fa;border:1px dashed #c3c4c7;border-radius:4px;padding:16px 18px;margin:12px 18px}
-.add-doc-panel-title{font-size:13px;font-weight:700;color:#031B4E;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.add-doc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
-.add-doc-field{display:flex;flex-direction:column;gap:4px}
-.add-doc-label{font-size:12px;font-weight:600;color:#1d2327}
-.add-doc-input{padding:7px 11px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
-.add-doc-input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-.add-doc-input::placeholder{color:#b0b0b0}
-.add-doc-select{padding:7px 28px 7px 11px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none;outline:none;cursor:pointer;width:100%}
-.add-doc-select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-.file-upload-row{display:flex;align-items:center;gap:8px}
-.file-upload-name{flex:1;padding:7px 11px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-style:italic;color:#8c8f94;background:#f3f4f5}
-.btn-upload{padding:7px 14px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer;white-space:nowrap}
-.btn-upload:hover{background:#f6f7f7}
-.add-doc-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
-.btn-cancel{padding:7px 14px;border:1px solid #c3c4c7;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;color:#50575e;background:#fff;cursor:pointer}
-.btn-cancel:hover{background:#f6f7f7}
+/* ── Inline add-file panel (hidden by default; JS toggles) ── */
+.eem-sr-add-panel{background:var(--eem-gray-50);border:1px dashed var(--eem-border-card);border-radius:var(--eem-radius);padding:16px 18px;margin:12px 18px}
+.eem-sr-add-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.eem-sr-add-field{display:flex;flex-direction:column;gap:4px}
+.eem-sr-add-label{font-size:12px;font-weight:600;color:var(--eem-text)}
+.eem-sr-file-pick{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.eem-sr-f-pdf-name{flex:1;min-width:120px;font-size:13px;font-style:italic;color:var(--eem-text-muted)}
+.eem-sr-add-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
 
-/* ═══════════════════════════════════════
-   SCREEN 2 — ADD EVENT RESULTS SECTION
-   ═══════════════════════════════════════ */
-.edit-body{padding:18px 22px;display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start}
-.edit-main{display:flex;flex-direction:column;gap:14px}
-.edit-rail{display:flex;flex-direction:column;gap:14px;position:sticky;top:44px}
-.rail-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}
-.rail-header{padding:11px 16px;border-bottom:1px solid #dcdcde;background:#f3f4f5}
-.rail-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E}
-.rail-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
-.rail-hint{font-size:12.5px;color:#6B7A99;line-height:1.5}
-.btn-save-draft{width:100%;background:#fff;color:#1d2327;border:1px solid #8c8f94;padding:9px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
-.btn-save-draft:hover{background:#f6f7f7}
-.btn-update{width:100%;background:#1668F2;color:#fff;border:1px solid #1668F2;padding:10px;border-radius:4px;font-size:13.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
-.btn-update:hover{background:#1257d1}
-.publish-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#1d2327}
-.publish-row svg{width:14px;height:14px;color:#6B7A99;flex-shrink:0}
-.publish-row strong{color:#031B4E;font-weight:600}
-.publish-row a{color:#1668F2;font-size:12px;font-weight:600;margin-left:auto}
-.publish-divider{height:1px;background:#f0f0f1}
+/* ── Empty states ── */
+.eem-sr-empty-mini{padding:18px;text-align:center;color:var(--eem-text-muted);font-size:13px}
+.eem-sr-empty-mini p{margin:0}
+.eem-sr-empty{padding:40px 24px;text-align:center;color:var(--eem-text-muted);display:flex;flex-direction:column;align-items:center;gap:12px}
+.eem-sr-empty p{margin:0;font-size:14px}
+.eem-sr-empty strong{color:var(--eem-navy);font-size:16px}
 
-/* Summary badges in rail */
-.doc-summary{display:flex;flex-direction:column;gap:6px}
-.doc-summary-row{display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#1d2327}
-.doc-summary-num{font-family:'Space Grotesk',sans-serif;font-weight:700;color:#031B4E;font-size:15px}
-.doc-summary-label{color:#6B7A99;font-size:12px}
-
-/* ═══════════════════════════════════
-   SCREEN 3 — PUBLIC: EVENTS LIST
-   ═══════════════════════════════════ */
-.public-page{background:#f8f8f8;min-height:100vh;font-family:'IBM Plex Sans',sans-serif}
-.public-header{background:#031B4E;padding:14px 32px;display:flex;align-items:center;justify-content:space-between}
-.public-header-logo{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#fff}
-.public-header-nav{display:flex;gap:20px}
-.public-header-nav a{font-size:13px;color:rgba(255,255,255,.75);font-weight:500}
-.public-header-nav a:hover{color:#fff}
-.public-hero{background:#031B4E;padding:36px 32px 32px;border-bottom:1px solid rgba(255,255,255,.1)}
-.public-hero h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:#fff;margin-bottom:6px}
-.public-hero p{font-size:14px;color:rgba(255,255,255,.65);max-width:560px}
-.public-body{max-width:960px;margin:0 auto;padding:28px 24px}
-.public-filters{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
-.public-filter-btn{padding:7px 16px;border:1px solid #c3c4c7;border-radius:20px;font-size:13px;font-weight:600;color:#50575e;background:#fff;cursor:pointer;font-family:'IBM Plex Sans',sans-serif}
-.public-filter-btn:hover{border-color:#031B4E;color:#031B4E}
-.public-filter-btn.active{background:#031B4E;color:#fff;border-color:#031B4E}
-
-/* Event card */
-.event-card{background:#fff;border:1px solid #dcdcde;border-radius:6px;margin-bottom:12px;overflow:hidden;display:flex}
-.event-card-date-bar{width:72px;min-width:72px;background:#031B4E;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 8px;flex-shrink:0}
-.event-card-month{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em}
-.event-card-day{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#fff;line-height:1}
-.event-card-year{font-size:10px;color:rgba(255,255,255,.5);margin-top:2px}
-.event-card-body{flex:1;padding:14px 16px;min-width:0}
-.event-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px}
-.event-card-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E;text-decoration:none}
-.event-card-title:hover{color:#1668F2}
-.event-status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
-.event-status-pill::before{content:'';width:5px;height:5px;border-radius:50%}
-.pill-upcoming{background:#EEF4FF;color:#1668F2}
-.pill-upcoming::before{background:#1668F2}
-.pill-ongoing{background:#dcfce7;color:#15803d}
-.pill-ongoing::before{background:#16a34a}
-.pill-past{background:#f3f4f5;color:#6B7A99}
-.pill-past::before{background:#9ca3af}
-.event-card-meta{font-size:12.5px;color:#6B7A99;display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap}
-.event-card-meta span{display:flex;align-items:center;gap:5px}
-.event-card-meta svg{width:12px;height:12px}
-.event-card-actions{display:flex;gap:8px;flex-wrap:wrap}
-
-/* Action buttons on event card */
-.card-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;text-decoration:none;border:1px solid}
-.card-btn svg{width:12px;height:12px}
-.card-btn-primary{background:#1668F2;color:#fff;border-color:#1668F2}
-.card-btn-primary:hover{background:#1257d1;color:#fff}
-.card-btn-outline{background:#fff;color:#1d2327;border-color:#c3c4c7}
-.card-btn-outline:hover{background:#f6f7f7;border-color:#8c8f94}
-.card-btn-results{background:#031B4E;color:#fff;border-color:#031B4E}
-.card-btn-results:hover{background:#04256a;color:#fff}
-.card-btn-draw{background:#fff;color:#0d9488;border-color:#0d9488}
-.card-btn-draw:hover{background:#F0FDFA;color:#0d9488}
-
-/* ═══════════════════════════════════════
-   SCREEN 4 — PUBLIC: EVENT RESULTS PAGE
-   ═══════════════════════════════════════ */
-.results-hero{background:#031B4E;padding:32px 32px 0}
-.results-hero-eyebrow{font-size:12px;font-weight:600;color:rgba(255,255,255,.5);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px}
-.results-hero-eyebrow a{color:rgba(255,255,255,.5)}
-.results-hero-eyebrow a:hover{color:rgba(255,255,255,.8)}
-.results-hero h1{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#fff;margin-bottom:6px}
-.results-hero-meta{display:flex;gap:16px;flex-wrap:wrap;padding-bottom:20px}
-.results-hero-meta span{font-size:13px;color:rgba(255,255,255,.6);display:flex;align-items:center;gap:6px}
-.results-hero-meta svg{width:13px;height:13px}
-/* Doc type tabs pinned to bottom of hero */
-.results-type-tabs{display:flex;gap:0;margin-top:4px}
-.results-type-tab{padding:11px 24px;font-size:14px;font-weight:600;color:rgba(255,255,255,.55);cursor:pointer;border-bottom:3px solid transparent;display:flex;align-items:center;gap:8px}
-.results-type-tab:hover{color:rgba(255,255,255,.85)}
-.results-type-tab.active{color:#fff;border-bottom-color:#C8FF00}
-.results-type-tab-count{font-size:11px;font-weight:700;background:rgba(255,255,255,.15);padding:2px 7px;border-radius:10px}
-.results-type-tab.active .results-type-tab-count{background:rgba(200,255,0,.25);color:#C8FF00}
-
-.results-body{max-width:860px;margin:0 auto;padding:28px 24px}
-.results-discipline{margin-bottom:28px}
-.results-discipline-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#6B7A99;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
-.results-discipline-title::after{content:'';flex:1;height:1px;background:#e5e7eb}
-
-/* Result item */
-.result-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:1px solid #e5e7eb;border-radius:4px;margin-bottom:6px;text-decoration:none}
-.result-item:hover{border-color:#1668F2;background:#fafcff}
-.result-item-icon{width:34px;height:34px;background:#fee2e2;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.result-item-icon svg{width:16px;height:16px;color:#b91c1c}
-.result-item-info{flex:1;min-width:0}
-.result-item-name{font-size:13.5px;font-weight:600;color:#031B4E;display:block;margin-bottom:1px}
-.result-item-meta{font-size:12px;color:#6B7A99}
-.result-item-arrow{color:#c3c4c7;flex-shrink:0}
-.result-item-arrow svg{width:16px;height:16px}
-.result-item:hover .result-item-arrow{color:#1668F2}
-
-/* Day label */
-.day-label{font-size:12px;font-weight:700;color:#8c8f94;letter-spacing:.06em;text-transform:uppercase;padding:8px 0 4px;display:flex;align-items:center;gap:8px}
-.day-label::after{content:'';flex:1;height:1px;background:#f0f0f1}
-
-/* Empty state */
-.empty-state{text-align:center;padding:40px 20px;color:#8c8f94}
-.empty-state svg{width:36px;height:36px;color:#c3c4c7;margin:0 auto 10px;display:block}
-.empty-state p{font-size:13px}
-.empty-state strong{color:#50575e;font-size:14px;display:block;margin-bottom:4px}
+@media (max-width:767px){
+  .wp-sidebar{display:none}
+  .eem-sr-add-grid{grid-template-columns:1fr}
+  .eem-sr-selector{padding:14px 16px}
+  .eem-sr-event-select{max-width:none}
+  .eem-sr-group-head{flex-wrap:wrap}
+  .eem-sr-group-actions{flex-wrap:wrap}
+  .eem-sr-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
+}
 </style>
 </head>
 <body>
 
-<!-- ── SCREEN NAVIGATION ── -->
-<!-- ════════════════════════════════════
-     SCREEN 1 — ADMIN: RESULTS MANAGER
-     ════════════════════════════════════ -->
+<!-- ── WP admin bar stub ── -->
 <div class="wp-admin-bar">
-  <span>&#9776;</span><span class="site">My Equestrian Site</span><span>+ New</span>
-  <span style="margin-left:auto">Howdy, whitney</span>
+  <span class="site">⬛ En Event Manager</span>
+  <span>＋ New</span>
+  <span>👤 admin</span>
 </div>
+
 <div class="wp-body">
+  <!-- ── WP sidebar stub ── -->
   <nav class="wp-sidebar">
-    <div class="wp-sidebar-sep"></div>
     <div class="wp-sidebar-label">Event Manager</div>
-    <div class="wp-sidebar-sub">Events</div>
-    <div class="wp-sidebar-sub">Orders</div>
+    <div class="wp-sidebar-sub">Dashboard</div>
     <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub">Orders</div>
+    <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
     <div class="wp-sidebar-sub active">Sheets &amp; Results</div>
-    <div class="wp-sidebar-sub">Stall Charts</div>
     <div class="wp-sidebar-sub">Reports</div>
     <div class="wp-sidebar-sub">Settings</div>
   </nav>
+
   <main class="wp-content">
-    <div class="breadcrumb">
-      <div class="breadcrumb-logo-box">Plugin Logo</div>
-      <span class="breadcrumb-sep">/</span>
-      <span class="breadcrumb-page">Sheets &amp; Results</span>
+
+    <!-- ── Breadcrumb (above the bordered card; rendered via eem_render_breadcrumb) ── -->
+    <div class="eem-breadcrumb">
+      <span class="eem-breadcrumb-logo"><span class="eem-breadcrumb-logo-box">EQUINE logo</span></span>
+      <span class="eem-breadcrumb-sep">/</span>
+      <span class="eem-breadcrumb-segment">Sheets &amp; Results</span>
     </div>
-    <div class="plugin-wrap">
 
-      <div class="plugin-header">
-        <div class="plugin-header-left">
-          <h1 class="plugin-title">Sheets &amp; Results</h1>
-          <div class="plugin-subtitle">Upload and manage draw sheets and results for any event. Files go live immediately when saved.</div>
+    <!-- ── The single bordered plugin card ── -->
+    <div class="eem-page eem-sheets-results"
+         data-ajax-url="/wp-admin/admin-ajax.php"
+         data-nonce="sample_nonce_abc123"
+         data-event-id="42">
+      <div class="eem-plugin-wrap">
+
+        <!-- Header -->
+        <header class="eem-plugin-header">
+          <div class="eem-plugin-header-left">
+            <h1 class="eem-plugin-title">Sheets &amp; Results</h1>
+            <div class="eem-plugin-subtitle">Upload and manage draw sheets and results for any event. Files go live immediately when saved.</div>
+          </div>
+        </header>
+
+        <!-- Event selector band
+             PHP: render_event_selector() — dropdown of en_event posts + date pill + lifecycle badge.
+             Lifecycle: Upcoming (blue), Ongoing (green/eem-status-active), Past Event (gray/eem-status-archived). -->
+        <div class="eem-sr-selector">
+          <span class="eem-sr-selector-label">Viewing event:</span>
+          <select class="eem-field-select eem-sr-event-select" data-eem-action="sr-switch-event">
+            <option value="42" selected>Spring Barrel Bash 2026</option>
+            <option value="43">Summer Series Round 2</option>
+            <option value="44">Fall Classic Rodeo</option>
+          </select>
+          <span class="eem-sr-meta-pill">Jun 12–15, 2026</span>
+          <span class="eem-status-badge eem-status-upcoming eem-sr-status-pill">Upcoming</span>
+        </div>
+
+        <!-- .eem-sr-body wrapper — PHP wraps tabs + panels in this div -->
+        <div class="eem-sr-body">
+
+          <!-- Tabs
+               PHP: render_body_inner() emits tabs then two .eem-sr-panel divs.
+               data-eem-action="sr-tab" + data-sr-tab="drawsheets|results" -->
+          <div class="eem-sr-tabs">
+            <button type="button" class="eem-sr-tab is-active" data-eem-action="sr-tab" data-sr-tab="drawsheets">
+              Draw Sheets <span class="eem-sr-tab-count">3</span>
+            </button>
+            <button type="button" class="eem-sr-tab" data-eem-action="sr-tab" data-sr-tab="results">
+              Results <span class="eem-sr-tab-count">1</span>
+            </button>
+          </div>
+
+          <!-- ════════ DRAW SHEETS PANEL (active) ════════
+               PHP: render_drawsheets() — add-discipline bar first, then groups. -->
+          <div class="eem-sr-panel" data-sr-panel="drawsheets">
+
+            <!-- Add-discipline bar (render_add_discipline_bar) -->
+            <div class="eem-sr-add-discipline">
+              <input type="text" class="eem-field-input eem-sr-discipline-input" placeholder="New discipline (e.g. Barrel Racing)…">
+              <button type="button" class="eem-btn eem-btn-secondary" data-eem-action="sr-add-discipline" data-event-id="42">Add Discipline</button>
+            </div>
+
+            <!-- ── Group: Barrel Racing ──
+                 Group head: discipline name + file count + Rename + Delete + "+ Add File".
+                 Add-file panel rendered hidden (default); one shown open here for reference.
+                 PHP: render_add_panel() outputs with `hidden` attribute. -->
+            <div class="eem-sr-group">
+              <div class="eem-sr-group-head">
+                <div class="eem-sr-group-name">Barrel Racing <span class="eem-sr-group-count">2 files</span></div>
+                <div class="eem-sr-group-actions">
+                  <button type="button" class="eem-sr-group-link" data-eem-action="sr-rename-discipline" data-discipline-id="10" data-name="Barrel Racing">Rename</button>
+                  <button type="button" class="eem-sr-group-link is-danger" data-eem-action="sr-delete-discipline" data-discipline-id="10" data-name="Barrel Racing" data-file-count="2">Delete</button>
+                  <button type="button" class="eem-sr-add-file-btn" data-eem-action="sr-toggle-add" data-discipline-id="10">+ Add File</button>
+                </div>
+              </div>
+
+              <!-- Inline Add-File panel — PHP outputs as `hidden`; shown open here for reference.
+                   Fields: Label (text), Round (select), Date (date), PDF File (WP media picker).
+                   Buttons: Cancel (sr-cancel-add), Save & Publish (sr-save-entry). -->
+              <div class="eem-sr-add-panel" data-discipline-panel="10">
+                <div class="eem-sr-add-grid">
+                  <div class="eem-sr-add-field">
+                    <label class="eem-sr-add-label">Label</label>
+                    <input type="text" class="eem-field-input eem-sr-f-label" placeholder="e.g. Open 5D Long Go">
+                  </div>
+                  <div class="eem-sr-add-field">
+                    <label class="eem-sr-add-label">Round</label>
+                    <select class="eem-field-select eem-sr-f-round">
+                      <option value="">No round</option>
+                      <option value="1st-go">1st Go</option>
+                      <option value="2nd-go">2nd Go</option>
+                      <option value="short-go">Short Go</option>
+                      <option value="finals">Finals</option>
+                    </select>
+                  </div>
+                  <div class="eem-sr-add-field">
+                    <label class="eem-sr-add-label">Date</label>
+                    <input type="date" class="eem-field-input eem-sr-f-date" value="2026-06-13">
+                  </div>
+                  <div class="eem-sr-add-field">
+                    <label class="eem-sr-add-label">PDF File</label>
+                    <div class="eem-sr-file-pick">
+                      <input type="hidden" class="eem-sr-f-pdf" value="0">
+                      <span class="eem-sr-f-pdf-name">No file selected</span>
+                      <button type="button" class="eem-btn-upload" data-eem-action="sr-pick-file">Upload PDF</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="eem-sr-add-actions">
+                  <button type="button" class="eem-btn eem-btn-secondary" data-eem-action="sr-cancel-add">Cancel</button>
+                  <button type="button" class="eem-btn eem-btn-electric" data-eem-action="sr-save-entry" data-event-id="42" data-discipline-id="10">Save &amp; Publish</button>
+                </div>
+              </div>
+
+              <!-- draw-sheet rows: render_drawsheet_row()
+                   Actions: Download (link), Replace PDF (sr-replace-pdf / drawsheet), Delete (sr-delete-entry). -->
+              <div class="eem-sr-row">
+                <div class="eem-sr-row-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div class="eem-sr-row-info">
+                  <span class="eem-sr-row-name">Open 5D Long Go</span>
+                  <div class="eem-sr-row-meta">1st Go · Jun 13</div>
+                </div>
+                <span class="eem-status-badge eem-status-active eem-sr-live-badge">Live</span>
+                <div class="eem-sr-row-actions">
+                  <a class="eem-sr-action-btn" href="#" target="_blank" rel="noopener" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+                  <button type="button" class="eem-sr-action-btn" data-eem-action="sr-replace-pdf" data-entry-id="101" data-which="drawsheet" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/></svg></button>
+                  <button type="button" class="eem-sr-action-btn is-danger" data-eem-action="sr-delete-entry" data-entry-id="101" data-label="Open 5D Long Go" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </div>
+              </div>
+
+              <div class="eem-sr-row">
+                <div class="eem-sr-row-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div class="eem-sr-row-info">
+                  <span class="eem-sr-row-name">Open 5D Short Go</span>
+                  <div class="eem-sr-row-meta">Short Go · Jun 15</div>
+                </div>
+                <span class="eem-status-badge eem-status-active eem-sr-live-badge">Live</span>
+                <div class="eem-sr-row-actions">
+                  <a class="eem-sr-action-btn" href="#" target="_blank" rel="noopener" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+                  <button type="button" class="eem-sr-action-btn" data-eem-action="sr-replace-pdf" data-entry-id="102" data-which="drawsheet" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/></svg></button>
+                  <button type="button" class="eem-sr-action-btn is-danger" data-eem-action="sr-delete-entry" data-entry-id="102" data-label="Open 5D Short Go" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Group: Pole Bending ── -->
+            <div class="eem-sr-group">
+              <div class="eem-sr-group-head">
+                <div class="eem-sr-group-name">Pole Bending <span class="eem-sr-group-count">1 file</span></div>
+                <div class="eem-sr-group-actions">
+                  <button type="button" class="eem-sr-group-link" data-eem-action="sr-rename-discipline" data-discipline-id="11" data-name="Pole Bending">Rename</button>
+                  <button type="button" class="eem-sr-group-link is-danger" data-eem-action="sr-delete-discipline" data-discipline-id="11" data-name="Pole Bending" data-file-count="1">Delete</button>
+                  <button type="button" class="eem-sr-add-file-btn" data-eem-action="sr-toggle-add" data-discipline-id="11">+ Add File</button>
+                </div>
+              </div>
+              <!-- Add-file panel for Pole Bending — hidden by default -->
+              <div class="eem-sr-add-panel" data-discipline-panel="11" hidden>
+                <div class="eem-sr-add-grid">
+                  <div class="eem-sr-add-field">
+                    <label class="eem-sr-add-label">Label</label>
+                    <input type="text" class="eem-field-input eem-sr-f-label" placeholder="e.g. Open 5D Long Go">
+                  </div>
+                  <div class="eem-sr-add-field">
+                    <label class="eem-sr-add-label">Round</label>
+                    <select class="eem-field-select eem-sr-f-round">
+                      <option value="">No round</option>
+                      <option value="1st-go">1st Go</option>
+                      <option value="2nd-go">2nd Go</option>
+                      <option value="short-go">Short Go</option>
+                      <option value="finals">Finals</option>
+                    </select>
+                  </div>
+                  <div class="eem-sr-add-field">
+                    <label class="eem-sr-add-label">Date</label>
+                    <input type="date" class="eem-field-input eem-sr-f-date">
+                  </div>
+                  <div class="eem-sr-add-field">
+                    <label class="eem-sr-add-label">PDF File</label>
+                    <div class="eem-sr-file-pick">
+                      <input type="hidden" class="eem-sr-f-pdf" value="0">
+                      <span class="eem-sr-f-pdf-name">No file selected</span>
+                      <button type="button" class="eem-btn-upload" data-eem-action="sr-pick-file">Upload PDF</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="eem-sr-add-actions">
+                  <button type="button" class="eem-btn eem-btn-secondary" data-eem-action="sr-cancel-add">Cancel</button>
+                  <button type="button" class="eem-btn eem-btn-electric" data-eem-action="sr-save-entry" data-event-id="42" data-discipline-id="11">Save &amp; Publish</button>
+                </div>
+              </div>
+              <div class="eem-sr-row">
+                <div class="eem-sr-row-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div class="eem-sr-row-info">
+                  <span class="eem-sr-row-name">Pole Bending Draw</span>
+                  <div class="eem-sr-row-meta">1st Go · Jun 14</div>
+                </div>
+                <span class="eem-status-badge eem-status-active eem-sr-live-badge">Live</span>
+                <div class="eem-sr-row-actions">
+                  <a class="eem-sr-action-btn" href="#" target="_blank" rel="noopener" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+                  <button type="button" class="eem-sr-action-btn" data-eem-action="sr-replace-pdf" data-entry-id="103" data-which="drawsheet" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/></svg></button>
+                  <button type="button" class="eem-sr-action-btn is-danger" data-eem-action="sr-delete-entry" data-entry-id="103" data-label="Pole Bending Draw" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Group: Goat Tying (no draw sheets yet — empty state) ── -->
+            <div class="eem-sr-group">
+              <div class="eem-sr-group-head">
+                <div class="eem-sr-group-name">Goat Tying <span class="eem-sr-group-count">0 files</span></div>
+                <div class="eem-sr-group-actions">
+                  <button type="button" class="eem-sr-group-link" data-eem-action="sr-rename-discipline" data-discipline-id="12" data-name="Goat Tying">Rename</button>
+                  <button type="button" class="eem-sr-group-link is-danger" data-eem-action="sr-delete-discipline" data-discipline-id="12" data-name="Goat Tying" data-file-count="0">Delete</button>
+                  <button type="button" class="eem-sr-add-file-btn" data-eem-action="sr-toggle-add" data-discipline-id="12">+ Add File</button>
+                </div>
+              </div>
+              <!-- Add-file panel — hidden by default -->
+              <div class="eem-sr-add-panel" data-discipline-panel="12" hidden>
+                <div class="eem-sr-add-grid">
+                  <div class="eem-sr-add-field">
+                    <label class="eem-sr-add-label">Label</label>
+                    <input type="text" class="eem-field-input eem-sr-f-label" placeholder="e.g. Open 5D Long Go">
+                  </div>
+                  <div class="eem-sr-add-field">
+                    <label class="eem-sr-add-label">Round</label>
+                    <select class="eem-field-select eem-sr-f-round">
+                      <option value="">No round</option>
+                      <option value="1st-go">1st Go</option>
+                      <option value="2nd-go">2nd Go</option>
+                      <option value="short-go">Short Go</option>
+                      <option value="finals">Finals</option>
+                    </select>
+                  </div>
+                  <div class="eem-sr-add-field">
+                    <label class="eem-sr-add-label">Date</label>
+                    <input type="date" class="eem-field-input eem-sr-f-date">
+                  </div>
+                  <div class="eem-sr-add-field">
+                    <label class="eem-sr-add-label">PDF File</label>
+                    <div class="eem-sr-file-pick">
+                      <input type="hidden" class="eem-sr-f-pdf" value="0">
+                      <span class="eem-sr-f-pdf-name">No file selected</span>
+                      <button type="button" class="eem-btn-upload" data-eem-action="sr-pick-file">Upload PDF</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="eem-sr-add-actions">
+                  <button type="button" class="eem-btn eem-btn-secondary" data-eem-action="sr-cancel-add">Cancel</button>
+                  <button type="button" class="eem-btn eem-btn-electric" data-eem-action="sr-save-entry" data-event-id="42" data-discipline-id="12">Save &amp; Publish</button>
+                </div>
+              </div>
+              <div class="eem-sr-empty-mini"><p>No draw sheets uploaded yet for this discipline.</p></div>
+            </div>
+
+          </div><!-- /drawsheets panel -->
+
+          <!-- ════════ RESULTS PANEL ════════
+               PHP: render_results() — mirrors draw-sheet rows; no Rename/Delete in group head.
+               Group head: discipline name + "X of Y uploaded" count (no action buttons).
+               Live row: green Live badge + Download + Replace + Remove result (sr-clear-result).
+               Pending row: amber background + "No result uploaded yet" + "Upload Result PDF" CTA.
+               Result rows only appear for draw sheets that exist (drawsheet_pdf > 0). -->
+          <div class="eem-sr-panel" data-sr-panel="results" hidden>
+
+            <!-- Results group: Barrel Racing — 1 of 2 uploaded -->
+            <div class="eem-sr-group">
+              <div class="eem-sr-group-head">
+                <div class="eem-sr-group-name">Barrel Racing
+                  <span class="eem-sr-group-count">1 of 2 uploaded</span>
+                </div>
+                <!-- NOTE: Results tab group head has NO Rename/Delete/Add File buttons (per PHP source) -->
+              </div>
+
+              <!-- result live row -->
+              <div class="eem-sr-row">
+                <div class="eem-sr-row-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div class="eem-sr-row-info">
+                  <span class="eem-sr-row-name">Open 5D Long Go</span>
+                  <div class="eem-sr-row-meta">1st Go · Jun 13</div>
+                </div>
+                <span class="eem-status-badge eem-status-active eem-sr-live-badge">Live</span>
+                <div class="eem-sr-row-actions">
+                  <a class="eem-sr-action-btn" href="#" target="_blank" rel="noopener" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+                  <button type="button" class="eem-sr-action-btn" data-eem-action="sr-replace-pdf" data-entry-id="101" data-which="result" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/></svg></button>
+                  <button type="button" class="eem-sr-action-btn is-danger" data-eem-action="sr-clear-result" data-entry-id="101" title="Remove result PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+                </div>
+              </div>
+
+              <!-- result pending (amber) row -->
+              <div class="eem-sr-row eem-sr-row--pending">
+                <div class="eem-sr-row-icon eem-sr-row-icon--pending">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div class="eem-sr-row-info">
+                  <span class="eem-sr-row-name">Open 5D Short Go</span>
+                  <div class="eem-sr-row-meta eem-sr-row-meta--pending">No result uploaded yet</div>
+                </div>
+                <div class="eem-sr-row-actions">
+                  <button type="button" class="eem-btn eem-sr-upload-result-btn" data-eem-action="sr-replace-pdf" data-entry-id="102" data-which="result">Upload Result PDF</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Results group: Pole Bending — 0 of 1 uploaded -->
+            <div class="eem-sr-group">
+              <div class="eem-sr-group-head">
+                <div class="eem-sr-group-name">Pole Bending
+                  <span class="eem-sr-group-count">0 of 1 uploaded</span>
+                </div>
+              </div>
+              <div class="eem-sr-row eem-sr-row--pending">
+                <div class="eem-sr-row-icon eem-sr-row-icon--pending">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div class="eem-sr-row-info">
+                  <span class="eem-sr-row-name">Pole Bending Draw</span>
+                  <div class="eem-sr-row-meta eem-sr-row-meta--pending">No result uploaded yet</div>
+                </div>
+                <div class="eem-sr-row-actions">
+                  <button type="button" class="eem-btn eem-sr-upload-result-btn" data-eem-action="sr-replace-pdf" data-entry-id="103" data-which="result">Upload Result PDF</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Results group: Goat Tying — no draw sheets, so no result rows -->
+            <div class="eem-sr-group">
+              <div class="eem-sr-group-head">
+                <div class="eem-sr-group-name">Goat Tying
+                  <span class="eem-sr-group-count">—</span>
+                </div>
+              </div>
+              <div class="eem-sr-empty-mini"><p>No draw sheets added yet. Results rows appear automatically once draw sheets are uploaded.</p></div>
+            </div>
+
+          </div><!-- /results panel -->
+
+        </div><!-- /eem-sr-body -->
+
+      </div><!-- /eem-plugin-wrap -->
+    </div><!-- /eem-page -->
+
+    <!-- ════════ EMPTY STATE (shown when no en_event posts exist) ════════
+         PHP: render() shows this when $events is empty.
+         CTA links to /wp-admin/post-new.php?post_type=en_event. -->
+    <!--
+    <div class="eem-page eem-sheets-results">
+      <div class="eem-plugin-wrap">
+        <header class="eem-plugin-header">
+          <div class="eem-plugin-header-left">
+            <h1 class="eem-plugin-title">Sheets & Results</h1>
+            <div class="eem-plugin-subtitle">Upload and manage draw sheets and results for any event.</div>
+          </div>
+        </header>
+        <div class="eem-sr-empty">
+          <p><strong>No events yet</strong></p>
+          <p>Create an event first — draw sheets and results attach to an event.</p>
+          <a class="eem-btn eem-btn-electric" href="/wp-admin/post-new.php?post_type=en_event">Add Event</a>
         </div>
       </div>
-
-      <!-- Event selector -->
-      <div class="event-selector">
-        <span class="event-selector-label">Viewing event:</span>
-        <select>
-          <option>2026 Southeast Region Super Sort</option>
-          <option>2026 Gulf Coast Classic</option>
-          <option>2026 Lone Star Invitational</option>
-          <option>Black Hills Stock Show (EEMDEMO)</option>
-        </select>
-        <span class="event-meta-pill">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Jun 14–18, 2026
-        </span>
-        <span class="event-meta-pill" style="background:#dcfce7;border-color:#bbf7d0;color:#15803d">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Ongoing
-        </span>
-      </div>
-
-      <!-- Doc type tabs -->
-      <div class="doc-tabs">
-        <div class="doc-tab active" onclick="switchDocTab('s1','drawsheets')" id="s1-tab-drawsheets">Draw Sheets <span class="doc-tab-count">8</span></div>
-        <div class="doc-tab" onclick="switchDocTab('s1','results')" id="s1-tab-results">Results <span class="doc-tab-count">7</span></div>
-      </div>
-
-      <div id="s1-drawsheets" style="display:none">
-        <!-- Add-discipline bar — assigns a new en_discipline term to this event -->
-        <div class="add-discipline-bar">
-          <input type="text" placeholder="New discipline name (e.g. Team Roping)">
-          <button>Add Discipline</button>
-        </div>
-        <div class="discipline-group">
-          <div class="discipline-header">
-            <div class="discipline-name">Barrel Racing <span class="discipline-count">2 files</span></div>
-            <div class="group-actions">
-              <button class="group-link">Rename</button>
-              <button class="group-link danger">Delete</button>
-              <button class="btn-add-doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add File</button>
-            </div>
-          </div>
-          <div class="doc-row">
-            <div class="doc-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-            <div class="doc-row-info"><span class="doc-row-name">Open 5D Draw Sheet</span><div class="doc-row-meta"><span>Jun 14</span></div></div>
-            <span class="doc-status status-live">Live</span>
-            <div class="doc-row-actions">
-              <button class="doc-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
-              <button class="doc-action-btn danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
-            </div>
-          </div>
-          <div class="doc-row">
-            <div class="doc-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-            <div class="doc-row-info"><span class="doc-row-name">19U Barrels Draw</span><div class="doc-row-meta"><span>Jun 16</span></div></div>
-            <span class="doc-status status-live">Live</span>
-            <div class="doc-row-actions">
-              <button class="doc-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
-              <button class="doc-action-btn danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
-            </div>
-          </div>
-        </div>
-        <div class="discipline-group">
-          <div class="discipline-header">
-            <div class="discipline-name">Breakaway Roping <span class="discipline-count">1 file</span></div>
-            <div class="group-actions">
-              <button class="group-link">Rename</button>
-              <button class="group-link danger">Delete</button>
-              <button class="btn-add-doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add File</button>
-            </div>
-          </div>
-          <div class="doc-row">
-            <div class="doc-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-            <div class="doc-row-info"><span class="doc-row-name">15U Breakaway Draw Sheet</span><div class="doc-row-meta"><span>Jun 12</span></div></div>
-            <span class="doc-status status-live">Live</span>
-            <div class="doc-row-actions">
-              <button class="doc-action-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
-              <button class="doc-action-btn danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
-            </div>
-          </div>
-        </div>
-        <div class="discipline-group">
-          <div class="discipline-header">
-            <div class="discipline-name">Tie-Down Roping <span class="discipline-count">0 files</span></div>
-            <div class="group-actions">
-              <button class="group-link">Rename</button>
-              <button class="group-link danger">Delete</button>
-              <button class="btn-add-doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add File</button>
-            </div>
-          </div>
-          <div class="empty-state" style="padding:20px"><p>No draw sheets uploaded yet for this discipline.</p></div>
-        </div>
-      </div>
-
-      <div id="s1-results">
-      <!-- Results are auto-created from draw sheet entries. Rows with no PDF yet show "Upload Result" inline. -->
-
-      <!-- Discipline: Barrel Racing -->
-      <div class="discipline-group">
-        <div class="discipline-header">
-          <div class="discipline-name">Barrel Racing <span class="discipline-count">2 of 2 uploaded</span></div>
-        </div>
-
-        <!-- Mirrored from draw sheet — PDF uploaded, Live -->
-        <div class="doc-row">
-          <div class="doc-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-          <div class="doc-row-info">
-            <span class="doc-row-name">Open 5D Draw Sheet</span>
-            <div class="doc-row-meta"><span>Jun 14</span><span>Open-5D-Results.pdf</span></div>
-          </div>
-          <span class="doc-status status-live">Live</span>
-          <div class="doc-row-actions">
-            <button class="doc-action-btn" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
-            <button class="doc-action-btn" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/></svg></button>
-            <button class="doc-action-btn danger" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
-          </div>
-        </div>
-
-        <!-- Mirrored from draw sheet — PDF uploaded, Live -->
-        <div class="doc-row">
-          <div class="doc-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-          <div class="doc-row-info">
-            <span class="doc-row-name">19U Barrels Draw</span>
-            <div class="doc-row-meta"><span>Jun 16</span><span>19U-Barrels-Results.pdf</span></div>
-          </div>
-          <span class="doc-status status-live">Live</span>
-          <div class="doc-row-actions">
-            <button class="doc-action-btn" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
-            <button class="doc-action-btn" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/></svg></button>
-            <button class="doc-action-btn danger" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Discipline: Breakaway Roping -->
-      <div class="discipline-group">
-        <div class="discipline-header">
-          <div class="discipline-name">Breakaway Roping <span class="discipline-count">0 of 1 uploaded</span></div>
-        </div>
-
-        <!-- Mirrored from draw sheet — NO PDF yet, awaiting upload -->
-        <div class="doc-row" style="background:#fffbeb">
-          <div class="doc-row-icon" style="background:#fef3c7"><svg viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-          <div class="doc-row-info">
-            <span class="doc-row-name">15U Breakaway Draw Sheet</span>
-            <div class="doc-row-meta"><span>Jun 12</span><span style="color:#ca8a04;font-weight:600">No result uploaded yet</span></div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div class="file-upload-row">
-              <button class="btn-upload" style="border-color:#ca8a04;color:#a16207;background:#fefce8">Upload Result PDF</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Discipline: Tie-Down Roping — no draw sheets so no mirrored rows -->
-      <div class="discipline-group">
-        <div class="discipline-header">
-          <div class="discipline-name">Tie-Down Roping <span class="discipline-count">—</span></div>
-        </div>
-        <div class="empty-state" style="padding:20px">
-          <p>No draw sheets added yet. Results rows appear automatically once draw sheets are uploaded.</p>
-        </div>
-      </div>
-
-      </div><!-- /s1-results -->
-
     </div>
+    -->
+
   </main>
 </div>
-</div>
-
-
-<!-- ══════════════════════════════════════════════
-     SCREEN 2 — ADMIN: EVENT EDIT DOCUMENTS SECTION
-     ══════════════════════════════════════════════ -->
 
 <script>
-function toggleAddPanel(id){var p=document.getElementById(id);p.style.display=p.style.display==='none'?'block':'none';}
-function switchDocTab(screen,tab){['drawsheets','results'].forEach(t=>{var te=document.getElementById(screen+'-tab-'+t);if(te)te.classList.toggle('active',t===tab);var p=document.getElementById(screen+'-'+t);if(p)p.style.display=(t===tab)?'':'none';});}
-document.addEventListener('DOMContentLoaded',function(){document.getElementById('s1-drawsheets').style.display='';document.getElementById('s1-results').style.display='none';});
+// Preview-only tab toggle (live page uses data-eem-action="sr-tab" + admin.js).
+document.querySelectorAll('.eem-sr-tab').forEach(function (tab, i) {
+  tab.addEventListener('click', function () {
+    document.querySelectorAll('.eem-sr-tab').forEach(function (t) { t.classList.remove('is-active'); });
+    tab.classList.add('is-active');
+    var panels = document.querySelectorAll('.eem-sr-panel');
+    panels.forEach(function (p) { p.hidden = true; });
+    panels[i].hidden = false;
+  });
+});
+
+// Preview-only Add File toggle (live page uses data-eem-action="sr-toggle-add").
+document.querySelectorAll('[data-eem-action="sr-toggle-add"]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var did = btn.getAttribute('data-discipline-id');
+    var panel = document.querySelector('[data-discipline-panel="' + did + '"]');
+    if (panel) { panel.hidden = !panel.hidden; }
+  });
+});
+
+// Preview-only Cancel (live page uses data-eem-action="sr-cancel-add").
+document.querySelectorAll('[data-eem-action="sr-cancel-add"]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var panel = btn.closest('.eem-sr-add-panel');
+    if (panel) { panel.hidden = true; }
+  });
+});
 </script>
 </body>
 </html>

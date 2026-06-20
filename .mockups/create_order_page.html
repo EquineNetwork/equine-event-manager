@@ -6,672 +6,724 @@
 <title>Equine Event Manager – Create Order</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Create Order – admin page (admin.php?page=equine-event-manager-create-order)
+   Mockup reflecting the LIVE render as of 2026-06-20 (EEM_Create_Order_Page).
+   Shows: customer picked via typeahead, reservation NTR 6519 selected (picked
+   state via render_reservation_card_picked()), section stubs loaded, two custom
+   line items added by JS, discount open (not yet applied), payment buttons enabled.
+   Sample data mirrors EEM_Create_Order_Page PHP structure exactly.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root{
+  --eem-electric:#1668F2; --eem-electric-hover:#0f54cc; --eem-navy:#031B4E;
+  --eem-amber:#F5A623; --eem-green:#22C55E;
+  --eem-text:#1d2327; --eem-text-secondary:#646970; --eem-radius:3px;
+  --eem-radius-lg:6px; --eem-info-bg:#f0f4fb; --eem-info-border:#d9e2f2;
+  --eem-border:#D9E2F2; --eem-border-soft:#f0f0f1;
+  --eem-font-display:'Space Grotesk',sans-serif;
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:var(--eem-text);font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
 svg{flex-shrink:0}
+a{text-decoration:none} a:hover{text-decoration:none}
+[hidden]{display:none !important}
 
-/* Universal hover convention */
-a{text-decoration:none}
-a:hover{text-decoration:none}
-
-/* ── WP SHELL ── */
-.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:300}
+/* ── WP SHELL STUB ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
 .wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
 .wp-admin-bar span.site{color:#fff;font-weight:600}
 .wp-body{display:flex;flex:1}
 .wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
-.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
-.wp-sidebar-item:hover{background:#2c3338;color:#fff}
-.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
-.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
 .wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
 .wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
-.wp-sidebar-sub:hover{color:#fff}
 .wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
-
-/* ── CONTENT ── */
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
 .wp-content{flex:1;padding:12px 20px 40px;min-width:0}
 
-/* Breadcrumb */
-.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
-.breadcrumb-sep{font-size:13px;color:#8c8f94}
-.breadcrumb-page{font-size:13px;color:#031B4E;font-weight:600}
-.breadcrumb-page a{color:#031B4E;font-weight:600;text-decoration:none}
-.breadcrumb-page a:hover{color:#1668F2;text-decoration:none}
+/* ── Breadcrumb ── */
+.eem-breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.eem-breadcrumb-logo{width:150px;height:34px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999;border:1px dashed #bbb;flex-shrink:0;font-family:var(--eem-font-display);font-weight:700;letter-spacing:.04em}
+.eem-breadcrumb-sep{font-size:13px;color:#8c8f94}
+.eem-breadcrumb-segment{font-size:13px;color:var(--eem-navy);font-weight:600}
+a.eem-breadcrumb-segment:hover{color:var(--eem-electric)}
+.eem-breadcrumb-segment[aria-current]{color:var(--eem-text-secondary);font-weight:600}
 
-/* ── PLUGIN-WRAP ── */
-.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
-.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.plugin-header-left{flex:1;min-width:0}
-.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
-.plugin-subtitle{font-size:13px;color:#50575e;line-height:1.45}
+/* ── PAGE WRAP / HEADER ── */
+.eem-page-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+.eem-page-header{padding:18px 22px;border-bottom:1px solid #dcdcde}
+.eem-page-title{font-family:var(--eem-font-display);font-size:22px;font-weight:700;color:var(--eem-navy);line-height:1.2}
+.eem-page-subtitle{font-size:13px;color:var(--eem-text-secondary);margin-top:5px;max-width:760px}
+.eem-page-body{padding:18px 22px;background:#f0f0f1}
 
-/* ── BODY ── */
-.create-body{padding:18px 22px;background:#fff}
+/* ── CARD primitives ── */
+.eem-card{background:#fff;border:1px solid #dcdcde;border-radius:var(--eem-radius-lg);overflow:hidden}
+.eem-card-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid #f0f0f1}
+.eem-card-title{display:flex;align-items:center;gap:8px;font-family:var(--eem-font-display);font-size:14px;font-weight:700;color:var(--eem-navy)}
+.eem-card-icon{width:14px;height:14px;color:var(--eem-electric);flex-shrink:0}
+.eem-card-body{padding:16px}
 
-/* ── TWO-COL LAYOUT ── */
-.workspace{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
-.workspace-main{display:flex;flex-direction:column;gap:14px;min-width:0}
-.workspace-rail{display:flex;flex-direction:column;gap:14px;position:sticky;top:44px}
+/* ── Field primitives ── */
+.eem-field-label{display:block;font-size:13px;font-weight:600;color:var(--eem-navy);margin-bottom:4px}
+.eem-field-group{display:flex;flex-direction:column}
+.eem-field-hint{font-size:12px;color:var(--eem-text-secondary);line-height:1.45}
+.eem-field-input,.eem-field-select,.eem-field-textarea{width:100%;padding:8px 10px;border:1px solid #8c8f94;border-radius:var(--eem-radius);font-size:13px;font-family:inherit;color:var(--eem-text);background:#fff}
+.eem-field-input:focus,.eem-field-select:focus,.eem-field-textarea:focus{border-color:var(--eem-electric);outline:none;box-shadow:0 0 0 1px var(--eem-electric)}
+.eem-field-textarea{resize:vertical}
+.eem-req{color:#b91c1c;margin-left:2px}
+.eem-field-optional{color:var(--eem-text-secondary);font-weight:400}
 
-/* ── INNER CARDS ── */
-.form-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}
-.form-card-header{padding:13px 18px;border-bottom:1px solid #dcdcde;background:#fff;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.form-card-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#031B4E;display:flex;align-items:center;gap:8px}
-.form-card-title svg{width:15px;height:15px;color:#1668F2;flex-shrink:0}
-.form-card-body{padding:16px 18px}
-.card-subtitle-row{padding:10px 18px;border-bottom:1px solid #f0f0f1;background:#f3f4f5;font-size:12.5px;color:#50575e}
+/* ── Buttons ── */
+.eem-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--eem-radius);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;border:1px solid transparent}
+.eem-btn-secondary{background:#fff;border-color:#c3c4c7;color:var(--eem-text)}
+.eem-btn-secondary:hover{border-color:#8c8f94;background:#f6f7f7}
+.eem-btn-electric{background:var(--eem-electric);color:#fff}
+.eem-btn-electric:hover{background:var(--eem-electric-hover)}
+.eem-btn-electric:disabled{background:#a9c4f6;cursor:not-allowed}
+.eem-btn-amber{background:var(--eem-amber);color:#fff;border-color:transparent}
+.eem-btn-amber:hover{background:#d4891a}
+.eem-btn-ghost{background:#fff;border-color:#c3c4c7;color:var(--eem-text)}
+.eem-btn-ghost:hover{border-color:#8c8f94;background:#f6f7f7}
+.eem-btn-ghost:disabled{color:#a7aaad;cursor:not-allowed}
+.eem-btn-add{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid #c3c4c7;border-radius:var(--eem-radius);font-size:13px;font-weight:600;font-family:inherit;color:var(--eem-text);background:#fff;cursor:pointer}
+.eem-btn-add:hover{background:#f6f7f7;border-color:#8c8f94}
+.eem-btn-add svg{width:13px;height:13px;color:var(--eem-electric)}
 
-/* Toggle */
-.toggle{width:36px;height:20px;border-radius:10px;position:relative;cursor:pointer;flex-shrink:0;transition:background .15s;border:none;padding:0}
-.toggle.on{background:#1668F2}
-.toggle.off{background:#c3c4c7}
-.toggle::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:3px;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .15s}
-.toggle.on::after{left:19px}
-.toggle.off::after{left:3px}
+/* ── Toggle ── */
+.eem-toggle{position:relative;width:40px;height:20px;border-radius:999px;border:none;cursor:pointer;flex-shrink:0}
+.eem-toggle.on{background:var(--eem-electric)} .eem-toggle.off{background:#D9E2F2}
+.eem-toggle::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.eem-toggle.on::after{transform:translateX(20px)} .eem-toggle.off::after{transform:translateX(0)}
 
-/* Fields */
-.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.field-grid.cols-1{grid-template-columns:1fr}
-.field-grid:last-child{margin-bottom:0}
-.field-group{display:flex;flex-direction:column;gap:5px}
-.field-label{font-size:12.5px;font-weight:600;color:#1d2327}
-.field-label .req{color:#b91c1c;margin-left:2px}
-.field-input,.field-select,.field-textarea{padding:9px 11px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;width:100%;outline:none}
-.field-input:focus,.field-select:focus,.field-textarea:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-.field-input::placeholder,.field-textarea::placeholder{color:#b0b0b0}
-.field-input[readonly]{background:#f3f4f5;color:#50575e}
-.field-select{padding:9px 30px 9px 11px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none}
-.field-textarea{resize:vertical;min-height:80px;line-height:1.55}
-.field-hint{font-size:12.5px;color:#50575e;line-height:1.5}
+/* ── Search ── */
+.eem-search-wrap{position:relative}
+.eem-search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:#8c8f94;pointer-events:none}
+.eem-search-input{width:100%;padding:9px 12px 9px 34px;border:1px solid #8c8f94;border-radius:var(--eem-radius);font-size:13px;font-family:inherit;background:#fff}
+.eem-search-input:focus{border-color:var(--eem-electric);outline:none;box-shadow:0 0 0 1px var(--eem-electric)}
+.eem-search-input::placeholder{color:#8c8f94}
 
-/* Qty control */
-.qty-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #f0f0f1}
-.qty-row:last-child{border-bottom:none}
-.qty-info{flex:1;min-width:0}
-.qty-name{font-size:13.5px;font-weight:600;color:#031B4E}
-.qty-sub{font-size:12px;color:#50575e;margin-top:2px}
-.qty-control{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.qty-btn{width:28px;height:28px;border-radius:50%;border:1px solid #c3c4c7;background:#fff;color:#1668F2;font-size:16px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;font-family:inherit}
-.qty-btn:hover:not(:disabled){border-color:#1668F2;background:#EEF4FF}
-.qty-btn:disabled{cursor:not-allowed;color:#c3c4c7}
-.qty-num{font-size:14px;font-weight:700;color:#031B4E;min-width:28px;text-align:center}
-.auto-pill{font-size:10px;background:#EEF4FF;color:#1668F2;padding:2px 7px;border-radius:8px;font-weight:600;margin-left:6px;letter-spacing:.02em;border:1px solid #c0d8ff}
+/* ── Empty CTA (no reservations state) ── */
+.eem-empty-cta{text-align:center;padding:28px 16px}
+.eem-empty-cta__icon{color:#8c8f94;margin:0 auto 12px}
+.eem-empty-cta__title{font-family:var(--eem-font-display);font-size:15px;font-weight:700;color:var(--eem-navy);margin-bottom:6px}
+.eem-empty-cta__text{font-size:13px;color:var(--eem-text-secondary);margin-bottom:14px;max-width:380px;margin-left:auto;margin-right:auto}
 
-/* ── CUSTOMER SEARCH ── */
-.cs-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
-.cs-header-left{flex:1;min-width:0}
-.cs-header-sub{font-size:12.5px;color:#50575e;line-height:1.45;margin-top:3px}
-.cs-skip{background:#fff;border:1px solid #c3c4c7;color:#1d2327;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:inherit;flex-shrink:0}
-.cs-skip:hover{background:#f6f7f7}
-.cs-input-wrap{position:relative}
-.cs-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:#8c8f94;pointer-events:none}
-.cs-input{width:100%;padding:9px 12px 9px 33px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
-.cs-input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-.cs-input::placeholder{color:#b0b0b0}
-.cs-dropdown{display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #c3c4c7;border-radius:4px;box-shadow:0 8px 24px rgba(3,27,78,.12);z-index:50;max-height:340px;overflow-y:auto}
-.cs-input-wrap.show .cs-dropdown{display:block}
-.cs-result{padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f1}
-.cs-result:last-of-type{border-bottom:none}
-.cs-result:hover{background:#EEF4FF}
-.cs-result-main{font-size:13.5px;font-weight:700;color:#031B4E}
-.cs-result-meta{font-size:11.5px;color:#50575e;margin-top:2px}
-.cs-result-new{padding:10px 14px;cursor:pointer;background:#f3f4f5;border-top:1px solid #dcdcde;font-size:12.5px;color:#1668F2;font-weight:600;text-align:center}
-.cs-result-new:hover{background:#EEF4FF}
-.cs-picked{display:none;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;background:#EEF4FF;border:1px solid #c0d8ff;border-radius:4px}
-.cs-card.has-picked .cs-input-wrap{display:none}
-.cs-card.has-picked .cs-picked{display:flex}
-.cs-picked-name{font-size:13.5px;font-weight:700;color:#031B4E}
-.cs-picked-meta{font-size:11.5px;color:#50575e;margin-top:2px}
-.cs-change{background:#fff;border:1px solid #c3c4c7;color:#1d2327;font-size:12px;font-weight:600;padding:5px 12px;border-radius:4px;cursor:pointer;font-family:inherit;flex-shrink:0}
-.cs-change:hover{background:#f6f7f7}
+/* ════════════════ CREATE-ORDER LAYOUT (.eem-co-*) ════════════════ */
+.eem-co-workspace{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
+.eem-co-main{display:flex;flex-direction:column;gap:14px;min-width:0}
+.eem-co-rail{display:flex;flex-direction:column;gap:14px;position:sticky;top:44px}
 
-/* ── RESERVATION PICKER ── */
-.linked-event{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;background:#EEF4FF;border:1px solid #c0d8ff;border-radius:4px}
-.linked-event-info{flex:1;min-width:0}
-.linked-event-name{font-size:14px;font-weight:700;color:#031B4E}
-.linked-event-dates{font-size:12px;color:#50575e;margin-top:2px}
-.linked-event-change{font-size:12.5px;color:#1668F2;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;background:none;border:none;font-family:inherit;padding:0}
-.linked-event-change:hover{color:#1257d1}
+/* Customer lookup */
+.eem-co-customer-card{overflow:visible;position:relative;z-index:20}
+.eem-co-cs-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.eem-co-cs-header .eem-field-hint{flex:1;min-width:0}
+.eem-co-cs-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #c3c4c7;border-radius:var(--eem-radius);box-shadow:0 8px 24px rgba(3,27,78,.12);z-index:50;max-height:340px;overflow-y:auto}
+.eem-co-cs-result{padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f0f1}
+.eem-co-cs-result:hover{background:var(--eem-info-bg)}
+.eem-co-cs-result-main{font-size:13.5px;font-weight:700;color:var(--eem-navy)}
+.eem-co-cs-result-meta{font-size:11.5px;color:var(--eem-text-secondary);margin-top:2px}
 
-/* ── CUSTOM LINE ITEMS ── */
-.custom-items-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
-.custom-item-row{display:grid;grid-template-columns:1fr 140px 32px;gap:8px;align-items:center}
-.ci-price-wrap{position:relative}
-.ci-currency{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13.5px;font-weight:600;color:#50575e;pointer-events:none}
-.ci-price{padding-left:22px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
-.ci-remove{width:32px;height:32px;background:#fff;border:1px solid #fecaca;color:#b91c1c;border-radius:4px;font-size:18px;font-weight:600;cursor:pointer;line-height:1;font-family:inherit;padding:0;display:flex;align-items:center;justify-content:center}
-.ci-remove:hover{background:#fef2f2;border-color:#b91c1c}
-.btn-add-custom{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;background:#fff;border:1px dashed #1668F2;color:#1668F2;border-radius:4px;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer}
-.btn-add-custom:hover{background:#EEF4FF}
-.btn-add-custom svg{width:13px;height:13px}
+/* Customer picked state — rendered by JS after typeahead selection */
+.eem-co-cs-picked{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;background:var(--eem-info-bg);border:1px solid var(--eem-info-border);border-radius:var(--eem-radius)}
+.eem-co-cs-picked-name{font-size:13.5px;font-weight:700;color:var(--eem-navy)}
+.eem-co-cs-picked-meta{font-size:11.5px;color:var(--eem-text-secondary);margin-top:2px}
 
-/* ── RAIL: ORDER SUMMARY ── */
-.rail-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}
-.rail-head{background:#f3f4f5;padding:13px 18px;border-bottom:1px solid #dcdcde}
-.rail-head-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#031B4E}
-.rail-head-sub{font-size:12px;color:#50575e;margin-top:2px}
-.rail-body{padding:14px 18px}
-.rail-event{font-size:13px;font-weight:600;color:#031B4E;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #f0f0f1}
-.summary-line{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;font-size:13px;padding:7px 0;border-bottom:1px solid #f0f0f1}
-.summary-line:last-of-type{border-bottom:none}
-.summary-line-label{color:#1d2327;flex:1}
-.summary-line-sub{font-size:11.5px;color:#50575e;display:block;margin-top:2px}
-.summary-line-price{font-weight:700;color:#031B4E;white-space:nowrap;font-variant-numeric:tabular-nums}
-.summary-divider{border:none;border-top:1px solid #dcdcde;margin:10px 0}
-.summary-total{display:flex;justify-content:space-between;font-size:16px;font-weight:800;color:#031B4E;font-family:'Space Grotesk',sans-serif}
-.summary-total span:last-child{color:#1668F2}
+/* Reservation picked state — rendered by render_reservation_card_picked() */
+.eem-co-linked-res{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;background:var(--eem-info-bg);border:1px solid var(--eem-info-border);border-radius:var(--eem-radius)}
+.eem-co-linked-res__info{flex:1;min-width:0}
+.eem-co-linked-res__name{font-size:13.5px;font-weight:700;color:var(--eem-navy)}
+.eem-co-linked-res__dates{font-size:11.5px;color:var(--eem-text-secondary);margin-top:2px}
+.eem-co-linked-res__change{font-size:12.5px;font-weight:600;color:var(--eem-electric);white-space:nowrap;flex-shrink:0}
+.eem-co-linked-res__change:hover{color:var(--eem-electric-hover)}
 
-/* Discount affordance */
-.discount-section{margin:8px 0 4px}
-.btn-add-discount{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px dashed #c3c4c7;color:#50575e;padding:7px 12px;border-radius:4px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;width:100%;justify-content:center}
-.btn-add-discount:hover{border-color:#1668F2;color:#1668F2}
-.btn-add-discount svg{width:13px;height:13px}
-.discount-section.open .btn-add-discount{display:none}
-.discount-fields{display:none}
-.discount-section.open .discount-fields{display:block}
-.discount-row{display:grid;grid-template-columns:1fr 120px;gap:8px;margin-bottom:6px}
-.discount-type{font-size:12.5px;padding:7px 8px}
-.discount-value-wrap{position:relative}
-.discount-currency{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12.5px;font-weight:600;color:#50575e}
-.discount-value{padding-left:22px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;font-size:12.5px}
-.discount-reason{font-size:12.5px;width:100%;margin-bottom:6px}
-.discount-applied-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 11px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:4px;font-size:12.5px}
-.discount-applied-label{color:#15803d;font-weight:600;flex:1}
-.discount-applied-value{color:#15803d;font-weight:700;font-variant-numeric:tabular-nums}
-.btn-remove-discount{background:transparent;border:none;color:#b91c1c;font-size:11.5px;font-weight:600;cursor:pointer;padding:0 0 0 6px;font-family:inherit}
-.btn-remove-discount:hover{color:#7f1d1d}
+/* Contact grid */
+.eem-co-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.eem-co-field-grid + .eem-co-field-grid{margin-top:12px}
 
-/* ── PAYMENT CARD ── */
-.payment-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}
-.payment-tabs{display:flex;border-bottom:1px solid #dcdcde;background:#f3f4f5}
-.payment-tab{flex:1;padding:11px 10px;font-size:13px;font-weight:600;color:#50575e;cursor:pointer;text-align:center;border-bottom:3px solid transparent;background:#f3f4f5;border-top:none;border-left:none;border-right:none;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit}
-.payment-tab svg{width:13px;height:13px}
-.payment-tab:hover{color:#031B4E;background:#e9ebec}
-.payment-tab.active{color:#1668F2;border-bottom-color:#1668F2;background:#fff}
-.payment-body{padding:16px 18px}
-.payment-desc{font-size:13px;color:#50575e;line-height:1.55;margin-bottom:14px}
+/* Custom line items */
+.eem-co-custom-list{display:flex;flex-direction:column;gap:8px}
+.eem-co-custom-list:not(:empty){margin-bottom:12px}
+.eem-co-custom-row{display:grid;grid-template-columns:1fr 140px 32px;gap:8px;align-items:center}
+.eem-co-custom-remove{background:transparent;border:1px solid #dcdcde;border-radius:var(--eem-radius);color:#b91c1c;cursor:pointer;width:32px;height:34px;display:inline-flex;align-items:center;justify-content:center;font-size:16px}
+.eem-co-custom-remove:hover{border-color:#b91c1c;background:#fef2f2}
 
-/* Email preview (kept as info-accent per established pattern) */
-.email-preview{background:#F0F4FB;border:1px solid #D9E2F2;border-radius:4px;padding:12px 14px;margin-bottom:14px;font-size:12.5px;color:#1d2327;line-height:1.65}
-.email-preview strong{color:#031B4E;font-weight:600}
-.email-preview em{font-style:italic;color:#031B4E}
+/* Summary card */
+.eem-co-summary-head{background:#f3f4f5}
+.eem-co-summary-event{font-size:11.5px;font-weight:600;color:var(--eem-electric);text-transform:uppercase;letter-spacing:.04em;padding-bottom:8px;border-bottom:1px solid #f0f0f1;margin-bottom:4px}
+.eem-co-summary-line{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;font-size:13px;padding:7px 0;border-bottom:1px solid #f0f0f1}
+.eem-co-summary-line-label{color:var(--eem-text);flex:1}
+.eem-co-summary-line-sub{font-size:11.5px;color:var(--eem-text-secondary);display:block;margin-top:2px}
+.eem-co-summary-line-price{font-weight:700;color:var(--eem-navy);white-space:nowrap;font-variant-numeric:tabular-nums}
+.eem-co-summary-line--discount .eem-co-summary-line-price{color:#15803d}
+.eem-co-summary-line--custom .eem-co-summary-line-label{color:var(--eem-text-secondary)}
+.eem-co-summary-divider{border:none;border-top:1px solid #dcdcde;margin:10px 0}
+.eem-co-summary-total{display:flex;justify-content:space-between;font-size:16px;font-weight:800;color:var(--eem-navy);font-family:var(--eem-font-display)}
+.eem-co-summary-total span:last-child{color:var(--eem-electric)}
 
-.btn-send{width:100%;background:#1668F2;color:#fff;border:1px solid #1668F2;padding:11px;border-radius:4px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
-.btn-send:hover{background:#1257d1;border-color:#1257d1}
-.btn-send svg{width:14px;height:14px;color:#fff}
+/* Discount */
+.eem-co-discount{margin:8px 0 4px}
+.eem-co-discount-add{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px dashed #c3c4c7;color:var(--eem-text-secondary);padding:7px 12px;border-radius:var(--eem-radius);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;width:100%;justify-content:center}
+.eem-co-discount-add:hover{border-color:var(--eem-electric);color:var(--eem-electric)}
+.eem-co-discount-add svg{width:13px;height:13px}
+.eem-co-discount-fields{display:none}
+.eem-co-discount.open .eem-co-discount-add{display:none}
+.eem-co-discount.open .eem-co-discount-fields{display:block}
+.eem-co-discount-row{display:grid;grid-template-columns:1fr 120px;gap:8px;margin-bottom:8px;align-items:stretch}
+.eem-co-discount-type{font-size:12.5px;padding:7px 8px;margin:0}
+.eem-co-discount-value-wrap{position:relative;display:flex}
+.eem-co-discount-currency{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12.5px;font-weight:600;color:var(--eem-text-secondary);pointer-events:none;z-index:1}
+.eem-co-discount-value{flex:1 1 auto;width:100%;margin:0;padding-left:22px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;font-size:12.5px}
+.eem-co-discount-reason{font-size:12.5px;width:100%;margin:0 0 10px}
+.eem-co-discount-applied-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 11px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--eem-radius);font-size:12.5px}
+.eem-co-discount-applied-label{color:#15803d;font-weight:600;flex:1}
+.eem-co-discount-applied-value{color:#15803d;font-weight:700;font-variant-numeric:tabular-nums}
+.eem-co-discount-remove{background:transparent;border:none;color:#b91c1c;font-size:11.5px;font-weight:600;cursor:pointer;padding:0 0 0 6px;font-family:inherit}
+.eem-co-discount-remove:hover{color:#7f1d1d}
 
-.btn-charge{width:100%;background:#1668F2;color:#fff;border:1px solid #1668F2;padding:11px;border-radius:4px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;margin-top:8px}
-.btn-charge:hover{background:#1257d1;border-color:#1257d1}
-.btn-charge svg{width:14px;height:14px;color:#fff}
+/* Payment card + tabs */
+.eem-co-payment-card{overflow:hidden}
+.eem-co-payment-tabs{display:flex;border-bottom:1px solid #dcdcde;background:#f3f4f5}
+.eem-co-payment-tab{flex:1;padding:11px 10px;font-size:13px;font-weight:600;color:var(--eem-text-secondary);cursor:pointer;text-align:center;border:none;border-bottom:3px solid transparent;background:#f3f4f5;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit}
+.eem-co-payment-tab svg{width:13px;height:13px}
+.eem-co-payment-tab:hover{color:var(--eem-navy);background:#e9ebec}
+.eem-co-payment-tab.is-active{color:var(--eem-electric);border-bottom-color:var(--eem-electric);background:#fff}
+.eem-co-btn-block{width:100%;justify-content:center;margin-top:12px}
+.eem-co-open-tab-row{border-top:1px solid var(--eem-border-soft)}
 
-/* Card form */
-.card-input-wrap{position:relative;margin-bottom:10px}
-.card-icons{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;gap:4px}
-.card-icon{width:28px;height:18px;border-radius:3px;border:1px solid #E2E8F0;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:#fff}
-.card-icon.visa{background:#1a1f71}
-.card-icon.mc{background:#eb001b}
-.billing-sub{font-size:12.5px;font-weight:700;color:#031B4E;margin:12px 0 8px;font-family:'Space Grotesk',sans-serif}
-.secure-note{text-align:center;font-size:12px;color:#50575e;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:5px}
-.secure-note svg{width:12px;height:12px;color:#50575e}
-
-/* ── RESPONSIVE ── */
-@media(max-width:1024px){
-  .wp-sidebar{display:none}
-  .wp-content{padding:10px 14px 40px}
-  .workspace{grid-template-columns:1fr}
-  .workspace-rail{position:static;display:grid;grid-template-columns:1fr 1fr;gap:14px;order:-1}
+@media(max-width:980px){
+  .eem-co-workspace{grid-template-columns:1fr}
+  .eem-co-rail{position:static}
 }
-@media(max-width:767px){
-  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
-  .wp-content{padding:8px 10px 32px}
-  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
-  .plugin-header{padding:14px;flex-direction:column;align-items:stretch;gap:8px}
-  .plugin-title{font-size:18px}
-  .create-body{padding:12px 14px}
-  .workspace{grid-template-columns:1fr;gap:12px}
-  .workspace-rail{display:flex;flex-direction:column;order:-1}
-  .field-grid{grid-template-columns:1fr}
-  .form-card-body{padding:14px}
-  .form-card-header{padding:11px 14px}
-  .cs-header{flex-direction:column;align-items:stretch}
-  .cs-skip{align-self:flex-end}
-  .custom-item-row{grid-template-columns:1fr 100px 32px;gap:6px}
-  .discount-row{grid-template-columns:1fr;gap:6px}
+@media(max-width:600px){
+  .eem-co-field-grid{grid-template-columns:1fr}
+  .eem-co-cs-header{flex-direction:column;align-items:stretch}
+  .eem-co-custom-row{grid-template-columns:1fr 100px 32px;gap:6px}
 }
 </style>
 </head>
 <body>
 
-<!-- WP shell stub -->
-<div class="wp-admin-bar">
-  <span>&#9776;</span>
-  <span class="site">My Equestrian Site</span>
-  <span>+ New</span>
-  <span style="margin-left:auto">Howdy, whitney</span>
-</div>
-
+<!-- ── WP ADMIN BAR STUB ── -->
+<div class="wp-admin-bar"><span class="site">en-event-manager.local</span><span>+ New</span></div>
 <div class="wp-body">
   <nav class="wp-sidebar">
-    <div class="wp-sidebar-item">Dashboard</div>
-    <div class="wp-sidebar-item">Media</div>
-    <div class="wp-sidebar-item">Posts</div>
-    <div class="wp-sidebar-item">Pages</div>
-    <div class="wp-sidebar-sep"></div>
     <div class="wp-sidebar-label">Event Manager</div>
+    <div class="wp-sidebar-sub">Dashboard</div>
     <div class="wp-sidebar-sub active">Orders</div>
     <div class="wp-sidebar-sub">Reservations</div>
     <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
     <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sep"></div>
     <div class="wp-sidebar-sub">Settings</div>
   </nav>
 
   <main class="wp-content">
+    <!-- ░░░ PLUGIN RENDER STARTS (EEM_Create_Order_Page::render) ░░░ -->
+    <div class="eem-page">
+      <nav class="eem-breadcrumb" aria-label="Breadcrumb">
+        <a class="eem-breadcrumb-logo" href="#" aria-label="Equine Event Manager dashboard">EQUINE</a>
+        <span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+        <a class="eem-breadcrumb-segment" href="#">Orders</a>
+        <span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+        <span class="eem-breadcrumb-segment" aria-current="page">Create Order</span>
+      </nav>
 
-    <!-- Breadcrumb -->
-    <div class="breadcrumb">
-      <div class="breadcrumb-logo-box">Plugin Logo</div>
-      <span class="breadcrumb-sep">/</span>
-      <span class="breadcrumb-page"><a href="admin.php?page=equine-event-manager-orders">Orders</a></span>
-      <span class="breadcrumb-sep">/</span>
-      <span class="breadcrumb-page">Create Order</span>
-    </div>
+      <div class="eem-page-wrap">
+        <header class="eem-page-header">
+          <h1 class="eem-page-title">Create Order</h1>
+          <p class="eem-page-subtitle">Manually create a new order on behalf of a customer — phone orders, walk-ins, or anything not coming through the customer-facing reservation form.</p>
+        </header>
 
-    <!-- PLUGIN-WRAP -->
-    <div class="plugin-wrap">
+        <div class="eem-page-body">
+          <!--
+            When ?reservation_id=N is NOT set, the outer wrapper is a <form>.
+            When ?reservation_id=N IS set, the wrapper is a <div data-eem-co-has-embed="1">
+            because the embedded [en_reservation] shortcode renders its own <form>
+            and nested forms are invalid HTML.
+            This mockup shows the NON-embedded state (no reservation_id in URL)
+            so the outer wrapper is a <form>.
+          -->
+          <form class="eem-co-workspace" id="eem-create-order-form" method="post" autocomplete="off">
 
-      <header class="plugin-header">
-        <div class="plugin-header-left">
-          <h1 class="plugin-title">Create Order</h1>
-          <div class="plugin-subtitle">Manually create a new order on behalf of a customer — phone orders, walk-ins, or anything not coming through the customer-facing reservation form.</div>
-        </div>
-      </header>
+            <!-- ═══════════ MAIN COLUMN ═══════════ -->
+            <div class="eem-co-main">
 
-      <div class="create-body">
-
-        <div class="workspace">
-
-          <!-- ════ MAIN COLUMN ════ -->
-          <div class="workspace-main">
-
-            <!-- 1. CUSTOMER SEARCH -->
-            <div class="form-card cs-card" id="customer-search">
-              <div class="form-card-header">
-                <div class="form-card-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  Look up customer
-                </div>
-              </div>
-              <div class="form-card-body">
-                <div class="cs-header">
-                  <div class="cs-header-left">
-                    <div class="cs-header-sub">Search by name, email, or phone to autofill contact info. Skip to enter a new customer manually.</div>
+              <!-- ── Card 1: Customer lookup ────────────────────────────────
+                   render_customer_lookup_card()
+                   Initial state: search input visible, picked div hidden.
+                   JS shows .eem-co-cs-picked and hides .eem-co-cs-input-wrap
+                   after the admin selects a result from the typeahead dropdown.
+                   Sample shows PICKED state (Dana Whitfield already selected).
+              ── -->
+              <section class="eem-card eem-co-customer-card" id="eem-co-customer" data-eem-co-customer>
+                <header class="eem-card-header">
+                  <h2 class="eem-card-title">
+                    <svg class="eem-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Look up customer
+                  </h2>
+                </header>
+                <div class="eem-card-body">
+                  <!-- Header row: hint + Skip button -->
+                  <div class="eem-co-cs-header">
+                    <p class="eem-field-hint">Search by name or email to autofill contact info. Skip to enter a new customer manually.</p>
+                    <button type="button" class="eem-btn eem-btn-secondary eem-co-cs-skip" data-eem-action="create-order-skip-customer">Skip — new customer</button>
                   </div>
-                  <button class="cs-skip" onclick="document.getElementById('customer-search').style.display='none'">Skip — new customer</button>
-                </div>
-                <div class="cs-input-wrap">
-                  <svg class="cs-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  <input class="cs-input" placeholder="Start typing a name, email, or phone…" oninput="showCsResults(this.value)">
-                  <div class="cs-dropdown">
-                    <div class="cs-result" onclick="pickCustomer('Whitney Mitchell','whitney@example.com','(555) 234-5678')">
-                      <div class="cs-result-main">Whitney Mitchell</div>
-                      <div class="cs-result-meta">whitney@example.com · (555) 234-5678 · 3 prior orders</div>
-                    </div>
-                    <div class="cs-result" onclick="pickCustomer('Jane Doe','jane@example.com','(555) 555-1212')">
-                      <div class="cs-result-main">Jane Doe</div>
-                      <div class="cs-result-meta">jane@example.com · (555) 555-1212 · 1 prior order</div>
-                    </div>
-                    <div class="cs-result" onclick="pickCustomer('Marcus Trevino','marcus@example.com','(555) 888-2244')">
-                      <div class="cs-result-main">Marcus Trevino</div>
-                      <div class="cs-result-meta">marcus@example.com · (555) 888-2244 · 5 prior orders</div>
-                    </div>
-                    <div class="cs-result-new" onclick="document.getElementById('customer-search').style.display='none'">+ Create new customer — none of these match</div>
-                  </div>
-                </div>
-                <div class="cs-picked">
-                  <div>
-                    <div class="cs-picked-name" id="cs-picked-name">—</div>
-                    <div class="cs-picked-meta" id="cs-picked-meta">—</div>
-                  </div>
-                  <button class="cs-change" onclick="clearCustomer()">Change</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- 2. RESERVATION PICKER -->
-            <div class="form-card">
-              <div class="form-card-header">
-                <div class="form-card-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                  Choose Reservation
-                </div>
-              </div>
-              <div class="form-card-body">
-                <div class="linked-event">
-                  <div class="linked-event-info">
-                    <div class="linked-event-name">Perry, GA — 2026 Southeast Region Super Sort</div>
-                    <div class="linked-event-dates">May 8, 2026 – May 10, 2026</div>
-                  </div>
-                  <button class="linked-event-change">Change</button>
-                </div>
-                <p class="field-hint" style="margin-top:10px">The reservation controls which sections, pricing, and dates are available on this form.</p>
-              </div>
-            </div>
-
-            <!-- 3. CONTACT INFO -->
-            <div class="form-card">
-              <div class="form-card-header">
-                <div class="form-card-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                  Contact Information
-                </div>
-              </div>
-              <div class="form-card-body">
-                <div class="field-grid">
-                  <div class="field-group"><label class="field-label">First Name <span class="req">*</span></label><input class="field-input" placeholder="First name"></div>
-                  <div class="field-group"><label class="field-label">Last Name <span class="req">*</span></label><input class="field-input" placeholder="Last name"></div>
-                </div>
-                <div class="field-grid">
-                  <div class="field-group"><label class="field-label">Email <span class="req">*</span></label><input class="field-input" type="email" placeholder="customer@email.com"></div>
-                  <div class="field-group"><label class="field-label">Phone <span class="req">*</span></label><input class="field-input" type="tel" placeholder="(555) 000-0000"></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 4. STALL RESERVATIONS -->
-            <div class="form-card">
-              <div class="form-card-header">
-                <div class="form-card-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                  Stall Reservations
-                </div>
-                <button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')" aria-label="Toggle Stall Reservations"></button>
-              </div>
-              <div class="form-card-body">
-                <div class="field-grid" style="margin-bottom:14px">
-                  <div class="field-group"><label class="field-label">Rate Type</label><select class="field-select"><option>Nightly</option><option>Weekend</option></select></div>
-                  <div class="field-group"><label class="field-label">Arrival Date <span class="req">*</span></label><select class="field-select"><option>Fri, May 8, 2026</option></select></div>
-                  <div class="field-group"><label class="field-label">Departure Date <span class="req">*</span></label><select class="field-select"><option>Sun, May 10, 2026</option></select></div>
-                  <div class="field-group"><label class="field-label">Nights</label><input class="field-input" value="2 Nights" readonly></div>
-                </div>
-                <div class="qty-row">
-                  <div class="qty-info"><div class="qty-name">Stalls — $1.00/night</div><div class="qty-sub">2 bags of shavings required per stall</div></div>
-                  <div class="qty-control"><button class="qty-btn">−</button><span class="qty-num">2</span><button class="qty-btn">+</button></div>
-                </div>
-                <div class="qty-row" style="opacity:.7">
-                  <div class="qty-info"><div class="qty-name">Required Shavings — $10.00/bag <span class="auto-pill">Auto</span></div><div class="qty-sub">Automatically added · 4 bags</div></div>
-                  <div class="qty-control"><button class="qty-btn" disabled>−</button><span class="qty-num">4</span><button class="qty-btn" disabled>+</button></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 5. RV RESERVATIONS -->
-            <div class="form-card">
-              <div class="form-card-header">
-                <div class="form-card-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-                  RV Reservations
-                </div>
-                <button class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off')" aria-label="Toggle RV Reservations"></button>
-              </div>
-            </div>
-
-            <!-- 6. ADD-ONS -->
-            <div class="form-card">
-              <div class="form-card-header">
-                <div class="form-card-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                  Add-Ons
-                </div>
-                <button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off')" aria-label="Toggle Add-Ons"></button>
-              </div>
-              <div class="form-card-body">
-                <div class="qty-row">
-                  <div class="qty-info"><div class="qty-name">Shavings — $12.00/bag</div><div class="qty-sub">3.5 Cu. Ft.</div></div>
-                  <div class="qty-control"><button class="qty-btn">−</button><span class="qty-num">0</span><button class="qty-btn">+</button></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 7. CUSTOM LINE ITEMS -->
-            <div class="form-card">
-              <div class="form-card-header">
-                <div class="form-card-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Custom Line Items
-                </div>
-              </div>
-              <div class="form-card-body">
-                <p class="field-hint" style="margin-bottom:12px">Add one-off charges not configured on the reservation. Examples: late fee, damage charge, transferred credit. Each appears on the customer's invoice.</p>
-                <div class="custom-items-list" id="custom-items-list">
-                  <div class="custom-item-row">
-                    <input class="field-input" placeholder="Description (e.g. Late arrival fee)" value="Late arrival fee">
-                    <div class="ci-price-wrap">
-                      <span class="ci-currency">$</span>
-                      <input class="field-input ci-price" type="number" step="0.01" value="25.00">
-                    </div>
-                    <button class="ci-remove" onclick="this.closest('.custom-item-row').remove()" aria-label="Remove">×</button>
-                  </div>
-                </div>
-                <button class="btn-add-custom" onclick="addCustomItem()">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Add custom line item
-                </button>
-              </div>
-            </div>
-
-            <!-- 8. GROUP RESERVATION -->
-            <div class="form-card">
-              <div class="form-card-header">
-                <div class="form-card-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-                  Group Reservation
-                </div>
-                <button class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off')" aria-label="Toggle Group Reservation"></button>
-              </div>
-            </div>
-
-            <!-- 9. SPECIAL REQUESTS -->
-            <div class="form-card">
-              <div class="form-card-header">
-                <div class="form-card-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                  Special Requests
-                </div>
-              </div>
-              <div class="form-card-body">
-                <textarea class="field-textarea" placeholder="Any special requests, stall preferences, accessibility needs…"></textarea>
-              </div>
-            </div>
-
-          </div><!-- /workspace-main -->
-
-          <!-- ════ RAIL ════ -->
-          <div class="workspace-rail">
-
-            <!-- Order Summary -->
-            <div class="rail-card">
-              <div class="rail-head">
-                <div class="rail-head-title">Order Summary</div>
-              </div>
-              <div class="rail-body">
-                <div class="rail-event">Perry, GA — 2026 Southeast Region Super Sort</div>
-                <div class="summary-line">
-                  <div class="summary-line-label">Stalls ×2<span class="summary-line-sub">2 nights · Nightly</span></div>
-                  <span class="summary-line-price">$4.00</span>
-                </div>
-                <div class="summary-line">
-                  <div class="summary-line-label">Required Shavings ×4<span class="summary-line-sub">Auto-added · $10/bag</span></div>
-                  <span class="summary-line-price">$40.00</span>
-                </div>
-                <div class="summary-line">
-                  <div class="summary-line-label">Late arrival fee<span class="summary-line-sub">Custom item</span></div>
-                  <span class="summary-line-price">$25.00</span>
-                </div>
-                <div class="discount-section" id="discount-section">
-                  <button class="btn-add-discount" onclick="document.getElementById('discount-section').classList.add('open')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
-                    Apply discount
-                  </button>
-                  <div class="discount-fields">
-                    <div class="discount-row">
-                      <select class="field-select discount-type"><option>Dollar amount ($)</option><option>Percentage (%)</option></select>
-                      <div class="discount-value-wrap">
-                        <span class="discount-currency">$</span>
-                        <input class="field-input discount-value" type="number" step="0.01" value="10.00">
+                  <!-- Search input (hidden once customer picked in real flow; shown here as reference) -->
+                  <div class="eem-search-wrap eem-co-cs-input-wrap" data-eem-co-cs-wrap hidden>
+                    <svg class="eem-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="search" class="eem-search-input eem-co-cs-input" placeholder="Start typing a name or email…" data-eem-input-action="create-order-customer-search" aria-label="Customer search" />
+                    <!-- Typeahead dropdown (shown by JS when results are available) -->
+                    <div class="eem-co-cs-dropdown" data-eem-co-cs-dropdown hidden>
+                      <!-- Sample dropdown results (shown when typing "dana") -->
+                      <div class="eem-co-cs-result">
+                        <div class="eem-co-cs-result-main">Dana Whitfield</div>
+                        <div class="eem-co-cs-result-meta">dana.whitfield@example.com · 3 orders</div>
+                      </div>
+                      <div class="eem-co-cs-result">
+                        <div class="eem-co-cs-result-main">Danae Forrester</div>
+                        <div class="eem-co-cs-result-meta">danae@example.com · 1 order</div>
                       </div>
                     </div>
-                    <input class="field-input discount-reason" placeholder="Reason (required, logged in Activity Log)" value="First-time customer discount">
-                    <div class="discount-applied-row">
-                      <span class="discount-applied-label">Discount applied</span>
-                      <span class="discount-applied-value">−$10.00</span>
-                      <button class="btn-remove-discount" onclick="document.getElementById('discount-section').classList.remove('open')">Remove</button>
+                  </div>
+                  <!-- Picked state — shown by JS after typeahead selection -->
+                  <div class="eem-co-cs-picked" data-eem-co-cs-picked>
+                    <div>
+                      <div class="eem-co-cs-picked-name" data-eem-co-cs-picked-name>Dana Whitfield</div>
+                      <div class="eem-co-cs-picked-meta" data-eem-co-cs-picked-meta>dana.whitfield@example.com · (605) 555-0142</div>
+                    </div>
+                    <button type="button" class="eem-btn eem-btn-secondary" data-eem-action="create-order-change-customer">Change</button>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ── Card 2: Reservation picker ──────────────────────────────
+                   render_reservation_card() — shows a <select> with published reservations.
+                   render_reservation_card_picked() — shows when ?reservation_id=N is set;
+                   renders .eem-co-linked-res pill with title, dates, and a Change link.
+                   Sample shows the PICKED state (NTR 6519 selected).
+              ── -->
+              <section class="eem-card" id="eem-co-reservation">
+                <header class="eem-card-header">
+                  <h2 class="eem-card-title">
+                    <svg class="eem-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    Choose Reservation
+                  </h2>
+                </header>
+                <div class="eem-card-body">
+                  <!--
+                    PICKED STATE (render_reservation_card_picked).
+                    .eem-co-linked-res / __info / __name / __dates / __change
+                    are the actual PHP-rendered class names.
+                    "Change" is an <a> href back to the base Create Order URL.
+                  -->
+                  <div class="eem-co-linked-res">
+                    <div class="eem-co-linked-res__info">
+                      <div class="eem-co-linked-res__name">NTR- Rapid City, SD</div>
+                      <div class="eem-co-linked-res__dates">2026-08-14 – 2026-08-16</div>
+                    </div>
+                    <a href="#" class="eem-co-linked-res__change">Change</a>
+                  </div>
+                  <p class="eem-field-hint" style="margin-top:8px">The reservation controls which sections, pricing, and dates are available on this form.</p>
+                </div>
+              </section>
+
+              <!--
+                ALTERNATE: Reservation picker — SELECT state (no reservation chosen).
+                Shown when no ?reservation_id= param is in the URL.
+                Uncomment this block and comment out the picked state above to show this view.
+              -->
+              <!--
+              <section class="eem-card" id="eem-co-reservation">
+                <header class="eem-card-header">
+                  <h2 class="eem-card-title">…Choose Reservation…</h2>
+                </header>
+                <div class="eem-card-body">
+                  <label class="eem-field-label" for="eem-co-reservation-select">Reservation <span class="eem-req">*</span></label>
+                  <select class="eem-field-select" id="eem-co-reservation-select" name="reservation_id" data-eem-input-action="create-order-reservation">
+                    <option value="">Select a reservation…</option>
+                    <option value="6519" data-dates="2026-08-14 – 2026-08-16">NTR- Rapid City, SD (2026-08-14 – 2026-08-16)</option>
+                    <option value="5990" data-dates="2026-06-26 – 2026-06-28">2026 Southeast Region Super Sort (2026-06-26 – 2026-06-28)</option>
+                  </select>
+                  <p class="eem-field-hint" style="margin-top:8px">The reservation controls which sections, pricing, and dates are available on this form.</p>
+                </div>
+              </section>
+              -->
+
+              <!-- ── Card 3: Contact Information ─────────────────────────────
+                   render_contact_card()
+                   All four fields carry data-eem-co-contact="..." attributes so JS
+                   can autofill them from the customer typeahead result.
+                   Sample shows fields populated from Dana Whitfield's record.
+              ── -->
+              <section class="eem-card" id="eem-co-contact">
+                <header class="eem-card-header">
+                  <h2 class="eem-card-title">
+                    <svg class="eem-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Contact Information
+                  </h2>
+                </header>
+                <div class="eem-card-body">
+                  <div class="eem-co-field-grid">
+                    <div class="eem-field-group">
+                      <label class="eem-field-label">First Name <span class="eem-req">*</span></label>
+                      <input class="eem-field-input" type="text" name="first_name" data-eem-co-contact="first_name" value="Dana" placeholder="First name" />
+                    </div>
+                    <div class="eem-field-group">
+                      <label class="eem-field-label">Last Name <span class="eem-req">*</span></label>
+                      <input class="eem-field-input" type="text" name="last_name" data-eem-co-contact="last_name" value="Whitfield" placeholder="Last name" />
+                    </div>
+                  </div>
+                  <div class="eem-co-field-grid">
+                    <div class="eem-field-group">
+                      <label class="eem-field-label">Email <span class="eem-req">*</span></label>
+                      <input class="eem-field-input" type="email" name="email" data-eem-co-contact="email" value="dana.whitfield@example.com" placeholder="customer@email.com" />
+                    </div>
+                    <div class="eem-field-group">
+                      <label class="eem-field-label">Phone <span class="eem-req">*</span></label>
+                      <input class="eem-field-input" type="tel" name="phone" data-eem-co-contact="phone" value="(605) 555-0142" placeholder="(555) 000-0000" />
                     </div>
                   </div>
                 </div>
-                <hr class="summary-divider">
-                <div class="summary-total"><span>Total</span><span>$59.00</span></div>
-              </div>
-            </div>
+              </section>
 
-            <!-- Payment -->
-            <div class="payment-card">
-              <div class="payment-tabs">
-                <button class="payment-tab active" data-tab="link" onclick="showPaymentTab('link')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                  Send Link
-                </button>
-                <button class="payment-tab" data-tab="charge" onclick="showPaymentTab('charge')">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                  Charge Card
-                </button>
-              </div>
-
-              <!-- Send Link -->
-              <div class="payment-body payment-panel" id="pay-link">
-                <p class="payment-desc">Email the customer a secure link to pay their balance online. No card details needed here.</p>
-                <label class="field-label" style="display:block;margin-bottom:5px">Personal message <span style="color:#50575e;font-weight:400">(optional)</span></label>
-                <textarea class="field-textarea" id="invoice-msg" placeholder="Add a personal note that will appear in the email body…" style="min-height:60px;margin-bottom:12px">Thanks for your phone order — your reservation is locked in. Pay at your convenience using the secure link below.</textarea>
-                <div class="email-preview">
-                  <strong>To:</strong> customer@email.com<br>
-                  <strong>Subject:</strong> Your reservation for 2026 SE Region Super Sort<br><br>
-                  Hi Whitney,<br><br>
-                  <em id="email-preview-msg">Thanks for your phone order — your reservation is locked in. Pay at your convenience using the secure link below.</em><br><br>
-                  <strong>Balance due: $59.00</strong>
+              <!-- ── Cards 4–7: Reservation-driven section stubs ─────────────
+                   render_section_card_stub() — rendered when no ?reservation_id=N.
+                   When a reservation IS embedded (?reservation_id=N), render_embedded_sections()
+                   replaces these four cards with the full [en_reservation] shortcode output
+                   wrapped in <div class="eem-co-form-embed eem-event-page">.
+                   Toggle buttons carry data-eem-action="create-order-toggle-section".
+              ── -->
+              <section class="eem-card eem-co-section-card" data-eem-co-section="stall">
+                <header class="eem-card-header">
+                  <h2 class="eem-card-title">
+                    <svg class="eem-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                    Stall Reservations
+                  </h2>
+                  <button type="button" class="eem-toggle on" role="switch" aria-checked="true" data-eem-action="create-order-toggle-section" aria-label="Toggle Stall Reservations"></button>
+                </header>
+                <div class="eem-card-body eem-co-section-body">
+                  <p class="eem-field-hint eem-co-section-placeholder">Configured from the selected reservation. Choose a reservation above to load this section.</p>
                 </div>
-                <button class="btn-send">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                  Send Payment Link
-                </button>
-              </div>
+              </section>
 
-              <!-- Charge Card -->
-              <div class="payment-body payment-panel" id="pay-charge" style="display:none">
-                <p class="payment-desc">Enter the customer's card details to charge them directly. Use only when the customer has provided their card in person or by phone.</p>
-                <div class="card-input-wrap">
-                  <input class="field-input" placeholder="1234 1234 1234 1234" style="padding-right:80px">
-                  <div class="card-icons"><div class="card-icon visa">VISA</div><div class="card-icon mc">MC</div></div>
+              <section class="eem-card eem-co-section-card" data-eem-co-section="rv">
+                <header class="eem-card-header">
+                  <h2 class="eem-card-title">
+                    <svg class="eem-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    RV Reservations
+                  </h2>
+                  <button type="button" class="eem-toggle off" role="switch" aria-checked="false" data-eem-action="create-order-toggle-section" aria-label="Toggle RV Reservations"></button>
+                </header>
+                <div class="eem-card-body eem-co-section-body" hidden>
+                  <p class="eem-field-hint eem-co-section-placeholder">Configured from the selected reservation. Choose a reservation above to load this section.</p>
                 </div>
-                <div class="field-grid" style="margin-bottom:10px">
-                  <div class="field-group"><label class="field-label">Expiry <span class="req">*</span></label><input class="field-input" placeholder="MM / YY"></div>
-                  <div class="field-group"><label class="field-label">CVC <span class="req">*</span></label><input class="field-input" placeholder="CVC"></div>
+              </section>
+
+              <section class="eem-card eem-co-section-card" data-eem-co-section="addons">
+                <header class="eem-card-header">
+                  <h2 class="eem-card-title">
+                    <svg class="eem-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                    Add-Ons
+                  </h2>
+                  <button type="button" class="eem-toggle on" role="switch" aria-checked="true" data-eem-action="create-order-toggle-section" aria-label="Toggle Add-Ons"></button>
+                </header>
+                <div class="eem-card-body eem-co-section-body">
+                  <p class="eem-field-hint eem-co-section-placeholder">Configured from the selected reservation. Choose a reservation above to load this section.</p>
                 </div>
-                <div class="billing-sub">Billing Address</div>
-                <div class="field-group" style="margin-bottom:8px"><input class="field-input" placeholder="Name on card"></div>
-                <div class="field-group" style="margin-bottom:8px"><input class="field-input" placeholder="Address"></div>
-                <div class="field-grid" style="margin-bottom:0">
-                  <div class="field-group"><input class="field-input" placeholder="City"></div>
-                  <div class="field-group"><input class="field-input" placeholder="ZIP"></div>
+              </section>
+
+              <section class="eem-card eem-co-section-card" data-eem-co-section="group">
+                <header class="eem-card-header">
+                  <h2 class="eem-card-title">
+                    <svg class="eem-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                    Group Reservation
+                  </h2>
+                  <button type="button" class="eem-toggle off" role="switch" aria-checked="false" data-eem-action="create-order-toggle-section" aria-label="Toggle Group Reservation"></button>
+                </header>
+                <div class="eem-card-body eem-co-section-body" hidden>
+                  <p class="eem-field-hint eem-co-section-placeholder">Configured from the selected reservation. Choose a reservation above to load this section.</p>
                 </div>
-                <button class="btn-charge">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                  Charge $59.00
-                </button>
-                <div class="secure-note">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-                  Secured by Stripe
+              </section>
+
+              <!-- ── Card 8: Custom Line Items ──────────────────────────────
+                   render_custom_items_card()
+                   POST field names: custom_item_desc[] / custom_item_amount[]
+                   (parallel arrays — NOT custom_desc[] / custom_amount[]).
+                   .eem-co-custom-list starts EMPTY in real render; JS adds rows.
+                   Sample shows two JS-added rows.
+              ── -->
+              <section class="eem-card" id="eem-co-custom-items">
+                <header class="eem-card-header">
+                  <h2 class="eem-card-title">
+                    <svg class="eem-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Custom Line Items
+                  </h2>
+                </header>
+                <div class="eem-card-body">
+                  <p class="eem-field-hint" style="margin-bottom:12px">Add one-off charges not configured on the reservation. Examples: late fee, damage charge, transferred credit. Each appears on the customer&#8217;s invoice.</p>
+                  <!-- data-eem-co-custom-list: JS appends rows here; empty in server render -->
+                  <div class="eem-co-custom-list" data-eem-co-custom-list>
+                    <!-- Sample row 1 (JS-added) -->
+                    <div class="eem-co-custom-row">
+                      <input class="eem-field-input" type="text" name="custom_item_desc[]" value="Late stall request fee" placeholder="Description" />
+                      <input class="eem-field-input" type="number" step="0.01" name="custom_item_amount[]" value="25.00" placeholder="0.00" style="text-align:right" />
+                      <button type="button" class="eem-co-custom-remove" aria-label="Remove line item">&times;</button>
+                    </div>
+                    <!-- Sample row 2 (JS-added): negative amount = credit -->
+                    <div class="eem-co-custom-row">
+                      <input class="eem-field-input" type="text" name="custom_item_desc[]" value="Transferred credit (2025 event)" placeholder="Description" />
+                      <input class="eem-field-input" type="number" step="0.01" name="custom_item_amount[]" value="-40.00" placeholder="0.00" style="text-align:right" />
+                      <button type="button" class="eem-co-custom-remove" aria-label="Remove line item">&times;</button>
+                    </div>
+                  </div>
+                  <button type="button" class="eem-btn-add" data-eem-action="create-order-add-custom-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add custom line item
+                  </button>
                 </div>
-              </div>
-            </div>
+              </section>
 
-          </div><!-- /workspace-rail -->
+              <!-- ── Card 9: Special Requests ───────────────────────────────
+                   render_special_requests_card()
+                   textarea starts empty in real render.
+              ── -->
+              <section class="eem-card" id="eem-co-special">
+                <header class="eem-card-header">
+                  <h2 class="eem-card-title">
+                    <svg class="eem-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    Special Requests
+                  </h2>
+                </header>
+                <div class="eem-card-body">
+                  <textarea class="eem-field-textarea" name="notes" rows="3" placeholder="Any special requests, stall preferences, accessibility needs…"></textarea>
+                </div>
+              </section>
 
-        </div><!-- /workspace -->
+            </div><!-- /.eem-co-main -->
 
-      </div><!-- /create-body -->
+            <!-- ═══════════ RIGHT RAIL ═══════════ -->
+            <aside class="eem-co-rail">
 
-    </div><!-- /plugin-wrap -->
+              <!-- ── Rail: Order Summary ──────────────────────────────────────
+                   render_summary_card()
+                   Initial render: .eem-co-summary-lines contains only the empty-hint
+                   paragraph (data-eem-co-summary-empty). JS from the pricing engine
+                   (coSyncTotals) populates summary lines and hides the empty hint.
+                   Sample shows a populated state (JS has synced from reservation form).
+                   Note: .eem-co-summary-event is only rendered when $embedded_title !== ''.
+              ── -->
+              <section class="eem-card eem-co-summary-card">
+                <header class="eem-card-header eem-co-summary-head">
+                  <h2 class="eem-card-title">Order Summary</h2>
+                </header>
+                <div class="eem-card-body">
+                  <div class="eem-co-summary-lines" data-eem-co-summary-lines>
+                    <!-- .eem-co-summary-event: rendered when reservation is embedded -->
+                    <div class="eem-co-summary-event" data-eem-co-summary-event>NTR- Rapid City, SD</div>
+                    <!-- Empty hint (hidden by JS once lines are synced) -->
+                    <p class="eem-field-hint" data-eem-co-summary-empty hidden>Select a reservation and add items to build the order.</p>
+                    <!-- Lines below are JS-synced from the embedded pricing engine -->
+                    <div class="eem-co-summary-line">
+                      <span class="eem-co-summary-line-label">Stall Reservations
+                        <span class="eem-co-summary-line-sub">4 stalls × $45.00/night × 2 nights</span>
+                      </span>
+                      <span class="eem-co-summary-line-price">$360.00</span>
+                    </div>
+                    <div class="eem-co-summary-line">
+                      <span class="eem-co-summary-line-label">Add-Ons
+                        <span class="eem-co-summary-line-sub">Shavings × 3</span>
+                      </span>
+                      <span class="eem-co-summary-line-price">$27.00</span>
+                    </div>
+                    <div class="eem-co-summary-line eem-co-summary-line--custom">
+                      <span class="eem-co-summary-line-label">Late stall request fee</span>
+                      <span class="eem-co-summary-line-price">$25.00</span>
+                    </div>
+                    <div class="eem-co-summary-line eem-co-summary-line--custom">
+                      <span class="eem-co-summary-line-label">Transferred credit (2025 event)</span>
+                      <span class="eem-co-summary-line-price">&minus;$40.00</span>
+                    </div>
+                    <div class="eem-co-summary-line">
+                      <span class="eem-co-summary-line-label">Convenience fee</span>
+                      <span class="eem-co-summary-line-price">$9.72</span>
+                    </div>
+                  </div>
 
+                  <!-- Discount control
+                       data-eem-co-discount: root; JS adds .open class to reveal fields.
+                       .eem-co-discount-add: "Apply discount" button (hidden when .open).
+                       .eem-co-discount-fields: revealed when .open.
+                       data-eem-co-discount-symbol: JS swaps $ ↔ % based on select.
+                       data-eem-co-discount-applied: hidden initially; shown after apply.
+                       Sample shows discount fields OPEN but not yet applied.
+                  -->
+                  <div class="eem-co-discount open" data-eem-co-discount>
+                    <button type="button" class="eem-co-discount-add" data-eem-action="create-order-add-discount">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+                      Apply discount
+                    </button>
+                    <div class="eem-co-discount-fields" data-eem-co-discount-fields>
+                      <div class="eem-co-discount-row">
+                        <select class="eem-field-select eem-co-discount-type" name="eem_discount_type" data-eem-co-discount-type>
+                          <option value="dollar">Dollar amount ($)</option>
+                          <option value="percent" selected>Percentage (%)</option>
+                        </select>
+                        <div class="eem-co-discount-value-wrap">
+                          <!-- data-eem-co-discount-symbol: JS updates to $ or % -->
+                          <span class="eem-co-discount-currency" data-eem-co-discount-symbol>%</span>
+                          <input class="eem-field-input eem-co-discount-value" type="number" step="0.01" min="0" name="eem_discount_value" value="10" data-eem-co-discount-value />
+                        </div>
+                      </div>
+                      <input class="eem-field-input eem-co-discount-reason" type="text" name="eem_discount_reason" value="Returning customer" placeholder="Reason (required, logged in Activity Log)" data-eem-co-discount-reason />
+                      <!-- Applied confirmation row — shown by JS after discount is confirmed -->
+                      <div class="eem-co-discount-applied-row" data-eem-co-discount-applied hidden>
+                        <span class="eem-co-discount-applied-label">Discount applied</span>
+                        <span class="eem-co-discount-applied-value" data-eem-co-discount-applied-value>&minus;$0.00</span>
+                        <button type="button" class="eem-co-discount-remove" data-eem-action="create-order-remove-discount">Remove</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <hr class="eem-co-summary-divider" />
+                  <div class="eem-co-summary-total">
+                    <span>Total</span>
+                    <span data-eem-co-summary-total>$381.72</span>
+                  </div>
+                </div>
+              </section>
+
+              <!-- ── Rail: Payment hand-off ──────────────────────────────────
+                   render_payment_card()
+                   Two tabs: "Send Link" and "Charge Card".
+                   All three action buttons start DISABLED (no reservation + no order yet).
+                   JS enables them once a valid order can be submitted.
+                   "Open Tab" saves without email/charge.
+                   data-eem-action attributes on all interactive elements.
+              ── -->
+              <section class="eem-card eem-co-payment-card">
+                <div class="eem-co-payment-tabs" role="tablist">
+                  <button type="button" class="eem-co-payment-tab is-active" data-eem-action="create-order-payment-tab" data-tab="link" role="tab" aria-selected="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                    Send Link
+                  </button>
+                  <button type="button" class="eem-co-payment-tab" data-eem-action="create-order-payment-tab" data-tab="charge" role="tab" aria-selected="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                    Charge Card
+                  </button>
+                </div>
+
+                <!-- Send Link panel (active tab) -->
+                <div class="eem-card-body eem-co-payment-panel" data-eem-co-payment-panel="link">
+                  <p class="eem-field-hint">Email the customer a secure link to pay their balance online. No card details needed here.</p>
+                  <label class="eem-field-label" for="eem-co-invoice-msg" style="display:block;margin:10px 0 5px">Personal message <span class="eem-field-optional">(optional)</span></label>
+                  <textarea class="eem-field-textarea" id="eem-co-invoice-msg" name="invoice_message" rows="2" placeholder="Add a personal note that will appear in the email body…"></textarea>
+                  <!-- Enabled after reservation chosen + required fields filled -->
+                  <button type="button" class="eem-btn eem-btn-electric eem-co-btn-block" data-eem-action="create-order-send-link">
+                    <svg class="eem-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    Send Payment Link
+                  </button>
+                </div>
+
+                <!-- Charge Card panel -->
+                <div class="eem-card-body eem-co-payment-panel" data-eem-co-payment-panel="charge" hidden>
+                  <p class="eem-field-hint">Creates the order, then takes you to the secured Collect Payment page to enter the card.</p>
+                  <button type="button" class="eem-btn eem-btn-electric eem-co-btn-block" data-eem-action="create-order-charge">
+                    <svg class="eem-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                    Create Order &amp; Collect Payment
+                  </button>
+                </div>
+
+                <!-- Open Tab row (always visible below tabs) -->
+                <div class="eem-card-body eem-co-open-tab-row">
+                  <button type="button" class="eem-btn eem-btn-ghost eem-co-btn-block" data-eem-action="create-order-open-tab">
+                    Save as Open Tab
+                  </button>
+                  <p class="eem-field-hint" style="margin-top:8px">Saves an unpaid order to finish later — nothing is emailed or charged. Send the invoice or collect payment from the order page anytime.</p>
+                </div>
+              </section>
+
+            </aside><!-- /.eem-co-rail -->
+
+          </form>
+        </div><!-- /.eem-page-body -->
+      </div><!-- /.eem-page-wrap -->
+    </div><!-- /.eem-page -->
   </main>
 </div>
 
 <script>
-function showCsResults(val){
-  const wrap = document.querySelector('.cs-input-wrap');
-  if (val && val.length > 0) wrap.classList.add('show');
-  else wrap.classList.remove('show');
-}
-function pickCustomer(name, email, phone){
-  const card = document.getElementById('customer-search');
-  document.getElementById('cs-picked-name').textContent = name;
-  document.getElementById('cs-picked-meta').textContent = email + ' · ' + phone;
-  card.classList.add('has-picked');
-  document.querySelector('.cs-input-wrap').classList.remove('show');
-  // Autofill Contact Info
-  const parts = name.split(' ');
-  const contactInputs = document.querySelectorAll('.field-input');
-  // Find the Contact Information inputs (First, Last, Email, Phone) by their position after the customer search section
-  let firstNameInput = null;
-  document.querySelectorAll('.field-input').forEach((input) => {
-    if (input.placeholder === 'First name' && !firstNameInput) firstNameInput = input;
-  });
-  if (firstNameInput){
-    const fields = document.querySelectorAll('.field-input');
-    let foundFirst = false;
-    let i = 0;
-    for (let j=0; j<fields.length; j++){
-      if (fields[j] === firstNameInput) { foundFirst = true; }
-      if (foundFirst){
-        if (i === 0) fields[j].value = parts[0] || '';
-        else if (i === 1) fields[j].value = parts.slice(1).join(' ');
-        else if (i === 2) fields[j].value = email;
-        else if (i === 3) fields[j].value = phone;
-        i++;
-        if (i > 3) break;
-      }
-    }
+// Minimal interactivity to make the mockup explorable.
+document.addEventListener('click', function (e) {
+  // Section enable toggles
+  var tog = e.target.closest('.eem-toggle');
+  if (tog) {
+    var on = tog.classList.toggle('on');
+    tog.classList.toggle('off', !on);
+    tog.setAttribute('aria-checked', on ? 'true' : 'false');
+    var body = tog.closest('.eem-co-section-card').querySelector('.eem-co-section-body');
+    if (body) body.hidden = !on;
+    return;
   }
-}
-function clearCustomer(){
-  document.getElementById('customer-search').classList.remove('has-picked');
-  document.querySelector('.cs-input').value = '';
-}
-function addCustomItem(){
-  const list = document.getElementById('custom-items-list');
-  const row = document.createElement('div');
-  row.className = 'custom-item-row';
-  row.innerHTML = '<input class="field-input" placeholder="Description (e.g. Late arrival fee)">' +
-    '<div class="ci-price-wrap"><span class="ci-currency">$</span><input class="field-input ci-price" type="number" step="0.01" placeholder="0.00"></div>' +
-    '<button class="ci-remove" onclick="this.closest(\'.custom-item-row\').remove()" aria-label="Remove">×</button>';
-  list.appendChild(row);
-}
-function showPaymentTab(tab){
-  document.querySelectorAll('.payment-panel').forEach(p => p.style.display = 'none');
-  document.querySelectorAll('.payment-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-  document.getElementById('pay-' + tab).style.display = 'block';
-}
-// Sync invoice message into email preview
-document.addEventListener('DOMContentLoaded', function(){
-  const msgInput = document.getElementById('invoice-msg');
-  const msgPreview = document.getElementById('email-preview-msg');
-  if (msgInput && msgPreview){
-    msgInput.addEventListener('input', function(){
-      msgPreview.textContent = msgInput.value || '(no personal message)';
+  // Payment tab switch
+  var tab = e.target.closest('.eem-co-payment-tab');
+  if (tab) {
+    var card = tab.closest('.eem-co-payment-card');
+    card.querySelectorAll('.eem-co-payment-tab').forEach(function (t) {
+      var active = t === tab;
+      t.classList.toggle('is-active', active);
+      t.setAttribute('aria-selected', active ? 'true' : 'false');
     });
+    card.querySelectorAll('[data-eem-co-payment-panel]').forEach(function (p) {
+      p.hidden = p.getAttribute('data-eem-co-payment-panel') !== tab.dataset.tab;
+    });
+    return;
+  }
+  // Apply discount: reveal fields
+  var discBtn = e.target.closest('.eem-co-discount-add');
+  if (discBtn) { discBtn.closest('.eem-co-discount').classList.add('open'); return; }
+  // Remove discount: collapse fields
+  var rmDisc = e.target.closest('.eem-co-discount-remove');
+  if (rmDisc) { rmDisc.closest('.eem-co-discount').classList.remove('open'); return; }
+  // Remove custom line item row
+  var rmItem = e.target.closest('.eem-co-custom-remove');
+  if (rmItem) { rmItem.closest('.eem-co-custom-row').remove(); return; }
+  // Add custom line item row
+  var addBtn = e.target.closest('[data-eem-action="create-order-add-custom-item"]');
+  if (addBtn) {
+    var list = document.querySelector('[data-eem-co-custom-list]');
+    var row = document.createElement('div');
+    row.className = 'eem-co-custom-row';
+    row.innerHTML = '<input class="eem-field-input" type="text" name="custom_item_desc[]" placeholder="Description" />'
+      + '<input class="eem-field-input" type="number" step="0.01" name="custom_item_amount[]" placeholder="0.00" style="text-align:right" />'
+      + '<button type="button" class="eem-co-custom-remove" aria-label="Remove line item">&times;</button>';
+    list.appendChild(row);
+    return;
+  }
+  // Change customer: show search, hide picked
+  var chgCustomer = e.target.closest('[data-eem-action="create-order-change-customer"]');
+  if (chgCustomer) {
+    var section = chgCustomer.closest('[data-eem-co-customer]');
+    section.querySelector('[data-eem-co-cs-picked]').hidden = true;
+    section.querySelector('[data-eem-co-cs-wrap]').hidden = false;
+    return;
+  }
+  // Skip — new customer: hide picked + search
+  var skip = e.target.closest('[data-eem-action="create-order-skip-customer"]');
+  if (skip) {
+    var sec = skip.closest('[data-eem-co-customer]');
+    sec.querySelector('[data-eem-co-cs-picked]').hidden = true;
+    sec.querySelector('[data-eem-co-cs-wrap]').hidden = true;
+    return;
   }
 });
-</script>
 
+// Discount type ↔ symbol
+var discType = document.querySelector('[data-eem-co-discount-type]');
+var discSymbol = document.querySelector('[data-eem-co-discount-symbol]');
+if (discType && discSymbol) {
+  discType.addEventListener('change', function () {
+    discSymbol.textContent = discType.value === 'percent' ? '%' : '$';
+  });
+}
+</script>
 </body>
 </html>

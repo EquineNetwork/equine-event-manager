@@ -6,633 +6,634 @@
 <title>Equine Event Manager – Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Dashboard – admin page (admin.php?page=equine-event-manager-dashboard)
+   Render entry: EEM_Dashboard_Page::render() (admin/class-eem-dashboard-page.php)
+   Curated mockup reflecting the LIVE page as of 2026-06-20. All eem-dashboard-*
+   values pulled verbatim from assets/css/admin.css. Brand tokens: electric
+   #1668F2, navy #031B4E, control border #8c8f94, light-blue band #f0f4fb /
+   #d9e2f2, radius 3px.
+   Layout: header card (page-wrap) on top with optional setup checklist inside;
+   floating cards on gray background below in 1fr + 340px grid (main + side).
+   Sidebar order (main): Attention → Upcoming Reservations → Recent Orders.
+   Sidebar order (side): Quick Actions → Today's Movement → Facility →
+   [Add-Ons if offered] → [Entries if enabled] → [Sheets if enabled] → This Week.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root{
+  --eem-navy:#031B4E; --eem-electric:#1668F2; --eem-electric-hover:#1355cc;
+  --eem-surface:#FFFFFF; --eem-border:#D9E2F2; --eem-border-soft:#f0f0f1;
+  --eem-control-border:#8c8f94; --eem-text:#1d2327; --eem-text-secondary:#6B7A99;
+  --eem-text-muted:#8c8f94; --eem-info-bg:#EEF4FF;
+  --eem-type-stall-bg:#EEF4FF; --eem-type-stall-text:#1668F2; --eem-type-stall-border:#c0d8ff;
+  --eem-type-rv-bg:#F5F3FF; --eem-type-rv-text:#6d28d9; --eem-type-rv-border:#ddd6fe;
+  --eem-type-addon-bg:#FFF7ED; --eem-type-addon-text:#c2410c; --eem-type-addon-border:#fed7aa;
+  --eem-type-group-bg:#F0FDF4; --eem-type-group-text:#15803d; --eem-type-group-border:#bbf7d0;
+  --eem-badge-green-bg:#F0FDF4; --eem-badge-green-text:#15803d; --eem-badge-green-border:#bbf7d0;
+  --eem-badge-amber-bg:#FFFBEB; --eem-badge-amber-text:#b45309; --eem-badge-amber-border:#fde68a;
+  --eem-font-display:'Space Grotesk',system-ui,sans-serif;
+  --eem-font-ui:'IBM Plex Sans',system-ui,sans-serif;
+  --eem-radius-sm:2px; --eem-radius:3px; --eem-radius-lg:6px;
+  --eem-select-height:38px;
+  --eem-focus-ring:0 0 0 2px rgba(22,104,242,0.1);
+  --eem-space-2:8px; --eem-space-3:12px;
+  --eem-border-card-rule:1px solid #c3c4c7;
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+body{font-family:var(--eem-font-ui);background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
 svg{flex-shrink:0}
-
-/* Universal hover convention */
-a{text-decoration:none;color:inherit}
+a{text-decoration:none}
 a:hover{text-decoration:none}
 
-/* ── WP SHELL ── */
+/* ── WP ADMIN SHELL STUB ── */
 .wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
 .wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
 .wp-admin-bar span.site{color:#fff;font-weight:600}
 .wp-body{display:flex;flex:1}
 .wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
-.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
-.wp-sidebar-item:hover{background:#2c3338;color:#fff}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer}
 .wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
 .wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
 .wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
-.wp-sidebar-sub:hover{color:#fff}
 .wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+.wp-content{flex:1;padding:12px 20px 40px;min-width:0;background:#f0f0f1}
 
-/* ── CONTENT ── */
-.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
-.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
-.breadcrumb-sep{font-size:13px;color:#8c8f94}
-.breadcrumb-page{font-size:13px;color:#50575e}
+/* ── PAGE SHELL ── */
+.eem-page{display:block;max-width:1200px}
+.eem-breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.eem-breadcrumb-logo{display:inline-flex;align-items:center;flex-shrink:0}
+.eem-breadcrumb-logo-box{height:34px;padding:0 14px;background:#031B4E;color:#fff;border-radius:4px;display:flex;align-items:center;font-family:var(--eem-font-display);font-weight:700;font-size:14px;letter-spacing:.04em}
+.eem-breadcrumb-sep{font-size:13px;color:#8c8f94}
+.eem-breadcrumb-segment{font-size:13px;color:#031B4E;font-weight:600}
 
-/* ── PLUGIN-WRAP ── */
-.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
-.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.plugin-header-left{flex:1;min-width:0}
-.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
-.plugin-subtitle{font-size:13px;color:#50575e;line-height:1.45}
-.plugin-header-actions{display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0}
-.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#1668F2;color:#fff;border:1px solid #1668F2;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
-.btn-primary:hover{background:#1257d1;border-color:#1257d1;color:#fff}
-.btn-primary svg{width:13px;height:13px;color:#fff}
-.btn-ghost{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;background:#fff;color:#1d2327;border:1px solid #c3c4c7;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap}
-.btn-ghost:hover{background:#f6f7f7;border-color:#1668F2;color:#1668F2}
-.btn-ghost svg{width:13px;height:13px}
+.eem-page-wrap{background:var(--eem-surface);border:var(--eem-border-card-rule);border-radius:var(--eem-radius);overflow:hidden}
+.eem-page-header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:var(--eem-space-3);flex-wrap:wrap}
+.eem-page-header-left{min-width:0}
+.eem-page-title{font-family:var(--eem-font-display);font-size:22px;font-weight:700;color:var(--eem-navy);line-height:1.3}
+.eem-page-subtitle{font-size:12.5px;color:var(--eem-text-secondary);margin-top:2px;line-height:1.5}
+.eem-page-actions{display:flex;align-items:center;gap:var(--eem-space-2);flex-shrink:0;flex-wrap:wrap}
+.eem-page-body{padding:0}
 
-.dashboard-body{padding:18px 22px;background:#fff}
+/* ── BUTTONS ── */
+.eem-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--eem-radius);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;border:1px solid;text-decoration:none}
+.eem-btn-electric,a.eem-btn-electric{background:var(--eem-electric);color:#fff;border-color:var(--eem-electric)}
+.eem-btn-electric:hover,a.eem-btn-electric:hover{background:var(--eem-electric-hover);border-color:var(--eem-electric-hover);color:#fff}
+.eem-btn-ghost,a.eem-btn-ghost{background:#fff;color:var(--eem-navy);border-color:#c3c4c7}
+.eem-btn-ghost:hover,a.eem-btn-ghost:hover{background:#f6f7f7;color:var(--eem-navy)}
+.eem-btn-amber,a.eem-btn-amber{background:#F5A623;color:#fff;border-color:#F5A623}
+.eem-btn-amber:hover,a.eem-btn-amber:hover{background:#e09512;border-color:#e09512;color:#fff}
 
-/* ── METRIC RANGE BAR ── */
-.metrics-range-bar{display:flex;align-items:center;justify-content:flex-end;margin:0 0 14px;gap:10px;flex-wrap:wrap}
-.metrics-range-label{font-size:12.5px;font-weight:600;color:#50575e}
-.metrics-range-select{padding:7px 32px 7px 12px;border:1px solid #8c8f94;border-radius:4px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;font-size:13px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;cursor:pointer;outline:none;appearance:none}
-.metrics-range-select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+/* ── STATUS BADGES (C1) ── */
+.eem-status-badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:600;line-height:1.4;white-space:nowrap}
+.eem-status-paid{background:var(--eem-badge-green-bg);color:var(--eem-badge-green-text);border:1px solid var(--eem-badge-green-border)}
+.eem-status-unpaid{background:var(--eem-badge-amber-bg);color:var(--eem-badge-amber-text);border:1px solid var(--eem-badge-amber-border)}
 
-/* ── METRIC CARDS (DEC-4: colored top borders consolidated to documented palette) ── */
-.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
-.metric-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;padding:16px 18px;position:relative;overflow:hidden}
-.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
-.metric-card.blue::before{background:#1668F2}
-.metric-card.orange::before{background:#c2410c}
-.metric-card.green::before{background:#15803d}
-.metric-card.red::before{background:#b91c1c}
-.metric-label{font-size:12.5px;font-weight:600;color:#50575e;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between}
-.metric-label svg{width:14px;height:14px;color:#8c8f94}
-.metric-value{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:#031B4E;margin-bottom:4px;letter-spacing:-.01em}
-.metric-sub{font-size:12px;color:#50575e;display:flex;align-items:center;gap:5px}
-.metric-sub .up{color:#15803d;font-weight:600}
-.metric-sub .down{color:#b91c1c;font-weight:600}
-.metric-sub .warn{color:#c2410c;font-weight:600}
+/* ── CARD CHROME (C1) ── */
+.eem-card{background:var(--eem-surface);border:var(--eem-border-card-rule);border-radius:var(--eem-radius);overflow:hidden}
+.eem-card-header{padding:13px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between;gap:var(--eem-space-3)}
+.eem-card-title{font-family:var(--eem-font-display);font-size:14px;font-weight:700;color:var(--eem-navy);display:flex;align-items:center;gap:7px}
+.eem-card-title svg{width:14px;height:14px;color:var(--eem-electric)}
+.eem-card-link{font-size:12.5px;color:var(--eem-electric);text-decoration:none;font-weight:600;white-space:nowrap}
+.eem-card-link:hover,.eem-card-link:focus{color:var(--eem-electric-hover);text-decoration:none}
 
-/* ── BODY GRID ── */
-.body-grid{display:grid;grid-template-columns:1fr 340px;gap:14px;align-items:start}
-.body-main{display:flex;flex-direction:column;gap:14px}
-.body-side{display:flex;flex-direction:column;gap:14px}
+/* ── SETUP CHECKLIST (renders inside .eem-page-wrap, below the page header) ── */
+.eem-setup-checklist{border-top:1px solid #dcdcde;background:#fafafa}
+.eem-setup-checklist__head{display:flex;align-items:flex-start;gap:12px;padding:14px 18px 10px;border-bottom:1px solid #f0f0f1}
+.eem-setup-checklist__head-icon{width:28px;height:28px;border-radius:999px;background:#F5A623;color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.eem-setup-checklist__title{font-family:var(--eem-font-display);font-size:14px;font-weight:700;color:var(--eem-navy);margin-bottom:2px}
+.eem-setup-checklist__sub{font-size:12.5px;color:#50575e}
+.eem-setup-checklist__list{list-style:none;padding:0;margin:0}
+.eem-setup-checklist__item{display:flex;align-items:flex-start;gap:12px;padding:12px 18px;border-bottom:1px solid var(--eem-border-soft)}
+.eem-setup-checklist__item:last-child{border-bottom:none}
+.eem-setup-checklist__item.is-next{background:#FFFBEB}
+.eem-setup-checklist__icon{width:28px;height:28px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--eem-electric);margin-top:1px}
+.eem-setup-checklist__item.is-next .eem-setup-checklist__icon{color:#b45309}
+.eem-setup-checklist__text{flex:1;min-width:0}
+.eem-setup-checklist__label{display:block;font-size:13.5px;font-weight:600;color:var(--eem-navy);margin-bottom:2px}
+.eem-setup-checklist__hint{display:block;font-size:12.5px;color:#50575e}
+.eem-setup-checklist__actions{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-top:2px}
+.eem-setup-checklist__cta{padding:5px 12px;font-size:12.5px}
+.eem-setup-checklist__skip{background:none;border:none;color:#50575e;font-size:12.5px;cursor:pointer;padding:5px 4px;font-family:inherit}
+.eem-setup-checklist__skip:hover{color:var(--eem-navy)}
 
-/* ── INNER CARDS ── */
-.card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}
-.card-header{padding:13px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.card-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#031B4E;display:flex;align-items:center;gap:8px}
-.card-title svg{width:15px;height:15px;color:#1668F2}
-.card-link{font-size:12.5px;color:#1668F2;font-weight:600;white-space:nowrap}
-.card-link:hover{color:#1257d1}
+/* ═══════════════ DASHBOARD ═══════════════ (verbatim from admin.css 6016+) */
+.eem-dashboard-body{padding:14px 0 18px;background:#f0f0f1}
+.eem-shell-page--dashboard .eem-page-body{padding:0}
+.eem-shell-page--dashboard .eem-page-wrap{border:1px solid #e2e4e7;border-radius:var(--eem-radius)}
+.eem-shell-page--dashboard .eem-dashboard-card{border-color:#e2e4e7}
 
-/* ── UPCOMING RESERVATIONS ── */
-.res-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:12px 18px;border-bottom:1px solid #f0f0f1}
-.res-row:last-child{border-bottom:none}
-.res-row:hover{background:#f6f7f7}
-.res-name{font-size:14px;font-weight:700;color:#031B4E;margin-bottom:2px}
-.res-row:hover .res-name{color:#1668F2}
-.res-dates{font-size:12.5px;color:#50575e;margin-bottom:6px}
-.res-dates .opens-soon{color:#15803d;font-weight:600}
-.res-dates .future{color:#50575e;font-weight:500}
-.res-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
-.res-tag{padding:3px 9px;border-radius:3px;font-size:11.5px;font-weight:600;line-height:1.4}
-.tag-stall{background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
-.tag-rv{background:#F5F3FF;color:#6d28d9;border:1px solid #ddd6fe}
-.tag-addon{background:#FFF7ED;color:#c2410c;border:1px solid #fed7aa}
-.tag-group{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
-.res-right{text-align:right;flex-shrink:0}
-.res-orders{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.1}
-.res-orders-label{font-size:11.5px;color:#50575e;margin-top:1px}
-.res-revenue{font-size:13px;font-weight:700;color:#1668F2;margin-top:4px;font-variant-numeric:tabular-nums}
+/* Body grid (1fr + 340px side) */
+.eem-dashboard-grid{display:grid;grid-template-columns:1fr 340px;gap:14px;align-items:start}
+.eem-dashboard-main,.eem-dashboard-side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.eem-dashboard-card,.eem-dashboard-kpi-card{min-width:0}
+.eem-dashboard-card .eem-card-title{font-size:15px}
 
-/* Stall progress */
-.stall-progress-wrap{margin-top:4px}
-.stall-progress-label{display:flex;justify-content:space-between;font-size:11.5px;color:#50575e;margin-bottom:4px}
-.stall-progress-label .progress-link{color:#1668F2;font-weight:600}
-.stall-progress-bar{height:5px;background:#f0f0f1;border-radius:3px;overflow:hidden}
-.stall-progress-fill{height:100%;border-radius:3px}
-.fill-green{background:#15803d}
-.fill-amber{background:#c2410c}
-.fill-red{background:#b91c1c}
+.eem-dashboard-empty{padding:18px;font-size:13px;color:var(--eem-text-muted);font-style:italic}
+.eem-dashboard-card-empty{font-size:13px;color:var(--eem-text-muted);font-style:italic}
 
-/* ── ATTENTION NEEDED ── */
-.attention-count{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:12px;background:#FEF2F2;color:#b91c1c;border:1px solid #fecaca}
-.attention-row{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid #f0f0f1}
-.attention-row:last-child{border-bottom:none}
-.attention-row:hover{background:#f6f7f7}
-.attention-icon{width:32px;height:32px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.attention-icon svg{width:15px;height:15px}
-.icon-orange{background:#FFF7ED;color:#c2410c}
-.icon-red{background:#FEF2F2;color:#b91c1c}
-.icon-blue{background:#EEF4FF;color:#1668F2}
-.attention-text{flex:1;min-width:0}
-.attention-title{font-size:13.5px;font-weight:600;color:#031B4E;margin-bottom:2px}
-.attention-row:hover .attention-title{color:#1668F2}
-.attention-desc{font-size:12px;color:#50575e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.attention-action{font-size:12.5px;font-weight:600;color:#1668F2;white-space:nowrap;flex-shrink:0}
+a.eem-dashboard-res-row,a.eem-dashboard-res-row:hover,a.eem-dashboard-res-row:focus,
+a.eem-dashboard-attention-row,a.eem-dashboard-attention-row:hover,a.eem-dashboard-attention-row:focus,
+a.eem-dashboard-order-row,a.eem-dashboard-order-row:hover,a.eem-dashboard-order-row:focus,
+a.eem-dashboard-qa-btn,a.eem-dashboard-qa-btn:hover,a.eem-dashboard-qa-btn:focus{text-decoration:none}
 
-/* ── RECENT ORDERS ── */
-.order-row{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid #f0f0f1}
-.order-row:last-child{border-bottom:none}
-.order-row:hover{background:#f6f7f7}
-.order-num-badge{font-size:13px;font-weight:700;color:#031B4E;min-width:58px;font-variant-numeric:tabular-nums}
-.order-row:hover .order-num-badge{color:#1668F2}
-.order-customer{flex:1;min-width:0}
-.order-name{font-size:13.5px;font-weight:600;color:#031B4E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.order-event{font-size:12px;color:#50575e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
-.order-amount{font-size:13.5px;font-weight:700;color:#031B4E;white-space:nowrap;font-variant-numeric:tabular-nums}
+/* Upcoming Reservations row */
+.eem-dashboard-res-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--eem-border-soft);color:var(--eem-text)}
+.eem-dashboard-res-row:last-child{border-bottom:none}
+.eem-dashboard-res-row:hover{background:#f6f7f7}
+.eem-dashboard-res-name{font-size:14px;font-weight:700;color:var(--eem-navy);margin-bottom:2px}
+.eem-dashboard-res-row:hover .eem-dashboard-res-name{color:var(--eem-electric)}
+.eem-dashboard-res-dates{font-size:12.5px;color:#50575e;margin-bottom:6px}
+.eem-dashboard-res-opens-soon{color:#15803d;font-weight:600}
+.eem-dashboard-res-future{color:#50575e;font-weight:500}
+.eem-dashboard-res-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.eem-dashboard-res-tag{padding:3px 9px;border-radius:var(--eem-radius-sm);font-size:11.5px;font-weight:600;line-height:1.4}
+.eem-dashboard-tag-stall{background:var(--eem-type-stall-bg);color:var(--eem-type-stall-text);border:1px solid var(--eem-type-stall-border)}
+.eem-dashboard-tag-rv{background:var(--eem-type-rv-bg);color:var(--eem-type-rv-text);border:1px solid var(--eem-type-rv-border)}
+.eem-dashboard-res-right{text-align:right;flex-shrink:0}
+.eem-dashboard-res-orders{font-family:var(--eem-font-display);font-size:22px;font-weight:700;color:var(--eem-navy);line-height:1.1}
+.eem-dashboard-res-orders-label{font-size:11.5px;color:#50575e;margin-top:1px}
+.eem-dashboard-res-revenue{font-size:13px;font-weight:700;color:var(--eem-electric);margin-top:4px;font-variant-numeric:tabular-nums}
+.eem-dashboard-res-stalls{font-size:11.5px;color:#50575e;margin-top:4px;font-variant-numeric:tabular-nums}
+.eem-dashboard-res-stalls strong{color:var(--eem-navy);font-weight:700}
 
-/* Status badges (matches shipped Orders list palette) */
-.status-badge{padding:3px 10px;border-radius:12px;font-size:11.5px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;border:1px solid}
-.status-badge::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.sb-paid{background:#F0FDF4;color:#15803d;border-color:#bbf7d0}.sb-paid::before{background:#15803d}
-.sb-unpaid{background:#FEF2F2;color:#b91c1c;border-color:#fecaca}.sb-unpaid::before{background:#b91c1c}
-.sb-invoice{background:#EFF6FF;color:#1d4ed8;border-color:#bfdbfe}.sb-invoice::before{background:#3b82f6}
-.sb-refunded{background:#F5F3FF;color:#6d28d9;border-color:#ddd6fe}.sb-refunded::before{background:#6d28d9}
+/* Attention rows */
+.eem-dashboard-attention-count{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:12px;background:#FEF2F2;color:#b91c1c;border:1px solid #fecaca}
+.eem-dashboard-attention-row{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--eem-border-soft);color:var(--eem-text)}
+.eem-dashboard-attention-row:last-child{border-bottom:none}
+.eem-dashboard-attention-row:hover{background:#f6f7f7}
+.eem-dashboard-attention-icon{width:32px;height:32px;border-radius:var(--eem-radius);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.eem-dashboard-attention-icon svg{width:15px;height:15px}
+.eem-dashboard-icon-orange{background:var(--eem-type-addon-bg);color:#c2410c}
+.eem-dashboard-icon-red{background:#FEF2F2;color:#b91c1c}
+.eem-dashboard-icon-blue{background:var(--eem-info-bg);color:var(--eem-electric)}
+.eem-dashboard-attention-text{flex:1;min-width:0}
+.eem-dashboard-attention-title{font-size:13.5px;font-weight:600;color:var(--eem-navy);margin-bottom:2px}
+.eem-dashboard-attention-row:hover .eem-dashboard-attention-title{color:var(--eem-electric)}
+.eem-dashboard-attention-desc{font-size:12px;color:#50575e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eem-dashboard-attention-action{font-size:12.5px;font-weight:600;color:var(--eem-electric);white-space:nowrap;flex-shrink:0}
 
-/* ── QUICK ACTIONS (DEC-5: documented info-accent tiles) ── */
-.quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px}
-.qa-btn{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#F0F4FB;border:1px solid #D9E2F2;border-radius:4px;cursor:pointer}
-.qa-btn:hover{background:#EEF4FF;border-color:#1668F2}
-.qa-icon{width:32px;height:32px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.qa-icon svg{width:15px;height:15px}
-.qi-blue{background:#EEF4FF;color:#1668F2}
-.qi-green{background:#F0FDF4;color:#15803d}
-.qi-purple{background:#F5F3FF;color:#6d28d9}
-.qi-orange{background:#FFF7ED;color:#c2410c}
-.qa-label{font-size:13.5px;font-weight:600;color:#031B4E;line-height:1.3}
-.qa-sub{font-size:11.5px;color:#50575e;margin-top:2px}
+/* Recent Orders rows */
+.eem-dashboard-order-row{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid var(--eem-border-soft);color:var(--eem-text)}
+.eem-dashboard-order-row:last-child{border-bottom:none}
+.eem-dashboard-order-row:hover{background:#f6f7f7}
+.eem-dashboard-order-num{font-size:13px;font-weight:700;color:var(--eem-navy);min-width:58px;font-variant-numeric:tabular-nums}
+.eem-dashboard-order-row:hover .eem-dashboard-order-num{color:var(--eem-electric)}
+.eem-dashboard-order-customer{flex:1;min-width:0}
+.eem-dashboard-order-name{font-size:13.5px;font-weight:600;color:var(--eem-navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eem-dashboard-order-event{font-size:12px;color:#50575e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.eem-dashboard-order-amount{font-size:13.5px;font-weight:700;color:var(--eem-navy);white-space:nowrap;font-variant-numeric:tabular-nums}
 
-/* ── REVENUE CHART (DEC-6: all bars Electric Blue) ── */
-.rev-chart{padding:16px 18px}
-.rev-chart-bars{display:flex;align-items:flex-end;gap:8px;height:90px;margin-bottom:8px}
-.rev-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
-.rev-bar{width:100%;border-radius:3px 3px 0 0;min-height:4px;background:#1668F2;transition:opacity .1s}
-.rev-bar:hover{opacity:.8}
-.rev-bar-label{font-size:11px;color:#50575e;white-space:nowrap}
-.rev-bar-val{font-size:11px;font-weight:600;color:#031B4E;font-variant-numeric:tabular-nums}
-.rev-total-row{display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid #f0f0f1;margin-top:6px}
-.rev-total-label{font-size:12.5px;color:#50575e}
-.rev-total-val{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;color:#1668F2;font-variant-numeric:tabular-nums}
+/* Quick Actions tiles */
+.eem-dashboard-quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px}
+.eem-dashboard-qa-btn{display:flex;align-items:center;gap:10px;padding:12px 14px;background:#F0F4FB;border:1px solid var(--eem-border);border-radius:var(--eem-radius);color:var(--eem-text)}
+.eem-dashboard-qa-btn:hover{background:var(--eem-info-bg);border-color:var(--eem-electric)}
+.eem-dashboard-qa-icon{width:32px;height:32px;border-radius:var(--eem-radius);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.eem-dashboard-qa-icon svg{width:15px;height:15px}
+.eem-dashboard-qi-blue{background:#DBE9FE;color:var(--eem-electric)}
+.eem-dashboard-qi-green{background:#D1FAE5;color:#15803d}
+.eem-dashboard-qi-purple{background:#E5E0FF;color:#6d28d9}
+.eem-dashboard-qi-orange{background:#FFE3CC;color:#c2410c}
+.eem-dashboard-qa-label{font-size:13.5px;font-weight:600;color:var(--eem-navy);line-height:1.3}
 
-/* ── THIS WEEK ── */
-.tw-body{padding:14px 18px;display:flex;flex-direction:column;gap:11px}
-.tw-row{display:flex;justify-content:space-between;align-items:center;font-size:13px}
-.tw-label{color:#50575e}
-.tw-value{font-weight:700;color:#031B4E;font-variant-numeric:tabular-nums}
-.tw-value.positive{color:#15803d}
-.tw-value.negative{color:#b91c1c}
+/* This Week + feature/status cards */
+.eem-dashboard-tw-body{padding:14px 18px;display:flex;flex-direction:column;gap:11px}
+.eem-dashboard-feature-body{padding:14px 18px;display:flex;flex-direction:column;gap:6px}
+.eem-dashboard-feature-stat{font-size:13px;color:var(--eem-text-secondary)}
+.eem-dashboard-feature-alert{font-size:12.5px;font-weight:600;color:#a16207}
+.eem-dashboard-card-body{padding:14px 18px}
+.eem-today-move-event{font-size:13px;font-weight:600;color:var(--eem-navy);margin-bottom:10px}
+.eem-today-move-stats{display:flex;gap:10px}
+.eem-today-move-stat{flex:1;display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:var(--eem-radius);background:#f8fafc;border:1px solid #eef2f7}
+.eem-today-move-num{font-family:var(--eem-font-display);font-size:22px;font-weight:700;line-height:1}
+.eem-today-move-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--eem-text-secondary)}
+.eem-today-move-stat--arriving .eem-today-move-num{color:#1668F2}
+.eem-today-move-stat--departing .eem-today-move-num{color:#b45309}
+.eem-facility-clean{display:flex;align-items:baseline;gap:8px}
+.eem-facility-clean-num{font-family:var(--eem-font-display);font-size:28px;font-weight:700;color:#b45309;line-height:1}
+.eem-facility-clean-lbl{font-size:12.5px;color:var(--eem-text-secondary)}
+.eem-dashboard-tw-row{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.eem-dashboard-tw-label{color:#50575e}
+.eem-dashboard-tw-value{font-weight:700;color:var(--eem-navy);font-variant-numeric:tabular-nums}
+.eem-dashboard-tw-value--positive{color:#15803d}
+.eem-dashboard-tw-value--negative{color:#b91c1c}
 
-/* ── RESPONSIVE ── */
-@media(max-width:1024px){
+/* Responsive */
+@media (max-width:1024px){
+  .eem-dashboard-body{padding:14px 0}
+  .eem-dashboard-grid{grid-template-columns:1fr}
+  .eem-dashboard-side{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+}
+@media (max-width:767px){
   .wp-sidebar{display:none}
-  .wp-content{padding:10px 14px 40px}
-  .metrics-grid{grid-template-columns:repeat(2,1fr)}
-  .body-grid{grid-template-columns:1fr}
-  .body-side{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-}
-@media(max-width:767px){
-  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
-  .wp-content{padding:8px 10px 32px}
-  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
-  .plugin-header{padding:14px;flex-direction:column;align-items:stretch;gap:10px}
-  .plugin-title{font-size:18px}
-  .plugin-header-actions{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .btn-primary,.btn-ghost{justify-content:center;padding:8px 14px;font-size:12.5px}
-  .dashboard-body{padding:12px 14px}
-  .metrics-grid{grid-template-columns:repeat(2,1fr);gap:8px}
-  .metric-card{padding:12px 14px}
-  .metric-value{font-size:22px}
-  .body-grid{grid-template-columns:1fr;gap:10px}
-  .body-side{display:flex;flex-direction:column;gap:10px}
-  .quick-actions{grid-template-columns:1fr 1fr;gap:8px;padding:10px}
-  .qa-btn{padding:10px}
-  .qa-icon{width:28px;height:28px}
-  .qa-label{font-size:12.5px}
-  .qa-sub{display:none}
-  .res-row{flex-direction:column;align-items:flex-start;gap:8px;padding:12px 14px;display:flex}
-  .res-right{display:flex;align-items:center;gap:16px;width:100%;text-align:left}
-  .res-orders{font-size:18px}
-  .res-revenue{margin-top:0}
-  .order-row{padding:10px 14px;gap:10px}
-  .order-name{font-size:13px}
-  .order-event{font-size:11.5px}
-  .order-amount{font-size:13px}
-  .attention-row{padding:10px 14px;gap:10px}
-  .attention-icon{width:28px;height:28px}
-  .attention-icon svg{width:13px;height:13px}
-  .attention-title{font-size:12.5px}
-  .attention-desc{font-size:11.5px}
-  .card-header{padding:11px 14px}
-  .card-title{font-size:14px}
-  .rev-chart{padding:12px 14px}
-  .rev-chart-bars{height:75px}
-  .rev-bar-label{font-size:10px}
-  .rev-bar-val{font-size:10px}
-  .metrics-range-bar{justify-content:space-between}
-}
-@media(max-width:390px){
-  .metrics-grid{grid-template-columns:1fr}
-  .plugin-header-actions{grid-template-columns:1fr}
-  .quick-actions{grid-template-columns:1fr}
-  .metric-value{font-size:24px}
+  .eem-dashboard-grid{grid-template-columns:1fr;gap:10px}
+  .eem-dashboard-side{display:flex;flex-direction:column;gap:10px}
+  .eem-dashboard-quick-actions{padding:10px}
+  .eem-dashboard-res-row{grid-template-columns:1fr;gap:8px;padding:12px 14px}
+  .eem-dashboard-res-right{display:flex;align-items:center;gap:16px;width:100%;text-align:left}
+  .eem-dashboard-res-orders{font-size:18px}
+  .eem-dashboard-res-revenue{margin-top:0}
+  .eem-dashboard-order-row{padding:10px 14px;gap:10px}
+  .eem-dashboard-attention-row{padding:10px 14px;gap:10px}
+  .eem-dashboard-attention-icon{width:28px;height:28px}
 }
 </style>
 </head>
-<body>
+<body class="eem-shell-page eem-shell-page--dashboard">
 
+<!-- ── WP ADMIN SHELL STUB ── -->
 <div class="wp-admin-bar">
-  <span>&#9776;</span>
-  <span class="site">My Equestrian Site</span>
-  <span>+ New</span>
-  <span style="margin-left:auto">Howdy, whitney</span>
+  <span class="site">⊞ En Event Manager</span>
+  <span>✎ New</span>
+  <span style="margin-left:auto">Howdy, admin ▾</span>
 </div>
-
 <div class="wp-body">
   <nav class="wp-sidebar">
-    <div class="wp-sidebar-item">Dashboard</div>
-    <div class="wp-sidebar-item">Media</div>
-    <div class="wp-sidebar-item">Posts</div>
-    <div class="wp-sidebar-item">Pages</div>
-    <div class="wp-sidebar-sep"></div>
     <div class="wp-sidebar-label">Event Manager</div>
     <div class="wp-sidebar-sub active">Dashboard</div>
-    <div class="wp-sidebar-sub">Orders</div>
     <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub">Orders</div>
     <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
+    <div class="wp-sidebar-sub">Daily Movement</div>
     <div class="wp-sidebar-sub">Reports</div>
     <div class="wp-sidebar-sub">Settings</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-item">Posts</div>
+    <div class="wp-sidebar-item">Media</div>
+    <div class="wp-sidebar-item">Plugins</div>
   </nav>
-
   <main class="wp-content">
 
-    <!-- Breadcrumb -->
-    <div class="breadcrumb">
-      <div class="breadcrumb-logo-box">Plugin Logo</div>
-      <span class="breadcrumb-sep">/</span>
-      <span class="breadcrumb-page">Dashboard</span>
-    </div>
+    <div class="eem-page">
+      <nav class="eem-breadcrumb" aria-label="Breadcrumb">
+        <a class="eem-breadcrumb-logo" href="#" aria-label="Equine Event Manager dashboard">
+          <span class="eem-breadcrumb-logo-box">EQUINE</span>
+        </a>
+        <span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+        <span class="eem-breadcrumb-segment" aria-current="page">Dashboard</span>
+      </nav>
 
-    <!-- PLUGIN-WRAP (DEC-1: single shell, no separate welcome bar) -->
-    <div class="plugin-wrap">
-
-      <header class="plugin-header">
-        <div class="plugin-header-left">
-          <h1 class="plugin-title">Dashboard</h1>
-          <div class="plugin-subtitle">Good morning, Whitney · Thursday, May 21, 2026 · 3 reservations coming up in the next 30 days</div>
-        </div>
-        <div class="plugin-header-actions">
-          <a href="admin.php?page=equine-event-manager-create-order" class="btn-primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Create Order
-          </a>
-          <a href="admin.php?page=equine-event-manager-reservations" class="btn-ghost">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m-7-8h.01M9 8h6m4-3v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-            View Reservations
-          </a>
-        </div>
-      </header>
-
-      <div class="dashboard-body">
-
-        <!-- Metric Range Filter -->
-        <div class="metrics-range-bar">
-          <span class="metrics-range-label">Showing metrics for</span>
-          <select class="metrics-range-select">
-            <option>Last 7 days</option>
-            <option selected>Last 30 days</option>
-            <option>Last 90 days</option>
-            <option>This year</option>
-            <option>All time</option>
-          </select>
-        </div>
-
-        <!-- Metric Cards (DEC-4: top borders in documented palette) -->
-        <div class="metrics-grid">
-          <div class="metric-card blue">
-            <div class="metric-label">
-              Total Revenue
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-            </div>
-            <div class="metric-value">$14,820</div>
-            <div class="metric-sub"><span class="up">↑ 12%</span> vs last month</div>
+      <!-- ── TOP CARD: page header + optional setup checklist ── -->
+      <div class="eem-page-wrap">
+        <header class="eem-page-header">
+          <div class="eem-page-header-left">
+            <h1 class="eem-page-title">Dashboard</h1>
+            <p class="eem-page-subtitle">Saturday, June 20, 2026 · 2 reservations coming up in the next 30 days</p>
           </div>
-          <div class="metric-card orange">
-            <div class="metric-label">
-              Outstanding Payments
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </div>
-            <div class="metric-value">$3,240</div>
-            <div class="metric-sub"><span class="warn">8 orders</span> awaiting payment</div>
+          <div class="eem-page-actions">
+            <a class="eem-btn eem-btn-electric" href="#">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Create Order
+            </a>
+            <a class="eem-btn eem-btn-ghost" href="#">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              View Reservations
+            </a>
           </div>
-          <div class="metric-card green">
-            <div class="metric-label">
-              Total Orders
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
-            </div>
-            <div class="metric-value">147</div>
-            <div class="metric-sub"><span class="up">↑ 23</span> this month</div>
-          </div>
-          <div class="metric-card red">
-            <div class="metric-label">
-              Unassigned Stalls
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-            </div>
-            <div class="metric-value">34</div>
-            <div class="metric-sub"><span class="down">Needs attention</span> across 2 events</div>
-          </div>
-        </div>
+        </header>
 
-        <!-- Body Grid -->
-        <div class="body-grid">
-
-          <!-- ════ MAIN ════ -->
-          <div class="body-main">
-
-            <!-- Upcoming Reservations -->
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                  Upcoming Reservations
-                </div>
-                <a class="card-link" href="admin.php?page=equine-event-manager-reservations">View all →</a>
+        <!-- Setup Checklist — renders inside .eem-page-wrap below the header.
+             Shown only when EEM_Setup_Checklist::should_show() returns true and
+             there are pending items. Once all items are complete the section
+             disappears automatically. This example shows a partially-configured
+             site (payment not yet set up). The "is-next" amber-tinted row is
+             whichever pending item carries tone='amber'. -->
+        <div class="eem-page-body">
+          <section class="eem-setup-checklist" data-eem-setup-checklist>
+            <header class="eem-setup-checklist__head">
+              <span class="eem-setup-checklist__head-icon" aria-hidden="true">!</span>
+              <div>
+                <h2 class="eem-setup-checklist__title">Finish setting up your plugin</h2>
+                <p class="eem-setup-checklist__sub">A few quick steps before you go live. Finished items disappear from this list.</p>
               </div>
+            </header>
+            <ul class="eem-setup-checklist__list">
+              <!-- setup row — completed (would not normally display, shown for reference) -->
+              <!-- 'is-next' item: amber tone, highlighted row -->
+              <li class="eem-setup-checklist__item is-todo is-next">
+                <span class="eem-setup-checklist__icon" aria-hidden="true">
+                  <svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+                </span>
+                <span class="eem-setup-checklist__text">
+                  <span class="eem-setup-checklist__label">Connect a payment processor</span>
+                  <span class="eem-setup-checklist__hint">Add your Stripe or Authorize.net credentials to start accepting payments.</span>
+                </span>
+                <span class="eem-setup-checklist__actions">
+                  <a class="eem-btn eem-btn-amber eem-setup-checklist__cta" href="#">Configure</a>
+                </span>
+              </li>
+              <li class="eem-setup-checklist__item is-todo">
+                <span class="eem-setup-checklist__icon" aria-hidden="true">
+                  <svg viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+                </span>
+                <span class="eem-setup-checklist__text">
+                  <span class="eem-setup-checklist__label">Add your first reservation</span>
+                  <span class="eem-setup-checklist__hint">Create a reservation so customers can start booking stalls and RV lots.</span>
+                </span>
+                <span class="eem-setup-checklist__actions">
+                  <a class="eem-btn eem-btn-electric eem-setup-checklist__cta" href="#">
+                    <svg viewBox="0 0 20 20" width="14" height="14"><path fill="currentColor" d="M10 2a1 1 0 0 1 1 1v6h6a1 1 0 1 1 0 2h-6v6a1 1 0 1 1-2 0v-6H3a1 1 0 1 1 0-2h6V3a1 1 0 0 1 1-1z"/></svg>
+                    New Reservation
+                  </a>
+                  <button type="button" class="eem-setup-checklist__skip" data-eem-action="setup-checklist-dismiss">Skip</button>
+                </span>
+              </li>
+            </ul>
+          </section>
+        </div>
+      </div><!-- /.eem-page-wrap -->
 
-              <a class="res-row" href="admin.php?page=equine-event-manager-edit-reservation&amp;reservation_id=1">
-                <div>
-                  <div class="res-name">2026 Southeast Region Super Sort</div>
-                  <div class="res-dates">May 8 – May 10, 2026 · <span class="opens-soon">Opens in 3 days</span></div>
-                  <div class="res-tags">
-                    <span class="res-tag tag-stall">Stall</span>
-                    <span class="res-tag tag-rv">RV</span>
-                    <span class="res-tag tag-addon">Add-On</span>
-                    <span class="res-tag tag-group">Group</span>
-                  </div>
-                  <div class="stall-progress-wrap">
-                    <div class="stall-progress-label"><span>Stall assignments</span><span class="progress-link">87 / 101</span></div>
-                    <div class="stall-progress-bar"><div class="stall-progress-fill fill-amber" style="width:86%"></div></div>
-                  </div>
-                </div>
-                <div class="res-right">
-                  <div class="res-orders">23</div>
-                  <div class="res-orders-label">orders</div>
-                  <div class="res-revenue">$6,420</div>
-                </div>
-              </a>
+      <div class="eem-dashboard-body">
+        <div class="eem-dashboard-grid">
 
-              <a class="res-row" href="admin.php?page=equine-event-manager-edit-reservation&amp;reservation_id=2">
-                <div>
-                  <div class="res-name">2026 Bluegrass Show</div>
-                  <div class="res-dates">May 17 – May 19, 2026 · <span class="future">In 10 days</span></div>
-                  <div class="res-tags">
-                    <span class="res-tag tag-stall">Stall</span>
-                    <span class="res-tag tag-addon">Add-On</span>
-                  </div>
-                  <div class="stall-progress-wrap">
-                    <div class="stall-progress-label"><span>Stall assignments</span><span class="progress-link">12 / 60</span></div>
-                    <div class="stall-progress-bar"><div class="stall-progress-fill fill-red" style="width:20%"></div></div>
-                  </div>
-                </div>
-                <div class="res-right">
-                  <div class="res-orders">8</div>
-                  <div class="res-orders-label">orders</div>
-                  <div class="res-revenue">$2,180</div>
-                </div>
-              </a>
+          <!-- ═══════════ MAIN COLUMN ═══════════ -->
+          <div class="eem-dashboard-main">
 
-              <a class="res-row" href="admin.php?page=equine-event-manager-edit-reservation&amp;reservation_id=3">
-                <div>
-                  <div class="res-name">2026 Sunshine Dressage</div>
-                  <div class="res-dates">May 20 – May 22, 2026 · <span class="future">In 13 days</span></div>
-                  <div class="res-tags">
-                    <span class="res-tag tag-stall">Stall</span>
-                    <span class="res-tag tag-rv">RV</span>
-                    <span class="res-tag tag-group">Group</span>
-                  </div>
-                  <div class="stall-progress-wrap">
-                    <div class="stall-progress-label"><span>Stall assignments</span><span class="progress-link">0 / 80</span></div>
-                    <div class="stall-progress-bar"><div class="stall-progress-fill fill-red" style="width:0%"></div></div>
-                  </div>
-                </div>
-                <div class="res-right">
-                  <div class="res-orders">5</div>
-                  <div class="res-orders-label">orders</div>
-                  <div class="res-revenue">$1,340</div>
-                </div>
-              </a>
-            </div>
-
-            <!-- Needs Attention -->
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <!-- Needs Attention
+                 render_attention_card() — items come from EEM_Dashboard_Repo::attention_items().
+                 Count badge in header. Each row: colored icon chip + title + desc + action label.
+                 Icon color classes: eem-dashboard-icon-orange, -red, -blue. -->
+            <div class="eem-card eem-dashboard-card">
+              <div class="eem-card-header">
+                <div class="eem-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   Needs Attention
                 </div>
-                <span class="attention-count">6 items</span>
+                <span class="eem-dashboard-attention-count">2 items</span>
               </div>
-
-              <a class="attention-row" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=2">
-                <div class="attention-icon icon-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
-                <div class="attention-text">
-                  <div class="attention-title">34 stalls unassigned — 2026 Bluegrass Show</div>
-                  <div class="attention-desc">Stall chart has 12 of 60 stalls assigned · Event opens in 10 days</div>
+              <a class="eem-dashboard-attention-row" href="#">
+                <span class="eem-dashboard-attention-icon eem-dashboard-icon-orange">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                </span>
+                <div class="eem-dashboard-attention-text">
+                  <div class="eem-dashboard-attention-title">5 orders awaiting payment</div>
+                  <div class="eem-dashboard-attention-desc">$1,352.60 outstanding</div>
                 </div>
-                <span class="attention-action">Assign →</span>
+                <span class="eem-dashboard-attention-action">View →</span>
               </a>
-
-              <a class="attention-row" href="admin.php?page=equine-event-manager-orders&amp;status=unpaid">
-                <div class="attention-icon icon-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
-                <div class="attention-text">
-                  <div class="attention-title">8 orders awaiting payment</div>
-                  <div class="attention-desc">$3,240 outstanding across 3 reservations</div>
+              <a class="eem-dashboard-attention-row" href="#">
+                <span class="eem-dashboard-attention-icon eem-dashboard-icon-blue">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                </span>
+                <div class="eem-dashboard-attention-text">
+                  <div class="eem-dashboard-attention-title">Stripe webhook not configured</div>
+                  <div class="eem-dashboard-attention-desc">Payment confirmations may be delayed without a webhook secret</div>
                 </div>
-                <span class="attention-action">View →</span>
-              </a>
-
-              <a class="attention-row" href="admin.php?page=equine-event-manager-stall-chart&amp;reservation_id=1">
-                <div class="attention-icon icon-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-                <div class="attention-text">
-                  <div class="attention-title">10 RV lot assignment issues</div>
-                  <div class="attention-desc">2026 Southeast Region Super Sort · Orders #00007–#00020</div>
-                </div>
-                <span class="attention-action">Fix →</span>
-              </a>
-
-              <a class="attention-row" href="admin.php?page=equine-event-manager-orders">
-                <div class="attention-icon icon-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
-                <div class="attention-text">
-                  <div class="attention-title">3 customers haven't signed the agreement</div>
-                  <div class="attention-desc">2026 Southeast Region Super Sort · Required before check-in</div>
-                </div>
-                <span class="attention-action">View →</span>
-              </a>
-
-              <a class="attention-row" href="admin.php?page=equine-event-manager-stall-charts">
-                <div class="attention-icon icon-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg></div>
-                <div class="attention-text">
-                  <div class="attention-title">2026 Sunshine Dressage stall chart not configured</div>
-                  <div class="attention-desc">No barns or stall blocks set up yet · Event in 13 days</div>
-                </div>
-                <span class="attention-action">Set up →</span>
-              </a>
-
-              <a class="attention-row" href="admin.php?page=equine-event-manager-settings">
-                <div class="attention-icon icon-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-                <div class="attention-text">
-                  <div class="attention-title">Stripe webhook not configured</div>
-                  <div class="attention-desc">Payment confirmations may be delayed without a webhook secret</div>
-                </div>
-                <span class="attention-action">Fix →</span>
+                <span class="eem-dashboard-attention-action">Fix →</span>
               </a>
             </div>
 
-            <!-- Recent Orders -->
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+            <!-- Upcoming Reservations
+                 render_upcoming_card() — up to 5 rows from EEM_Dashboard_Repo::upcoming_reservations().
+                 Each row: name / date range + relative label / type tags / order count + revenue + stall progress.
+                 opens_in tone classes: eem-dashboard-res-opens-soon (green) or eem-dashboard-res-future (gray). -->
+            <div class="eem-card eem-dashboard-card">
+              <div class="eem-card-header">
+                <div class="eem-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Upcoming Reservations
+                </div>
+                <a class="eem-card-link" href="#">View all →</a>
+              </div>
+              <a class="eem-dashboard-res-row" href="#">
+                <div class="eem-dashboard-res-main">
+                  <div class="eem-dashboard-res-name">2026 Southeast Region Super Sort</div>
+                  <div class="eem-dashboard-res-dates">Jun 26, 2026 · <span class="eem-dashboard-res-opens-soon">Opens in 6 days</span></div>
+                  <div class="eem-dashboard-res-tags"><span class="eem-dashboard-res-tag eem-dashboard-tag-stall">Stall</span></div>
+                </div>
+                <div class="eem-dashboard-res-right">
+                  <div class="eem-dashboard-res-orders">21</div>
+                  <div class="eem-dashboard-res-orders-label">orders</div>
+                  <div class="eem-dashboard-res-revenue">$4,297.34</div>
+                  <div class="eem-dashboard-res-stalls"><strong>46 / 46</strong> stalls</div>
+                </div>
+              </a>
+              <a class="eem-dashboard-res-row" href="#">
+                <div class="eem-dashboard-res-main">
+                  <div class="eem-dashboard-res-name">NTR 6519 – Rapid City, SD</div>
+                  <div class="eem-dashboard-res-dates">Jul 3, 2026 · <span class="eem-dashboard-res-future">In 13 days</span></div>
+                  <div class="eem-dashboard-res-tags"><span class="eem-dashboard-res-tag eem-dashboard-tag-stall">Stall</span> <span class="eem-dashboard-res-tag eem-dashboard-tag-rv">RV</span></div>
+                </div>
+                <div class="eem-dashboard-res-right">
+                  <div class="eem-dashboard-res-orders">2</div>
+                  <div class="eem-dashboard-res-orders-label">orders</div>
+                  <div class="eem-dashboard-res-revenue">$133.00</div>
+                  <div class="eem-dashboard-res-stalls"><strong>3 / 3</strong> stalls</div>
+                </div>
+              </a>
+            </div>
+
+            <!-- Recent Orders
+                 render_recent_orders_card() — 5 most recent orders.
+                 Order numbers are 5-digit zero-padded via sprintf('#%05d', $order_id).
+                 Status badge class comes from EEM_Orders_List_Page::status_slug_to_css_class(). -->
+            <div class="eem-card eem-dashboard-card">
+              <div class="eem-card-header">
+                <div class="eem-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
                   Recent Orders
                 </div>
-                <a class="card-link" href="admin.php?page=equine-event-manager-orders">View all →</a>
+                <a class="eem-card-link" href="#">View all →</a>
               </div>
-              <a class="order-row" href="admin.php?page=equine-event-manager-order&amp;order_id=00028">
-                <span class="order-num-badge">#00028</span>
-                <div class="order-customer"><div class="order-name">Whitney Mitchell</div><div class="order-event">2026 Southeast Region Super Sort</div></div>
-                <span class="order-amount">$22.00</span>
-                <span class="status-badge sb-paid">Paid</span>
+              <a class="eem-dashboard-order-row" href="#">
+                <span class="eem-dashboard-order-num">#90801</span>
+                <div class="eem-dashboard-order-customer">
+                  <div class="eem-dashboard-order-name">Order Edit Test (Stall)</div>
+                  <div class="eem-dashboard-order-event">2026 Southeast Region Super Sort</div>
+                </div>
+                <span class="eem-dashboard-order-amount">$125.84</span>
+                <span class="eem-status-badge eem-status-paid">Paid</span>
               </a>
-              <a class="order-row" href="admin.php?page=equine-event-manager-order&amp;order_id=00027">
-                <span class="order-num-badge">#00027</span>
-                <div class="order-customer"><div class="order-name">James Hartwell</div><div class="order-event">2026 Southeast Region Super Sort</div></div>
-                <span class="order-amount">$170.56</span>
-                <span class="status-badge sb-paid">Paid</span>
+              <a class="eem-dashboard-order-row" href="#">
+                <span class="eem-dashboard-order-num">#90802</span>
+                <div class="eem-dashboard-order-customer">
+                  <div class="eem-dashboard-order-name">Order Edit Test (RV)</div>
+                  <div class="eem-dashboard-order-event">NTR 6519 – Rapid City, SD</div>
+                </div>
+                <span class="eem-dashboard-order-amount">$40.00</span>
+                <span class="eem-status-badge eem-status-paid">Paid</span>
               </a>
-              <a class="order-row" href="admin.php?page=equine-event-manager-order&amp;order_id=00026">
-                <span class="order-num-badge">#00026</span>
-                <div class="order-customer"><div class="order-name">Sara Calloway</div><div class="order-event">2026 Bluegrass Show</div></div>
-                <span class="order-amount">$64.00</span>
-                <span class="status-badge sb-invoice">Invoice Sent</span>
+              <a class="eem-dashboard-order-row" href="#">
+                <span class="eem-dashboard-order-num">#90151</span>
+                <div class="eem-dashboard-order-customer">
+                  <div class="eem-dashboard-order-name">Taylor, James</div>
+                  <div class="eem-dashboard-order-event">2026 Southeast Region Super Sort</div>
+                </div>
+                <span class="eem-dashboard-order-amount">$360.00</span>
+                <span class="eem-status-badge eem-status-paid">Paid</span>
               </a>
-              <a class="order-row" href="admin.php?page=equine-event-manager-order&amp;order_id=00025">
-                <span class="order-num-badge">#00025</span>
-                <div class="order-customer"><div class="order-name">Devon Lacroix</div><div class="order-event">2026 Southeast Region Super Sort</div></div>
-                <span class="order-amount">$42.40</span>
-                <span class="status-badge sb-unpaid">Unpaid</span>
-              </a>
-              <a class="order-row" href="admin.php?page=equine-event-manager-order&amp;order_id=00024">
-                <span class="order-num-badge">#00024</span>
-                <div class="order-customer"><div class="order-name">Marcus Trevino</div><div class="order-event">2026 Sunshine Dressage</div></div>
-                <span class="order-amount">$88.00</span>
-                <span class="status-badge sb-paid">Paid</span>
+              <a class="eem-dashboard-order-row" href="#">
+                <span class="eem-dashboard-order-num">#90153</span>
+                <div class="eem-dashboard-order-customer">
+                  <div class="eem-dashboard-order-name">Lee, David</div>
+                  <div class="eem-dashboard-order-event"></div>
+                </div>
+                <span class="eem-dashboard-order-amount">$405.00</span>
+                <span class="eem-status-badge eem-status-unpaid">Unpaid</span>
               </a>
             </div>
 
-          </div><!-- /body-main -->
+          </div><!-- /.eem-dashboard-main -->
 
-          <!-- ════ SIDE ════ -->
-          <div class="body-side">
+          <!-- ═══════════ SIDE COLUMN ═══════════ -->
+          <div class="eem-dashboard-side">
 
-            <!-- Quick Actions -->
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <!-- Quick Actions
+                 render_quick_actions_card() — 4 tiles in a 2×2 grid.
+                 Tiles: Create Order (blue) · Stall Charts (green) · Collect Payment (purple) · Export Report (orange).
+                 PHP renders only eem-dashboard-qa-label (no sub-line). -->
+            <div class="eem-card eem-dashboard-card">
+              <div class="eem-card-header">
+                <div class="eem-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                   Quick Actions
                 </div>
               </div>
-              <div class="quick-actions">
-                <a class="qa-btn" href="admin.php?page=equine-event-manager-create-order">
-                  <div class="qa-icon qi-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
-                  <div><div class="qa-label">Create Order</div><div class="qa-sub">Manual entry</div></div>
+              <div class="eem-dashboard-quick-actions">
+                <a class="eem-dashboard-qa-btn" href="#">
+                  <span class="eem-dashboard-qa-icon eem-dashboard-qi-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+                  <div><div class="eem-dashboard-qa-label">Create Order</div></div>
                 </a>
-                <a class="qa-btn" href="admin.php?page=equine-event-manager-stall-charts">
-                  <div class="qa-icon qi-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
-                  <div><div class="qa-label">Stall Charts</div><div class="qa-sub">Assign stalls</div></div>
+                <a class="eem-dashboard-qa-btn" href="#">
+                  <span class="eem-dashboard-qa-icon eem-dashboard-qi-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
+                  <div><div class="eem-dashboard-qa-label">Stall Charts</div></div>
                 </a>
-                <a class="qa-btn" href="admin.php?page=equine-event-manager-orders&amp;status=unpaid">
-                  <div class="qa-icon qi-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
-                  <div><div class="qa-label">Collect Payment</div><div class="qa-sub">Unpaid orders</div></div>
+                <a class="eem-dashboard-qa-btn" href="#">
+                  <span class="eem-dashboard-qa-icon eem-dashboard-qi-purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>
+                  <div><div class="eem-dashboard-qa-label">Collect Payment</div></div>
                 </a>
-                <a class="qa-btn" href="admin.php?page=equine-event-manager-reports">
-                  <div class="qa-icon qi-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
-                  <div><div class="qa-label">Export Report</div><div class="qa-sub">Download CSV</div></div>
+                <a class="eem-dashboard-qa-btn" href="#">
+                  <span class="eem-dashboard-qa-icon eem-dashboard-qi-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+                  <div><div class="eem-dashboard-qa-label">Export Report</div></div>
                 </a>
               </div>
             </div>
 
-            <!-- Revenue by Reservation (DEC-6: all Electric Blue) -->
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                  Revenue by Reservation
+            <!-- Today's Movement
+                 render_today_movement_card() — from EEM_Dashboard_Repo::today_movement().
+                 When move['active'] is true: shows event label + arriving / departing stats.
+                 When false: shows "No events are active today." empty state.
+                 Links to Daily Movement page with ?reservation_id=N when a reservation is active. -->
+            <div class="eem-card eem-dashboard-card">
+              <div class="eem-card-header">
+                <div class="eem-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  Today's Movement
                 </div>
+                <a class="eem-card-link" href="#">View →</a>
               </div>
-              <div class="rev-chart">
-                <div class="rev-chart-bars">
-                  <div class="rev-bar-wrap">
-                    <div class="rev-bar-val">$6.4k</div>
-                    <div class="rev-bar" style="height:80%"></div>
-                    <div class="rev-bar-label">SE Sort</div>
+              <div class="eem-dashboard-card-body">
+                <div class="eem-today-move-event">2026 Southeast Region Super Sort</div>
+                <div class="eem-today-move-stats">
+                  <div class="eem-today-move-stat eem-today-move-stat--arriving">
+                    <span class="eem-today-move-num">0</span>
+                    <span class="eem-today-move-lbl">Arriving</span>
                   </div>
-                  <div class="rev-bar-wrap">
-                    <div class="rev-bar-val">$2.2k</div>
-                    <div class="rev-bar" style="height:27%"></div>
-                    <div class="rev-bar-label">Bluegrass</div>
+                  <div class="eem-today-move-stat eem-today-move-stat--departing">
+                    <span class="eem-today-move-num">0</span>
+                    <span class="eem-today-move-lbl">Departing</span>
                   </div>
-                  <div class="rev-bar-wrap">
-                    <div class="rev-bar-val">$1.3k</div>
-                    <div class="rev-bar" style="height:16%"></div>
-                    <div class="rev-bar-label">Dressage</div>
-                  </div>
-                  <div class="rev-bar-wrap">
-                    <div class="rev-bar-val">$3.1k</div>
-                    <div class="rev-bar" style="height:38%"></div>
-                    <div class="rev-bar-label">Gulf Coast</div>
-                  </div>
-                  <div class="rev-bar-wrap">
-                    <div class="rev-bar-val">$1.8k</div>
-                    <div class="rev-bar" style="height:22%"></div>
-                    <div class="rev-bar-label">Lone Star</div>
-                  </div>
-                </div>
-                <div class="rev-total-row">
-                  <span class="rev-total-label">Total collected (all time)</span>
-                  <span class="rev-total-val">$14,820</span>
                 </div>
               </div>
             </div>
 
-            <!-- This Week -->
-            <div class="card">
-              <div class="card-header">
-                <div class="card-title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <!-- Facility
+                 render_facility_card() — from EEM_Dashboard_Repo::facility_cleaning_count().
+                 When count > 0: shows amber number + "stall / lot needs cleaning" + Worksheet link.
+                 When count = 0: shows "All clean — nothing flagged for cleaning." empty state. -->
+            <div class="eem-card eem-dashboard-card">
+              <div class="eem-card-header">
+                <div class="eem-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                  Facility
+                </div>
+                <a class="eem-card-link" href="#" target="_blank" rel="noopener">Worksheet →</a>
+              </div>
+              <div class="eem-dashboard-card-body">
+                <div class="eem-facility-clean">
+                  <span class="eem-facility-clean-num">1</span>
+                  <span class="eem-facility-clean-lbl">stall / lot needs cleaning</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Add-Ons card
+                 render_addons_card() — from EEM_Dashboard_Repo::general_addons_summary().
+                 Only rendered when at least 1 purchasable add-on item is configured across
+                 upcoming reservations. Shows item count + reservation count. -->
+            <div class="eem-card eem-dashboard-card">
+              <div class="eem-card-header">
+                <div class="eem-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+                  Add-Ons
+                </div>
+                <a class="eem-card-link" href="#">Manage →</a>
+              </div>
+              <div class="eem-dashboard-feature-body">
+                <span class="eem-dashboard-feature-stat">3 add-ons offered · 2 reservations</span>
+              </div>
+            </div>
+
+            <!-- Entries card
+                 render_entries_card() — gated on $addons['entries']['enabled'].
+                 Only shown when the Entries feature flag is on for the account.
+                 Displays division count and entrant count. -->
+            <div class="eem-card eem-dashboard-card">
+              <div class="eem-card-header">
+                <div class="eem-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+                  Entries
+                </div>
+                <a class="eem-card-link" href="#">Manage →</a>
+              </div>
+              <div class="eem-dashboard-feature-body">
+                <span class="eem-dashboard-feature-stat">12 divisions · 31 entered</span>
+              </div>
+            </div>
+
+            <!-- Sheets & Results card
+                 render_sheets_card() — gated on $addons['sheets']['enabled'].
+                 Only shown when the Sheets & Results feature flag is on.
+                 Shows drawsheet count, results count, and awaiting-results alert when > 0. -->
+            <div class="eem-card eem-dashboard-card">
+              <div class="eem-card-header">
+                <div class="eem-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+                  Sheets &amp; Results
+                </div>
+                <a class="eem-card-link" href="#">Open →</a>
+              </div>
+              <div class="eem-dashboard-feature-body">
+                <span class="eem-dashboard-feature-stat">10 draw sheets · 7 results</span>
+                <span class="eem-dashboard-feature-alert">4 awaiting results</span>
+              </div>
+            </div>
+
+            <!-- This Week
+                 render_this_week_card() — from EEM_Dashboard_Repo::this_week().
+                 5 rows with tone classes: eem-dashboard-tw-value--positive (green) or
+                 eem-dashboard-tw-value--negative (red), or none (neutral). -->
+            <div class="eem-card eem-dashboard-card">
+              <div class="eem-card-header">
+                <div class="eem-card-title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   This Week
                 </div>
               </div>
-              <div class="tw-body">
-                <div class="tw-row"><span class="tw-label">New orders</span><span class="tw-value">14</span></div>
-                <div class="tw-row"><span class="tw-label">Revenue collected</span><span class="tw-value positive">$2,840</span></div>
-                <div class="tw-row"><span class="tw-label">Invoices sent</span><span class="tw-value">6</span></div>
-                <div class="tw-row"><span class="tw-label">Refunds processed</span><span class="tw-value negative">$240</span></div>
-                <div class="tw-row"><span class="tw-label">Stalls assigned</span><span class="tw-value">43</span></div>
+              <div class="eem-dashboard-tw-body">
+                <div class="eem-dashboard-tw-row"><span class="eem-dashboard-tw-label">New orders</span><span class="eem-dashboard-tw-value">14</span></div>
+                <div class="eem-dashboard-tw-row"><span class="eem-dashboard-tw-label">Revenue collected</span><span class="eem-dashboard-tw-value eem-dashboard-tw-value--positive">$2,700.84</span></div>
+                <div class="eem-dashboard-tw-row"><span class="eem-dashboard-tw-label">Invoices sent</span><span class="eem-dashboard-tw-value">0</span></div>
+                <div class="eem-dashboard-tw-row"><span class="eem-dashboard-tw-label">Refunds processed</span><span class="eem-dashboard-tw-value eem-dashboard-tw-value--negative">$0.00</span></div>
+                <div class="eem-dashboard-tw-row"><span class="eem-dashboard-tw-label">Stalls assigned</span><span class="eem-dashboard-tw-value">3</span></div>
               </div>
             </div>
 
-          </div><!-- /body-side -->
+          </div><!-- /.eem-dashboard-side -->
 
-        </div><!-- /body-grid -->
-
-      </div><!-- /dashboard-body -->
-
-    </div><!-- /plugin-wrap -->
+        </div><!-- /.eem-dashboard-grid -->
+      </div><!-- /.eem-dashboard-body -->
+    </div><!-- /.eem-page -->
 
   </main>
 </div>
-
 </body>
 </html>

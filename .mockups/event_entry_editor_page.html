@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Event Entry Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Event Entry Editor – admin page
+   (admin.php?page=equine-event-manager-entry-editor&entry_id=N)
+
+   Page: editor for a SINGLE CUSTOMER COMPETITION ENTRY (entrant name, division,
+   horse, entry fee, payment status, notes). This is a customer-submitted entry
+   record — distinct from the division configuration editor.
+
+   Page architecture:
+     • Breadcrumb (logo / Entries / <Entry title>) ABOVE the bordered card.
+     • .eem-plugin-wrap = ONE bordered card containing:
+         - .eem-plugin-header  (eyebrow + H1, meta line, header actions)
+         - .eem-edit-body > .eem-edit-main holding three section cards:
+             · Entrant & Horse  (green user-icon)   → Entrant name, Horse name
+             · Division & Fees  (blue tag-icon)     → Division, Entry fee, Payment status
+             · Notes            (gray note-icon)    → Internal notes textarea
+     • .eem-sticky-save fixed bottom bar: status pill + Save as Draft + Update.
+
+   Brand tokens: electric #1668F2, navy #031B4E, control border #8c8f94.
+   ───────────────────────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --eem-electric:#1668F2; --eem-electric-hover:#1257d1; --eem-navy:#031B4E;
+  --eem-amber:#F5A623; --eem-green:#22C55E; --eem-red:#EF4444;
+  --eem-text:#1d2327; --eem-text-secondary:#64748b; --eem-text-muted:#8c8f94;
+  --eem-text-placeholder:#9aa3b2; --eem-surface:#fff; --eem-control-border:#8c8f94;
+  --eem-border-soft:#e6e9ef; --eem-radius:3px; --eem-select-height:38px;
+  --eem-space-2:8px; --eem-space-3:12px; --eem-space-4:16px;
+  --eem-font-display:'Space Grotesk',sans-serif; --eem-font-ui:'IBM Plex Sans',sans-serif;
+  --eem-info-bg:#EAF2FE; --eem-success-accent:#16A34A;
+}
+body{font-family:var(--eem-font-ui);background:#f0f0f1;color:var(--eem-text);font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+svg{flex-shrink:0}
+a{text-decoration:none;color:inherit}
+a:hover{text-decoration:none}
+
+/* ── WP SHELL STUB ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+.wp-content{flex:1;padding:12px 20px 100px;min-width:0}
+
+/* ── Breadcrumb + logo ── */
+.eem-breadcrumb{display:flex;align-items:center;gap:8px;margin:0 0 10px;flex-wrap:wrap}
+.eem-breadcrumb-logo{display:inline-flex;align-items:center;flex-shrink:0}
+.eem-breadcrumb-logo-box{width:150px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb}
+.eem-breadcrumb-sep{font-size:13px;color:var(--eem-text-muted)}
+.eem-breadcrumb-segment{font-size:13px;color:var(--eem-navy);font-weight:600}
+a.eem-breadcrumb-segment{color:var(--eem-navy)}
+a.eem-breadcrumb-segment:hover{color:var(--eem-electric)}
+.eem-breadcrumb-segment[aria-current="page"]{color:var(--eem-navy);font-weight:600;cursor:default}
+
+/* ── PLUGIN WRAP (single bordered card) ── */
+.eem-page{display:block}
+.eem-plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+.eem-plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.eem-plugin-header-left{flex:1;min-width:0}
+.eem-res-name-eyebrow{display:block;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--eem-text-secondary);margin-bottom:3px}
+.eem-plugin-title{font-family:var(--eem-font-display);font-size:22px;font-weight:700;color:var(--eem-navy);line-height:1.2}
+.eem-plugin-header-meta{font-size:13px;color:#6B7A99;margin-top:4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.eem-plugin-header-meta .eem-status-badge{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:10px;font-size:11.5px;font-weight:600;line-height:1.5}
+.eem-status-paid{background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0}
+.eem-status-unpaid{background:#FFF7ED;color:#C2410C;border:1px solid #FED7AA}
+.eem-status-partial{background:#FFFBEB;color:#92400E;border:1px solid #FDE68A}
+
+/* header actions */
+.eem-header-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
+a.eem-header-action-view,.eem-header-action-delete{padding:6px 14px;border:1px solid transparent;border-radius:var(--eem-radius);font-size:12.5px;font-weight:600;font-family:inherit;line-height:1.5;cursor:pointer;white-space:nowrap;text-decoration:none}
+a.eem-header-action-view{background:var(--eem-electric);color:#fff;border-color:var(--eem-electric)}
+a.eem-header-action-view:hover{background:var(--eem-electric-hover);border-color:var(--eem-electric-hover);color:#fff}
+.eem-header-action-delete{background:#fff;border-color:#c3c4c7;color:#cc1818}
+.eem-header-action-delete:hover{border-color:#cc1818;background:#fef2f2}
+
+/* ── EDIT BODY / MAIN ── */
+.eem-edit-body{padding:18px 22px 28px;background:#fff}
+.eem-edit-main{display:flex;flex-direction:column;gap:0;min-width:0}
+
+/* ── SECTION CARD ── */
+.eem-card{background:var(--eem-surface);border:1px solid #d6dbe2;border-radius:var(--eem-radius);overflow:hidden}
+.eem-reservation-editor-section.eem-card{margin-bottom:14px}
+.eem-reservation-editor-section.eem-card:last-child{margin-bottom:0}
+.eem-section-header{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;cursor:pointer;user-select:none;border-bottom:1px solid #dcdcde;gap:var(--eem-space-3)}
+.eem-section-header-left{display:flex;align-items:center;gap:var(--eem-space-3);min-width:0}
+.eem-section-header-right{display:flex;align-items:center;gap:var(--eem-space-3);flex-shrink:0}
+.eem-section-icon{width:28px;height:28px;border-radius:var(--eem-radius);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.eem-section-icon svg{width:14px;height:14px;stroke-width:2}
+.eem-section-icon--blue{background:var(--eem-info-bg);color:var(--eem-electric)}
+.eem-section-icon--green{background:#F0FDF4;color:var(--eem-success-accent)}
+.eem-section-icon--gray{background:#f1f5f9;color:#64748b}
+.eem-section-title{font-family:var(--eem-font-display);font-size:14px;font-weight:700;color:var(--eem-navy)}
+.eem-section-chevron{color:var(--eem-text-muted);transition:transform .2s;flex-shrink:0}
+.eem-section-chevron svg{width:16px;height:16px}
+.eem-section-collapsed .eem-section-chevron{transform:rotate(-90deg)}
+.eem-section-body{padding:6px 18px 16px}
+.eem-section-body--hidden{display:none}
+
+/* ── FIELD ROW ── */
+.eem-field-row{display:grid;grid-template-columns:200px 1fr;gap:var(--eem-space-4);align-items:start;padding:var(--eem-space-3) 0;border-bottom:1px solid var(--eem-border-soft)}
+.eem-field-row:first-child{padding-top:10px}
+.eem-field-row:last-child{border-bottom:none;padding-bottom:0}
+.eem-field-label{font-size:13px;font-weight:600;color:var(--eem-text);padding-top:9px;line-height:1.4}
+.eem-field-label-sub{font-size:11.5px;color:var(--eem-text-secondary);font-weight:400;margin-top:2px}
+.eem-field-label .eem-field-required{color:var(--eem-red);margin-left:2px}
+.eem-field-control{display:flex;flex-direction:column;gap:5px}
+input.eem-field-input,select.eem-field-select,textarea.eem-field-textarea{margin:0;padding:8px 11px;border:1px solid var(--eem-control-border);border-radius:var(--eem-radius);font-size:13.5px;font-family:inherit;color:var(--eem-navy);background:var(--eem-surface);width:100%;outline:none}
+input.eem-field-input{height:var(--eem-select-height);box-sizing:border-box}
+select.eem-field-select{height:var(--eem-select-height);box-sizing:border-box;cursor:pointer}
+input.eem-field-input:focus,select.eem-field-select:focus,textarea.eem-field-textarea:focus{border-color:var(--eem-electric);box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+input.eem-field-input::placeholder,textarea.eem-field-textarea::placeholder{color:var(--eem-text-placeholder)}
+textarea.eem-field-textarea{resize:vertical;min-height:90px;line-height:1.6}
+.eem-field-hint{font-size:11.5px;color:var(--eem-text-secondary);line-height:1.4}
+
+/* price affix wrap */
+.eem-price-wrap{display:flex;align-items:stretch;max-width:180px;height:var(--eem-select-height);box-sizing:border-box;border:1px solid var(--eem-control-border);border-radius:var(--eem-radius);background:#fff;overflow:hidden}
+.eem-price-wrap:focus-within{border-color:var(--eem-electric);box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.eem-price-symbol{padding:0 11px;background:#f0f4fb;border:none;border-right:1px solid var(--eem-control-border);font-size:13px;color:var(--eem-navy);font-weight:600;display:flex;align-items:center}
+input.eem-price-input{margin:0;padding:0 12px;height:100%;border:none;border-radius:0;font-size:13.5px;font-family:inherit;color:var(--eem-navy);background:transparent;min-width:0;flex:1;outline:none}
+
+/* payment status inline badge select */
+.eem-payment-status-row{display:flex;align-items:center;gap:10px}
+.eem-payment-status-select{height:var(--eem-select-height);min-width:160px}
+
+/* ── STICKY SAVE BAR ── */
+.eem-sticky-save{display:flex;align-items:center;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #dcdcde;box-shadow:0 -2px 8px rgba(0,0,0,.06);padding:10px 22px;z-index:50;gap:10px}
+.eem-sticky-save-status{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--eem-text);font-weight:600;white-space:nowrap}
+.eem-sticky-save-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0}
+.eem-sticky-save-status--published .eem-sticky-save-dot{background:#22c55e}
+.eem-sticky-save-status--draft .eem-sticky-save-dot{background:#8c8f94}
+.eem-sticky-save-spacer{flex:1}
+.eem-sticky-save-actions{display:flex;align-items:center;gap:8px}
+.eem-btn-save-draft{background:#fff;color:var(--eem-text);border:1px solid #8c8f94;padding:9px 16px;border-radius:var(--eem-radius);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer}
+.eem-btn-save-draft:hover{background:#f6f7f7}
+.eem-btn-update{background:var(--eem-electric);color:#fff;border:1px solid var(--eem-electric);padding:10px 18px;border-radius:var(--eem-radius);font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer}
+.eem-btn-update:hover{background:var(--eem-electric-hover);border-color:var(--eem-electric-hover)}
+
+/* responsive */
+@media(max-width:782px){
+  .wp-sidebar{display:none}
+  .eem-field-row{grid-template-columns:1fr;gap:6px}
+  .eem-field-label{padding-top:0}
+  .eem-edit-body{padding:14px 16px 24px}
+  .eem-plugin-header{padding:14px}
+  .eem-header-actions{width:100%}
+  .eem-sticky-save-status{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ── WP admin shell stub ── -->
+<div class="wp-admin-bar">
+  <span class="site">en-event-manager.local</span>
+  <span>+ New</span>
+  <span>Howdy, admin</span>
+</div>
+<div class="wp-body">
+  <nav class="wp-sidebar">
+    <div class="wp-sidebar-label">Event Manager</div>
+    <div class="wp-sidebar-sub">Dashboard</div>
+    <div class="wp-sidebar-sub">Orders</div>
+    <div class="wp-sidebar-sub active">Entries</div>
+    <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub">Settings</div>
+  </nav>
+
+  <main class="wp-content">
+
+    <div class="eem-page" data-eem-entry-editor data-entry-id="4821">
+
+      <!-- ── Breadcrumb ── -->
+      <nav class="eem-breadcrumb" aria-label="Breadcrumb">
+        <a class="eem-breadcrumb-logo" href="#" aria-label="Equine Event Manager dashboard">
+          <span class="eem-breadcrumb-logo-box">EQUINE&nbsp;LOGO</span>
+        </a>
+        <span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+        <a class="eem-breadcrumb-segment" href="#">Entries</a>
+        <span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+        <span class="eem-breadcrumb-segment" aria-current="page">Jessica Hart – #9.5 Division</span>
+      </nav>
+
+      <div class="eem-plugin-wrap">
+
+        <!-- ── Header ── -->
+        <header class="eem-plugin-header">
+          <div class="eem-plugin-header-left">
+            <span class="eem-res-name-eyebrow">Competition Entry</span>
+            <h1 class="eem-plugin-title">Jessica Hart – #9.5 Division</h1>
+            <div class="eem-plugin-header-meta">
+              Entry #4821
+              &nbsp;&middot;&nbsp;
+              2026 Spring Barrel Classic &nbsp;&middot;&nbsp; Apr 24 – Apr 26, 2026
+              &nbsp;&middot;&nbsp;
+              <span class="eem-status-badge eem-status-paid">Paid</span>
+            </div>
+          </div>
+          <div class="eem-header-actions">
+            <a class="eem-header-action-view" href="#" target="_blank" rel="noopener noreferrer">View Event</a>
+            <button type="button" class="eem-header-action-delete" data-eem-action="entry-delete">Delete Entry</button>
+          </div>
+        </header>
+
+        <!-- ── Body ── -->
+        <div class="eem-edit-body">
+          <main class="eem-edit-main">
+
+            <!-- ── Section: Entrant & Horse ── -->
+            <section class="eem-card eem-reservation-editor-section" id="card-entrant-horse">
+              <div class="eem-section-header" data-eem-action="reservation-editor-toggle-collapse" data-eem-section="entrant-horse">
+                <div class="eem-section-header-left">
+                  <div class="eem-section-icon eem-section-icon--green" aria-hidden="true">
+                    <!-- user icon -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </div>
+                  <span class="eem-section-title">Entrant &amp; Horse</span>
+                </div>
+                <div class="eem-section-header-right">
+                  <div class="eem-section-chevron" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                </div>
+              </div>
+              <div class="eem-section-body" id="body-entrant-horse">
+
+                <div class="eem-field-row">
+                  <div class="eem-field-label">
+                    Entrant Name
+                    <span class="eem-field-required" aria-hidden="true">*</span>
+                    <div class="eem-field-label-sub">Competitor's full name</div>
+                  </div>
+                  <div class="eem-field-control">
+                    <input class="eem-field-input" type="text" id="eem-entry-entrant-name" name="entrant_name" value="Jessica Hart" placeholder="e.g. Jane Smith">
+                  </div>
+                </div>
+
+                <div class="eem-field-row">
+                  <div class="eem-field-label">
+                    Horse Name
+                    <div class="eem-field-label-sub">Name of the horse competing</div>
+                  </div>
+                  <div class="eem-field-control">
+                    <input class="eem-field-input" type="text" id="eem-entry-horse-name" name="horse_name" value="Sparky Red" placeholder="e.g. Sparky Red">
+                  </div>
+                </div>
+
+              </div>
+            </section>
+
+            <!-- ── Section: Division & Fees ── -->
+            <section class="eem-card eem-reservation-editor-section" id="card-division-fees">
+              <div class="eem-section-header" data-eem-action="reservation-editor-toggle-collapse" data-eem-section="division-fees">
+                <div class="eem-section-header-left">
+                  <div class="eem-section-icon eem-section-icon--blue" aria-hidden="true">
+                    <!-- tag icon -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                  </div>
+                  <span class="eem-section-title">Division &amp; Fees</span>
+                </div>
+                <div class="eem-section-header-right">
+                  <div class="eem-section-chevron" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                </div>
+              </div>
+              <div class="eem-section-body" id="body-division-fees">
+
+                <div class="eem-field-row">
+                  <div class="eem-field-label">
+                    Division
+                    <span class="eem-field-required" aria-hidden="true">*</span>
+                    <div class="eem-field-label-sub">Which division this entry is for</div>
+                  </div>
+                  <div class="eem-field-control">
+                    <select class="eem-field-select" id="eem-entry-division" name="division_id">
+                      <option value="">— Select Division —</option>
+                      <option value="1">#9.5 Division</option>
+                      <option value="2" selected>#9.5 Division (selected)</option>
+                      <option value="3">Open Division</option>
+                      <option value="4">Youth Division</option>
+                    </select>
+                    <span class="eem-field-hint">Divisions are configured on the reservation editor.</span>
+                  </div>
+                </div>
+
+                <div class="eem-field-row">
+                  <div class="eem-field-label">Entry Fee
+                    <div class="eem-field-label-sub">Amount charged for this entry</div>
+                  </div>
+                  <div class="eem-field-control">
+                    <div class="eem-price-wrap">
+                      <span class="eem-price-symbol">$</span>
+                      <input class="eem-price-input" type="number" min="0" step="0.01" id="eem-entry-fee" name="entry_fee" value="45.00" placeholder="0.00">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="eem-field-row">
+                  <div class="eem-field-label">Payment Status
+                    <div class="eem-field-label-sub">Track whether this entry has been paid</div>
+                  </div>
+                  <div class="eem-field-control">
+                    <div class="eem-payment-status-row">
+                      <select class="eem-field-select eem-payment-status-select" id="eem-entry-payment-status" name="payment_status">
+                        <option value="paid" selected>Paid</option>
+                        <option value="unpaid">Unpaid</option>
+                        <option value="partial">Partial</option>
+                        <option value="comp">Comp / Waived</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </section>
+
+            <!-- ── Section: Notes ── -->
+            <section class="eem-card eem-reservation-editor-section" id="card-entry-notes">
+              <div class="eem-section-header" data-eem-action="reservation-editor-toggle-collapse" data-eem-section="entry-notes">
+                <div class="eem-section-header-left">
+                  <div class="eem-section-icon eem-section-icon--gray" aria-hidden="true">
+                    <!-- file-text icon -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                  </div>
+                  <span class="eem-section-title">Notes</span>
+                </div>
+                <div class="eem-section-header-right">
+                  <div class="eem-section-chevron" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                </div>
+              </div>
+              <div class="eem-section-body" id="body-entry-notes">
+                <div class="eem-field-row">
+                  <div class="eem-field-label">Internal Notes
+                    <div class="eem-field-label-sub">Admin-only notes for this entry. Not shown to the customer.</div>
+                  </div>
+                  <div class="eem-field-control">
+                    <textarea class="eem-field-textarea" id="eem-entry-notes" name="notes" rows="4" placeholder="Optional admin notes…">Confirmed entry by phone on Apr 2. Customer requested gate 3 draw position.</textarea>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+          </main>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Sticky save bar ── -->
+<div class="eem-sticky-save" id="eem-entry-sticky-save" data-entry-id="4821" data-save-nonce="bdd0c26be2">
+  <div class="eem-sticky-save-status eem-sticky-save-status--published">
+    <span class="eem-sticky-save-dot" aria-hidden="true"></span>
+    <span data-eem-entry-status>Published</span>
+  </div>
+  <div class="eem-sticky-save-spacer"></div>
+  <div class="eem-sticky-save-actions">
+    <button type="button" class="eem-btn-save-draft" data-eem-action="entry-editor-save-draft">Save as Draft</button>
+    <button type="button" class="eem-btn-update" data-eem-action="entry-editor-update">Update Entry</button>
+  </div>
+</div>
+
+<script>
+/* Minimal preview interactivity — collapse/expand section cards on header click. */
+document.addEventListener('click', function (e) {
+  var header = e.target.closest('[data-eem-action="reservation-editor-toggle-collapse"]');
+  if (!header) return;
+  var card = header.closest('.eem-reservation-editor-section');
+  var body = card.querySelector('.eem-section-body');
+  card.classList.toggle('eem-section-collapsed');
+  if (body) body.classList.toggle('eem-section-body--hidden');
+});
+</script>
+</body>
+</html>

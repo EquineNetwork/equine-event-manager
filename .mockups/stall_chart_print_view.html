@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stall Chart — 2026 Southeast Region Super Sort</title>
+<title>Stall Chart — 2025 National Team Roping (NTR 6519)</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -15,90 +15,113 @@ a:hover{text-decoration:none}
 
 #print-view{display:block;background:#fff}
 
-/* ── ON-SCREEN PRINT-PREVIEW TOOLBAR (light alt-bg, DEC-C) ── */
+/* ── ON-SCREEN PRINT-PREVIEW TOOLBAR ── */
 .pv-topbar{background:#f3f4f5;border-bottom:1px solid #dcdcde;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:10}
-.pv-topbar-left{display:flex;align-items:center;gap:10px;min-width:0}
+.pv-topbar-left{display:flex;align-items:center;gap:16px;min-width:0;flex-wrap:wrap}
 .pv-topbar-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E}
 .pv-topbar-sub{font-size:12px;color:#6B7A99;margin-top:1px}
 .pv-topbar-btns{display:flex;gap:8px;flex-shrink:0}
-.btn-pv-print{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:8px 16px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn-pv-print{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:8px 16px;border-radius:3px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .btn-pv-print:hover{background:#1257d1;border-color:#1257d1}
 .btn-pv-print svg{width:13px;height:13px}
-.btn-pv-exit{background:#fff;color:#1d2327;border:1px solid #c3c4c7;padding:8px 14px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.btn-pv-exit{background:#fff;color:#1d2327;border:1px solid #c3c4c7;padding:8px 14px;border-radius:3px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
 .btn-pv-exit:hover{background:#f6f7f7}
 
-/* ── BODY ── */
-.pv-body{padding:22px 28px;max-width:1000px;margin:0 auto}
+/* ── FILTER BAR (on-screen only) ── */
+.pv-filter-bar{background:#f0f4fb;border-bottom:1px solid #dcdcde;padding:10px 18px;display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap}
+.pv-filter-group{display:flex;flex-direction:column;gap:4px}
+.pv-filter-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#64748b}
+.pv-filter-seg{display:flex;border:1px solid #8c8f94;border-radius:3px;overflow:hidden;background:#fff}
+.pv-filter-seg-btn{padding:6px 13px;font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;border:none;background:#fff;color:#1d2327;border-right:1px solid #8c8f94}
+.pv-filter-seg-btn:last-child{border-right:none}
+.pv-filter-seg-btn.active{background:#1668F2;color:#fff}
+.pv-filter-select{padding:6px 10px;border:1px solid #8c8f94;border-radius:3px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none;min-width:160px}
+.pv-filter-select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
 
-/* Header (DEC-L: no logo, event name carries identity; DEC-M: drop "For:") */
+/* ── BODY ── */
+.pv-body{padding:22px 28px;max-width:1040px;margin:0 auto}
+
+/* Header */
 .pv-header{margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #031B4E}
 .pv-event{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;margin-bottom:6px}
 .pv-meta{font-size:13px;color:#4a5a7a;display:flex;gap:24px;flex-wrap:wrap}
 .pv-meta strong{color:#031B4E;font-weight:600}
 
-/* Daily Movement (DEC-D: soft-blue info accent) */
-.pv-movement{background:#F0F4FB;border:1px solid #D9E2F2;border-radius:4px;padding:12px 16px;margin-bottom:18px}
+/* Daily Movement (soft-blue info accent) */
+.pv-movement{background:#F0F4FB;border:1px solid #D9E2F2;border-radius:3px;padding:12px 16px;margin-bottom:18px}
 .pv-movement-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;margin-bottom:10px}
-.pv-movement-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.pv-movement-day{}
+.pv-movement-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 .pv-movement-date{font-size:12.5px;font-weight:700;color:#031B4E;margin-bottom:4px}
 .pv-movement-vals{font-size:12.5px;color:#1d2327}
 .pv-movement-vals span{display:block;font-weight:500}
 
-/* Section bands (DEC-B: white bg + thick navy top border) */
-.pv-section-band{background:#fff;border-top:3px solid #031B4E;padding:14px 0 10px;font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E;margin:18px 0 0}
+/* Section bands — light blue (#f0f0fb) per brand spec */
+.pv-section-band{background:#f0f0fb;border-top:3px solid #031B4E;padding:10px 14px;font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#031B4E;margin:22px 0 0;display:flex;align-items:center;justify-content:space-between}
+.pv-section-band-sub{font-size:12px;font-weight:400;color:#6B7A99;font-family:'IBM Plex Sans',sans-serif;margin-left:10px}
+.pv-section-kpis{display:flex;gap:14px;font-size:12px;font-family:'IBM Plex Sans',sans-serif}
+.pv-section-kpi{font-weight:600;color:#031B4E}
+.pv-section-kpi span{color:#6B7A99;font-weight:400}
 
 /* Tables */
-.pv-table-wrap{border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:18px}
+.pv-table-wrap{border:1px solid #e5e7eb;border-radius:3px;overflow:hidden;margin-bottom:0}
 .pv-table{width:100%;border-collapse:collapse;background:#fff}
 
-/* Thead (DEC-A: VIS-1 alt-bg + navy text + mixed-case) */
+/* Thead */
 .pv-table thead tr{background:#f3f4f5;border-bottom:1px solid #dcdcde}
-.pv-table thead th{padding:10px 12px;font-size:13px;font-weight:600;color:#1d2327;text-align:left}
+.pv-table thead th{padding:10px 12px;font-size:12.5px;font-weight:600;color:#1d2327;text-align:left}
 .pv-table thead th.c{text-align:center}
 .pv-table tbody tr{border-bottom:1px solid #f0f0f1}
 .pv-table tbody tr:last-child{border-bottom:none}
-.pv-table tbody tr:nth-child(even){background:#f3f4f5} /* DEC-I: zebra aligned to VIS-1 */
+.pv-table tbody tr:nth-child(even){background:#f9f9f9}
 .pv-table td{padding:9px 12px;font-size:13px;vertical-align:middle;color:#1d2327}
 
 /* Stall # cell */
 .pv-stall-num{font-weight:700;color:#031B4E;font-size:13.5px;font-family:'Space Grotesk',sans-serif}
-.pv-block{color:#6B7A99;font-size:12px}
 .pv-customer{font-weight:600;color:#031B4E}
 .pv-customer-empty{color:#8c8f94;font-style:italic;font-weight:400}
 .pv-order{color:#1d2327;font-size:12.5px;font-variant-numeric:tabular-nums}
+.pv-date-cell{font-size:12.5px;color:#4a5a7a;font-variant-numeric:tabular-nums;white-space:nowrap}
 
-/* Check-in column (DEC-O: kept) */
+/* Check-in column */
 .pv-checkin{text-align:center}
 .pv-checkbox{display:inline-block;width:16px;height:16px;border:1.5px solid #6B7A99;border-radius:2px;background:#fff}
 
-/* Occupancy pills (DEC-J: match detail page light-fill variants; DEC-K: full mixed-case words) */
+/* Occupancy pills */
 .pv-night-cell{text-align:center;font-variant-numeric:tabular-nums}
-.pv-occ{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11.5px;font-weight:600;border:1px solid}
+.pv-occ{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11.5px;font-weight:600;border:1px solid;white-space:nowrap}
 .pv-occ-res{background:#EEF4FF;color:#1668F2;border-color:#c0d8ff}
 .pv-occ-avail{background:#F0FDF4;color:#15803d;border-color:#bbf7d0}
 .pv-occ-block{background:#FEF2F2;color:#b91c1c;border-color:#fecaca}
 
-/* Barn header rows (DEC-H: mixed-case navy on VIS-1 alt-bg, matches detail page) */
-.pv-barn-header td{background:#f3f4f5;padding:9px 12px;font-size:13px;font-weight:600;color:#031B4E;border-top:1px solid #dcdcde;border-bottom:1px solid #dcdcde}
+/* Status pills */
+.pv-status{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11.5px;font-weight:600;border:1px solid;white-space:nowrap}
+.pv-status-paid{background:#EEF4FF;color:#1668F2;border-color:#c0d8ff}
+.pv-status-pending{background:#FEF9EC;color:#b45309;border-color:#fde68a}
+.pv-status-checkedin{background:#EEF4FF;color:#1668F2;border-color:#c0d8ff}
+.pv-status-partial{background:#FEF9EC;color:#b45309;border-color:#fde68a}
+
+/* Barn header rows — light blue band matching section bands */
+.pv-barn-header td{background:#f0f0fb;padding:9px 12px;font-size:13px;font-weight:600;color:#031B4E;border-top:2px solid #c0c8f0;border-bottom:1px solid #c0c8f0}
 .pv-barn-header td .pv-occ-count{float:right;background:#fff;color:#031B4E;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;border:1px solid #c3c4c7}
 .pv-barn-sub{font-weight:400;color:#6B7A99;font-size:12.5px;margin-left:8px}
 
+/* Barn block wrapper for page-break-per-barn */
+.pv-barn-block{margin-bottom:20px}
+.pv-barn-block:last-child{margin-bottom:0}
+
 /* Footer */
-.pv-footer{margin-top:18px;padding-top:12px;border-top:1px solid #e8eaf0;display:flex;justify-content:space-between;font-size:12px;color:#6B7A99;flex-wrap:wrap;gap:8px}
+.pv-footer{margin-top:20px;padding-top:12px;border-top:1px solid #e8eaf0;display:flex;justify-content:space-between;font-size:12px;color:#6B7A99;flex-wrap:wrap;gap:8px}
 
 /* ── MOBILE ── */
 @media(max-width:767px){
   .pv-topbar{flex-direction:column;align-items:flex-start;gap:10px;padding:12px 14px}
   .pv-topbar-btns{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .btn-pv-print,.btn-pv-exit{width:100%;justify-content:center;font-size:12.5px;padding:9px 10px}
+  .pv-filter-bar{gap:12px;padding:10px 14px}
   .pv-body{padding:14px}
   .pv-event{font-size:18px}
   .pv-meta{gap:10px;font-size:12px}
-  .pv-movement-grid{grid-template-columns:1fr;gap:10px}
-  .pv-movement-day{display:flex;align-items:center;justify-content:space-between;gap:12px}
-  .pv-movement-vals{display:flex;gap:16px}
-  .pv-movement-vals span{display:inline}
+  .pv-movement-grid{grid-template-columns:1fr 1fr;gap:10px}
   .pv-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .pv-table{min-width:640px;font-size:12px}
   .pv-table thead th{padding:8px 10px;font-size:12px}
@@ -110,11 +133,12 @@ a:hover{text-decoration:none}
   .pv-topbar-btns{grid-template-columns:1fr}
 }
 
-/* ── PRINT MEDIA — force colors, tighten layout ── */
+/* ── PRINT MEDIA ── */
 @media print{
   *,*::before,*::after{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
   body{font-size:11px}
   .pv-topbar{display:none!important}
+  .pv-filter-bar{display:none!important}
   .pv-body{padding:8mm 10mm;max-width:none}
   .pv-event{font-size:16px}
   .pv-meta{font-size:10.5px;gap:14px}
@@ -122,21 +146,23 @@ a:hover{text-decoration:none}
   .pv-movement-title{font-size:11px;margin-bottom:6px}
   .pv-movement-date{font-size:10.5px}
   .pv-movement-vals{font-size:10.5px}
-  .pv-section-band{font-size:13px;padding:10px 0 7px;margin-top:10px;border-top-width:2.5px}
-  .pv-table-wrap{margin-bottom:10px}
+  .pv-section-band{font-size:13px;padding:8px 10px;margin-top:12px;border-top-width:2px}
+  .pv-table-wrap{margin-bottom:0}
   .pv-table td,.pv-table th{padding:5px 8px;font-size:10px}
   .pv-table thead th{font-size:10px}
   .pv-stall-num{font-size:10.5px}
-  .pv-block{font-size:9.5px}
   .pv-customer{font-size:10.5px}
   .pv-order{font-size:9.5px}
+  .pv-date-cell{font-size:9.5px}
   .pv-occ{font-size:9px;padding:1.5px 7px}
+  .pv-status{font-size:9px;padding:1.5px 7px}
   .pv-barn-header td{padding:5px 8px;font-size:10px}
   .pv-barn-header td .pv-occ-count{font-size:9px;padding:0 6px}
   .pv-checkbox{width:11px;height:11px}
-  .pv-table-wrap{break-inside:avoid}
-  .pv-table tbody tr{break-inside:avoid}
-  .pv-section-by-customer{break-before:auto}
+  /* Page break per barn */
+  .pv-barn-block{break-inside:avoid;page-break-inside:avoid}
+  .pv-barn-block+.pv-barn-block{break-before:page;page-break-before:page}
+  .pv-section-by-customer{break-before:page;page-break-before:page}
   .pv-footer{margin-top:10px;font-size:9.5px}
   @page{margin:10mm 8mm;size:letter portrait}
 }
@@ -150,8 +176,8 @@ a:hover{text-decoration:none}
   <div class="pv-topbar">
     <div class="pv-topbar-left">
       <div>
-        <div class="pv-topbar-title">Print View — Stall Chart</div>
-        <div class="pv-topbar-sub">2026 Southeast Region Super Sort · May 7–9, 2026</div>
+        <div class="pv-topbar-title">Print View — Stall &amp; RV Chart</div>
+        <div class="pv-topbar-sub">2025 National Team Roping · Oct 9–12, 2025</div>
       </div>
     </div>
     <div class="pv-topbar-btns">
@@ -163,14 +189,34 @@ a:hover{text-decoration:none}
     </div>
   </div>
 
+  <!-- Filter bar (on-screen only, hidden on print) -->
+  <div class="pv-filter-bar">
+    <div class="pv-filter-group">
+      <div class="pv-filter-label">Show</div>
+      <div class="pv-filter-seg">
+        <button class="pv-filter-seg-btn active">All</button>
+        <button class="pv-filter-seg-btn">Stalls</button>
+        <button class="pv-filter-seg-btn">RV</button>
+      </div>
+    </div>
+    <div class="pv-filter-group">
+      <div class="pv-filter-label">View</div>
+      <select class="pv-filter-select">
+        <option selected>By Location</option>
+        <option>By Customer</option>
+      </select>
+    </div>
+  </div>
+
   <div class="pv-body">
 
-    <!-- Header (event name + dates + printed) -->
+    <!-- Header -->
     <div class="pv-header">
-      <div class="pv-event">2026 Southeast Region Super Sort</div>
+      <div class="pv-event">2025 National Team Roping</div>
       <div class="pv-meta">
-        <span><strong>Dates:</strong> May 7–9, 2026</span>
-        <span><strong>Printed:</strong> May 21, 2026 7:08 AM</span>
+        <span><strong>Dates:</strong> Oct 9–12, 2025</span>
+        <span><strong>Reservation:</strong> NTR 6519</span>
+        <span><strong>Printed:</strong> Jun 20, 2026 7:08 AM</span>
       </div>
     </div>
 
@@ -178,120 +224,217 @@ a:hover{text-decoration:none}
     <div class="pv-movement">
       <div class="pv-movement-title">Daily Movement</div>
       <div class="pv-movement-grid">
-        <div class="pv-movement-day">
-          <div class="pv-movement-date">May 7</div>
-          <div class="pv-movement-vals"><span>↓ 22 Arriving</span><span>↑ 0 Departing</span></div>
+        <div>
+          <div class="pv-movement-date">Oct 9</div>
+          <div class="pv-movement-vals"><span>↓ 18 Arriving</span><span>↑ 0 Departing</span></div>
         </div>
-        <div class="pv-movement-day">
-          <div class="pv-movement-date">May 8</div>
-          <div class="pv-movement-vals"><span>↓ 0 Arriving</span><span>↑ 0 Departing</span></div>
+        <div>
+          <div class="pv-movement-date">Oct 10</div>
+          <div class="pv-movement-vals"><span>↓ 4 Arriving</span><span>↑ 0 Departing</span></div>
         </div>
-        <div class="pv-movement-day">
-          <div class="pv-movement-date">May 9</div>
-          <div class="pv-movement-vals"><span>↓ 0 Arriving</span><span>↑ 23 Departing</span></div>
+        <div>
+          <div class="pv-movement-date">Oct 11</div>
+          <div class="pv-movement-vals"><span>↓ 0 Arriving</span><span>↑ 2 Departing</span></div>
+        </div>
+        <div>
+          <div class="pv-movement-date">Oct 12</div>
+          <div class="pv-movement-vals"><span>↓ 0 Arriving</span><span>↑ 20 Departing</span></div>
         </div>
       </div>
     </div>
 
     <!-- ═══════════════════════════════════════ -->
-    <!-- BY LOCATION                            -->
+    <!-- BY LOCATION — STALLS                  -->
     <!-- ═══════════════════════════════════════ -->
 
-    <div class="pv-section-band">By Location</div>
-    <div class="pv-table-wrap">
-      <table class="pv-table">
-        <thead>
-          <tr>
-            <th style="width:60px">Stall</th>
-            <th>Customer</th>
-            <th style="width:85px">Order #</th>
-            <th class="c" style="width:60px">✓ Arr.</th>
-            <th class="c" style="width:90px">May 7</th>
-            <th class="c" style="width:90px">May 8</th>
-            <th class="c" style="width:90px">May 9</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- RED BARN -->
-          <tr class="pv-barn-header"><td colspan="7">Red Barn <span class="pv-barn-sub">· Stalls 100–120</span><span class="pv-occ-count">5 of 8 occupied</span></td></tr>
-          <tr><td class="pv-stall-num">100</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-order">#00028</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
-          <tr><td class="pv-stall-num">101</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-order">#00028</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
-          <tr><td class="pv-stall-num">102</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-order">#00028</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
-          <tr><td class="pv-stall-num">103</td><td class="pv-customer">Jane Doe</td><td class="pv-order">#00030</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
-          <tr><td class="pv-stall-num">104</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-order">#00028</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
-          <tr><td class="pv-stall-num">105</td><td class="pv-customer">Marcus Trevino</td><td class="pv-order">#00024</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
-          <tr><td class="pv-stall-num">106</td><td class="pv-customer pv-customer-empty">—</td><td class="pv-order">—</td><td class="pv-checkin">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
-          <tr><td class="pv-stall-num">107</td><td class="pv-customer pv-customer-empty">—</td><td class="pv-order">—</td><td class="pv-checkin">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+    <div class="pv-section-band">
+      <span>By Location — Stalls<span class="pv-section-band-sub">Red Barn, Blue Barn, Yellow Barn</span></span>
+      <div class="pv-section-kpis">
+        <div class="pv-section-kpi">18 <span>occupied</span></div>
+        <div class="pv-section-kpi">4 <span>available</span></div>
+        <div class="pv-section-kpi">2 <span>blocked</span></div>
+      </div>
+    </div>
 
-          <!-- BLUE BARN -->
-          <tr class="pv-barn-header"><td colspan="7">Blue Barn <span class="pv-barn-sub">· Stalls 121–160</span><span class="pv-occ-count">1 of 3 occupied</span></td></tr>
-          <tr><td class="pv-stall-num">121</td><td class="pv-customer">Devon Lacroix</td><td class="pv-order">#00029</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
-          <tr><td class="pv-stall-num">122</td><td class="pv-customer pv-customer-empty">—</td><td class="pv-order">—</td><td class="pv-checkin">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
-          <tr><td class="pv-stall-num">123</td><td class="pv-customer pv-customer-empty">—</td><td class="pv-order">—</td><td class="pv-checkin">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-block">Blocked</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-block">Blocked</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-block">Blocked</span></td></tr>
+    <!-- RED BARN -->
+    <div class="pv-barn-block">
+      <div class="pv-table-wrap">
+        <table class="pv-table">
+          <thead>
+            <tr>
+              <th style="width:60px">Stall</th>
+              <th>Customer</th>
+              <th style="width:85px">Order #</th>
+              <th class="c" style="width:52px">✓ Arr.</th>
+              <th class="c" style="width:82px">Oct 9</th>
+              <th class="c" style="width:82px">Oct 10</th>
+              <th class="c" style="width:82px">Oct 11</th>
+              <th class="c" style="width:82px">Oct 12</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="pv-barn-header"><td colspan="8">Red Barn <span class="pv-barn-sub">· Stalls 100–120</span><span class="pv-occ-count">6 of 8 occupied</span></td></tr>
+            <tr><td class="pv-stall-num">100</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-order">#00128</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">101</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-order">#00128</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">102</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-order">#00128</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">103</td><td class="pv-customer">Jane Hargrove</td><td class="pv-order">#00130</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">104</td><td class="pv-customer">Marcus Trevino</td><td class="pv-order">#00124</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">105</td><td class="pv-customer">Devon Lacroix</td><td class="pv-order">#00129</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">106</td><td class="pv-customer pv-customer-empty">—</td><td class="pv-order">—</td><td class="pv-checkin">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">107</td><td class="pv-customer pv-customer-empty">—</td><td class="pv-order">—</td><td class="pv-checkin">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-block">Blocked</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-block">Blocked</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-block">Blocked</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-block">Blocked</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
-          <!-- YELLOW BARN -->
-          <tr class="pv-barn-header"><td colspan="7">Yellow Barn <span class="pv-barn-sub">· Stalls 161–200</span><span class="pv-occ-count">0 of 2 occupied</span></td></tr>
-          <tr><td class="pv-stall-num">197</td><td class="pv-customer pv-customer-empty">—</td><td class="pv-order">—</td><td class="pv-checkin">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
-          <tr><td class="pv-stall-num">200</td><td class="pv-customer pv-customer-empty">—</td><td class="pv-order">—</td><td class="pv-checkin">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
-        </tbody>
-      </table>
+    <!-- BLUE BARN -->
+    <div class="pv-barn-block">
+      <div class="pv-table-wrap">
+        <table class="pv-table">
+          <thead>
+            <tr>
+              <th style="width:60px">Stall</th>
+              <th>Customer</th>
+              <th style="width:85px">Order #</th>
+              <th class="c" style="width:52px">✓ Arr.</th>
+              <th class="c" style="width:82px">Oct 9</th>
+              <th class="c" style="width:82px">Oct 10</th>
+              <th class="c" style="width:82px">Oct 11</th>
+              <th class="c" style="width:82px">Oct 12</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="pv-barn-header"><td colspan="8">Blue Barn <span class="pv-barn-sub">· Stalls 121–160</span><span class="pv-occ-count">5 of 6 occupied</span></td></tr>
+            <tr><td class="pv-stall-num">121</td><td class="pv-customer">Chad Beaumont</td><td class="pv-order">#00131</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">122</td><td class="pv-customer">Chad Beaumont</td><td class="pv-order">#00131</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">123</td><td class="pv-customer">Rayna Flores</td><td class="pv-order">#00133</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">124</td><td class="pv-customer">Rayna Flores</td><td class="pv-order">#00133</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">125</td><td class="pv-customer">Tom Whitfield</td><td class="pv-order">#00135</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">126</td><td class="pv-customer pv-customer-empty">—</td><td class="pv-order">—</td><td class="pv-checkin">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- YELLOW BARN -->
+    <div class="pv-barn-block">
+      <div class="pv-table-wrap">
+        <table class="pv-table">
+          <thead>
+            <tr>
+              <th style="width:60px">Stall</th>
+              <th>Customer</th>
+              <th style="width:85px">Order #</th>
+              <th class="c" style="width:52px">✓ Arr.</th>
+              <th class="c" style="width:82px">Oct 9</th>
+              <th class="c" style="width:82px">Oct 10</th>
+              <th class="c" style="width:82px">Oct 11</th>
+              <th class="c" style="width:82px">Oct 12</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="pv-barn-header"><td colspan="8">Yellow Barn <span class="pv-barn-sub">· Stalls 200–220</span><span class="pv-occ-count">7 of 8 occupied</span></td></tr>
+            <tr><td class="pv-stall-num">200</td><td class="pv-customer">Lisa Kendrick</td><td class="pv-order">#00136</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">201</td><td class="pv-customer">Lisa Kendrick</td><td class="pv-order">#00136</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">202</td><td class="pv-customer">Brandon Osei</td><td class="pv-order">#00138</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">203</td><td class="pv-customer">Brandon Osei</td><td class="pv-order">#00138</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">204</td><td class="pv-customer">Gina Moreau</td><td class="pv-order">#00140</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">205</td><td class="pv-customer">Gina Moreau</td><td class="pv-order">#00140</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">206</td><td class="pv-customer">Tom Whitfield</td><td class="pv-order">#00135</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">207</td><td class="pv-customer pv-customer-empty">—</td><td class="pv-order">—</td><td class="pv-checkin">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ═══════════════════════════════════════ -->
-    <!-- RV LOTS                                -->
+    <!-- BY LOCATION — RV LOTS                 -->
     <!-- ═══════════════════════════════════════ -->
 
-    <div class="pv-section-band">RV Lots</div>
-    <div class="pv-table-wrap">
-      <table class="pv-table">
-        <thead>
-          <tr>
-            <th style="width:100px">RV Lot</th>
-            <th>Customer</th>
-            <th style="width:85px">Order #</th>
-            <th class="c" style="width:60px">✓ Arr.</th>
-            <th class="c" style="width:90px">May 7</th>
-            <th class="c" style="width:90px">May 8</th>
-            <th class="c" style="width:90px">May 9</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td class="pv-stall-num">Red Lot</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-order">#00031</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
-        </tbody>
-      </table>
+    <div class="pv-section-band">
+      <span>By Location — RV Lots<span class="pv-section-band-sub">North Lot, South Lot</span></span>
+      <div class="pv-section-kpis">
+        <div class="pv-section-kpi">5 <span>occupied</span></div>
+        <div class="pv-section-kpi">3 <span>available</span></div>
+      </div>
+    </div>
+
+    <div class="pv-barn-block">
+      <div class="pv-table-wrap">
+        <table class="pv-table">
+          <thead>
+            <tr>
+              <th style="width:100px">RV Lot</th>
+              <th>Customer</th>
+              <th style="width:85px">Order #</th>
+              <th class="c" style="width:52px">✓ Arr.</th>
+              <th class="c" style="width:82px">Oct 9</th>
+              <th class="c" style="width:82px">Oct 10</th>
+              <th class="c" style="width:82px">Oct 11</th>
+              <th class="c" style="width:82px">Oct 12</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="pv-barn-header"><td colspan="8">North Lot <span class="pv-barn-sub">· Lots N1–N10</span><span class="pv-occ-count">3 of 5 occupied</span></td></tr>
+            <tr><td class="pv-stall-num">N1</td><td class="pv-customer">Whitney Mitchell</td><td class="pv-order">#00128</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">N2</td><td class="pv-customer">Jane Hargrove</td><td class="pv-order">#00130</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">N3</td><td class="pv-customer">Marcus Trevino</td><td class="pv-order">#00124</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">N4</td><td class="pv-customer pv-customer-empty">—</td><td class="pv-order">—</td><td class="pv-checkin">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">N5</td><td class="pv-customer pv-customer-empty">—</td><td class="pv-order">—</td><td class="pv-checkin">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr class="pv-barn-header"><td colspan="8">South Lot <span class="pv-barn-sub">· Lots S1–S8</span><span class="pv-occ-count">2 of 3 occupied</span></td></tr>
+            <tr><td class="pv-stall-num">S1</td><td class="pv-customer">Chad Beaumont</td><td class="pv-order">#00131</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">S2</td><td class="pv-customer">Devon Lacroix</td><td class="pv-order">#00129</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-res">Reserved</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+            <tr><td class="pv-stall-num">S3</td><td class="pv-customer pv-customer-empty">—</td><td class="pv-order">—</td><td class="pv-checkin">—</td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td><td class="pv-night-cell"><span class="pv-occ pv-occ-avail">Available</span></td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ═══════════════════════════════════════ -->
     <!-- BY CUSTOMER                            -->
     <!-- ═══════════════════════════════════════ -->
 
-    <div class="pv-section-band pv-section-by-customer">By Customer</div>
+    <div class="pv-section-band pv-section-by-customer">
+      <span>By Customer</span>
+      <div class="pv-section-kpis">
+        <div class="pv-section-kpi">9 <span>customers</span></div>
+      </div>
+    </div>
+
     <div class="pv-table-wrap">
       <table class="pv-table">
         <thead>
           <tr>
             <th>Customer</th>
             <th style="width:85px">Order #</th>
-            <th class="c" style="width:60px">✓ Arr.</th>
-            <th class="c" style="width:65px">Nights</th>
-            <th>Stall(s)</th>
-            <th>RV Lot(s)</th>
+            <th class="c" style="width:52px">✓ Arr.</th>
+            <th style="width:100px">Arrival</th>
+            <th style="width:100px">Departure</th>
+            <th style="width:90px">Barn</th>
+            <th style="width:70px">Stall #</th>
+            <th style="width:70px">RV Lot</th>
+            <th style="width:80px">Status</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td class="pv-customer">Whitney Mitchell</td><td class="pv-order">#00028</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell">2</td><td>Red Barn 100, 101, 102, 104</td><td class="pv-customer-empty">—</td></tr>
-          <tr><td class="pv-customer">Whitney Mitchell</td><td class="pv-order">#00031</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell">2</td><td class="pv-customer-empty">—</td><td>Red Lot</td></tr>
-          <tr><td class="pv-customer">Jane Doe</td><td class="pv-order">#00030</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell">2</td><td>Red Barn 103</td><td class="pv-customer-empty">—</td></tr>
-          <tr><td class="pv-customer">Marcus Trevino</td><td class="pv-order">#00024</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell">2</td><td>Red Barn 105</td><td class="pv-customer-empty">—</td></tr>
-          <tr><td class="pv-customer">Devon Lacroix</td><td class="pv-order">#00029</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-night-cell">2</td><td>Blue Barn 121</td><td class="pv-customer-empty">—</td></tr>
+          <tr><td class="pv-customer">Whitney Mitchell</td><td class="pv-order">#00128</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-date-cell">Oct 9</td><td class="pv-date-cell">Oct 12</td><td>Red Barn</td><td>100, 101, 102</td><td>N1</td><td><span class="pv-status pv-status-paid">Paid</span></td></tr>
+          <tr><td class="pv-customer">Jane Hargrove</td><td class="pv-order">#00130</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-date-cell">Oct 9</td><td class="pv-date-cell">Oct 12</td><td>Red Barn</td><td>103</td><td>N2</td><td><span class="pv-status pv-status-paid">Paid</span></td></tr>
+          <tr><td class="pv-customer">Marcus Trevino</td><td class="pv-order">#00124</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-date-cell">Oct 9</td><td class="pv-date-cell">Oct 12</td><td>Red Barn</td><td>104</td><td>N3</td><td><span class="pv-status pv-status-partial">Partial</span></td></tr>
+          <tr><td class="pv-customer">Devon Lacroix</td><td class="pv-order">#00129</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-date-cell">Oct 9</td><td class="pv-date-cell">Oct 12</td><td>Red Barn</td><td>105</td><td>S2</td><td><span class="pv-status pv-status-paid">Paid</span></td></tr>
+          <tr><td class="pv-customer">Chad Beaumont</td><td class="pv-order">#00131</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-date-cell">Oct 9</td><td class="pv-date-cell">Oct 12</td><td>Blue Barn</td><td>121, 122</td><td>S1</td><td><span class="pv-status pv-status-paid">Paid</span></td></tr>
+          <tr><td class="pv-customer">Rayna Flores</td><td class="pv-order">#00133</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-date-cell">Oct 9</td><td class="pv-date-cell">Oct 12</td><td>Blue Barn</td><td>123, 124</td><td class="pv-customer-empty">—</td><td><span class="pv-status pv-status-pending">Unpaid</span></td></tr>
+          <tr><td class="pv-customer">Tom Whitfield</td><td class="pv-order">#00135</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-date-cell">Oct 10</td><td class="pv-date-cell">Oct 12</td><td>Blue / Yellow</td><td>125, 206</td><td class="pv-customer-empty">—</td><td><span class="pv-status pv-status-paid">Paid</span></td></tr>
+          <tr><td class="pv-customer">Lisa Kendrick</td><td class="pv-order">#00136</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-date-cell">Oct 9</td><td class="pv-date-cell">Oct 12</td><td>Yellow Barn</td><td>200, 201</td><td class="pv-customer-empty">—</td><td><span class="pv-status pv-status-paid">Paid</span></td></tr>
+          <tr><td class="pv-customer">Brandon Osei</td><td class="pv-order">#00138</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-date-cell">Oct 9</td><td class="pv-date-cell">Oct 12</td><td>Yellow Barn</td><td>202, 203</td><td class="pv-customer-empty">—</td><td><span class="pv-status pv-status-partial">Partial</span></td></tr>
+          <tr><td class="pv-customer">Gina Moreau</td><td class="pv-order">#00140</td><td class="pv-checkin"><span class="pv-checkbox"></span></td><td class="pv-date-cell">Oct 9</td><td class="pv-date-cell">Oct 12</td><td>Yellow Barn</td><td>204, 205</td><td class="pv-customer-empty">—</td><td><span class="pv-status pv-status-paid">Paid</span></td></tr>
         </tbody>
       </table>
     </div>
 
     <!-- Footer -->
     <div class="pv-footer">
-      <span>2026 Southeast Region Super Sort · Stall Chart</span>
-      <span>Printed May 21, 2026 · Equine Event Manager</span>
+      <span>2025 National Team Roping · NTR 6519 · Stall &amp; RV Chart</span>
+      <span>Printed Jun 20, 2026 · Equine Event Manager</span>
     </div>
 
   </div>

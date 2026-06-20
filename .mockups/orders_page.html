@@ -6,498 +6,931 @@
 <title>Equine Event Manager – Orders</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
+/* ── BRAND TOKENS (copied from assets/css/admin.css :root) ── */
+:root{
+  --eem-navy:#031B4E; --eem-electric:#1668F2; --eem-electric-hover:#1355cc;
+  --eem-bg:#F7F9FC; --eem-bg-alt:#f3f4f5; --eem-bg-hover:#fafbff;
+  --eem-border:#D9E2F2; --eem-border-soft:#f0f0f1; --eem-border-card:#c3c4c7;
+  --eem-control-border:#8c8f94;
+  --eem-ink:#1d2327; --eem-muted:#646970;
+  --eem-radius-sm:2px; --eem-radius:3px; --eem-radius-lg:6px;
+  --eem-type-stall-bg:#EEF4FF; --eem-type-stall-text:#1668F2; --eem-type-stall-border:#c0d8ff;
+  --eem-type-rv-bg:#F5F3FF; --eem-type-rv-text:#6d28d9; --eem-type-rv-border:#ddd6fe;
+  --eem-type-addon-bg:#FFF7ED; --eem-type-addon-text:#c2410c; --eem-type-addon-border:#fed7aa;
+  --eem-type-group-bg:#eef2ff; --eem-type-group-text:#4338ca; --eem-type-group-border:#c7d2fe;
+  --eem-type-entry-bg:#F0FDF4; --eem-type-entry-text:#15803d; --eem-type-entry-border:#bbf7d0;
+  --eem-badge-green-bg:#F0FDF4; --eem-badge-green-text:#15803d; --eem-badge-green-border:#bbf7d0;
+  --eem-badge-amber-bg:#FFFBEB; --eem-badge-amber-text:#b45309; --eem-badge-amber-border:#fde68a;
+  --eem-badge-red-bg:#FEF2F2;   --eem-badge-red-text:#b91c1c;   --eem-badge-red-border:#fecaca;
+  --eem-badge-gray-bg:#F8FAFC;  --eem-badge-gray-text:#64748b;  --eem-badge-gray-border:#e2e8f0;
+  --eem-badge-blue-bg:#EEF4FF;  --eem-badge-blue-text:#1668F2;  --eem-badge-blue-border:#c0d8ff;
+  --eem-badge-orange-bg:#FFF7ED;--eem-badge-orange-text:#c2410c;--eem-badge-orange-border:#fed7aa;
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:var(--eem-ink);font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
 
 /* Universal hover convention — color only, NEVER underline */
 a{text-decoration:none}
 a:hover{text-decoration:none}
 
-/* ── WP SHELL ── */
+/* ── WP SHELL STUB ── */
 .wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;position:sticky;top:0;z-index:200;flex-shrink:0}
-.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7}
 .wp-admin-bar span.site{color:#fff;font-weight:600}
 .wp-body{display:flex;flex:1}
 .wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
-.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
 .wp-sidebar-item:hover{background:#2c3338;color:#fff}
 .wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
-.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
 .wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
-.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7}
 .wp-sidebar-sub:hover{color:#fff}
 .wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+.wp-content-area{flex:1;background:#f0f0f1;padding:0;overflow-x:auto}
 
-/* ── CONTENT ── */
-.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+/* ── EEM PAGE WRAPPER ── */
+.eem-page{padding:20px;max-width:1280px}
+.eem-breadcrumb{display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:13px;color:var(--eem-muted)}
+.eem-breadcrumb-logo img{height:30px;display:block}
+.eem-breadcrumb-sep{color:#c3c4c7}
+.eem-breadcrumb-segment{color:var(--eem-navy);font-weight:600}
 
-/* Logo + breadcrumb (standard placeholder) */
-.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
-.breadcrumb-sep{font-size:13px;color:#8c8f94}
-.breadcrumb-page{font-size:13px;color:#1d2327;font-weight:600}
+.eem-page-wrap{background:#fff;border:1px solid var(--eem-border-card);border-radius:var(--eem-radius-lg);overflow:visible}
+.eem-page-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:20px 22px;border-bottom:1px solid var(--eem-border-soft)}
+.eem-page-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--eem-navy);line-height:1.2}
+.eem-page-subtitle{font-size:13px;color:var(--eem-muted);margin-top:4px;max-width:640px}
+.eem-page-actions{flex-shrink:0}
+.eem-btn{display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;padding:8px 14px;border-radius:var(--eem-radius);border:1px solid transparent;cursor:pointer;text-decoration:none}
+.eem-btn-electric,a.eem-btn-electric{background:var(--eem-electric);color:#fff;border-color:var(--eem-electric)}
+a.eem-btn-electric:link,a.eem-btn-electric:visited,a.eem-btn-electric:hover,a.eem-btn-electric:focus{color:#fff;text-decoration:none}
+.eem-btn-electric:hover{background:var(--eem-electric-hover)}
+.eem-btn-secondary{background:#fff;color:var(--eem-navy);border-color:var(--eem-control-border)}
+.eem-btn-primary{background:var(--eem-electric);color:#fff;border-color:var(--eem-electric)}
+.eem-btn-delete{background:#b91c1c;color:#fff;border-color:#b91c1c}
 
-/* ── PLUGIN-WRAP (VIS-3) ── */
-.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+.eem-page-body{padding:18px 22px 22px}
 
-/* PAGE HEADER (inside plugin-wrap per VIS-3) */
-.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.plugin-header-left{flex:1;min-width:0}
-.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
-.plugin-subtitle{font-size:13px;color:#6B7A99;line-height:1.45}
+/* ── INLINE NOTICE ── */
+.notice{padding:10px 14px;margin-bottom:12px;border-left:4px solid #72aee6;background:#fff;font-size:13px;border-radius:var(--eem-radius)}
+.notice-success{border-left-color:#00a32a}
+.notice-warning{border-left-color:#dba617}
+.notice-error{border-left-color:#d63638}
 
-/* Primary CTA (VIS-4 — Electric Blue) */
-.btn-primary{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:9px 18px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;text-decoration:none}
-.btn-primary:hover{background:#1257d1;border-color:#1257d1;color:#fff}
-.btn-primary svg{width:13px;height:13px}
+/* ── TOOLBARS ── */
+.eem-list-toolbar{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.eem-list-toolbar-left,.eem-list-toolbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.eem-toolbar-controls{border-top:1px solid var(--eem-border-soft);padding-top:12px}
 
-/* ── TOOLBAR ROW 1: Event dropdown + Status tabs ── */
-.toolbar-row-1{padding:12px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#fff}
-.event-select{padding:7px 32px 7px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none;min-width:260px;cursor:pointer}
+.eem-toolbar-select{font-size:13px;padding:6px 28px 6px 10px;border:1px solid var(--eem-control-border);border-radius:var(--eem-radius);background:#fff;color:var(--eem-ink);min-height:34px;
+  appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23646970' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.eem-toolbar-btn{font-size:13px;font-weight:500;padding:6px 14px;border:1px solid var(--eem-control-border);border-radius:var(--eem-radius);background:#fff;color:var(--eem-ink);cursor:pointer;min-height:34px}
+.eem-toolbar-btn:hover{border-color:var(--eem-electric);color:var(--eem-electric)}
 
-/* Status tabs (Orders pattern — plain text, no counts) */
-.status-tabs{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
-.status-tab{font-size:13px;color:#50575e;cursor:pointer;text-decoration:none;white-space:nowrap;padding:4px 2px;border-bottom:2px solid transparent}
-.status-tab:hover{color:#031B4E}
-.status-tab.active{color:#031B4E;font-weight:600;border-bottom-color:#1668F2}
+/* Bulk form (row 2 left) */
+.eem-bulk-form{display:flex;align-items:center;gap:8px}
 
-/* ── TOOLBAR ROW 2: Bulk actions + filters + search ── */
-.toolbar-row-2{padding:12px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff}
-.toolbar-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.toolbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:auto}
-.toolbar-select{padding:6px 28px 6px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none;cursor:pointer;min-width:130px}
-.toolbar-btn{padding:6px 14px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer;white-space:nowrap}
-.toolbar-btn:hover{background:#f6f7f7}
-.search-wrap{position:relative;min-width:180px;max-width:260px;flex:1}
-.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94}
-.search-input{width:100%;padding:6px 10px 6px 28px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
-.search-input:focus{border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
-.search-input::placeholder{color:#b0b0b0}
-.item-count{font-size:13px;color:#50575e;white-space:nowrap}
+/* Billing-status filter tabs */
+.eem-filter-tabs{display:inline-flex;gap:4px;background:var(--eem-bg-alt);border-radius:var(--eem-radius);padding:3px}
+.eem-filter-tab,a.eem-filter-tab{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:5px 12px;border-radius:var(--eem-radius);color:var(--eem-muted);text-decoration:none}
+a.eem-filter-tab:link,a.eem-filter-tab:visited{color:var(--eem-muted);text-decoration:none}
+a.eem-filter-tab:hover,a.eem-filter-tab:focus{color:var(--eem-navy);text-decoration:none}
+.eem-filter-tab.active,a.eem-filter-tab.active{background:#fff;color:var(--eem-navy);font-weight:600;box-shadow:0 1px 2px rgba(3,27,78,.08)}
 
-/* ── TABLE (desktop) ── */
-.desktop-table{overflow-x:auto}
-table{width:100%;border-collapse:collapse}
-thead{background:#f3f4f5;border-bottom:1px solid #dcdcde}
-thead th{padding:11px 14px;font-size:13px;font-weight:600;color:#1d2327;text-align:left;white-space:nowrap}
-thead th.col-cb{width:36px;padding:11px 8px 11px 18px}
-thead th.sortable{cursor:pointer;color:#1668F2}
-thead th.sortable:hover{color:#1257d1}
-.sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:4px;vertical-align:middle;opacity:.5}
-.sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
-.sort-icon span:first-child{border-bottom:4px solid currentColor}
-.sort-icon span:last-child{border-top:4px solid currentColor}
+/* Search */
+.eem-search-wrap{position:relative;display:flex;align-items:center}
+.eem-search-wrap svg{position:absolute;left:9px;width:15px;height:15px;color:var(--eem-muted);pointer-events:none}
+.eem-search-input{font-size:13px;padding:6px 10px 6px 30px;border:1px solid var(--eem-control-border);border-radius:var(--eem-radius);min-height:34px;width:200px;background:#fff;color:var(--eem-ink)}
+.eem-search-input:focus{outline:none;border-color:var(--eem-electric);box-shadow:0 0 0 1px var(--eem-electric)}
+.eem-item-count{font-size:13px;color:var(--eem-muted);white-space:nowrap}
 
-tbody tr{border-bottom:1px solid #f0f0f1}
-tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:#f6f7f7}
-td{padding:14px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
-td.col-cb{padding:14px 8px 14px 18px;width:36px}
+/* ── TABLE ── */
+.eem-desktop-table{border:1px solid var(--eem-border);border-radius:var(--eem-radius-lg);overflow:hidden;margin-top:4px}
+.eem-table{width:100%;border-collapse:collapse;font-size:13px}
+.eem-table thead tr{background:var(--eem-bg)}
+.eem-table thead th{text-align:left;padding:11px 14px;font-size:12px;font-weight:600;color:var(--eem-muted);text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--eem-border);white-space:nowrap}
+.eem-table thead th.sortable a{display:inline-flex;align-items:center;gap:5px;color:var(--eem-muted)}
+a.eem-table thead th.sortable a:hover{color:var(--eem-navy)}
+.eem-table tbody tr{border-bottom:1px solid var(--eem-border-soft)}
+.eem-table tbody tr:last-child{border-bottom:none}
+.eem-table tbody tr:hover{background:var(--eem-bg-hover)}
+.eem-table td{padding:12px 14px;vertical-align:middle;color:var(--eem-ink)}
+.eem-col-cb{width:36px;text-align:center}
+.eem-table-empty{text-align:center;color:var(--eem-muted);padding:32px 14px}
+.eem-order-num{font-weight:600;color:var(--eem-electric)}
+a.eem-order-num:link,a.eem-order-num:visited{color:var(--eem-electric)}
+.eem-customer-name{color:var(--eem-navy);font-weight:500}
+a.eem-customer-name:link,a.eem-customer-name:visited{color:var(--eem-navy)}
+.eem-event-link{color:var(--eem-electric)}
+a.eem-event-link:link,a.eem-event-link:visited{color:var(--eem-electric)}
+.eem-event-name{color:var(--eem-muted)}
+.eem-date-val{color:var(--eem-muted);white-space:nowrap}
 
-/* Order # (link styling — navy bold, electric hover) */
-.order-num{font-weight:700;color:#031B4E;font-size:13px;white-space:nowrap;text-decoration:none}
-.order-num:hover{color:#1668F2}
+.eem-sort-icon{display:inline-flex;flex-direction:column;gap:1px}
+.eem-sort-icon span{width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
+.eem-sort-icon span:first-child{border-bottom:4px solid #c3c4c7}
+.eem-sort-icon span:last-child{border-top:4px solid #c3c4c7}
+th.is-sorted--desc .eem-sort-icon span:last-child{border-top-color:var(--eem-navy)}
+th.is-sorted--asc .eem-sort-icon span:first-child{border-bottom-color:var(--eem-navy)}
 
-/* Customer name (link to Customer Profile stub) */
-.customer-name{color:#031B4E;font-weight:600;text-decoration:none}
-.customer-name:hover{color:#1668F2}
+/* Type badges */
+.eem-type-badges{display:flex;gap:4px;flex-wrap:wrap}
+.eem-type-badges-empty{color:var(--eem-muted)}
+.eem-type-badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;line-height:1.5}
+.eem-type-stall{background:var(--eem-type-stall-bg);color:var(--eem-type-stall-text);border:1px solid var(--eem-type-stall-border)}
+.eem-type-rv{background:var(--eem-type-rv-bg);color:var(--eem-type-rv-text);border:1px solid var(--eem-type-rv-border)}
+.eem-type-addon{background:var(--eem-type-addon-bg);color:var(--eem-type-addon-text);border:1px solid var(--eem-type-addon-border)}
+.eem-type-group{background:var(--eem-type-group-bg);color:var(--eem-type-group-text);border:1px solid var(--eem-type-group-border)}
+.eem-type-entry{background:var(--eem-type-entry-bg);color:var(--eem-type-entry-text);border:1px solid var(--eem-type-entry-border)}
 
-/* Event name */
-.event-name{color:#50575e;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
-/* Date cell */
-.date-val{color:#8c8f94;white-space:nowrap;font-size:13px}
-
-/* Type badges — FIXED colors per shipped state */
-.type-badges{display:flex;gap:4px;flex-wrap:wrap}
-.type-badge{padding:3px 9px;border-radius:3px;font-size:11.5px;font-weight:600;white-space:nowrap;display:inline-block;line-height:1.5}
-.type-stall{background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
-.type-rv{background:#F5F3FF;color:#6d28d9;border:1px solid #ddd6fe}
-.type-addon{background:#FFF7ED;color:#c2410c;border:1px solid #fed7aa}
-.type-group{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
-
-/* Status badges (mixed-case for Orders per shipped state) */
-.status-badge{padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;line-height:1.5}
-.status-badge::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.status-paid{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
-.status-paid::before{background:#22c55e}
-.status-unpaid{background:#FFFBEB;color:#b45309;border:1px solid #fde68a}
-.status-unpaid::before{background:#f59e0b}
-.status-partial{background:#FFFBEB;color:#b45309;border:1px solid #fde68a}
-.status-partial::before{background:#f59e0b}
-.status-invoice{background:#EFF6FF;color:#1d4ed8;border:1px solid #bfdbfe}
-.status-invoice::before{background:#3b82f6}
-.status-refunded{background:#FFF1F2;color:#be123c;border:1px solid #fecdd3}
-.status-refunded::before{background:#f43f5e}
-.status-cancelled{background:#F8FAFC;color:#64748b;border:1px solid #e2e8f0}
-.status-cancelled::before{background:#94a3b8}
+/* Status badges — legacy class names (.eem-status-{slug}) as emitted by PHP */
+.eem-status-badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px;line-height:1.5}
+.eem-status-paid{background:var(--eem-badge-green-bg);color:var(--eem-badge-green-text);border:1px solid var(--eem-badge-green-border)}
+.eem-status-unpaid{background:var(--eem-badge-amber-bg);color:var(--eem-badge-amber-text);border:1px solid var(--eem-badge-amber-border)}
+.eem-status-refunded{background:var(--eem-badge-red-bg);color:var(--eem-badge-red-text);border:1px solid var(--eem-badge-red-border)}
+.eem-status-cancelled{background:var(--eem-badge-gray-bg);color:var(--eem-badge-gray-text);border:1px solid var(--eem-badge-gray-border)}
+/* partial = partially-refunded */
+.eem-status-partial{background:var(--eem-badge-red-bg);color:#9a3412;border:1px solid #fca5a5}
+/* invoice = invoice-sent */
+.eem-status-invoice{background:var(--eem-badge-blue-bg);color:var(--eem-badge-blue-text);border:1px solid var(--eem-badge-blue-border)}
 
 /* Actions cell */
-.actions-cell{display:flex;align-items:center;gap:5px;justify-content:flex-end}
-.action-icon-btn{width:30px;height:30px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#6B7A99;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
-.action-icon-btn:hover{background:#f0f0f1;color:#1d2327;border-color:#8c8f94}
-.action-icon-btn svg{width:14px;height:14px}
-.more-btn{width:30px;height:30px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;letter-spacing:.05em;line-height:1}
-.more-btn:hover{background:#f0f0f1;color:#1d2327;border-color:#8c8f94}
+.eem-actions-cell{display:flex;align-items:center;gap:6px;justify-content:flex-end}
+.eem-btn-collect,a.eem-btn-collect{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:5px 11px;border-radius:var(--eem-radius);background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;text-decoration:none}
+a.eem-btn-collect:link,a.eem-btn-collect:visited{color:#c2410c;text-decoration:none}
+.eem-btn-collect:hover{background:#c2410c;color:#fff;border-color:#c2410c}
+.eem-action-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--eem-border);border-radius:var(--eem-radius);background:#fff;color:var(--eem-muted);cursor:pointer}
+.eem-action-icon-btn:hover{border-color:var(--eem-electric);color:var(--eem-electric)}
+.eem-action-icon-btn svg{width:15px;height:15px}
 
-/* Collect button (orange pill — matches Order Detail) */
-.btn-collect{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:4px;font-size:12px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;background:#FFF7ED;color:#c2410c;border:1px solid #fed7aa;text-decoration:none}
-.btn-collect:hover{background:#fed7aa;color:#c2410c}
-.btn-collect svg{width:13px;height:13px}
+/* Meatballs dropdown */
+.eem-row-menu-wrap{position:relative}
+.eem-more-btn{width:30px;height:30px;border:1px solid var(--eem-border);border-radius:var(--eem-radius);background:#fff;color:var(--eem-muted);cursor:pointer;font-size:16px;line-height:1;letter-spacing:1px}
+.eem-more-btn:hover{border-color:var(--eem-electric);color:var(--eem-electric)}
+.eem-row-dropdown{position:absolute;right:0;top:calc(100% + 4px);min-width:200px;background:#fff;border:1px solid var(--eem-border-card);border-radius:var(--eem-radius);box-shadow:0 6px 22px rgba(3,27,78,.16);padding:5px;z-index:50;display:none}
+.eem-row-menu-wrap.open .eem-row-dropdown{display:block}
+.eem-row-dd-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;font-size:13px;padding:7px 9px;border:none;background:none;color:var(--eem-ink);border-radius:var(--eem-radius-sm);cursor:pointer;text-decoration:none}
+a.eem-row-dd-item:link,a.eem-row-dd-item:visited{color:var(--eem-ink);text-decoration:none}
+.eem-row-dd-item:hover{background:var(--eem-bg)}
+.eem-row-dd-item svg{width:15px;height:15px;color:var(--eem-muted);flex-shrink:0}
+.eem-row-dd-danger{color:#b91c1c}
+.eem-row-dd-danger svg{color:#b91c1c}
 
-/* Row menu dropdown */
-.row-menu-wrap{position:relative;display:inline-block}
-.row-dropdown{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid #c3c4c7;border-radius:4px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:210px;z-index:100;overflow:hidden}
-.row-dropdown.open{display:block}
-.row-dd-item{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:13px;color:#1d2327;cursor:pointer;border-bottom:1px solid #f0f0f1;white-space:nowrap;text-decoration:none}
-.row-dd-item:last-child{border-bottom:none}
-.row-dd-item:hover{background:#f6f7f7;color:#1d2327}
-.row-dd-item svg{width:13px;height:13px;color:#6B7A99;flex-shrink:0}
-.row-dd-danger{color:#b91c1c}
-.row-dd-danger svg{color:#fca5a5}
-.row-dd-danger:hover{background:#fef2f2;color:#b91c1c}
+/* Pagination footer */
+.eem-table-footer{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-top:14px}
+.eem-table-footer-info{font-size:13px;color:var(--eem-muted)}
+.eem-pagination{display:inline-flex;gap:4px}
+.eem-page-btn{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 8px;font-size:13px;border:1px solid var(--eem-border);border-radius:var(--eem-radius);background:#fff;color:var(--eem-ink);cursor:pointer;text-decoration:none}
+a.eem-page-btn:link,a.eem-page-btn:visited{color:var(--eem-ink)}
+.eem-page-btn:hover{border-color:var(--eem-electric);color:var(--eem-electric)}
+.eem-page-btn.active{background:var(--eem-electric);color:#fff;border-color:var(--eem-electric)}
+.eem-page-btn[aria-disabled="true"]{opacity:.4;cursor:default;pointer-events:none}
+.eem-page-btn svg{width:14px;height:14px}
 
-/* TABLE FOOTER */
-.table-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid #dcdcde;background:#f3f4f5;flex-wrap:wrap;gap:8px}
-.table-footer-info{font-size:13px;color:#50575e}
-.pagination{display:flex;align-items:center;gap:3px}
-.page-btn{width:28px;height:28px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Sans',sans-serif;text-decoration:none}
-.page-btn:hover{background:#f6f7f7}
-.page-btn.active{background:#1668F2;color:#fff;border-color:#1668F2}
-.page-btn.disabled{opacity:.45;cursor:not-allowed}
-.page-btn svg{width:12px;height:12px}
+/* ── MOBILE CARDS ── */
+.eem-mobile-cards{display:none;flex-direction:column;gap:10px}
+.eem-mobile-card{border:1px solid var(--eem-border);border-radius:var(--eem-radius-lg);padding:13px 14px;background:#fff}
+.eem-mobile-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.eem-mobile-card-id{font-weight:600;color:var(--eem-electric)}
+.eem-mobile-card-meta{font-size:12px;color:var(--eem-muted)}
+.eem-mobile-card-title{font-weight:600;color:var(--eem-navy)}
+.eem-mobile-card-sub{font-size:13px;margin-top:2px}
+.eem-mobile-card-sub a{color:var(--eem-electric)}
+.eem-mobile-card-bottom{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px}
+.eem-mobile-card-badges{display:flex;gap:5px;flex-wrap:wrap}
 
-/* MOBILE CARDS (hidden on desktop) */
-.mobile-orders{display:none;padding:12px 14px}
-.mobile-order-card{background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:14px;margin-bottom:8px}
-.mobile-order-card:last-child{margin-bottom:0}
-.moc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.moc-num{color:#031B4E;font-weight:700;font-size:14px;text-decoration:none}
-.moc-num:hover{color:#1668F2}
-.moc-date{font-size:12px;color:#8c8f94}
-.moc-customer{font-size:14px;font-weight:600;color:#1d2327;margin-bottom:2px}
-.moc-customer a{color:#031B4E;text-decoration:none}
-.moc-customer a:hover{color:#1668F2}
-.moc-event{font-size:12.5px;color:#50575e;margin-bottom:8px}
-.moc-bottom{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
-.moc-badges{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
-.moc-actions{display:flex;gap:5px}
+/* ── MODAL CHROME ── */
+.eem-modal{position:fixed;inset:0;background:rgba(3,27,78,.45);display:none;align-items:flex-start;justify-content:center;padding:60px 16px;z-index:300;overflow:auto}
+.eem-modal.open{display:flex}
+.eem-modal-card{background:#fff;border-radius:var(--eem-radius-lg);width:100%;max-width:480px;box-shadow:0 20px 60px rgba(3,27,78,.3)}
+.eem-modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--eem-border-soft)}
+.eem-modal-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;color:var(--eem-navy)}
+.eem-modal-close{background:none;border:none;font-size:22px;line-height:1;color:var(--eem-muted);cursor:pointer}
+.eem-modal-body{padding:18px 20px;font-size:13px}
+.eem-modal-foot{display:flex;padding:14px 20px;border-top:1px solid var(--eem-border-soft);gap:10px}
+.eem-modal-foot--split{justify-content:space-between}
 
-/* ── TABLET ── */
-@media(max-width:960px){
-  .wp-sidebar{display:none}
-  .wp-content{padding:10px 14px 40px}
-  .toolbar-row-1{flex-direction:column;align-items:stretch}
-  .event-select{min-width:0;width:100%}
-  .status-tabs{justify-content:center}
-}
+/* Modal field rows */
+.eem-field-row{margin-top:12px}
+.eem-field-label{display:block;font-size:13px;font-weight:600;color:var(--eem-navy);margin-bottom:5px}
+.eem-field-textarea{width:100%;border:1px solid var(--eem-control-border);border-radius:var(--eem-radius);padding:8px 10px;font-family:inherit;font-size:13px;resize:vertical}
+.eem-field-hint{font-size:12px;color:var(--eem-muted);margin-top:5px}
+.eem-field-control{display:flex;flex-direction:column}
 
-/* ── MOBILE ── */
-@media(max-width:767px){
-  .wp-admin-bar span:not(.site):not(:first-child):not(:last-child){display:none}
-  .wp-content{padding:8px 10px 32px}
-  .breadcrumb-logo-box{width:120px;height:30px;font-size:10px}
-  .plugin-header{padding:14px;flex-direction:column;align-items:stretch;gap:10px}
-  .plugin-title{font-size:18px}
-  .plugin-subtitle{font-size:12.5px}
-  .btn-primary{justify-content:center;padding:8px 14px;font-size:12px}
-  .toolbar-row-1{padding:10px 14px}
-  .status-tabs{overflow-x:auto;flex-wrap:nowrap;gap:12px;-webkit-overflow-scrolling:touch}
-  .status-tab{font-size:12px;white-space:nowrap}
-  .toolbar-row-2{padding:10px 14px;flex-direction:column;align-items:stretch;gap:8px}
-  .toolbar-left{flex-wrap:wrap}
-  .toolbar-right{margin-left:0;flex-wrap:wrap}
-  .search-wrap{flex:1;max-width:100%}
-  .desktop-table{display:none}
-  .mobile-orders{display:block}
-  .table-footer{padding:10px 14px}
+/* Bulk-refund modal 3-state system */
+.eem-bulk-refund-state{display:none}
+.eem-bulk-refund--state-intro .eem-bulk-refund-state--intro{display:block}
+.eem-bulk-refund--state-processing .eem-bulk-refund-state--processing{display:block}
+.eem-bulk-refund--state-summary .eem-bulk-refund-state--summary{display:block}
+.eem-bulk-refund-tab-warning{font-size:12px;color:var(--eem-muted);margin-top:12px;padding-top:10px;border-top:1px solid var(--eem-border-soft)}
+.eem-bulk-refund-processing-headline{font-weight:600;color:var(--eem-navy);margin-bottom:10px}
+.eem-bulk-refund-progress-list{list-style:none;font-size:13px;display:flex;flex-direction:column;gap:6px}
+.eem-bulk-refund-summary-totals{font-size:13px;font-weight:600;color:var(--eem-navy)}
+.eem-bulk-refund-failure-list{list-style:none;font-size:13px;color:#b91c1c;margin-top:8px;display:flex;flex-direction:column;gap:4px}
+.eem-orders-bulk-refund-summary,.eem-order-refund-summary{font-size:13px;color:var(--eem-ink);margin-bottom:4px}
+.eem-order-refund-notify-row{margin-top:10px}
+.eem-order-refund-notify{display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer}
+.eem-order-refund-error{color:#b91c1c;font-size:13px;margin-top:10px}
+.eem-bulk-cancel-progress{list-style:none;font-size:13px;display:flex;flex-direction:column;gap:6px;margin-top:12px}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .eem-desktop-table{display:none}
+  .eem-mobile-cards{display:flex}
+  .eem-list-toolbar{flex-direction:column;align-items:stretch}
+  .eem-list-toolbar-right{justify-content:space-between}
+  .eem-search-input{width:100%}
 }
 </style>
 </head>
 <body>
 
-<!-- WP shell stub -->
-<div class="wp-admin-bar">
-  <span>&#9776;</span>
-  <span class="site">My Equestrian Site</span>
-  <span>+ New</span>
-  <span style="margin-left:auto">Howdy, whitney</span>
-</div>
-
+<!-- WP admin chrome stub -->
+<div class="wp-admin-bar"><span class="site">EN Event Manager</span><span>Howdy, admin</span></div>
 <div class="wp-body">
   <nav class="wp-sidebar">
     <div class="wp-sidebar-item">Dashboard</div>
-    <div class="wp-sidebar-item">Media</div>
-    <div class="wp-sidebar-item">Posts</div>
-    <div class="wp-sidebar-item">Pages</div>
-    <div class="wp-sidebar-sep"></div>
     <div class="wp-sidebar-label">Event Manager</div>
-    <div class="wp-sidebar-sub active">Orders</div>
     <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub active">Orders</div>
     <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
     <div class="wp-sidebar-sub">Reports</div>
     <div class="wp-sidebar-sub">Settings</div>
   </nav>
 
-  <main class="wp-content">
+  <main class="wp-content-area">
+    <div class="eem-page">
 
-    <!-- Logo + breadcrumb -->
-    <div class="breadcrumb">
-      <div class="breadcrumb-logo-box">Plugin Logo</div>
-      <span class="breadcrumb-sep">/</span>
-      <span class="breadcrumb-page">Orders</span>
+      <nav class="eem-breadcrumb" aria-label="Breadcrumb">
+        <a class="eem-breadcrumb-logo" href="#" aria-label="Equine Event Manager dashboard">
+          <img src="Equine Event Manager Logo.png" alt="Equine Event Manager" />
+        </a>
+        <span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+        <span class="eem-breadcrumb-segment" aria-current="page">Orders</span>
+      </nav>
+
+      <div class="eem-page-wrap">
+        <header class="eem-page-header">
+          <div class="eem-page-header-left">
+            <h1 class="eem-page-title">Orders</h1>
+            <p class="eem-page-subtitle">View and manage all customer orders. Filter by event or billing status, search orders, and take quick actions.</p>
+          </div>
+          <div class="eem-page-actions"><a class="eem-btn eem-btn-electric" href="#">+ Create Order</a></div>
+        </header>
+
+        <div class="eem-page-body">
+
+          <!-- Inline action notice (e.g. after resend / trash / restore) — rendered by render_action_notice() -->
+          <!-- <div class="notice notice-success is-dismissible"><p>Customer notification email resent.</p></div> -->
+
+          <!-- ── TOOLBAR ROW 1: event filter (LEFT) + billing-status tabs (RIGHT) ── -->
+          <!-- render_toolbar() — event filter is its own GET form; tabs are plain anchors -->
+          <div class="eem-list-toolbar" data-eem-orders-list>
+            <div class="eem-list-toolbar-left">
+              <!-- event filter form: onchange auto-submits, preserves billing+type+s in hidden inputs -->
+              <form method="get">
+                <input type="hidden" name="page" value="equine-event-manager-orders" />
+                <input type="hidden" name="billing" value="all" />
+                <select class="eem-toolbar-select" name="event" onchange="this.form.submit()" aria-label="Filter by event">
+                  <option value="" selected>All events</option>
+                  <option value="ntr-6519">NTR- Rapid City, SD</option>
+                  <option value="2026-srss">2026 Southeast Region Super Sort</option>
+                  <option value="unassigned">Unassigned Event</option>
+                  <option value="group-only">Group Only Reservation</option>
+                </select>
+              </form>
+            </div>
+            <div class="eem-list-toolbar-right">
+              <!-- billing-status tabs — plain anchors, preserve type+event+s -->
+              <div class="eem-filter-tabs" role="tablist" aria-label="Billing status">
+                <a class="eem-filter-tab active" href="#" role="tab" aria-selected="true">All</a>
+                <a class="eem-filter-tab" href="#" role="tab" aria-selected="false">Unpaid</a>
+                <a class="eem-filter-tab" href="#" role="tab" aria-selected="false">Paid</a>
+                <a class="eem-filter-tab" href="#" role="tab" aria-selected="false">Refunded</a>
+                <a class="eem-filter-tab" href="#" role="tab" aria-selected="false">Cancelled</a>
+                <a class="eem-filter-tab" href="#" role="tab" aria-selected="false">Trash</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── TOOLBAR ROW 2: bulk form + type filter (LEFT) + search + count (RIGHT) ── -->
+          <div class="eem-list-toolbar eem-toolbar-controls">
+            <div class="eem-list-toolbar-left">
+              <!-- Bulk form — Apply button (type=button) opens the relevant modal via JS, does NOT submit -->
+              <form class="eem-bulk-form" data-eem-orders-bulk-form>
+                <input type="hidden" name="_eem_selected_ids" data-eem-orders-bulk-selected-ids value="" />
+                <select class="eem-toolbar-select" name="bulk_action" data-eem-orders-bulk-action>
+                  <option value="">Bulk actions</option>
+                  <option value="refund">Refund Selected</option>
+                  <option value="cancel">Cancel Selected</option>
+                  <option value="send_link">Send Payment Link</option>
+                </select>
+                <button type="button" class="eem-toolbar-btn" data-eem-action="orders-bulk-apply" onclick="openBulkModal()">Apply</button>
+              </form>
+              <!-- Type filter — single-select dropdown, onchange auto-submits -->
+              <form method="get">
+                <input type="hidden" name="page" value="equine-event-manager-orders" />
+                <input type="hidden" name="billing" value="all" />
+                <select class="eem-toolbar-select" name="type" onchange="this.form.submit()">
+                  <option value="" selected>All Types</option>
+                  <option value="stall">Stall</option>
+                  <option value="rv">RV</option>
+                  <option value="addon">Add-On</option>
+                  <option value="group">Group</option>
+                </select>
+              </form>
+            </div>
+            <div class="eem-list-toolbar-right">
+              <!-- Search form — preserves billing+type+event in hidden inputs -->
+              <form method="get" class="eem-search-form" role="search">
+                <input type="hidden" name="page" value="equine-event-manager-orders" />
+                <input type="hidden" name="billing" value="all" />
+                <div class="eem-search-wrap">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input class="eem-search-input" type="search" name="s" placeholder="Search" />
+                </div>
+              </form>
+              <span class="eem-item-count">46 orders</span>
+            </div>
+          </div>
+
+          <!-- ── DESKTOP TABLE ── -->
+          <!-- render_desktop_table() — 8 columns: checkbox, Order, Customer, Event, Type, Status, Date, Actions -->
+          <div class="eem-desktop-table">
+            <table class="eem-table">
+              <thead>
+                <tr>
+                  <th class="eem-col-cb"><input type="checkbox" data-eem-action="orders-toggle-all" onclick="toggleAll(this)" aria-label="Select all" /></th>
+                  <!-- sortable columns: order_number, status, date -->
+                  <th class="sortable"><a href="#">Order <span class="eem-sort-icon" aria-hidden="true"><span></span><span></span></span></a></th>
+                  <th>Customer</th>
+                  <th>Event</th>
+                  <th>Type</th>
+                  <th class="sortable"><a href="#">Status <span class="eem-sort-icon" aria-hidden="true"><span></span><span></span></span></a></th>
+                  <th class="sortable is-sorted is-sorted--desc"><a href="#">Date <span class="eem-sort-icon" aria-hidden="true"><span></span><span></span></span></a></th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+
+                <!-- ── ROW 1: Paid stall order — canonical NTR 6519 reservation ── -->
+                <!-- Meatballs: View Order + Edit Reservation + Resend Notification + Export CSV + Refund Order + Move to Trash -->
+                <!-- Note: Edit Reservation only appears when order notes contain "Reservation setup ID: N" -->
+                <tr data-order-key="abc1def2" data-billing="paid" data-types="stall">
+                  <td class="eem-col-cb"><input type="checkbox" class="eem-orders-row-cb" name="order_keys[]" value="abc1def2" aria-label="Select order 00020" /></td>
+                  <td><a class="eem-order-num" href="#">#00020</a></td>
+                  <td><a class="eem-customer-name" href="#">Mitchell, Whitney</a></td>
+                  <td><a class="eem-event-link" href="#">NTR- Rapid City, SD</a></td>
+                  <td><div class="eem-type-badges"><span class="eem-type-badge eem-type-stall">Stall</span></div></td>
+                  <td><span class="eem-status-badge eem-status-paid">Paid</span></td>
+                  <td><span class="eem-date-val">Jun 18, 2026</span></td>
+                  <td>
+                    <div class="eem-actions-cell">
+                      <!-- No Collect button — status is paid -->
+                      <button type="button" class="eem-action-icon-btn" data-eem-action="order-print-receipt" data-order-key="abc1def2" title="Print Receipt" aria-label="Print Receipt">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                      </button>
+                      <div class="eem-row-menu-wrap">
+                        <button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" onclick="toggleMenu(this)" aria-haspopup="menu" aria-expanded="false" title="More actions">···</button>
+                        <div class="eem-row-dropdown" id="eem-order-menu-desk-abc1def2" role="menu">
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order
+                          </a>
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Reservation
+                          </a>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-resend-notification" data-order-key="abc1def2" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification
+                          </button>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-export-csv" data-order-key="abc1def2" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV
+                          </button>
+                          <!-- Refund Order shown: status is paid (not refunded/cancelled) -->
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>Refund Order
+                          </a>
+                          <!-- Move to Trash (not trashed — shows trash, not Restore/Delete Permanently) -->
+                          <button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="order-trash" data-order-key="abc1def2" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- ── ROW 2: Paid order — stall + add-on badges ── -->
+                <tr data-order-key="bcd2efg3" data-billing="paid" data-types="stall,addon">
+                  <td class="eem-col-cb"><input type="checkbox" class="eem-orders-row-cb" name="order_keys[]" value="bcd2efg3" aria-label="Select order 00028" /></td>
+                  <td><a class="eem-order-num" href="#">#00028</a></td>
+                  <td><a class="eem-customer-name" href="#">Martinez, Rosa</a></td>
+                  <td><a class="eem-event-link" href="#">2026 Southeast Region Super Sort</a></td>
+                  <td><div class="eem-type-badges">
+                    <span class="eem-type-badge eem-type-stall">Stall</span>
+                    <span class="eem-type-badge eem-type-addon">Add-On</span>
+                  </div></td>
+                  <td><span class="eem-status-badge eem-status-paid">Paid</span></td>
+                  <td><span class="eem-date-val">Jun 17, 2026</span></td>
+                  <td>
+                    <div class="eem-actions-cell">
+                      <button type="button" class="eem-action-icon-btn" data-eem-action="order-print-receipt" data-order-key="bcd2efg3" title="Print Receipt" aria-label="Print Receipt">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                      </button>
+                      <div class="eem-row-menu-wrap">
+                        <button type="button" class="eem-more-btn" onclick="toggleMenu(this)" title="More actions">···</button>
+                        <div class="eem-row-dropdown" role="menu">
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order
+                          </a>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-resend-notification" data-order-key="bcd2efg3" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification
+                          </button>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-export-csv" data-order-key="bcd2efg3" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV
+                          </button>
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>Refund Order
+                          </a>
+                          <button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="order-trash" data-order-key="bcd2efg3" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- ── ROW 3: Unpaid stall order — shows Collect button ── -->
+                <!-- Collect button visible: status_slug is 'unpaid' or 'invoice-sent' -->
+                <tr data-order-key="cde3fgh4" data-billing="unpaid" data-types="stall">
+                  <td class="eem-col-cb"><input type="checkbox" class="eem-orders-row-cb" name="order_keys[]" value="cde3fgh4" aria-label="Select order 00153" /></td>
+                  <td><a class="eem-order-num" href="#">#00153</a></td>
+                  <td><a class="eem-customer-name" href="#">Lee, David</a></td>
+                  <td><span class="eem-event-name">Unassigned Event</span></td>
+                  <td><div class="eem-type-badges"><span class="eem-type-badge eem-type-stall">Stall</span></div></td>
+                  <td><span class="eem-status-badge eem-status-unpaid">Unpaid</span></td>
+                  <td><span class="eem-date-val">Jun 16, 2026</span></td>
+                  <td>
+                    <div class="eem-actions-cell">
+                      <!-- Collect button shown — status is unpaid -->
+                      <a class="eem-btn-collect" href="#" data-order-key="cde3fgh4">Collect</a>
+                      <button type="button" class="eem-action-icon-btn" data-eem-action="order-print-receipt" data-order-key="cde3fgh4" title="Print Receipt" aria-label="Print Receipt">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                      </button>
+                      <div class="eem-row-menu-wrap">
+                        <button type="button" class="eem-more-btn" onclick="toggleMenu(this)" title="More actions">···</button>
+                        <div class="eem-row-dropdown" role="menu">
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order
+                          </a>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-resend-notification" data-order-key="cde3fgh4" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification
+                          </button>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-export-csv" data-order-key="cde3fgh4" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV
+                          </button>
+                          <!-- Refund Order shown: status is unpaid (not refunded/cancelled) -->
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>Refund Order
+                          </a>
+                          <button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="order-trash" data-order-key="cde3fgh4" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- ── ROW 4: Invoice-sent RV order — also shows Collect button ── -->
+                <!-- status_slug = 'invoice-sent' → CSS class = 'invoice', Collect button visible -->
+                <tr data-order-key="def4ghi5" data-billing="unpaid" data-types="rv">
+                  <td class="eem-col-cb"><input type="checkbox" class="eem-orders-row-cb" name="order_keys[]" value="def4ghi5" aria-label="Select order 00089" /></td>
+                  <td><a class="eem-order-num" href="#">#00089</a></td>
+                  <td><a class="eem-customer-name" href="#">Nguyen, Kim</a></td>
+                  <td><a class="eem-event-link" href="#">NTR- Rapid City, SD</a></td>
+                  <td><div class="eem-type-badges"><span class="eem-type-badge eem-type-rv">RV</span></div></td>
+                  <td><span class="eem-status-badge eem-status-invoice">Invoice Sent</span></td>
+                  <td><span class="eem-date-val">Jun 15, 2026</span></td>
+                  <td>
+                    <div class="eem-actions-cell">
+                      <!-- Collect shown: status_slug = 'invoice-sent' -->
+                      <a class="eem-btn-collect" href="#" data-order-key="def4ghi5">Collect</a>
+                      <button type="button" class="eem-action-icon-btn" data-eem-action="order-print-receipt" data-order-key="def4ghi5" title="Print Receipt" aria-label="Print Receipt">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                      </button>
+                      <div class="eem-row-menu-wrap">
+                        <button type="button" class="eem-more-btn" onclick="toggleMenu(this)" title="More actions">···</button>
+                        <div class="eem-row-dropdown" role="menu">
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order
+                          </a>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-resend-notification" data-order-key="def4ghi5" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification
+                          </button>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-export-csv" data-order-key="def4ghi5" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV
+                          </button>
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>Refund Order
+                          </a>
+                          <button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="order-trash" data-order-key="def4ghi5" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- ── ROW 5: Partially-refunded order ── -->
+                <!-- status_slug = 'partially-refunded' → CSS class = 'partial', Refund Order shown -->
+                <tr data-order-key="efg5hij6" data-billing="refunded" data-types="stall">
+                  <td class="eem-col-cb"><input type="checkbox" class="eem-orders-row-cb" name="order_keys[]" value="efg5hij6" aria-label="Select order 00044" /></td>
+                  <td><a class="eem-order-num" href="#">#00044</a></td>
+                  <td><a class="eem-customer-name" href="#">Walker, Thomas</a></td>
+                  <td><a class="eem-event-link" href="#">2026 Southeast Region Super Sort</a></td>
+                  <td><div class="eem-type-badges"><span class="eem-type-badge eem-type-stall">Stall</span></div></td>
+                  <td><span class="eem-status-badge eem-status-partial">Partially Refunded</span></td>
+                  <td><span class="eem-date-val">Jun 12, 2026</span></td>
+                  <td>
+                    <div class="eem-actions-cell">
+                      <button type="button" class="eem-action-icon-btn" data-eem-action="order-print-receipt" data-order-key="efg5hij6" title="Print Receipt" aria-label="Print Receipt">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                      </button>
+                      <div class="eem-row-menu-wrap">
+                        <button type="button" class="eem-more-btn" onclick="toggleMenu(this)" title="More actions">···</button>
+                        <div class="eem-row-dropdown" role="menu">
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order
+                          </a>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-resend-notification" data-order-key="efg5hij6" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification
+                          </button>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-export-csv" data-order-key="efg5hij6" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV
+                          </button>
+                          <!-- Refund Order SHOWN — partially refunded, not fully refunded/cancelled -->
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 12 3 6 21 6 21 12"/><polyline points="3 18 3 12 21 12 21 18"/></svg>Refund Order
+                          </a>
+                          <button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="order-trash" data-order-key="efg5hij6" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- ── ROW 6: Fully refunded ── -->
+                <!-- status_slug = 'refunded' → no Refund Order menu item, no Collect button -->
+                <tr data-order-key="fgh6ijk7" data-billing="refunded" data-types="stall">
+                  <td class="eem-col-cb"><input type="checkbox" class="eem-orders-row-cb" name="order_keys[]" value="fgh6ijk7" aria-label="Select order 00011" /></td>
+                  <td><a class="eem-order-num" href="#">#00011</a></td>
+                  <td><a class="eem-customer-name" href="#">Johnson, Sarah</a></td>
+                  <td><a class="eem-event-link" href="#">NTR- Rapid City, SD</a></td>
+                  <td><div class="eem-type-badges"><span class="eem-type-badge eem-type-stall">Stall</span></div></td>
+                  <td><span class="eem-status-badge eem-status-refunded">Refunded</span></td>
+                  <td><span class="eem-date-val">Jun 10, 2026</span></td>
+                  <td>
+                    <div class="eem-actions-cell">
+                      <!-- No Collect, no Refund Order item -->
+                      <button type="button" class="eem-action-icon-btn" data-eem-action="order-print-receipt" data-order-key="fgh6ijk7" title="Print Receipt" aria-label="Print Receipt">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                      </button>
+                      <div class="eem-row-menu-wrap">
+                        <button type="button" class="eem-more-btn" onclick="toggleMenu(this)" title="More actions">···</button>
+                        <div class="eem-row-dropdown" role="menu">
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order
+                          </a>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-resend-notification" data-order-key="fgh6ijk7" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification
+                          </button>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-export-csv" data-order-key="fgh6ijk7" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV
+                          </button>
+                          <!-- Refund Order HIDDEN — status is refunded -->
+                          <button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="order-trash" data-order-key="fgh6ijk7" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- ── ROW 7: Cancelled group order ── -->
+                <!-- Refund Order HIDDEN — status is cancelled -->
+                <tr data-order-key="ghi7jkl8" data-billing="cancelled" data-types="group">
+                  <td class="eem-col-cb"><input type="checkbox" class="eem-orders-row-cb" name="order_keys[]" value="ghi7jkl8" aria-label="Select order 00010" /></td>
+                  <td><a class="eem-order-num" href="#">#00010</a></td>
+                  <td><a class="eem-customer-name" href="#">Walker, Group</a></td>
+                  <td><span class="eem-event-name">Group Only Reservation</span></td>
+                  <td><div class="eem-type-badges"><span class="eem-type-badge eem-type-group">Group</span></div></td>
+                  <td><span class="eem-status-badge eem-status-cancelled">Cancelled</span></td>
+                  <td><span class="eem-date-val">Jun 8, 2026</span></td>
+                  <td>
+                    <div class="eem-actions-cell">
+                      <button type="button" class="eem-action-icon-btn" data-eem-action="order-print-receipt" data-order-key="ghi7jkl8" title="Print Receipt" aria-label="Print Receipt">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                      </button>
+                      <div class="eem-row-menu-wrap">
+                        <button type="button" class="eem-more-btn" onclick="toggleMenu(this)" title="More actions">···</button>
+                        <div class="eem-row-dropdown" role="menu">
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order
+                          </a>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-resend-notification" data-order-key="ghi7jkl8" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification
+                          </button>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-export-csv" data-order-key="ghi7jkl8" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV
+                          </button>
+                          <!-- Refund Order HIDDEN — status is cancelled -->
+                          <button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="order-trash" data-order-key="ghi7jkl8" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Move to Trash
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- ── ROW 8: Trashed order — Trash tab only ── -->
+                <!-- Meatballs: View Order + Resend Notification + Export CSV + Restore + Delete Permanently -->
+                <!-- (trashed=true: Move to Trash replaced by Restore + Delete Permanently) -->
+                <tr data-order-key="hij8klm9" data-billing="trash" data-types="stall">
+                  <td class="eem-col-cb"><input type="checkbox" class="eem-orders-row-cb" name="order_keys[]" value="hij8klm9" aria-label="Select order 00007" /></td>
+                  <td><a class="eem-order-num" href="#">#00007</a></td>
+                  <td><a class="eem-customer-name" href="#">Brown, James</a></td>
+                  <td><a class="eem-event-link" href="#">NTR- Rapid City, SD</a></td>
+                  <td><div class="eem-type-badges"><span class="eem-type-badge eem-type-stall">Stall</span></div></td>
+                  <td><span class="eem-status-badge eem-status-cancelled">Cancelled</span></td>
+                  <td><span class="eem-date-val">Jun 5, 2026</span></td>
+                  <td>
+                    <div class="eem-actions-cell">
+                      <!-- No Collect — trashed/cancelled -->
+                      <button type="button" class="eem-action-icon-btn" data-eem-action="order-print-receipt" data-order-key="hij8klm9" title="Print Receipt" aria-label="Print Receipt">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                      </button>
+                      <div class="eem-row-menu-wrap">
+                        <button type="button" class="eem-more-btn" onclick="toggleMenu(this)" title="More actions">···</button>
+                        <div class="eem-row-dropdown" role="menu">
+                          <a class="eem-row-dd-item" href="#" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Order
+                          </a>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-resend-notification" data-order-key="hij8klm9" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Resend Notification
+                          </button>
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-export-csv" data-order-key="hij8klm9" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV
+                          </button>
+                          <!-- trashed=true: Restore replaces Move to Trash, Delete Permanently added -->
+                          <button type="button" class="eem-row-dd-item" data-eem-action="order-restore" data-order-key="hij8klm9" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><polyline points="3 3 3 8 8 8"/></svg>Restore
+                          </button>
+                          <button type="button" class="eem-row-dd-item eem-row-dd-danger" data-eem-action="order-delete-permanently" data-order-key="hij8klm9" data-order-number="#00007" role="menuitem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>Delete Permanently
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+
+              </tbody>
+            </table>
+          </div><!-- /.eem-desktop-table -->
+
+          <!-- ── MOBILE CARDS (shown < 900px) ── -->
+          <div class="eem-mobile-cards">
+            <!-- mobile card: paid stall -->
+            <div class="eem-mobile-card" data-order-key="abc1def2">
+              <div class="eem-mobile-card-top">
+                <a class="eem-mobile-card-id eem-order-num" href="#">#00020</a>
+                <span class="eem-mobile-card-meta">Jun 18, 2026</span>
+              </div>
+              <div class="eem-mobile-card-title"><a class="eem-customer-name" href="#">Mitchell, Whitney</a></div>
+              <div class="eem-mobile-card-sub"><a class="eem-event-link" href="#">NTR- Rapid City, SD</a></div>
+              <div class="eem-mobile-card-bottom">
+                <div class="eem-mobile-card-badges">
+                  <span class="eem-type-badge eem-type-stall">Stall</span>
+                  <span class="eem-status-badge eem-status-paid">Paid</span>
+                </div>
+                <div class="eem-actions-cell">
+                  <button type="button" class="eem-action-icon-btn" title="Print Receipt" aria-label="Print Receipt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+                  <div class="eem-row-menu-wrap">
+                    <button type="button" class="eem-more-btn" onclick="toggleMenu(this)" title="More actions">···</button>
+                    <div class="eem-row-dropdown" role="menu">
+                      <a class="eem-row-dd-item" href="#" role="menuitem">View Order</a>
+                      <a class="eem-row-dd-item" href="#" role="menuitem">Edit Reservation</a>
+                      <button type="button" class="eem-row-dd-item" role="menuitem">Resend Notification</button>
+                      <button type="button" class="eem-row-dd-item" role="menuitem">Export CSV</button>
+                      <a class="eem-row-dd-item" href="#" role="menuitem">Refund Order</a>
+                      <button type="button" class="eem-row-dd-item eem-row-dd-danger" role="menuitem">Move to Trash</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- mobile card: unpaid stall — shows Collect -->
+            <div class="eem-mobile-card" data-order-key="cde3fgh4">
+              <div class="eem-mobile-card-top">
+                <a class="eem-mobile-card-id eem-order-num" href="#">#00153</a>
+                <span class="eem-mobile-card-meta">Jun 16, 2026</span>
+              </div>
+              <div class="eem-mobile-card-title"><a class="eem-customer-name" href="#">Lee, David</a></div>
+              <div class="eem-mobile-card-sub"><span>Unassigned Event</span></div>
+              <div class="eem-mobile-card-bottom">
+                <div class="eem-mobile-card-badges">
+                  <span class="eem-type-badge eem-type-stall">Stall</span>
+                  <span class="eem-status-badge eem-status-unpaid">Unpaid</span>
+                </div>
+                <div class="eem-actions-cell">
+                  <a class="eem-btn-collect" href="#">Collect</a>
+                  <div class="eem-row-menu-wrap">
+                    <button type="button" class="eem-more-btn" onclick="toggleMenu(this)" title="More actions">···</button>
+                    <div class="eem-row-dropdown" role="menu">
+                      <a class="eem-row-dd-item" href="#" role="menuitem">View Order</a>
+                      <button type="button" class="eem-row-dd-item" role="menuitem">Resend Notification</button>
+                      <a class="eem-row-dd-item" href="#" role="menuitem">Refund Order</a>
+                      <button type="button" class="eem-row-dd-item eem-row-dd-danger" role="menuitem">Move to Trash</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div><!-- /.eem-mobile-cards -->
+
+          <!-- ── PAGINATION FOOTER ── -->
+          <!-- render_table_footer(): preserves billing+type+event+search in pagination links -->
+          <div class="eem-table-footer">
+            <span class="eem-table-footer-info">Showing 1–25 of 46 orders</span>
+            <nav class="eem-pagination" aria-label="Orders pagination">
+              <span class="eem-page-btn" aria-disabled="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg></span>
+              <span class="eem-page-btn active" aria-current="page">1</span>
+              <a class="eem-page-btn" href="#">2</a>
+              <a class="eem-page-btn" href="#" aria-label="Next page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></a>
+            </nav>
+          </div>
+
+        </div><!-- /.eem-page-body -->
+      </div><!-- /.eem-page-wrap -->
+    </div><!-- /.eem-page -->
+  </main>
+</div><!-- /.wp-body -->
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     MODALS — rendered by render_bulk_refund_modal(), render_bulk_cancel_modal(),
+     render_bulk_send_link_modal(). All three are always in the DOM; JS opens
+     the correct one based on the bulk_action select value.
+     ══════════════════════════════════════════════════════════════════════ -->
+
+<!-- ── MODAL 1: Bulk Refund Selected (3 render states, JS toggles eem-bulk-refund--state-*) ── -->
+<div class="eem-modal eem-bulk-refund-modal eem-bulk-refund--state-intro" id="eem-orders-bulk-refund-modal" role="dialog" aria-modal="true" aria-labelledby="eem-orders-bulk-refund-title" aria-hidden="true" data-eem-bulk-refund-modal>
+  <div class="eem-modal-card">
+    <header class="eem-modal-head">
+      <h2 class="eem-modal-title" id="eem-orders-bulk-refund-title">Refund Selected Orders</h2>
+      <button type="button" class="eem-modal-close" data-eem-action="orders-bulk-refund-close" aria-label="Close">&times;</button>
+    </header>
+
+    <!-- INTRO STATE (default) — confirm form + tab-close warning -->
+    <div class="eem-modal-body eem-bulk-refund-state eem-bulk-refund-state--intro">
+      <input type="hidden" data-eem-bulk-refund-keys value="" />
+      <p class="eem-orders-bulk-refund-summary" data-eem-orders-bulk-refund-summary>
+        <strong>3 orders selected</strong> — total $1,240.00 will be refunded to the original payment method.
+      </p>
+      <div class="eem-field-row">
+        <label class="eem-field-label" for="eem-orders-bulk-refund-reason">Reason (optional)</label>
+        <div class="eem-field-control">
+          <textarea class="eem-field-textarea" id="eem-orders-bulk-refund-reason" data-eem-bulk-refund-reason rows="3" maxlength="500" placeholder="e.g. Event cancelled due to weather"></textarea>
+          <p class="eem-field-hint">Stored on each refund record. Surfaced in the activity log; not sent to customers by default.</p>
+        </div>
+      </div>
+      <div class="eem-field-row">
+        <label class="eem-field-label" for="eem-orders-bulk-refund-notify">Notify customers</label>
+        <div class="eem-field-control">
+          <label><input type="checkbox" id="eem-orders-bulk-refund-notify" name="notify" value="1" checked /> Send the "Event Cancelled — Refund Processed" email to each customer.</label>
+        </div>
+      </div>
+      <p class="eem-bulk-refund-tab-warning">
+        If you close this window, refunds in progress will complete but remaining orders will need to be re-submitted.
+      </p>
     </div>
 
-    <!-- PLUGIN-WRAP (single bordered card per VIS-3) -->
-    <div class="plugin-wrap">
+    <!-- PROCESSING STATE — per-order progress list (populated by JS) -->
+    <div class="eem-modal-body eem-bulk-refund-state eem-bulk-refund-state--processing">
+      <p class="eem-bulk-refund-processing-headline">Processing refunds…</p>
+      <ul class="eem-bulk-refund-progress-list" data-eem-bulk-refund-progress-list>
+        <li>⏳ #00020 Mitchell, Whitney — processing…</li>
+        <li>✓ #00028 Martinez, Rosa — refunded $450.00</li>
+      </ul>
+    </div>
 
-      <!-- PAGE HEADER -->
-      <header class="plugin-header">
-        <div class="plugin-header-left">
-          <h1 class="plugin-title">Orders</h1>
-          <div class="plugin-subtitle">View and manage all customer orders. Filter by event or billing status, search orders, and take quick actions.</div>
-        </div>
-        <a href="#" class="btn-primary">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Create Order
-        </a>
-      </header>
-
-      <!-- TOOLBAR ROW 1: Event dropdown + Status tabs -->
-      <div class="toolbar-row-1">
-        <select class="event-select">
-          <option>All events</option>
-          <option>2026 Southeast Region Super Sort</option>
-          <option>2026 Bluegrass Show</option>
-          <option>2025 Spring Classic</option>
-          <option>2026 Gulf Coast Classic</option>
-          <option>2026 Sunshine Dressage</option>
-          <option>2026 Lone Star Invitational</option>
-        </select>
-        <div class="status-tabs">
-          <a class="status-tab active" href="#">All</a>
-          <a class="status-tab" href="#">Paid</a>
-          <a class="status-tab" href="#">Unpaid</a>
-          <a class="status-tab" href="#">Refunded</a>
-          <a class="status-tab" href="#">Cancelled</a>
-        </div>
+    <!-- SUMMARY STATE — success/failure totals + retry button (populated by JS) -->
+    <div class="eem-modal-body eem-bulk-refund-state eem-bulk-refund-state--summary">
+      <div class="eem-bulk-refund-summary-totals" data-eem-bulk-refund-summary-totals>
+        2 of 3 refunds processed — $790.00 returned
       </div>
+      <ul class="eem-bulk-refund-failure-list" data-eem-bulk-refund-failure-list>
+        <li>#00020 — Gateway error: card expired</li>
+      </ul>
+    </div>
 
-      <!-- TOOLBAR ROW 2: Bulk actions + Type filter + Search -->
-      <div class="toolbar-row-2">
-        <div class="toolbar-left">
-          <select class="toolbar-select">
-            <option>Bulk actions</option>
-            <option>Mark Paid</option>
-            <option>Send Reminder</option>
-            <option>Refund Selected</option>
-            <option>Move to Trash</option>
-          </select>
-          <button class="toolbar-btn">Apply</button>
-          <select class="toolbar-select">
-            <option>All Types</option>
-            <option>Stall</option>
-            <option>RV</option>
-            <option>Add-On</option>
-            <option>Group</option>
-          </select>
-          <button class="toolbar-btn">Filter</button>
-        </div>
-        <div class="toolbar-right">
-          <div class="search-wrap">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input class="search-input" type="text" placeholder="Search">
-          </div>
-          <button class="toolbar-btn">Search Orders</button>
-          <span class="item-count">26 orders</span>
-        </div>
-      </div>
-
-      <!-- DESKTOP TABLE -->
-      <div class="desktop-table">
-        <table>
-          <thead>
-            <tr>
-              <th class="col-cb"><input type="checkbox"></th>
-              <th class="sortable">Order <span class="sort-icon"><span></span><span></span></span></th>
-              <th>Customer</th>
-              <th>Event</th>
-              <th>Type</th>
-              <th class="sortable">Status <span class="sort-icon"><span></span><span></span></span></th>
-              <th class="sortable">Date <span class="sort-icon"><span></span><span></span></span></th>
-              <th style="text-align:right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td><a class="order-num" href="#">#04001</a></td>
-              <td><a class="customer-name" href="#">Alice Hudson</a></td>
-              <td class="event-name">2026 Southeast Region Sup...</td>
-              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span></div></td>
-              <td><span class="status-badge status-paid">Paid</span></td>
-              <td class="date-val">May 22, 2026</td>
-              <td>
-                <div class="actions-cell">
-                  <button class="action-icon-btn" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
-                  <button class="more-btn">···</button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td><a class="order-num" href="#">#00001</a></td>
-              <td><a class="customer-name" href="#">Whitney Mitchell</a></td>
-              <td class="event-name">External Event SEED-EVT-SORT</td>
-              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span></div></td>
-              <td><span class="status-badge status-paid">Paid</span></td>
-              <td class="date-val">May 22, 2026</td>
-              <td>
-                <div class="actions-cell">
-                  <button class="action-icon-btn" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
-                  <button class="more-btn">···</button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td><a class="order-num" href="#">#00002</a></td>
-              <td><a class="customer-name" href="#">James Hartwell</a></td>
-              <td class="event-name">External Event SEED-EVT-SORT</td>
-              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div></td>
-              <td><span class="status-badge status-paid">Paid</span></td>
-              <td class="date-val">May 21, 2026</td>
-              <td>
-                <div class="actions-cell">
-                  <button class="action-icon-btn" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
-                  <button class="more-btn">···</button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td><a class="order-num" href="#">#00003</a></td>
-              <td><a class="customer-name" href="#">Sara Calloway</a></td>
-              <td class="event-name">External Event SEED-EVT-SORT</td>
-              <td><div class="type-badges"><span class="type-badge type-rv">RV</span><span class="type-badge type-addon">Add-On</span></div></td>
-              <td><span class="status-badge status-paid">Paid</span></td>
-              <td class="date-val">May 20, 2026</td>
-              <td>
-                <div class="actions-cell">
-                  <button class="action-icon-btn" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
-                  <button class="more-btn">···</button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td><a class="order-num" href="#">#00006</a></td>
-              <td><a class="customer-name" href="#">Priya Anand</a></td>
-              <td class="event-name">External Event SEED-EVT-BLUEGRASS</td>
-              <td><div class="type-badges"><span class="type-badge type-rv">RV</span><span class="type-badge type-addon">Add-On</span><span class="type-badge type-group">Group</span></div></td>
-              <td><span class="status-badge status-paid">Paid</span></td>
-              <td class="date-val">May 13, 2026</td>
-              <td>
-                <div class="actions-cell">
-                  <button class="action-icon-btn" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
-                  <button class="more-btn">···</button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td><a class="order-num" href="#">#00009</a></td>
-              <td><a class="customer-name" href="#">Alan Turing</a></td>
-              <td class="event-name">External Event SEED-EVT-SORT</td>
-              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span></div></td>
-              <td><span class="status-badge status-unpaid">Unpaid</span></td>
-              <td class="date-val">May 7, 2026</td>
-              <td>
-                <div class="actions-cell">
-                  <a href="#" class="btn-collect">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                    Collect
-                  </a>
-                  <button class="action-icon-btn" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
-                  <button class="more-btn">···</button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="col-cb"><input type="checkbox"></td>
-              <td><a class="order-num" href="#">#00010</a></td>
-              <td><a class="customer-name" href="#">Donald Knuth</a></td>
-              <td class="event-name">External Event SEED-EVT-SORT</td>
-              <td><div class="type-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div></td>
-              <td><span class="status-badge status-unpaid">Unpaid</span></td>
-              <td class="date-val">May 5, 2026</td>
-              <td>
-                <div class="actions-cell">
-                  <a href="#" class="btn-collect">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                    Collect
-                  </a>
-                  <button class="action-icon-btn" title="Print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
-                  <button class="more-btn">···</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- MOBILE CARDS -->
-      <div class="mobile-orders">
-        <div class="mobile-order-card">
-          <div class="moc-top"><a href="#" class="moc-num">#04001</a><span class="moc-date">May 22, 2026</span></div>
-          <div class="moc-customer"><a href="#">Alice Hudson</a></div>
-          <div class="moc-event">2026 Southeast Region Super Sort</div>
-          <div class="moc-bottom">
-            <div class="moc-badges">
-              <span class="type-badge type-stall">Stall</span>
-              <span class="type-badge type-rv">RV</span>
-              <span class="status-badge status-paid">Paid</span>
-            </div>
-            <div class="moc-actions">
-              <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
-              <button class="more-btn">···</button>
-            </div>
-          </div>
-        </div>
-        <div class="mobile-order-card">
-          <div class="moc-top"><a href="#" class="moc-num">#00009</a><span class="moc-date">May 7, 2026</span></div>
-          <div class="moc-customer"><a href="#">Alan Turing</a></div>
-          <div class="moc-event">External Event SEED-EVT-SORT</div>
-          <div class="moc-bottom">
-            <div class="moc-badges">
-              <span class="type-badge type-stall">Stall</span>
-              <span class="status-badge status-unpaid">Unpaid</span>
-            </div>
-            <div class="moc-actions">
-              <a href="#" class="btn-collect">Collect</a>
-              <button class="more-btn">···</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TABLE FOOTER -->
-      <div class="table-footer">
-        <div class="table-footer-info">Showing 1–7 of 26 orders</div>
-        <div class="pagination">
-          <a class="page-btn disabled"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 2 3 6 8 10"/></svg></a>
-          <a class="page-btn active" href="#">1</a>
-          <a class="page-btn" href="#">2</a>
-          <a class="page-btn" href="#">3</a>
-          <a class="page-btn" href="#">4</a>
-          <a class="page-btn" href="#"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 2 9 6 4 10"/></svg></a>
-        </div>
-      </div>
-
-    </div><!-- /plugin-wrap -->
-
-  </main>
+    <footer class="eem-modal-foot eem-modal-foot--split">
+      <button type="button" class="eem-btn eem-btn-secondary" data-eem-action="orders-bulk-refund-close">Close</button>
+      <button type="button" class="eem-btn eem-btn-primary" data-eem-action="orders-bulk-refund-confirm" data-eem-bulk-refund-primary-btn>Confirm refund</button>
+    </footer>
+  </div>
 </div>
 
+<!-- ── MODAL 2: Bulk Cancel Selected ── -->
+<div class="eem-modal eem-bulk-cancel-modal" id="eem-orders-bulk-cancel-modal" role="dialog" aria-modal="true" aria-labelledby="eem-orders-bulk-cancel-title" aria-hidden="true" data-eem-bulk-cancel-modal>
+  <div class="eem-modal-card">
+    <header class="eem-modal-head">
+      <h2 class="eem-modal-title" id="eem-orders-bulk-cancel-title">Cancel Selected Orders</h2>
+      <button type="button" class="eem-modal-close" data-eem-action="orders-bulk-cancel-close" aria-label="Close">&times;</button>
+    </header>
+    <div class="eem-modal-body">
+      <p class="eem-order-refund-summary" data-eem-bulk-cancel-summary>Cancel the selected orders?</p>
+      <p class="eem-field-hint">Each order is cancelled, its stalls / RV lots are freed, and the customer is emailed. This does not refund any payment.</p>
+      <div class="eem-field-row">
+        <label class="eem-field-label" for="eem-orders-bulk-cancel-reason">Reason (optional)</label>
+        <textarea class="eem-field-textarea" id="eem-orders-bulk-cancel-reason" name="reason" rows="2" maxlength="500" data-eem-bulk-cancel-reason></textarea>
+      </div>
+      <div class="eem-field-row eem-order-refund-notify-row">
+        <label class="eem-order-refund-notify">
+          <input type="checkbox" data-eem-bulk-cancel-notify value="1" checked />
+          Email each customer a cancellation notice
+        </label>
+      </div>
+      <!-- Progress list (hidden initially, shown by JS during processing) -->
+      <ul class="eem-bulk-cancel-progress" data-eem-bulk-cancel-progress hidden></ul>
+      <div class="eem-order-refund-error" data-eem-bulk-cancel-error hidden></div>
+    </div>
+    <footer class="eem-modal-foot eem-modal-foot--split">
+      <button type="button" class="eem-btn eem-btn-secondary" data-eem-action="orders-bulk-cancel-close">Keep orders</button>
+      <button type="button" class="eem-btn eem-btn-delete" data-eem-action="orders-bulk-cancel-confirm" data-eem-bulk-cancel-confirm>Cancel orders</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ── MODAL 3: Send Payment Link ── -->
+<div class="eem-modal eem-bulk-send-link-modal" id="eem-orders-bulk-send-link-modal" role="dialog" aria-modal="true" aria-labelledby="eem-orders-bulk-send-link-title" aria-hidden="true" data-eem-bulk-send-link-modal>
+  <div class="eem-modal-card">
+    <header class="eem-modal-head">
+      <h2 class="eem-modal-title" id="eem-orders-bulk-send-link-title">Send Payment Link</h2>
+      <button type="button" class="eem-modal-close" data-eem-action="orders-bulk-send-link-close" aria-label="Close">&times;</button>
+    </header>
+    <div class="eem-modal-body">
+      <p class="eem-order-refund-summary" data-eem-bulk-send-link-summary>Email a payment link to the selected orders?</p>
+      <p class="eem-field-hint">Each unpaid order with a customer email is sent the hosted invoice payment link. Paid orders and orders without an email address are skipped.</p>
+      <!-- Progress list (hidden initially, shown by JS during processing) -->
+      <ul class="eem-bulk-cancel-progress" data-eem-bulk-send-link-progress hidden></ul>
+      <div class="eem-order-refund-error" data-eem-bulk-send-link-error hidden></div>
+    </div>
+    <footer class="eem-modal-foot eem-modal-foot--split">
+      <button type="button" class="eem-btn eem-btn-secondary" data-eem-action="orders-bulk-send-link-close">Close</button>
+      <button type="button" class="eem-btn eem-btn-electric" data-eem-action="orders-bulk-send-link-confirm" data-eem-bulk-send-link-confirm>Send payment links</button>
+    </footer>
+  </div>
+</div>
+
+<script>
+// Minimal mockup interactivity — row action menus + bulk modal dispatch
+function toggleMenu(btn){
+  var wrap = btn.closest('.eem-row-menu-wrap');
+  document.querySelectorAll('.eem-row-menu-wrap.open').forEach(function(w){ if(w!==wrap) w.classList.remove('open'); });
+  wrap.classList.toggle('open');
+  btn.setAttribute('aria-expanded', wrap.classList.contains('open') ? 'true' : 'false');
+}
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.eem-row-menu-wrap')){
+    document.querySelectorAll('.eem-row-menu-wrap.open').forEach(function(w){ w.classList.remove('open'); });
+  }
+});
+function toggleAll(master){
+  document.querySelectorAll('.eem-orders-row-cb').forEach(function(cb){ cb.checked = master.checked; });
+}
+// Bulk modal dispatch: open the correct modal based on bulk_action select value
+function openBulkModal(){
+  var action = document.querySelector('[data-eem-orders-bulk-action]')?.value || '';
+  if(action === 'refund'){
+    document.getElementById('eem-orders-bulk-refund-modal').classList.add('open');
+  } else if(action === 'cancel'){
+    document.getElementById('eem-orders-bulk-cancel-modal').classList.add('open');
+  } else if(action === 'send_link'){
+    document.getElementById('eem-orders-bulk-send-link-modal').classList.add('open');
+  }
+}
+// Close any open modal
+document.querySelectorAll('[data-eem-action$="-close"]').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.eem-modal.open').forEach(function(m){ m.classList.remove('open'); });
+  });
+});
+</script>
 </body>
 </html>

@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reservation Overview &mdash; Equine Event Manager (Admin Mockup)</title>
+<style>
+	/* ===================================================================
+	   Reservation Overview — admin mockup
+	   Page slug: equine-event-manager-reservation-overview
+	   Live render entry: EEM_Admin::render_reservation_overview_page()
+	   Shell variant: body.eem-shell-page--overview
+	   Style source: assets/css/admin-legacy.css (eem-shell-* + postbox)
+	   Brand tokens: electric #1668F2, navy #031B4E, radius 3px
+	   ------------------------------------------------------------------ */
+
+	:root {
+		--eem-electric: #1668F2;
+		--eem-navy: #031B4E;
+		--eem-app-bg: #f0f0f1;
+		--eem-card-border: #d7dee8;
+	}
+
+	* { box-sizing: border-box; }
+
+	body {
+		margin: 0;
+		background: var(--eem-app-bg);
+		color: #1d2327;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+		font-size: 13px;
+		line-height: 1.4em;
+	}
+
+	/* --- WP-admin shell stub --- */
+	#wpwrap { min-height: 100%; }
+	#wpcontent { margin-left: 0; }
+
+	.wrap { margin: 10px 20px 0 2px; }
+
+	a { color: var(--eem-electric); text-decoration: none; }
+	a:hover { color: var(--eem-navy); }
+
+	/* --- Shell wrap / background --- */
+	.eem-shell-wrap--header { background: #f0f0f1; }
+
+	/* --- Brand banner header --- */
+	.eem-shell-header__inner { padding: 0.875rem 1rem; }
+	.eem-shell-header__brand {
+		display: flex;
+		align-items: center;
+		gap: 50px;
+		min-height: 36px;
+	}
+	.eem-shell-header__logo {
+		display: block;
+		width: 150px;
+		max-width: 150px;
+		height: auto;
+		flex: 0 0 auto;
+	}
+	.eem-shell-header__copy { display: grid; gap: 0.25rem; min-width: 0; }
+	h1.eem-shell-header__title {
+		margin: 0;
+		color: #1d2327;
+		font-size: 20px;
+		font-weight: 800;
+		line-height: 1.2;
+		letter-spacing: -0.025em;
+	}
+	.eem-shell-header__subtitle {
+		margin: 0;
+		color: #5b6a7f;
+		font-size: 13px;
+		font-weight: 500;
+		line-height: 1.5;
+	}
+
+	/* --- Content grid --- */
+	.eem-shell-content {
+		display: grid;
+		gap: 0.875rem;
+		padding: 0.875rem;
+	}
+	.eem-shell-content--app { grid-template-columns: minmax(0, 1fr); }
+
+	/* --- Inline action bar --- */
+	.eem-shell-inline-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	/* --- WP buttons --- */
+	.button {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 34px;
+		padding: 0 0.85rem;
+		border: 1px solid #c3c4c7;
+		border-radius: 3px;
+		background: #f6f7f7;
+		color: #2c3338;
+		font-size: 13px;
+		font-weight: 600;
+		line-height: 1;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+	.button:hover { background: #f0f0f1; border-color: #8c8f94; color: var(--eem-navy); }
+	.button-primary {
+		background: var(--eem-electric);
+		border-color: var(--eem-electric);
+		color: #fff;
+	}
+	.button-primary:hover { background: #0f54cf; border-color: #0f54cf; color: #fff; }
+
+	/* --- postbox cards --- */
+	.postbox {
+		margin: 0;
+		border: 1px solid var(--eem-card-border);
+		border-radius: 8px;
+		background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+		box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+		overflow: hidden;
+	}
+	.postbox > h2 {
+		margin: 0;
+		padding: 1rem 1.125rem;
+		border-bottom: 1px solid #dde5ee;
+		color: #172033;
+		font-size: 1.0625rem;
+		font-weight: 800;
+		background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+	}
+	.postbox .inside { margin: 0; padding: 1rem 1.125rem; }
+	.postbox .inside > :first-child { margin-top: 0; }
+	.postbox .inside > :last-child { margin-bottom: 0; }
+
+	/* --- KPI metric cards --- */
+	.eem-shell-metrics-grid {
+		display: grid;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		gap: 0.875rem;
+	}
+	.eem-shell-metric-card {
+		border: 1px solid var(--eem-card-border);
+		border-radius: 8px;
+		background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+		box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+		padding: 1rem;
+	}
+	.eem-shell-metric-label {
+		margin: 0 0 0.5rem;
+		color: #667085;
+		font-size: 0.8125rem;
+		font-weight: 700;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+	}
+	.eem-shell-metric-value {
+		margin: 0;
+		color: #172033;
+		font-size: 1.75rem;
+		font-weight: 800;
+		line-height: 1.15;
+	}
+
+	/* --- widefat tables --- */
+	table.widefat {
+		width: 100%;
+		border: 0;
+		border-collapse: collapse;
+		box-shadow: none;
+		background: transparent;
+	}
+	table.widefat th,
+	table.widefat td {
+		padding: 0.875rem 1rem;
+		border-bottom: 1px solid #e3e9f1;
+		text-align: left;
+		vertical-align: middle;
+	}
+	table.widefat thead th {
+		color: #50575e;
+		font-weight: 700;
+		font-size: 12px;
+		text-transform: uppercase;
+		letter-spacing: 0.02em;
+		border-bottom: 1px solid #d7dee8;
+	}
+	table.widefat.striped tbody tr:nth-child(odd) { background: #fbfdff; }
+	/* Snapshot table — row-header column */
+	table.widefat tbody th[scope="row"] {
+		width: 200px;
+		color: #172033;
+		font-weight: 700;
+	}
+
+	/* --- Order/inventory type badges (inline styles from render_order_type_badges) --- */
+	.eem-shell-badges { display: inline-flex; gap: 0.4rem; flex-wrap: wrap; }
+	.eem-shell-badge {
+		display: inline-flex;
+		align-items: center;
+		min-height: 24px;
+		padding: 0.2rem 0.65rem;
+		border: 1px solid;
+		border-radius: 999px;
+		font-size: 0.78rem;
+		font-weight: 800;
+		line-height: 1;
+	}
+	/* Colors match render_order_type_badges() inline styles in PHP */
+	.eem-shell-badge--stall { background: #eaf1ff; border-color: #bad0ff; color: #2453a6; }
+	.eem-shell-badge--rv    { background: #ecf9ef; border-color: #bbe5c8; color: #247548; }
+	.eem-shell-badge--addon { background: #fff7dc; border-color: #efd58a; color: #9b6a12; }
+	.eem-shell-badge--group { background: #f4ecff; border-color: #d7c2ff; color: #6c41b7; }
+
+	/* Empty state text inside postbox */
+	.eem-empty-state { color: #50575e; margin: 0; }
+
+	@media (max-width: 1100px) {
+		.eem-shell-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	}
+	@media (max-width: 782px) {
+		.wrap { margin: 10px 12px 0; }
+		.eem-shell-header__brand { gap: 18px; flex-wrap: wrap; }
+		.eem-shell-metrics-grid { grid-template-columns: minmax(0, 1fr); }
+		.eem-shell-inline-actions .button { flex: 1 1 calc(50% - 0.75rem); }
+		table.widefat tbody th[scope="row"] { width: auto; }
+	}
+</style>
+</head>
+<body class="wp-admin eem-shell-page eem-shell-page--overview">
+<div id="wpwrap"><div id="wpcontent">
+
+<div class="wrap eem-shell-wrap eem-shell-wrap--header">
+
+	<!-- Brand banner: render_brand_banner( $overview['event_label'], subtitle ) -->
+	<header class="eem-shell-header">
+		<div class="eem-shell-header__inner">
+			<div class="eem-shell-header__brand">
+				<!-- Real logo: assets/images/logo.png -->
+				<img class="eem-shell-header__logo"
+				     src="Equine Event Manager Logo.png"
+				     alt="Equine Event Manager" width="150">
+				<div class="eem-shell-header__copy">
+					<h1 class="eem-shell-header__title">2026 National Team Roping — NTR 6519</h1>
+					<p class="eem-shell-header__subtitle">Review what has sold, what inventory remains, and which products are moving for this event.</p>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<div class="eem-shell-content eem-shell-content--app">
+
+		<!--
+		  Action bar — matches render_reservation_overview_page() lines 2309-2315.
+		  "Back to Reservations" → admin.php?page=equine-event-manager-reservations
+		  "Edit Reservation"    → get_edit_post_link( $reservation_id )
+		  "Stall Assignments"   → admin.php?page=equine-event-manager-stall-charts&reservation_id=N
+		  "Generate Stall Assignments" → admin-post.php?action=equine_event_manager_generate_stall_assignments (nonce'd)
+		  "Create Order"        → admin.php?page=equine-event-manager-create-order
+		  "Print PDF"           → admin-post.php?action=equine_event_manager_print_reservation_overview (nonce'd, target=_blank)
+		-->
+		<div class="eem-shell-actions eem-shell-inline-actions">
+			<a class="button" href="admin.php?page=equine-event-manager-reservations">Back to Reservations</a>
+			<a class="button" href="post.php?post=6519&action=edit">Edit Reservation</a>
+			<a class="button" href="admin.php?page=equine-event-manager-stall-charts&reservation_id=6519">Stall Assignments</a>
+			<a class="button button-primary" href="#">Generate Stall Assignments</a>
+			<a class="button" href="admin.php?page=equine-event-manager-create-order">Create Order</a>
+			<a class="button" target="_blank" href="#">Print PDF</a>
+		</div>
+
+		<!-- KPI metric strip — eem-shell-metrics-grid (5 cards) -->
+		<div class="postbox">
+			<div class="inside">
+				<div class="eem-shell-metrics-grid">
+					<div class="eem-shell-metric-card">
+						<p class="eem-shell-metric-label">Orders</p>
+						<!-- $overview['order_count'] -->
+						<p class="eem-shell-metric-value">21</p>
+					</div>
+					<div class="eem-shell-metric-card">
+						<p class="eem-shell-metric-label">Revenue</p>
+						<!-- '$' . number_format_i18n( $overview['revenue_total'], 2 ) -->
+						<p class="eem-shell-metric-value">$4,297.34</p>
+					</div>
+					<div class="eem-shell-metric-card">
+						<p class="eem-shell-metric-label">Stalls Sold</p>
+						<!-- $overview['stall_sold'] . ' (' . $overview['stall_remaining_label'] . ')' -->
+						<p class="eem-shell-metric-value">46 (4 remaining)</p>
+					</div>
+					<div class="eem-shell-metric-card">
+						<p class="eem-shell-metric-label">RVs Sold</p>
+						<!-- $overview['rv_sold'] . ' (' . $overview['rv_remaining_label'] . ')' -->
+						<p class="eem-shell-metric-value">9 (Unlimited)</p>
+					</div>
+					<div class="eem-shell-metric-card">
+						<p class="eem-shell-metric-label">Rider Groups</p>
+						<!-- _n( '%d group reservation', '%d group reservations', $overview['group_reservation_count'] ) -->
+						<p class="eem-shell-metric-value">0 group reservations</p>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Event Snapshot postbox -->
+		<div class="postbox">
+			<h2>Event Snapshot</h2>
+			<div class="inside">
+				<table class="widefat striped">
+					<tbody>
+						<!-- get_the_title( $reservation_id ) -->
+						<tr><th scope="row">Reservation</th><td>2026 National Team Roping — NTR 6519</td></tr>
+						<!-- $overview['event_source_label'] -->
+						<tr><th scope="row">Event Source</th><td>The Events Calendar</td></tr>
+						<!-- $overview['event_dates_label'] -->
+						<tr><th scope="row">Event Dates</th><td>July 10, 2026 &ndash; July 13, 2026</td></tr>
+						<!-- $overview['type_label'] — comma-separated stay types -->
+						<tr><th scope="row">Type</th><td>Stall, RV</td></tr>
+						<!-- $overview['stall_inventory_label'] -->
+						<tr><th scope="row">Stall Inventory</th><td>50</td></tr>
+						<!-- $overview['rv_inventory_label'] -->
+						<tr><th scope="row">RV Inventory</th><td>Unlimited</td></tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<!-- Inventory Overview postbox -->
+		<div class="postbox">
+			<h2>Inventory Overview</h2>
+			<div class="inside">
+				<table class="widefat striped">
+					<thead>
+						<tr>
+							<th>Item</th>
+							<th>Status</th>
+							<th>Inventory</th>
+							<th>Sold</th>
+							<th>Remaining</th>
+						</tr>
+					</thead>
+					<tbody>
+						<!--
+						  foreach ( $overview['inventory_rows'] as $row )
+						  status_label is rendered as plain esc_html() text — no styled span.
+						  group_reservations rows use summary_label / summary_value / summary_meta
+						  instead of inventory_label / sold / remaining_label.
+						-->
+						<tr>
+							<td>Stall Reservations</td>
+							<td>Low</td><!-- $row['status_label'] — plain text -->
+							<td>50</td><!-- $row['inventory_label'] -->
+							<td>46</td><!-- number_format_i18n( $row['sold'] ) -->
+							<td>4 remaining</td><!-- $row['remaining_label'] -->
+						</tr>
+						<tr>
+							<td>RV Reservations</td>
+							<td>Unlimited</td><!-- $row['status_label'] -->
+							<td>Unlimited</td><!-- $row['inventory_label'] -->
+							<td>9</td>
+							<td>Unlimited</td><!-- $row['remaining_label'] -->
+						</tr>
+						<!-- Group Reservations row uses display='group_reservations' shape -->
+						<tr>
+							<td>Group Reservations</td>
+							<td>Available</td>
+							<td>Submitted Groups</td><!-- $row['summary_label'] -->
+							<td>0</td><!-- $row['summary_value'] -->
+							<td>0 orders include a group reservation</td><!-- $row['summary_meta'] -->
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<!-- Product Activity postbox -->
+		<div class="postbox">
+			<h2>Product Activity</h2>
+			<div class="inside">
+				<!--
+				  PHP renders empty-state "No products have been sold for this event yet."
+				  when $overview['product_rows'] is empty.
+				  Only products with sold > 0 (or configured add-ons with 0 sales) appear.
+				-->
+				<table class="widefat striped">
+					<thead>
+						<tr>
+							<th>Product</th>
+							<th>Category</th>
+							<th>Sold</th>
+						</tr>
+					</thead>
+					<tbody>
+						<!-- required_shavings_sold > 0 → Stall Product row -->
+						<tr><td>Required Shavings</td><td>Stall Product</td><td>6</td></tr>
+						<!-- general_addon_sales — one row per configured/sold add-on -->
+						<tr><td>Alfalfa</td><td>General Add-On</td><td>0</td></tr>
+						<tr><td>Golf Cart Rental</td><td>General Add-On</td><td>0</td></tr>
+						<tr><td>Shavings</td><td>General Add-On</td><td>0</td></tr>
+						<!-- rv_addon_sales — one row per configured/sold RV add-on -->
+						<tr><td>50-amp Hookup Upgrade</td><td>RV Add-On</td><td>0</td></tr>
+						<tr><td>Sewer Hookup</td><td>RV Add-On</td><td>0</td></tr>
+						<tr><td>Standard</td><td>RV Add-On</td><td>9</td></tr>
+					</tbody>
+				</table>
+				<!-- Empty state (shown when no product_rows): -->
+				<!-- <p class="eem-empty-state">No products have been sold for this event yet.</p> -->
+			</div>
+		</div>
+
+		<!-- Recent Orders postbox — last 8 orders (array_slice 0, 8) -->
+		<div class="postbox">
+			<h2>Recent Orders</h2>
+			<div class="inside">
+				<!-- "View Recent Orders" → admin.php?page=equine-event-manager-orders&event_id=$reservation_id -->
+				<p><a class="button" href="admin.php?page=equine-event-manager-orders&event_id=6519">View Recent Orders</a></p>
+				<table class="widefat fixed striped">
+					<thead>
+						<tr>
+							<th>Order</th>
+							<th>Customer</th>
+							<th>Type</th>
+							<th>Date</th>
+						</tr>
+					</thead>
+					<tbody>
+						<!--
+						  foreach ( array_slice( $overview['orders'], 0, 8 ) as $order )
+						  Order link: admin.php?page=equine-event-manager-order&order_key=$order['order_key']
+						  Order number: '#' . $order['order_number']  (NOT zero-padded here — raw order_number from DB)
+						  Type: render_order_type_badges( $order['type'] ) — parses comma-sep string,
+						         outputs .eem-shell-badge--{stall|rv|addon|group} spans with inline !important styles.
+						-->
+						<tr>
+							<td><a href="admin.php?page=equine-event-manager-order&order_key=abc123">#90801</a></td>
+							<td>Order Edit Test (Stall)</td>
+							<td><span class="eem-shell-badges"><span class="eem-shell-badge eem-shell-badge--stall">Stall</span></span></td>
+							<td>June 18, 2026</td>
+						</tr>
+						<tr>
+							<td><a href="#">#9020</a></td>
+							<td>Emma Thompson</td>
+							<td><span class="eem-shell-badges"><span class="eem-shell-badge eem-shell-badge--stall">Stall</span></span></td>
+							<td>June 8, 2026</td>
+						</tr>
+						<tr>
+							<td><a href="#">#9019</a></td>
+							<td>Aisha Rahman</td>
+							<td><span class="eem-shell-badges"><span class="eem-shell-badge eem-shell-badge--rv">RV</span><span class="eem-shell-badge eem-shell-badge--addon">Add-On</span></span></td>
+							<td>June 6, 2026</td>
+						</tr>
+						<tr>
+							<td><a href="#">#9018</a></td>
+							<td>Grace Mwangi</td>
+							<td><span class="eem-shell-badges"><span class="eem-shell-badge eem-shell-badge--stall">Stall</span></span></td>
+							<td>June 4, 2026</td>
+						</tr>
+						<tr>
+							<td><a href="#">#9017</a></td>
+							<td>Carlos Delgado</td>
+							<td><span class="eem-shell-badges"><span class="eem-shell-badge eem-shell-badge--stall">Stall</span></span></td>
+							<td>June 2, 2026</td>
+						</tr>
+						<tr>
+							<td><a href="#">#9016</a></td>
+							<td>Wei Chen</td>
+							<td><span class="eem-shell-badges"><span class="eem-shell-badge eem-shell-badge--rv">RV</span></span></td>
+							<td>May 31, 2026</td>
+						</tr>
+						<tr>
+							<td><a href="#">#9015</a></td>
+							<td>Darnell Washington</td>
+							<td><span class="eem-shell-badges"><span class="eem-shell-badge eem-shell-badge--stall">Stall</span></span></td>
+							<td>May 29, 2026</td>
+						</tr>
+						<tr>
+							<td><a href="#">#9014</a></td>
+							<td>Emma Thompson</td>
+							<td><span class="eem-shell-badges"><span class="eem-shell-badge eem-shell-badge--stall">Stall</span></span></td>
+							<td>May 27, 2026</td>
+						</tr>
+						<!-- Empty state (shown when no orders): -->
+						<!-- <tr><td colspan="4">No orders have been placed for this event yet.</td></tr> -->
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+	</div><!-- /.eem-shell-content -->
+</div><!-- /.wrap -->
+
+</div></div><!-- /#wpcontent /#wpwrap -->
+</body>
+</html>

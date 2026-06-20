@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Entries (Divisions)</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Event Entries list – admin.php?page=equine-event-manager-entries
+   Render source: includes/class-eem-entries.php::render_list()
+   Columns: Division | Event | Price | Entered / Spots
+   Status pills reflect event timing (Scheduled / Ongoing / Past), not post
+   status (except Draft badge when post_status = 'draft').
+   No KPI strip — not in the PHP render.
+   Brand tokens: electric #1668F2, navy #031B4E, control border #8c8f94,
+   radius 3px. Oversold = red entered-count + "oversold by N" badge.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root{
+  --eem-navy:#031B4E; --eem-electric:#1668F2; --eem-electric-hover:#1355cc;
+  --eem-surface:#FFFFFF; --eem-border-soft:#f0f0f1; --eem-control-border:#8c8f94;
+  --eem-text:#1d2327; --eem-text-secondary:#6B7A99; --eem-text-muted:#8c8f94;
+  --eem-radius:3px; --eem-radius-lg:6px; --eem-select-height:38px;
+  --eem-font-ui:'IBM Plex Sans',sans-serif;
+  --eem-badge-green-bg:#F0FDF4; --eem-badge-green-text:#15803d; --eem-badge-green-border:#bbf7d0;
+  --eem-badge-amber-bg:#FFFBEB; --eem-badge-amber-text:#b45309; --eem-badge-amber-border:#fde68a;
+  --eem-badge-red-bg:#FEF2F2;   --eem-badge-red-text:#b91c1c;   --eem-badge-red-border:#fecaca;
+  --eem-badge-blue-bg:#EEF4FF;  --eem-badge-blue-text:#1668F2;  --eem-badge-blue-border:#c0d8ff;
+  --eem-badge-gray-bg:#F8FAFC;  --eem-badge-gray-text:#64748b;  --eem-badge-gray-border:#e2e8f0;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--eem-font-ui);background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+svg{flex-shrink:0}
+a{text-decoration:none}
+a:hover{text-decoration:none}
+
+/* ── WP SHELL STUB ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+
+/* ── Breadcrumb ── */
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.breadcrumb-sep{font-size:13px;color:#8c8f94}
+.breadcrumb-page{font-size:13px;color:#031B4E;font-weight:600}
+
+/* ── PAGE SHELL ── */
+.eem-page{display:block}
+.eem-page-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+.eem-page-header{padding:18px 22px;border-bottom:1px solid #dcdcde;background:#fff;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.eem-page-header-text{min-width:0}
+.eem-page-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2}
+.eem-page-subtitle{font-size:13px;color:#64748b;margin-top:4px;max-width:680px}
+.eem-page-body{background:#fff}
+
+/* ── BUTTONS ── */
+.eem-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;border:1px solid;text-decoration:none}
+.eem-btn-electric,a.eem-btn-electric{background:var(--eem-electric);color:#fff;border-color:var(--eem-electric)}
+.eem-btn-electric:hover,a.eem-btn-electric:hover{background:var(--eem-electric-hover);border-color:var(--eem-electric-hover);color:#fff}
+
+/* ── LIST TOOLBAR ── */
+.eem-list-toolbar{padding:12px 16px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f0f4fb}
+.eem-list-toolbar-left{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
+.eem-list-toolbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+select.eem-toolbar-select{margin:0;padding:0 28px 0 10px;border:1px solid var(--eem-control-border);border-radius:var(--eem-radius);font-size:13px;font-family:var(--eem-font-ui);color:var(--eem-text);background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 8px center;appearance:none;cursor:pointer;height:var(--eem-select-height);min-height:var(--eem-select-height);width:260px;max-width:100%;box-sizing:border-box}
+.eem-search-wrap{position:relative;flex:0 0 auto;width:220px;max-width:100%}
+.eem-search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--eem-text-muted);pointer-events:none}
+input.eem-search-input{width:100%;padding:0 10px 0 28px;border:1px solid var(--eem-control-border);border-radius:var(--eem-radius);font-size:13px;font-family:var(--eem-font-ui);color:var(--eem-text);background:#fff;outline:none;height:var(--eem-select-height);min-height:var(--eem-select-height);box-sizing:border-box;margin:0}
+input.eem-search-input::placeholder{color:#b0b0b0}
+input.eem-search-input:focus{border-color:var(--eem-electric)}
+
+/* ── TABLE ── */
+.eem-desktop-table{display:block}
+.eem-table{width:100%;border-collapse:collapse}
+.eem-table thead tr{border-bottom:1px solid #d9e2f2;background:#f8fafc}
+.eem-table thead th{padding:10px 14px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#031B4E;text-align:left;white-space:nowrap}
+.eem-table thead th.eem-sortable{cursor:pointer}
+.eem-table thead th.eem-sortable:hover{color:var(--eem-text)}
+.eem-table tbody tr{border-bottom:1px solid #f0f0f1}
+.eem-table tbody tr:last-child{border-bottom:none}
+.eem-table tbody tr:hover{background:#f6f7f7}
+.eem-table td{padding:12px 14px;font-size:13.5px;color:var(--eem-text);vertical-align:middle}
+.eem-table-empty{text-align:center;padding:40px 16px;color:var(--eem-text-muted);font-size:13px}
+
+/* sort indicator */
+.eem-sort-ind{display:inline-flex;flex-direction:column;gap:1px;margin-left:4px;vertical-align:middle;opacity:.45}
+.eem-sort-ind::before,.eem-sort-ind::after{content:"";display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
+.eem-sort-ind::before{border-bottom:4px solid currentColor}
+.eem-sort-ind::after{border-top:4px solid currentColor;margin-top:1px}
+
+/* ── DIVISION NAME + EVENT STATUS PILL ── */
+.eem-res-name,a.eem-res-name{font-weight:700;color:var(--eem-navy);font-size:14px;text-decoration:none}
+.eem-res-name:hover,a.eem-res-name:hover{color:var(--eem-electric)}
+/* Event-timing pills: Scheduled=blue, Ongoing=green, Past=gray */
+.eem-res-status{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;font-family:var(--eem-font-ui);line-height:1.4;white-space:nowrap;margin-left:8px}
+.eem-res-status--draft{background:var(--eem-badge-amber-bg);color:var(--eem-badge-amber-text);border:1px solid var(--eem-badge-amber-border)}
+.eem-res-status--scheduled{background:var(--eem-badge-blue-bg);color:var(--eem-badge-blue-text);border:1px solid var(--eem-badge-blue-border)}
+.eem-res-status--ongoing{background:var(--eem-badge-green-bg);color:var(--eem-badge-green-text);border:1px solid var(--eem-badge-green-border)}
+.eem-res-status--past{background:var(--eem-badge-gray-bg);color:var(--eem-badge-gray-text);border:1px solid var(--eem-badge-gray-border)}
+
+/* unconnected event hint */
+.eem-entries-unconnected{color:var(--eem-text-muted);font-style:italic;border-bottom:1px dotted #cbd2dd;cursor:help}
+
+/* price dash for no-price divisions */
+.eem-orders-count{font-size:14px;font-weight:600;color:var(--eem-navy);font-family:var(--eem-font-ui)}
+.eem-orders-count.is-zero{color:#8c8f94;font-weight:400}
+
+/* Entered / Spots cell */
+.eem-entries-entered-link{text-decoration:none}
+.eem-entered-spots{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.eem-entered-count{color:var(--eem-electric)}
+.eem-entered-count.is-oversold{color:#dc2626}
+.eem-entered-sep{color:var(--eem-text-muted);font-weight:400;margin:0 3px}
+.eem-spots-count{color:var(--eem-navy)}
+
+/* oversold inline badge */
+.eem-status-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;line-height:1.4;white-space:nowrap;margin-left:8px}
+.eem-status-oversold{background:var(--eem-badge-red-bg);color:var(--eem-badge-red-text);border:1px solid var(--eem-badge-red-border)}
+
+/* ── TABLE FOOTER ── */
+.eem-table-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;min-height:53px;box-sizing:border-box;background:#f8fafc;flex-wrap:wrap;gap:8px}
+.eem-table-footer-info{font-size:13px;color:#50575e}
+.eem-table-footer-sep{margin:0 6px;color:#c3c4c7}
+
+/* ── MOBILE CARDS ── */
+.eem-mobile-cards{display:none;padding:12px 14px}
+.eem-mobile-card{background:#fff;border:1px solid #dcdcde;border-radius:var(--eem-radius);padding:14px;margin-bottom:8px}
+.eem-mobile-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
+.eem-mobile-card-id,a.eem-mobile-card-id{font-weight:700;color:var(--eem-navy);font-size:14px;text-decoration:none}
+.eem-mobile-card-meta{font-size:13px;font-weight:600;color:var(--eem-navy)}
+.eem-mobile-card-sub{font-size:13px;color:#646970;margin-bottom:8px}
+.eem-mobile-card-bottom{display:flex;align-items:center;justify-content:flex-start}
+.eem-mobile-card-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.eem-mobile-card-metric{font-size:13px}
+
+@media(max-width:767px){
+  .eem-desktop-table{display:none}
+  .eem-mobile-cards{display:block}
+  select.eem-toolbar-select,.eem-search-wrap{width:100%}
+  .eem-list-toolbar-left,.eem-list-toolbar-right{flex:1 1 100%}
+}
+</style>
+</head>
+<body>
+
+<!-- ── WP ADMIN SHELL STUB ── -->
+<div class="wp-admin-bar"><span class="site">⊞ Equine Network</span><span>＋ New</span><span>👤 admin</span></div>
+<div class="wp-body">
+  <nav class="wp-sidebar">
+    <div class="wp-sidebar-item">📊 Dashboard</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-label">Event Manager</div>
+    <div class="wp-sidebar-sub">Dashboard</div>
+    <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub">Orders</div>
+    <div class="wp-sidebar-sub active">Event Entries</div>
+    <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub">Settings</div>
+  </nav>
+
+  <main class="wp-content">
+    <!-- Breadcrumb: just "Entries" — no nested segment -->
+    <div class="breadcrumb">
+      <div class="breadcrumb-logo-box">EQUINE logo</div>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-page">Entries</span>
+    </div>
+
+    <div class="eem-page">
+      <div class="eem-page-wrap">
+
+        <!-- ── PAGE HEADER ── -->
+        <div class="eem-page-header">
+          <div class="eem-page-header-text">
+            <div class="eem-page-title">Entries</div>
+            <div class="eem-page-subtitle">Divisions customers pay to enter, connected to an event. Each division surfaces as a purchasable option on that event's customer reservation page and folds into the order at checkout.</div>
+          </div>
+          <!-- href goes to post-new.php?post_type=en_entry which redirects to the custom editor -->
+          <a class="eem-btn eem-btn-electric" href="#">+ New Division</a>
+        </div>
+
+        <!-- No KPI strip — not rendered by PHP -->
+
+        <!-- ── TOOLBAR: event filter + search ── -->
+        <div class="eem-list-toolbar">
+          <div class="eem-list-toolbar-left">
+            <!-- data-eem-choices attribute triggers Choices.js in admin.js -->
+            <select class="eem-toolbar-select" data-eem-input-action="entries-filter-event" aria-label="Filter by event">
+              <option value="">All events</option>
+              <option value="6012">2026 National Trail Ride – NTR 6519</option>
+              <option value="6041">High Desert Barrel Series #4</option>
+              <option value="5990">2026 Spring Classic Horse Show</option>
+            </select>
+          </div>
+          <div class="eem-list-toolbar-right">
+            <div class="eem-search-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input class="eem-search-input" type="search" placeholder="Search" data-eem-input-action="entries-search" aria-label="Search divisions">
+            </div>
+          </div>
+        </div>
+
+        <!-- ── DESKTOP TABLE ── -->
+        <!-- Each <tr> carries data-eem-event-id, data-sort-* attrs for JS filtering/sorting -->
+        <div class="eem-desktop-table">
+          <table class="eem-table eem-entries-table" data-eem-entries-table>
+            <thead>
+              <tr>
+                <th class="eem-sortable" data-eem-sort="name" data-eem-sort-type="text">Division<span class="eem-sort-ind" aria-hidden="true"></span></th>
+                <th class="eem-sortable" data-eem-sort="event" data-eem-sort-type="text">Event<span class="eem-sort-ind" aria-hidden="true"></span></th>
+                <th class="eem-sortable" data-eem-sort="price" data-eem-sort-type="num">Price<span class="eem-sort-ind" aria-hidden="true"></span></th>
+                <th class="eem-sortable" data-eem-sort="entered" data-eem-sort-type="num">Entered / Spots<span class="eem-sort-ind" aria-hidden="true"></span></th>
+              </tr>
+            </thead>
+            <tbody>
+
+              <!-- Ongoing event, under capacity — division name links to detail view (?division_id=N) -->
+              <tr data-eem-event-id="6041" data-sort-name="#9.5 open barrel race" data-sort-event="high desert barrel series #4" data-sort-price="45" data-sort-entered="48">
+                <td>
+                  <a class="eem-res-name" href="#">#9.5 Open Barrel Race</a>
+                  <span class="eem-res-status eem-res-status--ongoing">Ongoing</span>
+                </td>
+                <td>High Desert Barrel Series #4</td>
+                <td>$45.00</td>
+                <td>
+                  <a class="eem-entries-entered-link" href="#" title="View entrants">
+                    <span class="eem-entered-spots">
+                      <span class="eem-entered-count">48</span><span class="eem-entered-sep">/</span><span class="eem-spots-count">60</span>
+                    </span>
+                  </a>
+                </td>
+              </tr>
+
+              <!-- Ongoing event, OVERSOLD — entered count turns red + oversold badge -->
+              <tr data-eem-event-id="6041" data-sort-name="#7 youth division" data-sort-event="high desert barrel series #4" data-sort-price="35" data-sort-entered="52">
+                <td>
+                  <a class="eem-res-name" href="#">#7 Youth Division</a>
+                  <span class="eem-res-status eem-res-status--ongoing">Ongoing</span>
+                </td>
+                <td>High Desert Barrel Series #4</td>
+                <td>$35.00</td>
+                <td>
+                  <a class="eem-entries-entered-link" href="#" title="View entrants">
+                    <span class="eem-entered-spots">
+                      <span class="eem-entered-count is-oversold">52</span><span class="eem-entered-sep">/</span><span class="eem-spots-count">50</span>
+                    </span>
+                  </a>
+                  <span class="eem-status-badge eem-status-oversold">oversold by 2</span>
+                </td>
+              </tr>
+
+              <!-- Scheduled event, unlimited spots (spots_int = 0 → "Unlimited") -->
+              <tr data-eem-event-id="5990" data-sort-name="showmanship class" data-sort-event="2026 spring classic horse show" data-sort-price="25" data-sort-entered="31">
+                <td>
+                  <a class="eem-res-name" href="#">Showmanship Class</a>
+                  <span class="eem-res-status eem-res-status--scheduled">Scheduled</span>
+                </td>
+                <td>2026 Spring Classic Horse Show</td>
+                <td>$25.00</td>
+                <td>
+                  <a class="eem-entries-entered-link" href="#" title="View entrants">
+                    <span class="eem-entered-spots">
+                      <span class="eem-entered-count">31</span><span class="eem-entered-sep">/</span><span class="eem-spots-count">Unlimited</span>
+                    </span>
+                  </a>
+                </td>
+              </tr>
+
+              <!-- Scheduled event, partial fill -->
+              <tr data-eem-event-id="5990" data-sort-name="hunter under saddle" data-sort-event="2026 spring classic horse show" data-sort-price="50" data-sort-entered="22">
+                <td>
+                  <a class="eem-res-name" href="#">Hunter Under Saddle</a>
+                  <span class="eem-res-status eem-res-status--scheduled">Scheduled</span>
+                </td>
+                <td>2026 Spring Classic Horse Show</td>
+                <td>$50.00</td>
+                <td>
+                  <a class="eem-entries-entered-link" href="#" title="View entrants">
+                    <span class="eem-entered-spots">
+                      <span class="eem-entered-count">22</span><span class="eem-entered-sep">/</span><span class="eem-spots-count">40</span>
+                    </span>
+                  </a>
+                </td>
+              </tr>
+
+              <!-- Past event (end_date before today) -->
+              <tr data-eem-event-id="6012" data-sort-name="#4 pee-wee roping" data-sort-event="2026 national trail ride" data-sort-price="30" data-sort-entered="28">
+                <td>
+                  <a class="eem-res-name" href="#">#4 Pee-Wee Roping</a>
+                  <span class="eem-res-status eem-res-status--past">Past</span>
+                </td>
+                <td>2026 National Trail Ride – NTR 6519</td>
+                <td>$30.00</td>
+                <td>
+                  <a class="eem-entries-entered-link" href="#" title="View entrants">
+                    <span class="eem-entered-spots">
+                      <span class="eem-entered-count">28</span><span class="eem-entered-sep">/</span><span class="eem-spots-count">30</span>
+                    </span>
+                  </a>
+                </td>
+              </tr>
+
+              <!-- Not connected — no reservation_id, event cell shows dotted "Not connected" hint -->
+              <tr data-eem-event-id="" data-sort-name="open team roping" data-sort-event="" data-sort-price="60" data-sort-entered="0">
+                <td>
+                  <a class="eem-res-name" href="#">Open Team Roping</a>
+                  <!-- No event-status pill when rid = 0 -->
+                </td>
+                <td>
+                  <span class="eem-entries-unconnected" title="This division has no linked event, so it does not appear on any customer reservation page.">Not connected</span>
+                </td>
+                <td>$60.00</td>
+                <td>
+                  <a class="eem-entries-entered-link" href="#" title="View entrants">
+                    <span class="eem-entered-spots">
+                      <span class="eem-entered-count">0</span><span class="eem-entered-sep">/</span><span class="eem-spots-count">24</span>
+                    </span>
+                  </a>
+                </td>
+              </tr>
+
+              <!-- Draft division (post_status = 'draft') — amber Draft badge alongside no event-status pill -->
+              <tr data-eem-event-id="5990" data-sort-name="ranch versatility" data-sort-event="2026 spring classic horse show" data-sort-price="-1" data-sort-entered="0">
+                <td>
+                  <a class="eem-res-name" href="#">Ranch Versatility</a>
+                  <span class="eem-res-status eem-res-status--draft">Draft</span>
+                </td>
+                <td>2026 Spring Classic Horse Show</td>
+                <!-- No price set → dash via .is-zero -->
+                <td><span class="eem-orders-count is-zero">—</span></td>
+                <td>
+                  <a class="eem-entries-entered-link" href="#" title="View entrants">
+                    <span class="eem-entered-spots">
+                      <span class="eem-entered-count">0</span><span class="eem-entered-sep">/</span><span class="eem-spots-count">20</span>
+                    </span>
+                  </a>
+                </td>
+              </tr>
+
+              <!-- Empty-filtered row (hidden by default; JS shows it when filter yields 0 results) -->
+              <tr class="eem-entries-empty-filtered" hidden>
+                <td colspan="4" class="eem-table-empty">No divisions for this event.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ── MOBILE CARDS ── -->
+        <div class="eem-mobile-cards eem-entries-mobile">
+
+          <div class="eem-mobile-card" data-eem-event-id="6041" data-search-name="#9.5 open barrel race" data-sort-entered="48">
+            <div class="eem-mobile-card-top">
+              <a class="eem-mobile-card-id" href="#">#9.5 Open Barrel Race</a>
+              <span class="eem-mobile-card-meta">$45.00</span>
+            </div>
+            <div class="eem-mobile-card-sub">High Desert Barrel Series #4</div>
+            <div class="eem-mobile-card-bottom"><div class="eem-mobile-card-badges">
+              <a class="eem-mobile-card-metric eem-entries-entered-link" href="#">
+                <span class="eem-entered-spots"><span class="eem-entered-count">48</span><span class="eem-entered-sep">/</span><span class="eem-spots-count">60</span></span>
+              </a>
+            </div></div>
+          </div>
+
+          <div class="eem-mobile-card" data-eem-event-id="6041" data-search-name="#7 youth division" data-sort-entered="52">
+            <div class="eem-mobile-card-top">
+              <a class="eem-mobile-card-id" href="#">#7 Youth Division</a>
+              <span class="eem-mobile-card-meta">$35.00</span>
+            </div>
+            <div class="eem-mobile-card-sub">High Desert Barrel Series #4</div>
+            <div class="eem-mobile-card-bottom"><div class="eem-mobile-card-badges">
+              <a class="eem-mobile-card-metric eem-entries-entered-link" href="#">
+                <span class="eem-entered-spots"><span class="eem-entered-count is-oversold">52</span><span class="eem-entered-sep">/</span><span class="eem-spots-count">50</span></span>
+              </a>
+              <span class="eem-status-badge eem-status-oversold">oversold by 2</span>
+            </div></div>
+          </div>
+
+          <div class="eem-mobile-card" data-eem-event-id="" data-search-name="open team roping" data-sort-entered="0">
+            <div class="eem-mobile-card-top">
+              <a class="eem-mobile-card-id" href="#">Open Team Roping</a>
+              <span class="eem-mobile-card-meta">$60.00</span>
+            </div>
+            <div class="eem-mobile-card-sub"><span class="eem-entries-unconnected">Not connected</span></div>
+            <div class="eem-mobile-card-bottom"><div class="eem-mobile-card-badges">
+              <a class="eem-mobile-card-metric eem-entries-entered-link" href="#">
+                <span class="eem-entered-spots"><span class="eem-entered-count">0</span><span class="eem-entered-sep">/</span><span class="eem-spots-count">24</span></span>
+              </a>
+            </div></div>
+          </div>
+
+          <div class="eem-mobile-card eem-entries-mobile-empty" hidden>No divisions for this event.</div>
+        </div>
+
+        <!-- ── TABLE FOOTER ── -->
+        <!-- Counts come from PHP: count($rows) divisions + sum of entered -->
+        <div class="eem-table-footer">
+          <span class="eem-table-footer-info">
+            <span data-eem-entries-count>7 divisions</span>
+            <span class="eem-table-footer-sep" aria-hidden="true">·</span>
+            <span data-eem-entries-entrants>181 total entrants</span>
+          </span>
+        </div>
+
+      </div><!-- /.eem-page-wrap -->
+    </div><!-- /.eem-page -->
+  </main>
+</div>
+
+<script>
+// Minimal mockup interactivity — mirrors admin.js entries-filter-event + entries-search.
+(function(){
+  var sel = document.querySelector('[data-eem-input-action="entries-filter-event"]');
+  var search = document.querySelector('[data-eem-input-action="entries-search"]');
+  var rows = Array.from(document.querySelectorAll('.eem-entries-table tbody tr:not(.eem-entries-empty-filtered)'));
+  var cards = Array.from(document.querySelectorAll('.eem-entries-mobile .eem-mobile-card:not(.eem-entries-mobile-empty)'));
+  var emptyRow = document.querySelector('.eem-entries-empty-filtered');
+  var emptyCard = document.querySelector('.eem-entries-mobile-empty');
+
+  function filterAll(){
+    var evId = sel ? sel.value : '';
+    var q = search ? search.value.trim().toLowerCase() : '';
+    var anyVisible = false;
+    rows.forEach(function(tr){
+      var matchEv = !evId || tr.getAttribute('data-eem-event-id') === evId;
+      var matchQ = !q || (tr.getAttribute('data-sort-name') || '').indexOf(q) >= 0;
+      var show = matchEv && matchQ;
+      tr.hidden = !show;
+      if(show) anyVisible = true;
+    });
+    cards.forEach(function(c){
+      var matchEv = !evId || c.getAttribute('data-eem-event-id') === evId;
+      var matchQ = !q || (c.getAttribute('data-search-name') || '').indexOf(q) >= 0;
+      c.hidden = !(matchEv && matchQ);
+    });
+    if(emptyRow) emptyRow.hidden = anyVisible;
+    if(emptyCard) emptyCard.hidden = anyVisible;
+  }
+
+  if(sel) sel.addEventListener('change', filterAll);
+  if(search) search.addEventListener('input', filterAll);
+})();
+</script>
+</body>
+</html>

@@ -6,626 +6,562 @@
 <title>Equine Event Manager – Customer Profile</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+/* ─────────────────────────────────────────────────────────────────────────────
+   Customer Profile – admin page
+   (admin.php?page=equine-event-manager-customer&customer_email=…)
+   Rendered live by EEM_Customer_Profile_Page::render() against
+   EEM_Customer_Profile_Repo. Read-only aggregate model: a "customer" is the set
+   of orders sharing an email — identity + KPI stats, customer details, internal
+   notes (only writable surface), order history, reservation history, merged
+   activity timeline. Header actions: Send Email (mailto) + Export CSV.
+   Edit / Merge / Delete intentionally absent (no first-class customer entity).
 
-/* ── WP SHELL ── */
+   All eem-cp-* / eem-table / eem-status-badge / eem-type-badge / eem-activity-log
+   values pulled verbatim from assets/css/admin.css. Brand tokens: electric
+   #1668F2, navy #031B4E, control border #8c8f94, light-blue band #f0f4fb /
+   #d9e2f2, radius 3px. Seed based on customer "Mitchell, Whitney" but curated
+   with richer type badges + a billing address than the live seed so the full
+   design surfaces in one view.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root{
+  --eem-navy:#031B4E; --eem-electric:#1668F2; --eem-electric-hover:#1355cc;
+  --eem-bg:#F7F9FC; --eem-bg-alt:#f3f4f5; --eem-bg-hover:#fafbff; --eem-surface:#fff;
+  --eem-border-card:#c3c4c7; --eem-border-soft:#f0f0f1; --eem-control-border:#8c8f94;
+  --eem-text:#1d2327; --eem-text-secondary:#6B7A99; --eem-text-muted:#8c8f94;
+  --eem-info-bg:#EEF4FF; --eem-info-border:#c0d8ff;
+  --eem-success-bg:#F0FDFA; --eem-success-text:#0d9488; --eem-success-accent:#16a34a;
+  --eem-warn-bg:#FFFBEB; --eem-warn-accent:#d97706;
+  --eem-error-bg:#fef2f2; --eem-error-accent:#dc2626;
+  --eem-space-1:4px; --eem-space-2:8px; --eem-space-3:12px; --eem-space-4:16px;
+  --eem-radius-sm:2px; --eem-radius:3px; --eem-radius-lg:6px;
+  --eem-font-display:'Space Grotesk',system-ui,sans-serif;
+  --eem-font-ui:'IBM Plex Sans',sans-serif;
+  --eem-badge-green-bg:#F0FDF4; --eem-badge-green-text:#15803d; --eem-badge-green-border:#bbf7d0;
+  --eem-badge-amber-bg:#FFFBEB; --eem-badge-amber-text:#b45309; --eem-badge-amber-border:#fde68a;
+  --eem-badge-red-bg:#FEF2F2; --eem-badge-red-text:#b91c1c; --eem-badge-red-border:#fecaca;
+  --eem-badge-blue-bg:#EEF4FF; --eem-badge-blue-text:#1668F2; --eem-badge-blue-border:#c0d8ff;
+  --eem-badge-gray-bg:#F8FAFC; --eem-badge-gray-text:#64748b; --eem-badge-gray-border:#e2e8f0;
+  --eem-type-stall-bg:#EEF4FF; --eem-type-stall-text:#1668F2; --eem-type-stall-border:#c0d8ff;
+  --eem-type-rv-bg:#F5F3FF; --eem-type-rv-text:#6d28d9; --eem-type-rv-border:#ddd6fe;
+  --eem-type-addon-bg:#FFF7ED; --eem-type-addon-text:#c2410c; --eem-type-addon-border:#fed7aa;
+  --eem-type-group-bg:#F0FDF4; --eem-type-group-text:#15803d; --eem-type-group-border:#bbf7d0;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--eem-font-ui);background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+svg{flex-shrink:0}
+a{text-decoration:none}
+a:hover{text-decoration:none}
+
+/* ── WP SHELL STUB ── */
 .wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
 .wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
 .wp-admin-bar span.site{color:#fff;font-weight:600}
 .wp-body{display:flex;flex:1}
 .wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
-.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
-.wp-sidebar-item:hover{background:#2c3338;color:#fff}
-.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer}
 .wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
 .wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
 .wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
-.wp-sidebar-sub:hover{color:#fff}
 .wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
-
-/* ── CONTENT ── */
 .wp-content{flex:1;padding:12px 20px 40px;min-width:0}
 
-.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
-.breadcrumb-sep{font-size:13px;color:#8c8f94}
-.breadcrumb-page{font-size:13px;color:#50575e}
-.breadcrumb-page a{color:#50575e;text-decoration:none}
+/* ── Breadcrumb + logo (eem-breadcrumb) ── */
+.eem-breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.eem-breadcrumb-logo{display:inline-flex;align-items:center;flex-shrink:0}
+.eem-breadcrumb-logo img{height:34px;width:auto;display:block}
+.eem-breadcrumb-logo-box{width:160px;height:34px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
+.eem-breadcrumb-sep{font-size:13px;color:#8c8f94}
+.eem-breadcrumb-segment{font-size:13px;color:#031B4E;font-weight:600}
+a.eem-breadcrumb-segment:hover{color:#1668F2}
+.eem-breadcrumb-segment[aria-current="page"]{color:#6B7A99;font-weight:500}
 
-/* ── PLUGIN-WRAP (bordered card containing entire page) ── */
-.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+/* ── PAGE SHELL ── */
+.eem-page{display:block}
+.eem-page-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+.eem-page-header{padding:18px 22px;border-bottom:1px solid #dcdcde;background:#fff;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.eem-page-header-left{min-width:0}
+.eem-page-title{font-family:var(--eem-font-display);font-size:22px;font-weight:700;color:#031B4E;line-height:1.2}
+.eem-page-meta{margin-top:5px}
+.eem-page-actions{display:flex;gap:8px;flex-wrap:wrap}
+.eem-page-body{background:#fff}
 
-/* PAGE HEADER (inside plugin-wrap, per VIS-3) */
-.plugin-header{padding:14px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.plugin-header-left{flex:1;min-width:0}
-.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;color:#031B4E;margin-bottom:2px;line-height:1.3}
-.plugin-subtitle{font-size:12.5px;color:#6B7A99;margin-top:2px}
-.plugin-subtitle a{color:#031B4E;font-weight:600;text-decoration:none}
-.plugin-subtitle a:hover{color:#1668F2}
+/* ── BUTTONS ── */
+.eem-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--eem-radius);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;border:1px solid transparent;text-decoration:none;line-height:1.4}
+.eem-btn-ghost{background:#fff;color:#1d2327;border-color:#c3c4c7}
+.eem-btn-ghost:hover{background:#f6f7f7;color:#1d2327}
+.eem-btn-electric{background:var(--eem-electric);color:#fff;border-color:var(--eem-electric)}
+.eem-btn-electric:hover{background:var(--eem-electric-hover);border-color:var(--eem-electric-hover);color:#fff}
 
-/* Action bar in header */
-.action-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex-shrink:0}
-.btn{padding:7px 13px;border-radius:4px;font-size:12.5px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;border:1px solid;text-decoration:none}
-.btn svg{width:13px;height:13px;flex-shrink:0}
-.btn-ghost{background:#fff;color:#1d2327;border-color:#c3c4c7}
-.btn-ghost:hover{background:#f6f7f7}
-.btn-primary{background:#1668F2;color:#fff;border-color:#1668F2}
-.btn-primary:hover{background:#1257d1;border-color:#1257d1}
-.btn-icon{padding:6px 8px}
-.more-wrap{position:relative}
-.more-menu{display:none;position:absolute;top:100%;right:0;margin-top:4px;background:#fff;border:1px solid #c3c4c7;border-radius:4px;box-shadow:0 4px 12px rgba(0,0,0,.08);min-width:200px;z-index:50}
-.more-menu.open{display:block}
-.more-item{display:flex;align-items:center;gap:8px;padding:9px 14px;font-size:13px;color:#1d2327;cursor:pointer;border-bottom:1px solid #f0f0f1;text-decoration:none}
-.more-item:last-child{border-bottom:none}
-.more-item:hover{background:#f6f7f7}
-.more-item svg{width:13px;height:13px;color:#6B7A99;flex-shrink:0}
-.more-item-danger{color:#b91c1c}
-.more-item-danger svg{color:#fca5a5}
-.more-item-danger:hover{background:#fef2f2}
+/* ── SECTION HEADERS (between cards) ── */
+.eem-section-header{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-bottom:1px solid #dcdcde;gap:12px;background:#fff}
+.eem-section-title{font-family:var(--eem-font-display);font-size:14px;font-weight:700;color:var(--eem-navy)}
+.eem-section-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
 
-/* ── KPI STATS GRID ── */
-.stats-section{padding:16px 18px;border-bottom:1px solid #dcdcde;background:#fff}
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.stat-card{background:#F7F9FC;border:1px solid #e8eaf0;border-radius:6px;padding:14px 16px}
-.stat-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8c8f94;margin-bottom:6px}
-.stat-value{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.1;margin-bottom:3px}
-.stat-meta{font-size:11.5px;color:#6B7A99}
-.stat-card.accent-electric{border-color:#c0d8ff;background:#EEF4FF}
-.stat-card.accent-electric .stat-value{color:#1668F2}
-.stat-card.accent-teal{border-color:#a7e8d8;background:#E6FAF5}
-.stat-card.accent-teal .stat-value{color:#0d9488}
+/* ── CP SECTIONS (verbatim from admin.css) ── */
+.eem-cp-section{padding:var(--eem-space-4) 18px;border-bottom:1px solid var(--eem-border-card);background:var(--eem-surface)}
+.eem-cp-table-section,.eem-cp-activity{padding:0}
+.eem-cp-activity{padding:var(--eem-space-3) 18px var(--eem-space-4);border-bottom:none}
+.eem-cp-subtitle{font-size:12.5px;color:var(--eem-text-secondary)}
+.eem-cp-subtitle a{color:var(--eem-navy);font-weight:600}
+.eem-cp-subtitle a:hover{color:var(--eem-electric)}
+.eem-cp-dot{color:var(--eem-text-muted);margin:0 2px}
 
-/* ── SECTION HEADERS ── */
-.section-header{padding:14px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff}
-.section-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E}
-.section-actions{display:flex;align-items:center;gap:6px}
+/* KPI stats grid */
+.eem-cp-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--eem-space-3)}
+.eem-cp-stat-card{background:var(--eem-bg);border:1px solid #e8eaf0;border-radius:var(--eem-radius-lg);padding:14px 16px}
+.eem-cp-stat-card--electric{border-color:var(--eem-info-border);background:var(--eem-info-bg)}
+.eem-cp-stat-card--electric .eem-cp-stat-value{color:var(--eem-electric)}
+.eem-cp-stat-card--teal{border-color:#a7e8d8;background:#E6FAF5}
+.eem-cp-stat-card--teal .eem-cp-stat-value{color:var(--eem-success-text)}
+.eem-cp-stat-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--eem-text-muted);margin-bottom:6px}
+.eem-cp-stat-value{font-family:var(--eem-font-display);font-size:22px;font-weight:700;color:var(--eem-navy);line-height:1.1;margin-bottom:3px}
+.eem-cp-stat-value--sm{font-size:17px}
+.eem-cp-stat-meta{font-size:11.5px;color:var(--eem-text-secondary)}
 
-/* ── CUSTOMER DETAILS SECTION ── */
-.details-grid{padding:16px 18px;border-bottom:1px solid #dcdcde;background:#fff;display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
-.detail-block .detail-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8c8f94;margin-bottom:5px}
-.detail-block .detail-content{font-size:13px;color:#1d2327;line-height:1.6}
-.detail-block address{font-style:normal}
-.detail-block a{color:#031B4E;font-weight:500;text-decoration:none}
-.detail-block a:hover{color:#1668F2}
+/* Customer details */
+.eem-cp-details-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+.eem-cp-detail-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--eem-text-muted);margin-bottom:5px}
+.eem-cp-detail-body{font-size:13px;color:var(--eem-text);line-height:1.6}
+.eem-cp-detail-body address{font-style:normal}
+.eem-cp-detail-body a{color:var(--eem-navy);font-weight:500}
+.eem-cp-detail-body a:hover{color:var(--eem-electric)}
+.eem-cp-muted{color:var(--eem-text-muted)}
 
-/* ── NOTES SECTION ── */
-.notes-section{padding:14px 18px;border-bottom:1px solid #dcdcde;background:#fff}
-.notes-textarea{width:100%;min-height:70px;padding:9px 12px;border:1px solid #8c8f94;border-radius:4px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#1d2327;resize:vertical;background:#fff}
-.notes-textarea:focus{outline:none;border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
-.notes-actions{margin-top:8px;display:flex;justify-content:flex-end}
+/* Internal notes */
+.eem-cp-notes-input{width:100%;min-height:70px;padding:9px 12px;border:1px solid var(--eem-control-border);border-radius:var(--eem-radius);font-family:var(--eem-font-ui);font-size:13px;color:var(--eem-text);resize:vertical;background:var(--eem-surface)}
+.eem-cp-notes-input:focus{outline:none;border-color:var(--eem-electric);box-shadow:0 0 0 1px var(--eem-electric)}
+.eem-cp-notes-actions{margin-top:var(--eem-space-2);display:flex;justify-content:flex-end}
 
-/* ── TABLE SECTION ── */
-.table-section{background:#fff;border-bottom:1px solid #dcdcde}
-.table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse}
-thead{background:#f3f4f5;border-bottom:1px solid #dcdcde}
-th{padding:10px 14px;font-size:13px;font-weight:600;color:#1d2327;text-align:left;white-space:nowrap}
-th.r{text-align:right}
-th.c{text-align:center}
-th.sortable{cursor:pointer}
-th .sort-icons{display:inline-flex;flex-direction:column;gap:1px;margin-left:3px;vertical-align:middle;opacity:.45}
-th .sort-icons svg{width:8px;height:5px;display:block}
-tbody tr{border-bottom:1px solid #f0f0f1}
-tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:#f6f7f7}
-td{padding:12px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
-td.r{text-align:right;font-weight:600}
-td.c{text-align:center}
-.cell-link{color:#031B4E;font-weight:700;text-decoration:none}
-.cell-link:hover{color:#1668F2}
-.cell-event{color:#50575e;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cell-event a{color:#031B4E;text-decoration:none}
-.cell-event a:hover{color:#1668F2}
-.cell-date{color:#8c8f94;font-size:13px;white-space:nowrap}
-.cell-amount{color:#031B4E;font-weight:600;text-align:right;white-space:nowrap}
-.actions-cell{display:flex;gap:5px;justify-content:flex-end}
-.action-icon-btn{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #c3c4c7;background:#fff;color:#6B7A99;border-radius:4px;cursor:pointer}
-.action-icon-btn:hover{background:#f0f0f1}
-.action-icon-btn svg{width:14px;height:14px}
-.more-btn{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:1px solid #c3c4c7;background:#fff;color:#50575e;border-radius:4px;cursor:pointer;font-size:15px;line-height:1}
+/* Tables */
+.eem-cp-cell-link{color:var(--eem-navy);font-weight:700}
+.eem-cp-cell-link:hover{color:var(--eem-electric)}
+.eem-cp-cell-event{color:var(--eem-text);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eem-cp-cell-date{color:var(--eem-text-muted);white-space:nowrap}
+.eem-cp-table-footer{padding:var(--eem-space-3) 14px;background:var(--eem-bg-alt);display:flex;justify-content:space-between;align-items:center;gap:var(--eem-space-3);flex-wrap:wrap;border-top:1px solid var(--eem-border-card)}
+.eem-cp-footer-showing{font-size:12.5px;color:var(--eem-text-secondary)}
 
-/* Status badges */
-.status-badge{padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
-.status-badge::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.status-paid{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
-.status-paid::before{background:#22c55e}
-.status-partial{background:#FFFBEB;color:#b45309;border:1px solid #fde68a}
-.status-partial::before{background:#f59e0b}
-.status-invoice{background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
-.status-invoice::before{background:#3b82f6}
-.status-refunded{background:#FEF2F2;color:#b91c1c;border:1px solid #fecaca}
-.status-refunded::before{background:#ef4444}
-.status-unpaid{background:#FFFBEB;color:#b45309;border:1px solid #fde68a}
-.status-unpaid::before{background:#f59e0b}
-.status-active{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
-.status-active::before{background:#22c55e}
-.status-draft{background:#FEF3C7;color:#92400e;border:1px solid #fde68a}
-.status-draft::before{background:#f59e0b}
+/* Shared data table */
+.eem-table-wrap{overflow-x:auto}
+.eem-table{width:100%;border-collapse:collapse}
+.eem-table thead tr{border-bottom:1px solid #d9e2f2;background:#f8fafc}
+.eem-table thead th{padding:10px 14px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--eem-navy);text-align:left;white-space:nowrap}
+.eem-table tbody tr{border-bottom:1px solid var(--eem-border-soft)}
+.eem-table tbody tr:last-child{border-bottom:none}
+.eem-table tbody tr:hover{background:#f6f7f7}
+.eem-table td{padding:12px 14px;font-size:13.5px;color:var(--eem-text);vertical-align:middle}
+.eem-table-r{text-align:right}
+.eem-table-c{text-align:center}
 
-/* Type badges (no dot) */
-.type-badge{padding:2px 7px;border-radius:3px;font-size:11px;font-weight:600;white-space:nowrap;display:inline-block}
-.type-stall{background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
-.type-rv{background:#F5F3FF;color:#6d28d9;border:1px solid #ddd6fe}
-.type-addon{background:#FFF7ED;color:#c2410c;border:1px solid #fed7aa}
-.type-group{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
-.type-badges-wrap{display:inline-flex;gap:4px;flex-wrap:wrap}
+/* Status + type badges */
+.eem-status-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.eem-status-paid{background:var(--eem-badge-green-bg);color:var(--eem-badge-green-text);border:1px solid var(--eem-badge-green-border)}
+.eem-status-unpaid{background:var(--eem-badge-amber-bg);color:var(--eem-badge-amber-text);border:1px solid var(--eem-badge-amber-border)}
+.eem-status-partial{background:var(--eem-badge-amber-bg);color:var(--eem-badge-amber-text);border:1px solid var(--eem-badge-amber-border)}
+.eem-status-invoice{background:var(--eem-badge-blue-bg);color:var(--eem-badge-blue-text);border:1px solid var(--eem-badge-blue-border)}
+.eem-status-refunded{background:var(--eem-badge-red-bg);color:var(--eem-badge-red-text);border:1px solid var(--eem-badge-red-border)}
+.eem-status-cancelled{background:var(--eem-badge-gray-bg);color:var(--eem-badge-gray-text);border:1px solid var(--eem-badge-gray-border)}
+.eem-status-active{background:var(--eem-badge-green-bg);color:var(--eem-badge-green-text);border:1px solid var(--eem-badge-green-border)}
+.eem-type-badges-wrap{display:flex;gap:4px;flex-wrap:wrap}
+.eem-type-badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:var(--eem-radius-sm);font-size:11px;font-weight:600;white-space:nowrap}
+.eem-type-stall{background:var(--eem-type-stall-bg);color:var(--eem-type-stall-text);border:1px solid var(--eem-type-stall-border)}
+.eem-type-rv{background:var(--eem-type-rv-bg);color:var(--eem-type-rv-text);border:1px solid var(--eem-type-rv-border)}
+.eem-type-addon{background:var(--eem-type-addon-bg);color:var(--eem-type-addon-text);border:1px solid var(--eem-type-addon-border)}
+.eem-type-group{background:var(--eem-type-group-bg);color:var(--eem-type-group-text);border:1px solid var(--eem-type-group-border)}
 
-/* Collect button (orange) */
-.btn-collect{padding:3px 8px;border-radius:4px;font-size:11.5px;font-weight:600;background:#FFF7ED;color:#c2410c;border:1px solid #fed7aa;cursor:pointer;display:inline-flex;align-items:center;gap:4px;text-decoration:none}
-.btn-collect:hover{background:#fed7aa}
-.btn-collect svg{width:12px;height:12px}
+/* Mobile cards (hidden on desktop) */
+.eem-mobile-cards{display:none}
+.eem-mobile-card{background:var(--eem-surface);border:1px solid #dcdcde;border-radius:var(--eem-radius);padding:14px;margin:14px 14px 0}
+.eem-mobile-card-top{display:flex;justify-content:space-between;margin-bottom:6px}
+.eem-mobile-card-id{font-weight:700;color:var(--eem-electric);font-size:14px}
+.eem-mobile-card-meta{font-size:12px;color:var(--eem-text-muted)}
+.eem-mobile-card-title{font-size:14px;font-weight:500;margin-bottom:3px}
+.eem-mobile-card-sub{font-size:12.5px;color:#50575e;margin-bottom:8px}
+.eem-mobile-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:var(--eem-space-2);flex-wrap:wrap}
+.eem-mobile-card-badges{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
 
-/* Table footer / pagination */
-.table-footer{padding:12px 14px;background:#f3f4f5;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.footer-showing{font-size:12.5px;color:#6B7A99}
-.pagination{display:flex;gap:4px;align-items:center}
-.page-btn{width:28px;height:28px;border:1px solid #c3c4c7;background:#fff;color:#50575e;border-radius:4px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
-.page-btn:hover{background:#f6f7f7}
-.page-btn.active{background:#1668F2;color:#fff;border-color:#1668F2}
-.page-btn.disabled{opacity:.45;cursor:not-allowed}
-.page-btn svg{width:12px;height:12px}
+/* Activity log */
+.eem-activity-log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.eem-activity-log-entry{display:grid;grid-template-columns:32px 1fr auto;gap:var(--eem-space-3);align-items:flex-start;padding:var(--eem-space-3) 0;border-bottom:1px solid var(--eem-border-soft)}
+.eem-activity-log-entry:last-child{border-bottom:none}
+.eem-activity-log-icon{width:28px;height:28px;border-radius:var(--eem-radius);display:flex;align-items:center;justify-content:center;font-family:var(--eem-font-display);font-size:14px;font-weight:700;line-height:1;flex-shrink:0}
+.eem-activity-log-entry--create .eem-activity-log-icon{background:#F0FDF4;color:var(--eem-success-accent)}
+.eem-activity-log-entry--edit .eem-activity-log-icon{background:var(--eem-warn-bg);color:var(--eem-warn-accent)}
+.eem-activity-log-entry--info .eem-activity-log-icon{background:var(--eem-info-bg);color:var(--eem-electric)}
+.eem-activity-log-entry--refund .eem-activity-log-icon{background:var(--eem-error-bg);color:var(--eem-error-accent)}
+.eem-activity-log-entry--assignment .eem-activity-log-icon{background:var(--eem-type-rv-bg);color:var(--eem-type-rv-text)}
+.eem-activity-log-body{min-width:0}
+.eem-activity-log-title{font-size:13px;font-weight:600;color:var(--eem-navy);line-height:1.4}
+.eem-activity-log-meta{font-size:12px;color:var(--eem-text-secondary);line-height:1.5;margin-top:2px}
+.eem-activity-log-stamp{font-size:11.5px;color:var(--eem-text-muted);white-space:nowrap;text-align:right;padding-top:2px}
 
-/* ── ACTIVITY LOG ── */
-.activity-section{padding:14px 18px;background:#fff}
-.activity-list{display:flex;flex-direction:column;gap:0}
-.activity-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #f0f0f1;align-items:flex-start}
-.activity-item:last-child{border-bottom:none}
-.activity-icon{width:28px;height:28px;border-radius:50%;background:#F7F9FC;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:#6B7A99}
-.activity-icon svg{width:13px;height:13px}
-.activity-icon.icon-order{background:#EEF4FF;color:#1668F2}
-.activity-icon.icon-payment{background:#F0FDF4;color:#15803d}
-.activity-icon.icon-refund{background:#FEF2F2;color:#b91c1c}
-.activity-icon.icon-email{background:#F5F3FF;color:#6d28d9}
-.activity-icon.icon-note{background:#FFFBEB;color:#b45309}
-.activity-body{flex:1;min-width:0}
-.activity-text{font-size:13px;color:#1d2327;line-height:1.45}
-.activity-text strong{color:#031B4E}
-.activity-meta{font-size:11.5px;color:#8c8f94;margin-top:2px}
-.activity-note-body{font-size:12.5px;color:#50575e;margin-top:3px;padding:6px 10px;background:#FFFBEB;border-left:3px solid #fde68a;border-radius:0 4px 4px 0;line-height:1.5}
-.add-note-form{padding:10px 0 0;display:flex;gap:8px;align-items:flex-start;border-top:1px solid #dcdcde;margin-top:8px;padding-top:14px}
-.add-note-form textarea{flex:1;min-height:56px;padding:8px 11px;border:1px solid #8c8f94;border-radius:4px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#1d2327;resize:vertical;background:#fff}
-.add-note-form textarea:focus{outline:none;border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
-
-/* ── MOBILE CARDS (hidden on desktop) ── */
-.mobile-cards{display:none;padding:12px 14px;background:#fff}
-.mobile-card{background:#fff;border:1px solid #dcdcde;border-radius:4px;padding:14px;margin-bottom:8px}
-.mobile-card:last-child{margin-bottom:0}
-.mobile-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
-.mobile-card-id{color:#031B4E;font-weight:700;font-size:13.5px;text-decoration:none}
-.mobile-card-id:hover{color:#1668F2}
-.mobile-card-date{font-size:12px;color:#8c8f94}
-.mobile-card-title{font-size:14px;font-weight:600;color:#1d2327;margin-bottom:2px}
-.mobile-card-sub{font-size:12.5px;color:#50575e;margin-bottom:8px}
-.mobile-card-sub a{color:#031B4E;text-decoration:none}
-.mobile-card-sub a:hover{color:#1668F2}
-.mobile-card-bottom{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
-.mobile-card-badges{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
-.mobile-card-actions{display:flex;gap:5px}
-
-/* ── MOBILE BREAKPOINT ── */
-@media (max-width:1024px){
-  .stats-grid{grid-template-columns:repeat(2,1fr)}
-  .details-grid{grid-template-columns:1fr 1fr}
+/* ── RESPONSIVE ── */
+@media (max-width:960px){
+  .eem-cp-stats-grid{grid-template-columns:repeat(2,1fr)}
+  .eem-cp-details-grid{grid-template-columns:1fr 1fr}
 }
-@media (max-width:767px){
+@media (max-width:782px){
   .wp-sidebar{display:none}
-  .wp-content{padding:10px 12px 32px}
-  .plugin-header{flex-direction:column;align-items:flex-start;padding:12px 14px;gap:10px}
-  .action-bar{width:100%;flex-wrap:wrap}
-  .action-bar .btn{flex:1;justify-content:center;min-width:100px}
-  .stats-grid{grid-template-columns:1fr;gap:8px}
-  .stat-card{padding:11px 13px}
-  .stat-value{font-size:19px}
-  .details-grid{grid-template-columns:1fr;gap:14px;padding:12px 14px}
-  .section-header{padding:12px 14px}
-  .notes-section{padding:12px 14px}
-  .activity-section{padding:12px 14px}
-  /* Tables become cards on mobile */
-  .table-wrap{display:none}
-  .mobile-cards{display:block}
-  .table-footer{padding:10px 14px}
+  .eem-table-wrap{display:none}
+  .eem-mobile-cards{display:block;padding-bottom:14px}
+  .eem-cp-stats-grid{grid-template-columns:1fr;gap:var(--eem-space-2)}
+  .eem-cp-details-grid{grid-template-columns:1fr;gap:14px}
+  .eem-activity-log-entry{grid-template-columns:28px 1fr}
+  .eem-activity-log-stamp{grid-column:2;text-align:left;padding-top:4px}
 }
-
-/* ── HOVER CONVENTION (universal — color only, no underline) ── */
-a{text-decoration:none}
-a:hover{text-decoration:none}
-
 </style>
 </head>
 <body>
 
-<!-- WP shell stub (visual context only — not part of plugin code) -->
 <div class="wp-admin-bar">
-  <span class="site">My Site</span>
-  <span>+ New</span>
-  <span style="margin-left:auto">Howdy, Whitney</span>
+  <span class="site">⊞ en-event-manager.local</span>
+  <span>＋ New</span>
+  <span style="margin-left:auto">Howdy, whitney</span>
 </div>
+
 <div class="wp-body">
   <nav class="wp-sidebar">
     <div class="wp-sidebar-item">Dashboard</div>
+    <div class="wp-sidebar-item">Media</div>
     <div class="wp-sidebar-item">Posts</div>
-    <div class="wp-sidebar-item">Pages</div>
     <div class="wp-sidebar-sep"></div>
     <div class="wp-sidebar-label">Event Manager</div>
     <div class="wp-sidebar-sub">Dashboard</div>
-    <div class="wp-sidebar-sub">Reservations</div>
     <div class="wp-sidebar-sub active">Orders</div>
-    <div class="wp-sidebar-sub">Stall Charts</div>
-    <div class="wp-sidebar-sub">Invoicing</div>
+    <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
+    <div class="wp-sidebar-sub">Daily Movement</div>
     <div class="wp-sidebar-sub">Reports</div>
     <div class="wp-sidebar-sub">Settings</div>
   </nav>
-  <main class="wp-content">
 
-    <!-- Breadcrumb -->
-    <div class="breadcrumb">
-      <div class="breadcrumb-logo-box">Plugin Logo</div>
-      <span class="breadcrumb-sep">/</span>
-      <span class="breadcrumb-page"><a href="#">Customers</a></span>
-      <span class="breadcrumb-sep">/</span>
-      <span class="breadcrumb-page">Whitney Mitchell</span>
-    </div>
+  <div class="wp-content">
 
-    <!-- PLUGIN-WRAP (everything inside the bordered card) -->
-    <div class="plugin-wrap">
+    <!-- ── PAGE: eem_render_page_open( title, meta, actions, breadcrumb ) ── -->
+    <div class="eem-page">
 
-      <!-- PAGE HEADER (inside card per VIS-3) -->
-      <header class="plugin-header">
-        <div class="plugin-header-left">
-          <h1 class="plugin-title">Whitney Mitchell</h1>
-          <div class="plugin-subtitle">
-            <a href="mailto:info@wmpromotions.com">info@wmpromotions.com</a>
-            &nbsp;·&nbsp;
-            (559) 393-5352
-            &nbsp;·&nbsp;
-            Customer since May 2025
-          </div>
-        </div>
-        <div class="action-bar">
-          <button class="btn btn-ghost">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
-            Send Email
-          </button>
-          <button class="btn btn-primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
-            Edit Customer
-          </button>
-          <div class="more-wrap">
-            <button class="btn btn-ghost btn-icon" id="more-btn">···</button>
-            <div class="more-menu" id="more-menu">
-              <a class="more-item" href="#">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                Export Customer Data (CSV)
-              </a>
-              <a class="more-item" href="#">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Merge with Another Customer
-              </a>
-              <a class="more-item more-item-danger" href="#">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                Delete Customer
-              </a>
+      <nav class="eem-breadcrumb" aria-label="Breadcrumb">
+        <a class="eem-breadcrumb-logo" href="#" aria-label="Equine Event Manager dashboard">
+          <img src="Equine Event Manager Logo.png" alt="Equine Event Manager"
+               onerror="this.outerHTML='&lt;span class=&quot;eem-breadcrumb-logo-box&quot;&gt;Plugin Logo&lt;/span&gt;'">
+        </a>
+        <span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+        <a class="eem-breadcrumb-segment" href="#">Orders</a>
+        <span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+        <span class="eem-breadcrumb-segment" aria-current="page">Mitchell, Whitney</span>
+      </nav>
+
+      <div class="eem-page-wrap">
+
+        <header class="eem-page-header">
+          <div class="eem-page-header-left">
+            <h1 class="eem-page-title">Mitchell, Whitney</h1>
+            <div class="eem-page-meta">
+              <div class="eem-cp-subtitle">
+                <a href="mailto:wmitchell@equinenetwork.com">wmitchell@equinenetwork.com</a>
+                <span class="eem-cp-dot">·</span> (555) 777-0001
+                <span class="eem-cp-dot">·</span> Customer since June 2026
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+          <div class="eem-page-actions">
+            <a class="eem-btn eem-btn-ghost" href="mailto:wmitchell@equinenetwork.com">Send Email</a>
+            <a class="eem-btn eem-btn-ghost" href="#">Export CSV</a>
+          </div>
+        </header>
 
-      <!-- STATS GRID -->
-      <section class="stats-section">
-        <div class="stats-grid">
-          <div class="stat-card accent-electric">
-            <div class="stat-label">Lifetime Spend</div>
-            <div class="stat-value">$2,847.50</div>
-            <div class="stat-meta">across 14 orders</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Total Orders</div>
-            <div class="stat-value">14</div>
-            <div class="stat-meta">12 paid · 2 unpaid</div>
-          </div>
-          <div class="stat-card accent-teal">
-            <div class="stat-label">Avg Order Value</div>
-            <div class="stat-value">$203.39</div>
-            <div class="stat-meta">last 12 months</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Last Order</div>
-            <div class="stat-value">May 22, 2026</div>
-            <div class="stat-meta">2 days ago</div>
-          </div>
-        </div>
-      </section>
+        <div class="eem-page-body">
 
-      <!-- CUSTOMER DETAILS -->
-      <section class="section-header">
-        <h2 class="section-title">Customer Details</h2>
-      </section>
-      <section class="details-grid">
-        <div class="detail-block">
-          <div class="detail-label">Contact</div>
-          <div class="detail-content">
-            <a href="mailto:info@wmpromotions.com">info@wmpromotions.com</a><br>
-            (559) 393-5352
-          </div>
-        </div>
-        <div class="detail-block">
-          <div class="detail-label">Billing Address</div>
-          <div class="detail-content">
-            <address>
-              Whitney Mitchell<br>
-              12253 Avenue 472<br>
-              Orange Cove, CA 93646<br>
-              United States
-            </address>
-          </div>
-        </div>
-        <div class="detail-block">
-          <div class="detail-label">Account Info</div>
-          <div class="detail-content">
-            Customer since May 2025<br>
-            Communication: Email opt-in<br>
-            Status: <span class="status-badge status-active">Active</span>
-          </div>
-        </div>
-      </section>
+          <!-- ── KPI STATS (4 cards) ── -->
+          <section class="eem-cp-section eem-cp-stats">
+            <div class="eem-cp-stats-grid">
+              <div class="eem-cp-stat-card eem-cp-stat-card--electric">
+                <div class="eem-cp-stat-label">Lifetime Spend</div>
+                <div class="eem-cp-stat-value">$2,486.00</div>
+                <div class="eem-cp-stat-meta">across 6 orders</div>
+              </div>
+              <div class="eem-cp-stat-card">
+                <div class="eem-cp-stat-label">Total Orders</div>
+                <div class="eem-cp-stat-value">6</div>
+                <div class="eem-cp-stat-meta">5 paid · 1 unpaid</div>
+              </div>
+              <div class="eem-cp-stat-card eem-cp-stat-card--teal">
+                <div class="eem-cp-stat-label">Avg Order Value</div>
+                <div class="eem-cp-stat-value">$414.33</div>
+                <div class="eem-cp-stat-meta">across all orders</div>
+              </div>
+              <div class="eem-cp-stat-card">
+                <div class="eem-cp-stat-label">Last Order</div>
+                <div class="eem-cp-stat-value eem-cp-stat-value--sm">Jun 16, 2026</div>
+                <div class="eem-cp-stat-meta">4 days ago</div>
+              </div>
+            </div>
+          </section>
 
-      <!-- ADMIN NOTES -->
-      <section class="section-header">
-        <h2 class="section-title">Internal Notes</h2>
-      </section>
-      <section class="notes-section">
-        <textarea class="notes-textarea" placeholder="Add internal notes about this customer (not visible to customer)…">Repeat customer for SE Region events. Prefers nightly stall reservations. Always pays on time. Spencer Mitchell is her son who rides with her.</textarea>
-        <div class="notes-actions">
-          <button class="btn btn-primary">Save Notes</button>
-        </div>
-      </section>
+          <!-- ── CUSTOMER DETAILS ── -->
+          <section class="eem-section-header"><h2 class="eem-section-title">Customer Details</h2></section>
+          <section class="eem-cp-section eem-cp-details-grid">
+            <div class="eem-cp-detail">
+              <div class="eem-cp-detail-label">Contact</div>
+              <div class="eem-cp-detail-body">
+                <a href="mailto:wmitchell@equinenetwork.com">wmitchell@equinenetwork.com</a><br>
+                (555) 777-0001
+              </div>
+            </div>
+            <div class="eem-cp-detail">
+              <div class="eem-cp-detail-label">Billing Address</div>
+              <div class="eem-cp-detail-body">
+                <address>
+                  Whitney Mitchell<br>
+                  1420 Ranch Road<br>
+                  Rapid City, SD 57701<br>
+                  United States
+                </address>
+              </div>
+            </div>
+            <div class="eem-cp-detail">
+              <div class="eem-cp-detail-label">Account Info</div>
+              <div class="eem-cp-detail-body">
+                Customer since June 2026<br>
+                Status: <span class="eem-status-badge eem-status-active">Active</span>
+              </div>
+            </div>
+          </section>
 
-      <!-- ORDER HISTORY -->
-      <section class="section-header">
-        <h2 class="section-title">Order History</h2>
-        <div class="section-actions">
-          <a href="#" class="btn btn-ghost">View All Orders</a>
-        </div>
-      </section>
-      <section class="table-section">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th class="sortable">Order # <span class="sort-icons"><svg viewBox="0 0 8 5"><path d="M4 0L0 5h8z" fill="currentColor"/></svg><svg viewBox="0 0 8 5"><path d="M4 5L0 0h8z" fill="currentColor"/></svg></span></th>
-                <th>Event</th>
-                <th>Type</th>
-                <th class="sortable">Status <span class="sort-icons"><svg viewBox="0 0 8 5"><path d="M4 0L0 5h8z" fill="currentColor"/></svg><svg viewBox="0 0 8 5"><path d="M4 5L0 0h8z" fill="currentColor"/></svg></span></th>
-                <th class="sortable">Date <span class="sort-icons"><svg viewBox="0 0 8 5"><path d="M4 0L0 5h8z" fill="currentColor"/></svg><svg viewBox="0 0 8 5"><path d="M4 5L0 0h8z" fill="currentColor"/></svg></span></th>
-                <th class="r">Total</th>
-                <th class="r">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><a class="cell-link" href="#">#00028</a></td>
-                <td class="cell-event"><a href="#">2026 Southeast Region Super Sort</a></td>
-                <td><div class="type-badges-wrap"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div></td>
-                <td><span class="status-badge status-paid">Paid</span></td>
-                <td class="cell-date">May 22, 2026</td>
-                <td class="cell-amount">$208.66</td>
-                <td>
-                  <div class="actions-cell">
-                    <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
-                    <button class="more-btn">···</button>
+          <!-- ── INTERNAL NOTES (only writable surface, AJAX-saved) ── -->
+          <section class="eem-section-header"><h2 class="eem-section-title">Internal Notes</h2></section>
+          <section class="eem-cp-section eem-cp-notes"
+                   data-eem-customer-note
+                   data-eem-email="wmitchell@equinenetwork.com"
+                   data-eem-nonce="b0762a5e3c">
+            <textarea class="eem-cp-notes-input" data-eem-note-input
+                      placeholder="Add internal notes about this customer (not visible to the customer)…">Prefers stalls in Barn A. Brings 4 horses + 1 LQ trailer to NTR events. Call ahead for early arrival.</textarea>
+            <div class="eem-cp-notes-actions">
+              <button type="button" class="eem-btn eem-btn-electric" data-eem-action="save-customer-note">Save Notes</button>
+            </div>
+          </section>
+
+          <!-- ── ORDER HISTORY ── -->
+          <section class="eem-section-header">
+            <h2 class="eem-section-title">Order History</h2>
+            <div class="eem-section-actions">
+              <a class="eem-btn eem-btn-ghost" href="#">View All Orders</a>
+            </div>
+          </section>
+          <section class="eem-cp-section eem-cp-table-section">
+            <div class="eem-table-wrap">
+              <table class="eem-table">
+                <thead>
+                  <tr>
+                    <th>Order #</th><th>Event</th><th>Type</th><th>Status</th><th>Date</th>
+                    <th class="eem-table-r">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><a class="eem-cp-cell-link" href="#">#90162</a></td>
+                    <td class="eem-cp-cell-event">NTR Finals – Rapid City, SD</td>
+                    <td><div class="eem-type-badges-wrap"><span class="eem-type-badge eem-type-stall">Stall</span><span class="eem-type-badge eem-type-rv">RV</span></div></td>
+                    <td><span class="eem-status-badge eem-status-paid">Paid</span></td>
+                    <td class="eem-cp-cell-date">Jun 16, 2026</td>
+                    <td class="eem-table-r">$960.00</td>
+                  </tr>
+                  <tr>
+                    <td><a class="eem-cp-cell-link" href="#">#90112</a></td>
+                    <td class="eem-cp-cell-event">NTR – Rapid City, SD</td>
+                    <td><div class="eem-type-badges-wrap"><span class="eem-type-badge eem-type-stall">Stall</span><span class="eem-type-badge eem-type-addon">Add-On</span></div></td>
+                    <td><span class="eem-status-badge eem-status-unpaid">Unpaid</span></td>
+                    <td class="eem-cp-cell-date">Jun 14, 2026</td>
+                    <td class="eem-table-r">$615.00</td>
+                  </tr>
+                  <tr>
+                    <td><a class="eem-cp-cell-link" href="#">#90012</a></td>
+                    <td class="eem-cp-cell-event">NTR – Rapid City, SD</td>
+                    <td><div class="eem-type-badges-wrap"><span class="eem-type-badge eem-type-stall">Stall</span></div></td>
+                    <td><span class="eem-status-badge eem-status-paid">Paid</span></td>
+                    <td class="eem-cp-cell-date">Jun 12, 2026</td>
+                    <td class="eem-table-r">$393.00</td>
+                  </tr>
+                  <tr>
+                    <td><a class="eem-cp-cell-link" href="#">#90011</a></td>
+                    <td class="eem-cp-cell-event">Spring Barrel Series</td>
+                    <td><div class="eem-type-badges-wrap"><span class="eem-type-badge eem-type-group">Group</span></div></td>
+                    <td><span class="eem-status-badge eem-status-refunded">Refunded</span></td>
+                    <td class="eem-cp-cell-date">Jun 9, 2026</td>
+                    <td class="eem-table-r">$300.00</td>
+                  </tr>
+                  <tr>
+                    <td><a class="eem-cp-cell-link" href="#">#90010</a></td>
+                    <td class="eem-cp-cell-event">Spring Barrel Series</td>
+                    <td><div class="eem-type-badges-wrap"><span class="eem-type-badge eem-type-rv">RV</span></div></td>
+                    <td><span class="eem-status-badge eem-status-paid">Paid</span></td>
+                    <td class="eem-cp-cell-date">Jun 9, 2026</td>
+                    <td class="eem-table-r">$218.00</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- mobile card fallback -->
+            <div class="eem-mobile-cards">
+              <div class="eem-mobile-card">
+                <div class="eem-mobile-card-top">
+                  <a class="eem-mobile-card-id" href="#">#90162</a>
+                  <span class="eem-mobile-card-meta">Jun 16, 2026</span>
+                </div>
+                <div class="eem-mobile-card-title">NTR Finals – Rapid City, SD</div>
+                <div class="eem-mobile-card-bottom">
+                  <div class="eem-mobile-card-badges">
+                    <span class="eem-type-badge eem-type-stall">Stall</span>
+                    <span class="eem-type-badge eem-type-rv">RV</span>
+                    <span class="eem-status-badge eem-status-paid">Paid</span>
                   </div>
-                </td>
-              </tr>
-              <tr>
-                <td><a class="cell-link" href="#">#00021</a></td>
-                <td class="cell-event"><a href="#">2026 Southeast Region Super Sort</a></td>
-                <td><div class="type-badges-wrap"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span></div></td>
-                <td><span class="status-badge status-invoice">Invoice Sent</span></td>
-                <td class="cell-date">Apr 24, 2026</td>
-                <td class="cell-amount">$175.00</td>
-                <td>
-                  <div class="actions-cell">
-                    <a href="#" class="btn-collect">Collect</a>
-                    <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
-                    <button class="more-btn">···</button>
+                  <div class="eem-mobile-card-meta">$960.00</div>
+                </div>
+              </div>
+              <div class="eem-mobile-card">
+                <div class="eem-mobile-card-top">
+                  <a class="eem-mobile-card-id" href="#">#90112</a>
+                  <span class="eem-mobile-card-meta">Jun 14, 2026</span>
+                </div>
+                <div class="eem-mobile-card-title">NTR – Rapid City, SD</div>
+                <div class="eem-mobile-card-bottom">
+                  <div class="eem-mobile-card-badges">
+                    <span class="eem-type-badge eem-type-stall">Stall</span>
+                    <span class="eem-type-badge eem-type-addon">Add-On</span>
+                    <span class="eem-status-badge eem-status-unpaid">Unpaid</span>
                   </div>
-                </td>
-              </tr>
-              <tr>
-                <td><a class="cell-link" href="#">#00018</a></td>
-                <td class="cell-event"><a href="#">2026 Bluegrass Show</a></td>
-                <td><div class="type-badges-wrap"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span></div></td>
-                <td><span class="status-badge status-partial">Partially Refunded</span></td>
-                <td class="cell-date">Apr 18, 2026</td>
-                <td class="cell-amount">$320.00</td>
-                <td>
-                  <div class="actions-cell">
-                    <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
-                    <button class="more-btn">···</button>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td><a class="cell-link" href="#">#00012</a></td>
-                <td class="cell-event"><a href="#">2025 Spring Classic</a></td>
-                <td><div class="type-badges-wrap"><span class="type-badge type-stall">Stall</span><span class="type-badge type-group">Group</span></div></td>
-                <td><span class="status-badge status-paid">Paid</span></td>
-                <td class="cell-date">Mar 10, 2025</td>
-                <td class="cell-amount">$455.00</td>
-                <td>
-                  <div class="actions-cell">
-                    <button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
-                    <button class="more-btn">···</button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <!-- Mobile order cards -->
-        <div class="mobile-cards">
-          <div class="mobile-card">
-            <div class="mobile-card-top"><a href="#" class="mobile-card-id">#00028</a><span class="mobile-card-date">May 22, 2026</span></div>
-            <div class="mobile-card-title"><a href="#" style="color:#031B4E;text-decoration:none">2026 Southeast Region Super Sort</a></div>
-            <div class="mobile-card-bottom">
-              <div class="mobile-card-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span><span class="status-badge status-paid">Paid</span></div>
-              <div class="mobile-card-actions"><button class="action-icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button><button class="more-btn">···</button></div>
+                  <div class="eem-mobile-card-meta">$615.00</div>
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="mobile-card">
-            <div class="mobile-card-top"><a href="#" class="mobile-card-id">#00021</a><span class="mobile-card-date">Apr 24, 2026</span></div>
-            <div class="mobile-card-title"><a href="#" style="color:#031B4E;text-decoration:none">2026 Southeast Region Super Sort</a></div>
-            <div class="mobile-card-bottom">
-              <div class="mobile-card-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-addon">Add-On</span><span class="status-badge status-invoice">Invoice Sent</span></div>
-              <div class="mobile-card-actions"><a href="#" class="btn-collect">Collect</a><button class="more-btn">···</button></div>
-            </div>
-          </div>
-        </div>
-        <!-- Footer -->
-        <div class="table-footer">
-          <div class="footer-showing">Showing 1–4 of 14 orders</div>
-          <div class="pagination">
-            <a class="page-btn disabled"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="8 2 3 6 8 10"/></svg></a>
-            <a class="page-btn active" href="#">1</a>
-            <a class="page-btn" href="#">2</a>
-            <a class="page-btn" href="#">3</a>
-            <a class="page-btn" href="#"><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 2 9 6 4 10"/></svg></a>
-          </div>
-        </div>
-      </section>
 
-      <!-- RESERVATION HISTORY -->
-      <section class="section-header">
-        <h2 class="section-title">Reservation History</h2>
-      </section>
-      <section class="table-section">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Event</th>
-                <th>Event Dates</th>
-                <th>Type</th>
-                <th class="c">Orders</th>
-                <th class="r">Total Spent</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="cell-event"><a href="#">2026 Southeast Region Super Sort</a></td>
-                <td class="cell-date">May 28 – May 30, 2026</td>
-                <td><div class="type-badges-wrap"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span><span class="type-badge type-addon">Add-On</span></div></td>
-                <td class="c">3</td>
-                <td class="cell-amount">$583.66</td>
-              </tr>
-              <tr>
-                <td class="cell-event"><a href="#">2026 Bluegrass Show</a></td>
-                <td class="cell-date">Apr 15 – Apr 18, 2026</td>
-                <td><div class="type-badges-wrap"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span></div></td>
-                <td class="c">2</td>
-                <td class="cell-amount">$640.00</td>
-              </tr>
-              <tr>
-                <td class="cell-event"><a href="#">2025 Spring Classic</a></td>
-                <td class="cell-date">Mar 10 – Mar 12, 2025</td>
-                <td><div class="type-badges-wrap"><span class="type-badge type-stall">Stall</span><span class="type-badge type-group">Group</span></div></td>
-                <td class="c">9</td>
-                <td class="cell-amount">$1,623.84</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <!-- Mobile reservation cards -->
-        <div class="mobile-cards">
-          <div class="mobile-card">
-            <div class="mobile-card-top"><a href="#" class="mobile-card-id">2026 Southeast Region Super Sort</a></div>
-            <div class="mobile-card-sub">May 28 – May 30, 2026 · 3 orders · $583.66</div>
-            <div class="mobile-card-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span><span class="type-badge type-addon">Add-On</span></div>
-          </div>
-          <div class="mobile-card">
-            <div class="mobile-card-top"><a href="#" class="mobile-card-id">2026 Bluegrass Show</a></div>
-            <div class="mobile-card-sub">Apr 15 – Apr 18, 2026 · 2 orders · $640.00</div>
-            <div class="mobile-card-badges"><span class="type-badge type-stall">Stall</span><span class="type-badge type-rv">RV</span></div>
-          </div>
-        </div>
-      </section>
+            <div class="eem-cp-table-footer">
+              <span class="eem-cp-footer-showing">Showing 5 orders</span>
+            </div>
+          </section>
 
-      <!-- ACTIVITY LOG -->
-      <section class="section-header">
-        <h2 class="section-title">Activity Log</h2>
-      </section>
-      <section class="activity-section">
-        <div class="activity-list">
-          <div class="activity-item">
-            <div class="activity-icon icon-order">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <!-- ── RESERVATION HISTORY ── -->
+          <section class="eem-section-header"><h2 class="eem-section-title">Reservation History</h2></section>
+          <section class="eem-cp-section eem-cp-table-section">
+            <div class="eem-table-wrap">
+              <table class="eem-table">
+                <thead>
+                  <tr>
+                    <th>Event</th><th>Event Dates</th><th>Type</th>
+                    <th class="eem-table-c">Orders</th>
+                    <th class="eem-table-r">Total Spent</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="eem-cp-cell-event">NTR Finals – Rapid City, SD</td>
+                    <td class="eem-cp-cell-date">July 2, 2026 – July 5, 2026</td>
+                    <td><div class="eem-type-badges-wrap"><span class="eem-type-badge eem-type-stall">Stall</span><span class="eem-type-badge eem-type-rv">RV</span></div></td>
+                    <td class="eem-table-c">1</td>
+                    <td class="eem-table-r">$960.00</td>
+                  </tr>
+                  <tr>
+                    <td class="eem-cp-cell-event">NTR – Rapid City, SD</td>
+                    <td class="eem-cp-cell-date">June 18, 2026 – June 21, 2026</td>
+                    <td><div class="eem-type-badges-wrap"><span class="eem-type-badge eem-type-stall">Stall</span><span class="eem-type-badge eem-type-addon">Add-On</span></div></td>
+                    <td class="eem-table-c">2</td>
+                    <td class="eem-table-r">$1,008.00</td>
+                  </tr>
+                  <tr>
+                    <td class="eem-cp-cell-event">Spring Barrel Series</td>
+                    <td class="eem-cp-cell-date">May 22, 2026 – May 24, 2026</td>
+                    <td><div class="eem-type-badges-wrap"><span class="eem-type-badge eem-type-group">Group</span><span class="eem-type-badge eem-type-rv">RV</span></div></td>
+                    <td class="eem-table-c">2</td>
+                    <td class="eem-table-r">$518.00</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div class="activity-body">
-              <div class="activity-text">Order <strong><a href="#" style="color:#031B4E">#00028</a></strong> created — $208.66 for 2026 Southeast Region Super Sort</div>
-              <div class="activity-meta">May 22, 2026 at 10:32 AM</div>
-            </div>
-          </div>
-          <div class="activity-item">
-            <div class="activity-icon icon-payment">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            </div>
-            <div class="activity-body">
-              <div class="activity-text">Payment received via Stripe — <strong>$208.66</strong></div>
-              <div class="activity-meta">May 22, 2026 at 10:33 AM</div>
-            </div>
-          </div>
-          <div class="activity-item">
-            <div class="activity-icon icon-email">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            </div>
-            <div class="activity-body">
-              <div class="activity-text">Receipt email sent to <strong>info@wmpromotions.com</strong></div>
-              <div class="activity-meta">May 22, 2026 at 10:33 AM</div>
-            </div>
-          </div>
-          <div class="activity-item">
-            <div class="activity-icon icon-note">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            </div>
-            <div class="activity-body">
-              <div class="activity-text"><strong>Whitney (admin)</strong> added note</div>
-              <div class="activity-meta">May 20, 2026 at 3:14 PM</div>
-              <div class="activity-note-body">Customer called about RV hookup — confirmed Spot #12 in Red Lot.</div>
-            </div>
-          </div>
-          <div class="activity-item">
-            <div class="activity-icon icon-refund">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-            </div>
-            <div class="activity-body">
-              <div class="activity-text">Partial refund processed on order <strong><a href="#" style="color:#031B4E">#00018</a></strong> — <strong>$50.00</strong></div>
-              <div class="activity-meta">Apr 19, 2026 at 9:12 AM</div>
-            </div>
-          </div>
-        </div>
-        <!-- Add note form -->
-        <div class="add-note-form">
-          <textarea placeholder="Add a note about this customer…"></textarea>
-          <button class="btn btn-primary" style="align-self:flex-start">Add Note</button>
-        </div>
-      </section>
 
-    </div><!-- /plugin-wrap -->
+            <div class="eem-mobile-cards">
+              <div class="eem-mobile-card">
+                <div class="eem-mobile-card-top"><span class="eem-mobile-card-id">NTR Finals – Rapid City, SD</span></div>
+                <div class="eem-mobile-card-sub">July 2, 2026 – July 5, 2026 · 1 orders · $960.00</div>
+                <div class="eem-mobile-card-badges">
+                  <span class="eem-type-badge eem-type-stall">Stall</span>
+                  <span class="eem-type-badge eem-type-rv">RV</span>
+                </div>
+              </div>
+              <div class="eem-mobile-card">
+                <div class="eem-mobile-card-top"><span class="eem-mobile-card-id">NTR – Rapid City, SD</span></div>
+                <div class="eem-mobile-card-sub">June 18, 2026 – June 21, 2026 · 2 orders · $1,008.00</div>
+                <div class="eem-mobile-card-badges">
+                  <span class="eem-type-badge eem-type-stall">Stall</span>
+                  <span class="eem-type-badge eem-type-addon">Add-On</span>
+                </div>
+              </div>
+            </div>
+          </section>
 
-  </main>
-</div>
+          <!-- ── ACTIVITY LOG (merged across customer's orders, shared C2 partial) ── -->
+          <section class="eem-section-header"><h2 class="eem-section-title">Activity Log</h2></section>
+          <section class="eem-cp-section eem-cp-activity">
+            <ul class="eem-activity-log">
+              <li class="eem-activity-log-entry eem-activity-log-entry--edit">
+                <span class="eem-activity-log-icon" aria-hidden="true">~</span>
+                <div class="eem-activity-log-body">
+                  <div class="eem-activity-log-title">Admin note by whitney</div>
+                  <div class="eem-activity-log-meta">Order #90162 · note</div>
+                </div>
+                <time class="eem-activity-log-stamp" datetime="2026-06-16T14:55:27+00:00">June 16, 2026 · 2:55 pm</time>
+              </li>
+              <li class="eem-activity-log-entry eem-activity-log-entry--create">
+                <span class="eem-activity-log-icon" aria-hidden="true">+</span>
+                <div class="eem-activity-log-body">
+                  <div class="eem-activity-log-title">Order #90162 created</div>
+                  <div class="eem-activity-log-meta">$960.00 · 1 stall, 1 RV lot</div>
+                </div>
+                <time class="eem-activity-log-stamp" datetime="2026-06-16T14:53:41+00:00">June 16, 2026 · 2:53 pm</time>
+              </li>
+              <li class="eem-activity-log-entry eem-activity-log-entry--assignment">
+                <span class="eem-activity-log-icon" aria-hidden="true">#</span>
+                <div class="eem-activity-log-body">
+                  <div class="eem-activity-log-title">Stalls A-04, A-05 assigned</div>
+                  <div class="eem-activity-log-meta">Order #90112 · by whitney</div>
+                </div>
+                <time class="eem-activity-log-stamp" datetime="2026-06-14T10:12:08+00:00">June 14, 2026 · 10:12 am</time>
+              </li>
+              <li class="eem-activity-log-entry eem-activity-log-entry--refund">
+                <span class="eem-activity-log-icon" aria-hidden="true">$</span>
+                <div class="eem-activity-log-body">
+                  <div class="eem-activity-log-title">Refund processed: $300.00 by whitney</div>
+                  <div class="eem-activity-log-meta">Order #90011 · customer cancelled</div>
+                </div>
+                <time class="eem-activity-log-stamp" datetime="2026-06-09T21:23:48+00:00">June 9, 2026 · 9:23 pm</time>
+              </li>
+              <li class="eem-activity-log-entry eem-activity-log-entry--create">
+                <span class="eem-activity-log-icon" aria-hidden="true">+</span>
+                <div class="eem-activity-log-body">
+                  <div class="eem-activity-log-title">Order #90010 created</div>
+                  <div class="eem-activity-log-meta">$218.00 · 1 RV lot</div>
+                </div>
+                <time class="eem-activity-log-stamp" datetime="2026-06-09T18:01:44+00:00">June 9, 2026 · 6:01 pm</time>
+              </li>
+            </ul>
+          </section>
+
+        </div><!-- /.eem-page-body -->
+      </div><!-- /.eem-page-wrap -->
+    </div><!-- /.eem-page -->
+
+  </div><!-- /.wp-content -->
+</div><!-- /.wp-body -->
 
 <script>
-// Meatballs toggle (visual only)
-document.getElementById('more-btn').addEventListener('click', function(e){
-  e.stopPropagation();
-  document.getElementById('more-menu').classList.toggle('open');
-});
-document.addEventListener('click', function(){
-  document.getElementById('more-menu').classList.remove('open');
+/* Minimal demo wiring — mirrors admin.js delegated handler for the Save Notes
+   button (data-eem-action="save-customer-note"). No persistence in the mockup. */
+document.addEventListener('click', function (e) {
+  var btn = e.target.closest('[data-eem-action="save-customer-note"]');
+  if (!btn) return;
+  var label = btn.textContent;
+  btn.textContent = 'Saved ✓';
+  setTimeout(function () { btn.textContent = label; }, 1600);
 });
 </script>
-
 </body>
 </html>

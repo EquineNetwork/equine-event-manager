@@ -4,399 +4,632 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Equine Event Manager – Event Categories</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+/* ============================================================
+   Event Categories taxonomy admin (slug: equine-event-manager-event-categories)
+   Source-faithful: real .eem-* class names from
+   admin/class-eem-term-categories-page.php live render.
+   Token values resolved from assets/css/admin.css.
+   Brand: electric #1668F2 · navy #031B4E · radius 3px.
+
+   Key PHP facts reflected here:
+   - Three page variants: event / venue / producer categories (same render path).
+   - Add mode: form title "Add New Category", button "+ Add Category".
+   - Edit mode (triggered by ?edit=N in URL): form title "Edit Category",
+     button "Update Category", plus a "Cancel" secondary link.
+   - Bulk form: hidden action=eem_bulk_delete_terms + eem_page + wp_nonce_field.
+   - Search form: hidden name="page" input (GET form).
+   - Select-all checkbox: data-eem-action="eem-term-toggle-all".
+   - Meatball button: data-eem-action="dropdown-toggle", aria-expanded="false".
+   - Delete row item: data-eem-action="eem-term-delete" + data-term-name="...".
+   - Row name links to ?edit=TERM_ID (not a modal).
+   - Child terms shown with "— " depth prefix in flat depth-first order.
+   - Empty state: single colspan-6 cell with .eem-table-empty class.
+   - PRG notice banner: .notice.notice-{success|error|info}.is-dismissible.eem-term-notice
+     rendered above the split layout (not inside it).
+   - "View Events" row action links to edit.php?post_type=en_event&en_event_category=SLUG.
+   ============================================================ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
 a{text-decoration:none}
 a:hover{text-decoration:none}
 
-/* ── WP SHELL ── */
-.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;position:sticky;top:0;z-index:200;flex-shrink:0}
+/* ── WP ADMIN SHELL STUB ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
 .wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
 .wp-admin-bar span.site{color:#fff;font-weight:600}
 .wp-body{display:flex;flex:1}
 .wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
-.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer;display:flex;align-items:center;gap:8px;border-left:3px solid transparent}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer}
 .wp-sidebar-item:hover{background:#2c3338;color:#fff}
-.wp-sidebar-item.active{background:#1668F2;color:#fff;border-left-color:#90c4ff}
 .wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
 .wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
 .wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
 .wp-sidebar-sub:hover{color:#fff}
 .wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
-
-/* ── CONTENT ── */
 .wp-content{flex:1;padding:12px 20px 40px;min-width:0}
 
-/* Breadcrumb */
-.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
-.breadcrumb-sep{font-size:13px;color:#8c8f94}
-.breadcrumb-page{font-size:13px;color:#1d2327;font-weight:600}
+/* ── BREADCRUMB ── */
+.eem-breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.eem-breadcrumb-logo{flex-shrink:0}
+.breadcrumb-logo-box{width:170px;height:38px;background:#031B4E;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;letter-spacing:.04em;color:#fff;flex-shrink:0}
+.eem-breadcrumb-sep{font-size:13px;color:#8c8f94}
+.eem-breadcrumb-segment{font-size:13px;color:#1d2327;font-weight:600}
 
-/* ── PLUGIN-WRAP ── */
-.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+/* ── NOTICE BANNER (PRG redirect notices) ── */
+.notice{padding:10px 14px;border-left:4px solid #72aee6;background:#fff;border-radius:0 3px 3px 0;margin-bottom:12px;font-size:13.5px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.notice-success{border-left-color:#00a32a}
+.notice-error{border-left-color:#d63638}
+.notice-info{border-left-color:#72aee6}
+.notice p{margin:0}
+.notice-dismiss-btn{background:none;border:none;cursor:pointer;color:#8c8f94;font-size:18px;line-height:1;padding:0;flex-shrink:0}
+.notice-dismiss-btn:hover{color:#1d2327}
 
-/* PAGE HEADER */
-.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.plugin-header-left{flex:1;min-width:0}
-.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2;margin-bottom:4px}
-.plugin-subtitle{font-size:13px;color:#6B7A99;line-height:1.45}
+/* ── PAGE WRAP ── */
+.eem-page{max-width:1180px}
+.eem-page-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+.eem-page-header{padding:18px 22px;border-bottom:1px solid #dcdcde;background:#fff}
+.eem-page-header-left{flex:1;min-width:0}
+.eem-page-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.3}
+.eem-page-subtitle{font-size:12.5px;color:#6B7A99;margin-top:2px;line-height:1.5}
+.eem-page-body{background:#fff}
 
-/* ── SPLIT BODY ── */
-.split-body{display:flex;align-items:flex-start;gap:0}
+/* ── SPLIT (form left, table right) ── */
+.eem-term-split{display:flex;align-items:flex-start;gap:0}
+.eem-term-form-panel{width:320px;min-width:280px;flex-shrink:0;border-right:1px solid #dcdcde;padding:20px 22px 28px}
+.eem-term-form-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#031B4E;margin:0 0 18px}
+.eem-term-form-actions{display:flex;align-items:center;gap:10px;margin-top:4px}
 
-/* ── ADD FORM PANEL ── */
-.form-panel{width:320px;min-width:280px;flex-shrink:0;border-right:1px solid #dcdcde;padding:20px 22px 28px}
-.form-panel-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;color:#031B4E;margin-bottom:18px}
+/* form fields */
+.eem-term-form-panel .eem-field-row{display:block;padding:0;border-bottom:none;margin-bottom:16px}
+.eem-term-form-panel .eem-field-row:last-child{margin-bottom:0}
+.eem-field-label{display:block;font-size:13px;font-weight:600;color:#1d2327;margin-bottom:5px;line-height:1.4}
+.eem-field-input,.eem-field-select,.eem-field-textarea{width:100%;margin:0;padding:8px 11px;border:1px solid #8c8f94;border-radius:3px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#031B4E;background:#fff;outline:none}
+.eem-field-input{height:38px}
+.eem-field-input:focus,.eem-field-select:focus,.eem-field-textarea:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.18)}
+.eem-field-input::placeholder,.eem-field-textarea::placeholder{color:#b0b0b0}
+.eem-field-select{padding:8px 30px 8px 11px;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7A99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.eem-field-textarea{height:auto;min-height:90px;resize:vertical;line-height:1.6}
+.eem-field-hint{font-size:12px;color:#6B7A99;line-height:1.6;margin-top:5px}
 
-.field{margin-bottom:16px}
-.field-label{display:block;font-size:13px;font-weight:600;color:#1d2327;margin-bottom:5px}
-.field-input{width:100%;padding:7px 11px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
-.field-input:focus{border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
-.field-input::placeholder{color:#b0b0b0}
-.field-hint{font-size:12px;color:#6B7A99;margin-top:5px;line-height:1.45}
-textarea.field-input{resize:vertical;min-height:90px}
-.field-select{width:100%;padding:7px 28px 7px 11px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none;cursor:pointer;outline:none}
-.field-select:focus{border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
-
-.btn-primary{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:9px 18px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.btn-primary:hover{background:#1257d1;border-color:#1257d1}
+/* ── BUTTONS ── */
+.eem-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:3px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;border:none;background:transparent;color:inherit;text-decoration:none;line-height:1.4}
+.eem-btn svg{width:13px;height:13px}
+.eem-btn-electric{background:#1668F2;color:#fff}
+.eem-btn-electric:hover{background:#1257d1;color:#fff}
+.eem-btn-secondary{background:#fff;color:#031B4E;border:1px solid #8c8f94}
+.eem-btn-secondary:hover{background:#f6f7f7;border-color:#1668F2;color:#031B4E}
+.eem-btn-sm{padding:3px 10px;font-size:12px;border:1px solid #c3c4c7;border-radius:3px;background:#fff;cursor:pointer;color:#031B4E}
+.eem-btn-sm:hover{background:#f6f8fb}
 
 /* ── TABLE PANEL ── */
-.table-panel{flex:1;min-width:0;display:flex;flex-direction:column}
+.eem-term-table-panel{flex:1;min-width:0;padding:0}
+.eem-term-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:16px 18px 12px;border-bottom:1px solid #dcdcde}
+.eem-term-bulk-form,.eem-term-search-form{display:flex;align-items:center;gap:8px;margin:0}
+.eem-toolbar-select{height:34px;padding:5px 28px 5px 12px;border:1px solid #8c8f94;border-radius:3px;font-size:13px;font-family:inherit;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7A99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none;cursor:pointer;min-width:130px}
+.eem-toolbar-btn{height:34px;padding:5px 14px;border:1px solid #8c8f94;border-radius:3px;font-size:13px;font-family:inherit;color:#1d2327;background:#fff;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center}
+.eem-toolbar-btn:hover{background:#f6f7f7}
+.eem-search-wrap{position:relative;flex:1;min-width:150px;max-width:240px}
+.eem-search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94;pointer-events:none}
+.eem-search-input{width:100%;padding:6px 10px 6px 28px;border:1px solid #8c8f94;border-radius:3px;font-size:13px;font-family:inherit;color:#1d2327;background:#fff;outline:none}
+.eem-search-input:focus{border-color:#1668F2}
+.eem-search-input::placeholder{color:#b0b0b0}
+.eem-search-wrap--attached .eem-search-input{border-top-right-radius:0;border-bottom-right-radius:0}
+.eem-search-btn{border-left:none;border-top-left-radius:0;border-bottom-left-radius:0}
+.eem-item-count{font-size:13px;color:#50575e;white-space:nowrap;margin-left:auto}
 
-/* Toolbar */
-.table-toolbar{padding:10px 18px;border-bottom:1px solid #dcdcde;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.toolbar-select{padding:6px 28px 6px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none;cursor:pointer;min-width:130px}
-.toolbar-btn{padding:6px 14px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer;white-space:nowrap}
-.toolbar-btn:hover{background:#f6f7f7}
-.search-wrap{position:relative;min-width:160px;max-width:220px;flex:1}
-.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:#8c8f94}
-.search-input{width:100%;padding:6px 10px 6px 28px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
-.search-input:focus{border-color:#1668F2;box-shadow:0 0 0 1px #1668F2}
-.search-input::placeholder{color:#b0b0b0}
-.item-count{font-size:13px;color:#50575e;white-space:nowrap;margin-left:auto}
+/* ── DATA TABLE ── */
+.eem-desktop-table{overflow-x:auto}
+.eem-table{width:100%;border-collapse:collapse}
+.eem-table thead tr{border-bottom:1px solid #d9e2f2;background:#f8fafc}
+.eem-table thead th{padding:10px 14px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#031B4E;text-align:left;white-space:nowrap}
+.eem-table thead th.sortable a{color:inherit;text-decoration:none;display:inline-flex;align-items:center;cursor:pointer}
+.eem-table thead th.sortable.is-sorted{color:#1668F2}
+.eem-table thead th.sortable.is-sorted .eem-sort-icon{opacity:1}
+.eem-table tbody tr{border-bottom:1px solid #f0f0f1}
+.eem-table tbody tr:last-child{border-bottom:none}
+.eem-table tbody tr:hover{background:#f6f7f7}
+.eem-table td{padding:12px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
+.eem-table .eem-col-cb,.eem-table th.eem-col-cb{width:36px;padding-left:18px;padding-right:8px}
+.eem-term-table-panel .eem-table th:first-child,.eem-term-table-panel .eem-table td:first-child{padding-left:18px}
+.eem-term-table-panel .eem-table th:last-child,.eem-term-table-panel .eem-table td:last-child{padding-right:18px}
+.eem-table-r{text-align:right}
+.eem-table-empty{padding:24px 18px;color:#6B7A99;font-size:13.5px;text-align:left}
 
-/* Table */
-table{width:100%;border-collapse:collapse}
-thead{background:#f3f4f5;border-bottom:1px solid #dcdcde}
-thead th{padding:11px 14px;font-size:13px;font-weight:600;color:#1d2327;text-align:left;white-space:nowrap}
-thead th.col-cb{width:36px;padding:11px 8px 11px 18px}
-thead th.sortable{cursor:pointer;color:#1668F2}
-thead th.sortable:hover{color:#1257d1}
-.sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:4px;vertical-align:middle;opacity:.5}
-.sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
-.sort-icon span:first-child{border-bottom:4px solid currentColor}
-.sort-icon span:last-child{border-top:4px solid currentColor}
+/* sort icon */
+.eem-sort-icon{display:inline-flex;flex-direction:column;gap:1px;margin-left:3px;vertical-align:middle;opacity:.5}
+.eem-sort-icon span{display:block;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent}
+.eem-sort-icon span:first-child{border-bottom:4px solid currentColor}
+.eem-sort-icon span:last-child{border-top:4px solid currentColor}
 
-tbody tr{border-bottom:1px solid #f0f0f1}
-tbody tr:last-child{border-bottom:none}
-td{padding:13px 14px;font-size:13.5px;color:#1d2327;vertical-align:middle}
-td.col-cb{padding:13px 8px 13px 18px;width:36px}
+/* term-specific cells */
+a.eem-term-name{font-weight:700;color:#031B4E;font-size:13px;display:block;text-decoration:none}
+a.eem-term-name:hover{color:#1668F2}
+.eem-term-slug{font-family:'IBM Plex Mono','Courier New',monospace;font-size:12.5px;color:#50575e;background:#f3f4f5;padding:1px 6px;border-radius:3px;display:inline-block}
+.eem-term-count{font-family:'Space Grotesk',sans-serif;font-weight:700;color:#031B4E;font-size:13.5px}
+.eem-term-count-zero{font-weight:400;color:#8c8f94}
+.eem-term-muted{color:#8c8f94}
 
-.cat-name{font-weight:700;color:#031B4E;font-size:13px;text-decoration:none;display:block;margin-bottom:3px}
-.cat-name:hover{color:#1668F2}
-.cat-row-actions{display:none;gap:8px}
-tbody tr:hover .cat-row-actions{display:flex}
-.cat-row-action{font-size:12px;color:#1668F2;cursor:pointer}
-.cat-row-action:hover{color:#1257d1}
-.cat-row-action-sep{font-size:12px;color:#c3c4c7}
+/* actions cell + meatballs dropdown */
+.eem-actions-cell{display:flex;align-items:center;gap:5px;justify-content:flex-end}
+.eem-row-menu-wrap{position:relative;display:inline-block}
+.eem-more-btn{width:30px;height:30px;border-radius:3px;border:1px solid #c3c4c7;background:#fff;color:#50575e;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;letter-spacing:.05em;line-height:1}
+.eem-more-btn:hover{background:#f0f0f1;color:#1d2327;border-color:#8c8f94}
+.eem-row-dropdown{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid #c3c4c7;border-radius:3px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:190px;z-index:100;overflow:hidden}
+.eem-row-menu-wrap.open .eem-row-dropdown{display:block}
+.eem-row-dd-item{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:13px;color:#1d2327;cursor:pointer;border-bottom:1px solid #f0f0f1;white-space:nowrap;background:transparent;border-left:none;border-right:none;border-top:none;font-family:inherit;width:100%;text-align:left;text-decoration:none}
+.eem-row-dd-item:last-child{border-bottom:none}
+.eem-row-dd-item:hover{background:#f6f7f7}
+.eem-row-dd-item svg{width:13px;height:13px;color:#6B7A99;flex-shrink:0}
+.eem-row-dd-danger{color:#b91c1c}
+.eem-row-dd-danger svg{color:#fca5a5}
+.eem-row-dd-danger:hover{background:#fef2f2}
 
-.cat-slug{font-size:13px;color:#50575e;font-family:'IBM Plex Mono','Courier New',monospace;font-size:12.5px;background:#f3f4f5;padding:1px 6px;border-radius:3px;display:inline-block}
-.cat-desc{font-size:13px;color:#50575e}
-.cat-desc-empty{font-size:13px;color:#8c8f94}
-.cat-count{font-size:13.5px;font-weight:700;color:#031B4E;font-family:'Space Grotesk',sans-serif}
-.cat-count-zero{font-weight:400;color:#8c8f94}
+/* table footer */
+.eem-table-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;min-height:53px;box-sizing:border-box;background:#f8fafc;flex-wrap:wrap;gap:8px}
+.eem-table-footer-info{font-size:13px;color:#50575e}
 
-/* Actions */
-.actions-cell{display:flex;align-items:center;gap:5px;justify-content:flex-end}
-.more-btn{width:30px;height:30px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;color:#50575e;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;letter-spacing:.05em;line-height:1}
-.more-btn:hover{background:#f0f0f1;border-color:#8c8f94}
-.row-menu-wrap{position:relative;display:inline-block}
-.row-dropdown{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border:1px solid #c3c4c7;border-radius:4px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:180px;z-index:100;overflow:hidden}
-.row-dropdown.open{display:block}
-.row-dd-item{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:13px;color:#1d2327;cursor:pointer;border-bottom:1px solid #f0f0f1;white-space:nowrap;text-decoration:none}
-.row-dd-item:last-child{border-bottom:none}
-.row-dd-item:hover{background:#f6f7f7}
-.row-dd-item svg{width:13px;height:13px;color:#6B7A99;flex-shrink:0}
-.row-dd-danger{color:#b91c1c}
-.row-dd-danger svg{color:#fca5a5}
-.row-dd-danger:hover{background:#fef2f2}
-
-/* Empty state */
-.empty-state{padding:40px 20px;text-align:center;color:#8c8f94;font-size:13px}
-.empty-state svg{width:32px;height:32px;color:#c3c4c7;margin-bottom:10px}
-
-/* Table footer */
-.table-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid #dcdcde;background:#f3f4f5;flex-wrap:wrap;gap:8px}
-.table-footer-info{font-size:13px;color:#50575e}
+/* ── MOBILE CARDS (hidden on desktop) ── */
+.eem-mobile-cards{display:none}
+.eem-mobile-card{background:#fff;border:1px solid #dcdcde;border-radius:3px;padding:14px;margin-bottom:8px}
+.eem-mobile-card-top{display:flex;justify-content:space-between;margin-bottom:6px}
+.eem-mobile-card-id{font-weight:700;color:#1668F2;font-size:14px}
+.eem-mobile-card-meta{font-size:12px;color:#8c8f94}
+.eem-mobile-card-sub{font-size:12.5px;color:#50575e;margin-bottom:8px}
+.eem-mobile-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.eem-mobile-card-actions{display:flex;gap:6px}
+.eem-mobile-card--empty{color:#6B7A99;font-size:13.5px;padding:20px 14px}
 
 /* ── RESPONSIVE ── */
 @media(max-width:960px){
   .wp-sidebar{display:none}
-  .wp-content{padding:10px 14px 40px}
+  .eem-term-split{flex-direction:column}
+  .eem-term-form-panel{width:100%;border-right:none;border-bottom:1px solid #dcdcde;padding:18px 16px}
+  .eem-term-table-panel{padding:0}
 }
-@media(max-width:767px){
-  .split-body{flex-direction:column}
-  .form-panel{width:100%;border-right:none;border-bottom:1px solid #dcdcde}
-  .wp-content{padding:8px 10px 32px}
-  .plugin-title{font-size:18px}
+@media(max-width:782px){
+  .eem-desktop-table{display:none}
+  .eem-mobile-cards{display:block;padding:14px 16px}
 }
 </style>
 </head>
 <body>
 
+<!-- WP admin bar -->
 <div class="wp-admin-bar">
-  <span>&#9776;</span>
-  <span class="site">My Equestrian Site</span>
-  <span>+ New</span>
-  <span style="margin-left:auto">Howdy, whitney</span>
+  <span class="site">⬛ En Event Manager</span>
+  <span>＋ New</span>
+  <span style="margin-left:auto">Howdy, Admin</span>
 </div>
 
 <div class="wp-body">
+  <!-- WP sidebar stub -->
   <nav class="wp-sidebar">
     <div class="wp-sidebar-item">Dashboard</div>
     <div class="wp-sidebar-item">Media</div>
     <div class="wp-sidebar-item">Posts</div>
-    <div class="wp-sidebar-item">Pages</div>
     <div class="wp-sidebar-sep"></div>
     <div class="wp-sidebar-label">Event Manager</div>
-    <div class="wp-sidebar-sub">Events</div>
-    <div class="wp-sidebar-sub active">Event Categories</div>
+    <div class="wp-sidebar-sub">Dashboard</div>
     <div class="wp-sidebar-sub">Orders</div>
     <div class="wp-sidebar-sub">Reservations</div>
-    <div class="wp-sidebar-sub">Stall Charts</div>
-    <div class="wp-sidebar-sub">Venues</div>
-    <div class="wp-sidebar-sub">Producers</div>
+    <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
     <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub active">Event Categories</div>
     <div class="wp-sidebar-sub">Settings</div>
   </nav>
 
   <main class="wp-content">
+    <div class="eem-page">
 
-    <div class="breadcrumb">
-      <div class="breadcrumb-logo-box">Plugin Logo</div>
-      <span class="breadcrumb-sep">/</span>
-      <span class="breadcrumb-page">Event Categories</span>
-    </div>
+      <!-- Branded breadcrumb header -->
+      <nav class="eem-breadcrumb" aria-label="Breadcrumb">
+        <a class="eem-breadcrumb-logo" href="#" aria-label="Equine Event Manager dashboard">
+          <span class="breadcrumb-logo-box">EQUINE</span>
+        </a>
+        <span class="eem-breadcrumb-sep" aria-hidden="true">/</span>
+        <span class="eem-breadcrumb-segment" aria-current="page">Event Categories</span>
+      </nav>
 
-    <div class="plugin-wrap">
+      <!--
+        PRG NOTICE BANNER — rendered by render_notice() above .eem-term-split.
+        Shown only when ?en_notice=X&en_type=Y is present in the URL after a
+        Post/Redirect/Get cycle. Example: category added successfully.
+        Classes: .notice .notice-{success|error|info} .is-dismissible .eem-term-notice
+      -->
+      <div class="notice notice-success is-dismissible eem-term-notice" role="status" aria-live="polite">
+        <p>Category added.</p>
+        <button type="button" class="notice-dismiss-btn" aria-label="Dismiss" onclick="this.closest('.notice').remove()">×</button>
+      </div>
 
-      <!-- PAGE HEADER -->
-      <header class="plugin-header">
-        <div class="plugin-header-left">
-          <h1 class="plugin-title">Event Categories</h1>
-          <div class="plugin-subtitle">Organize events into categories. Categories can be nested and assigned to events at any time.</div>
-        </div>
-      </header>
-
-      <!-- SPLIT BODY -->
-      <div class="split-body">
-
-        <!-- ADD FORM -->
-        <div class="form-panel">
-          <div class="form-panel-title">Add New Category</div>
-
-          <div class="field">
-            <label class="field-label" for="cat-name">Name</label>
-            <input class="field-input" id="cat-name" type="text" placeholder="e.g. Reining">
-            <div class="field-hint">The name is how it appears on your site.</div>
+      <div class="eem-page-wrap">
+        <header class="eem-page-header">
+          <div class="eem-page-header-left">
+            <h1 class="eem-page-title">Event Categories</h1>
+            <p class="eem-page-subtitle">Organize events into categories. Categories can be nested and assigned to events at any time.</p>
           </div>
+        </header>
 
-          <div class="field">
-            <label class="field-label" for="cat-slug">Slug</label>
-            <input class="field-input" id="cat-slug" type="text" placeholder="e.g. reining">
-            <div class="field-hint">The slug is the URL-friendly version of the name — lowercase letters, numbers, and hyphens only.</div>
-          </div>
+        <div class="eem-page-body">
+          <div class="eem-term-split">
 
-          <div class="field">
-            <label class="field-label" for="cat-parent">Parent Category</label>
-            <select class="field-select" id="cat-parent">
-              <option>None</option>
-              <option>Western</option>
-              <option>English</option>
-              <option>Speed Events</option>
-            </select>
-            <div class="field-hint">Assign a parent to create a hierarchy — e.g. Reining under Western.</div>
-          </div>
+            <!-- ════════════════════════════════════════════════════════════
+                 LEFT: "Add New Category" form panel (ADD MODE)
+                 In edit mode (?edit=N): title becomes "Edit Category",
+                 fields are pre-filled, button label is "Update Category",
+                 and a "Cancel" secondary button appears beside it.
+                 Hidden inputs: action=eem_save_term, eem_page=<slug>,
+                 wp_nonce_field('eem_save_term'). Edit mode also adds:
+                 <input type="hidden" name="term_id" value="N">
+                 ════════════════════════════════════════════════════════════ -->
+            <div class="eem-term-form-panel">
+              <h2 class="eem-term-form-title">Add New Category</h2>
+              <form method="post" action="/wp-admin/admin-post.php">
+                <input type="hidden" name="action" value="eem_save_term">
+                <input type="hidden" name="eem_page" value="equine-event-manager-event-categories">
+                <!-- wp_nonce_field('eem_save_term') renders two hidden inputs here -->
+                <input type="hidden" name="_wpnonce" value="abc123sample">
+                <input type="hidden" name="_wp_http_referer" value="/wp-admin/admin.php?page=equine-event-manager-event-categories">
 
-          <div class="field">
-            <label class="field-label" for="cat-desc">Description</label>
-            <textarea class="field-input" id="cat-desc" placeholder="Optional description..."></textarea>
-            <div class="field-hint">The description is not shown publicly by default.</div>
-          </div>
+                <div class="eem-field-row">
+                  <label class="eem-field-label" for="eem-term-name">Name</label>
+                  <input class="eem-field-input" id="eem-term-name" name="term_name" type="text" value="" placeholder="e.g. Reining" required>
+                  <p class="eem-field-hint">The name is how it appears on your site.</p>
+                </div>
 
-          <button class="btn-primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add Category
-          </button>
-        </div>
+                <div class="eem-field-row">
+                  <label class="eem-field-label" for="eem-term-slug">Slug</label>
+                  <input class="eem-field-input" id="eem-term-slug" name="term_slug" type="text" value="" placeholder="e.g. reining">
+                  <p class="eem-field-hint">The slug is the URL-friendly version of the name — lowercase letters, numbers, and hyphens only.</p>
+                </div>
 
-        <!-- TABLE PANEL -->
-        <div class="table-panel">
+                <div class="eem-field-row">
+                  <label class="eem-field-label" for="eem-term-parent">Parent Category</label>
+                  <select class="eem-field-select" id="eem-term-parent" name="term_parent">
+                    <option value="0">None</option>
+                    <!-- Hierarchical options rendered by render_parent_options().
+                         Child terms prefixed with "— " per depth level.
+                         Self + descendants excluded in edit mode. -->
+                    <option value="74">Barrel Racing</option>
+                    <option value="76">— Junior Barrel Racing</option>
+                    <option value="78">Reining</option>
+                    <option value="75">Roping</option>
+                  </select>
+                  <p class="eem-field-hint">Assign a parent to create a hierarchy — e.g. Reining under Western.</p>
+                </div>
 
-          <div class="table-toolbar">
-            <select class="toolbar-select">
-              <option>Bulk actions</option>
-              <option>Delete</option>
-            </select>
-            <button class="toolbar-btn">Apply</button>
-            <div class="search-wrap">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input class="search-input" type="text" placeholder="Search categories...">
+                <div class="eem-field-row">
+                  <label class="eem-field-label" for="eem-term-desc">Description</label>
+                  <textarea class="eem-field-input eem-field-textarea" id="eem-term-desc" name="term_description" placeholder="Optional description…"></textarea>
+                  <p class="eem-field-hint">The description is not shown publicly by default.</p>
+                </div>
+
+                <div class="eem-term-form-actions">
+                  <!-- Edit mode: button label = "Update Category"; also shows Cancel link -->
+                  <button type="submit" class="eem-btn eem-btn-electric">+ Add Category</button>
+                  <!-- Cancel link (EDIT MODE ONLY — hidden in add mode):
+                  <a class="eem-btn eem-btn-secondary" href="/wp-admin/admin.php?page=equine-event-manager-event-categories">Cancel</a>
+                  -->
+                </div>
+              </form>
             </div>
-            <button class="toolbar-btn">Search</button>
-            <span class="item-count">5 items</span>
-          </div>
 
-          <table>
-            <thead>
-              <tr>
-                <th class="col-cb"><input type="checkbox"></th>
-                <th class="sortable">Name <span class="sort-icon"><span></span><span></span></span></th>
-                <th>Slug</th>
-                <th>Description</th>
-                <th class="sortable">Count <span class="sort-icon"><span></span><span></span></span></th>
-                <th style="text-align:right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="col-cb"><input type="checkbox"></td>
-                <td>
-                  <a class="cat-name" href="#">Western</a>
-                  <div class="cat-row-actions">
-                    <a class="cat-row-action" href="#">Edit</a>
-                    <span class="cat-row-action-sep">|</span>
-                    <a class="cat-row-action" href="#">Delete</a>
-                    <span class="cat-row-action-sep">|</span>
-                    <a class="cat-row-action" href="#">View</a>
+            <!-- ════════════════════════════════════════════════════════════
+                 RIGHT: Categories table panel
+                 ════════════════════════════════════════════════════════════ -->
+            <div class="eem-term-table-panel">
+              <div class="eem-term-toolbar eem-toolbar-controls">
+
+                <!-- Bulk-delete form. Hidden: action=eem_bulk_delete_terms, eem_page, nonce. -->
+                <form class="eem-term-bulk-form" id="eem-term-bulk-form" method="post" action="/wp-admin/admin-post.php">
+                  <input type="hidden" name="action" value="eem_bulk_delete_terms">
+                  <input type="hidden" name="eem_page" value="equine-event-manager-event-categories">
+                  <input type="hidden" name="_wpnonce" value="def456sample">
+                  <select class="eem-toolbar-select" name="bulk_action" aria-label="Bulk actions">
+                    <option value="">Bulk actions</option>
+                    <option value="delete">Delete</option>
+                  </select>
+                  <button type="submit" class="eem-toolbar-btn" data-eem-action="eem-term-bulk-apply">Apply</button>
+                </form>
+
+                <!-- Search form: GET to admin.php, hidden name="page" preserves the slug. -->
+                <form class="eem-term-search-form" method="get" action="/wp-admin/admin.php">
+                  <input type="hidden" name="page" value="equine-event-manager-event-categories">
+                  <span class="eem-search-wrap eem-search-wrap--attached">
+                    <svg class="eem-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input class="eem-search-input" type="search" name="s" value="" placeholder="Search">
+                  </span>
+                  <button type="submit" class="eem-toolbar-btn eem-search-btn">Search</button>
+                </form>
+
+                <!-- Item count: sprintf(_n('%s item','%s items',$count), number_format_i18n($count)) -->
+                <span class="eem-item-count">4 items</span>
+              </div>
+
+              <!-- Desktop table -->
+              <div class="eem-desktop-table">
+                <table class="eem-table eem-term-table">
+                  <thead>
+                    <tr>
+                      <!-- Select-all: data-eem-action="eem-term-toggle-all" (JS in admin.js) -->
+                      <th class="eem-col-cb"><input type="checkbox" data-eem-action="eem-term-toggle-all" aria-label="Select all"></th>
+                      <!-- Sortable TH rendered by sortable_th(). Active sort gets .is-sorted + .is-asc/.is-desc -->
+                      <th class="sortable is-sorted is-asc"><a href="/wp-admin/admin.php?page=equine-event-manager-event-categories&orderby=name&order=desc">Name <span class="eem-sort-icon" aria-hidden="true"><span></span><span></span></span></a></th>
+                      <th>Slug</th>
+                      <th>Description</th>
+                      <th class="sortable"><a href="/wp-admin/admin.php?page=equine-event-manager-event-categories&orderby=count&order=asc">Count <span class="eem-sort-icon" aria-hidden="true"><span></span><span></span></span></a></th>
+                      <th class="eem-table-r">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+
+                    <!-- Row: Barrel Racing (depth=0, parent term) -->
+                    <tr>
+                      <td class="eem-col-cb"><input type="checkbox" name="term_ids[]" value="74" form="eem-term-bulk-form" aria-label="Barrel Racing"></td>
+                      <td>
+                        <!-- Name links to ?edit=TERM_ID (not a modal) -->
+                        <a class="eem-term-name" href="/wp-admin/admin.php?page=equine-event-manager-event-categories&edit=74">Barrel Racing</a>
+                      </td>
+                      <td><span class="eem-term-slug">barrel-racing</span></td>
+                      <td><span class="eem-term-muted">—</span></td>
+                      <td><span class="eem-term-count">3</span></td>
+                      <td>
+                        <div class="eem-actions-cell">
+                          <div class="eem-row-menu-wrap">
+                            <!-- Meatball: data-eem-action="dropdown-toggle", aria-expanded toggled by admin.js -->
+                            <button type="button" class="eem-more-btn"
+                                    data-eem-action="dropdown-toggle"
+                                    aria-haspopup="menu"
+                                    aria-expanded="false"
+                                    aria-controls="eem-term-menu-74"
+                                    title="More actions">···</button>
+                            <div class="eem-row-dropdown" id="eem-term-menu-74" role="menu">
+                              <a class="eem-row-dd-item" role="menuitem" href="/wp-admin/admin.php?page=equine-event-manager-event-categories&edit=74">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</a>
+                              <!-- "View Events" links to edit.php?post_type=en_event&en_event_category=SLUG -->
+                              <a class="eem-row-dd-item" role="menuitem" href="/wp-admin/edit.php?post_type=en_event&en_event_category=barrel-racing">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Events</a>
+                              <!-- Delete: data-eem-action="eem-term-delete" + data-term-name for JS confirm.
+                                   href is a nonce URL: admin-post.php?action=eem_delete_term&term_id=N&eem_page=...&_wpnonce=... -->
+                              <a class="eem-row-dd-item eem-row-dd-danger" role="menuitem"
+                                 href="/wp-admin/admin-post.php?action=eem_delete_term&term_id=74&eem_page=equine-event-manager-event-categories&_wpnonce=ghi789sample"
+                                 data-eem-action="eem-term-delete"
+                                 data-term-name="Barrel Racing">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete</a>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+
+                    <!-- Row: Junior Barrel Racing (depth=1, child of Barrel Racing)
+                         Name prefixed with "— " per str_repeat('— ', $depth). -->
+                    <tr>
+                      <td class="eem-col-cb"><input type="checkbox" name="term_ids[]" value="76" form="eem-term-bulk-form" aria-label="— Junior Barrel Racing"></td>
+                      <td>
+                        <a class="eem-term-name" href="/wp-admin/admin.php?page=equine-event-manager-event-categories&edit=76">— Junior Barrel Racing</a>
+                      </td>
+                      <td><span class="eem-term-slug">junior-barrel-racing</span></td>
+                      <td>Open to riders 18 and under.</td>
+                      <td><span class="eem-term-count">1</span></td>
+                      <td>
+                        <div class="eem-actions-cell">
+                          <div class="eem-row-menu-wrap">
+                            <button type="button" class="eem-more-btn"
+                                    data-eem-action="dropdown-toggle"
+                                    aria-haspopup="menu"
+                                    aria-expanded="false"
+                                    aria-controls="eem-term-menu-76"
+                                    title="More actions">···</button>
+                            <div class="eem-row-dropdown" id="eem-term-menu-76" role="menu">
+                              <a class="eem-row-dd-item" role="menuitem" href="/wp-admin/admin.php?page=equine-event-manager-event-categories&edit=76">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</a>
+                              <a class="eem-row-dd-item" role="menuitem" href="/wp-admin/edit.php?post_type=en_event&en_event_category=junior-barrel-racing">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Events</a>
+                              <a class="eem-row-dd-item eem-row-dd-danger" role="menuitem"
+                                 href="/wp-admin/admin-post.php?action=eem_delete_term&term_id=76&eem_page=equine-event-manager-event-categories&_wpnonce=jkl012sample"
+                                 data-eem-action="eem-term-delete"
+                                 data-term-name="Junior Barrel Racing">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete</a>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+
+                    <!-- Row: Reining (depth=0) -->
+                    <tr>
+                      <td class="eem-col-cb"><input type="checkbox" name="term_ids[]" value="78" form="eem-term-bulk-form" aria-label="Reining"></td>
+                      <td>
+                        <a class="eem-term-name" href="/wp-admin/admin.php?page=equine-event-manager-event-categories&edit=78">Reining</a>
+                      </td>
+                      <td><span class="eem-term-slug">reining</span></td>
+                      <td>Western precision riding patterns.</td>
+                      <td><span class="eem-term-count">4</span></td>
+                      <td>
+                        <div class="eem-actions-cell">
+                          <div class="eem-row-menu-wrap">
+                            <button type="button" class="eem-more-btn"
+                                    data-eem-action="dropdown-toggle"
+                                    aria-haspopup="menu"
+                                    aria-expanded="false"
+                                    aria-controls="eem-term-menu-78"
+                                    title="More actions">···</button>
+                            <div class="eem-row-dropdown" id="eem-term-menu-78" role="menu">
+                              <a class="eem-row-dd-item" role="menuitem" href="/wp-admin/admin.php?page=equine-event-manager-event-categories&edit=78">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</a>
+                              <a class="eem-row-dd-item" role="menuitem" href="/wp-admin/edit.php?post_type=en_event&en_event_category=reining">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Events</a>
+                              <a class="eem-row-dd-item eem-row-dd-danger" role="menuitem"
+                                 href="/wp-admin/admin-post.php?action=eem_delete_term&term_id=78&eem_page=equine-event-manager-event-categories&_wpnonce=mno345sample"
+                                 data-eem-action="eem-term-delete"
+                                 data-term-name="Reining">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete</a>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+
+                    <!-- Row: Roping (depth=0, count=0 → .eem-term-count-zero) -->
+                    <tr>
+                      <td class="eem-col-cb"><input type="checkbox" name="term_ids[]" value="75" form="eem-term-bulk-form" aria-label="Roping"></td>
+                      <td>
+                        <a class="eem-term-name" href="/wp-admin/admin.php?page=equine-event-manager-event-categories&edit=75">Roping</a>
+                      </td>
+                      <td><span class="eem-term-slug">roping</span></td>
+                      <td><span class="eem-term-muted">—</span></td>
+                      <td><span class="eem-term-count eem-term-count-zero">0</span></td>
+                      <td>
+                        <div class="eem-actions-cell">
+                          <div class="eem-row-menu-wrap">
+                            <button type="button" class="eem-more-btn"
+                                    data-eem-action="dropdown-toggle"
+                                    aria-haspopup="menu"
+                                    aria-expanded="false"
+                                    aria-controls="eem-term-menu-75"
+                                    title="More actions">···</button>
+                            <div class="eem-row-dropdown" id="eem-term-menu-75" role="menu">
+                              <a class="eem-row-dd-item" role="menuitem" href="/wp-admin/admin.php?page=equine-event-manager-event-categories&edit=75">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</a>
+                              <a class="eem-row-dd-item" role="menuitem" href="/wp-admin/edit.php?post_type=en_event&en_event_category=roping">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Events</a>
+                              <a class="eem-row-dd-item eem-row-dd-danger" role="menuitem"
+                                 href="/wp-admin/admin-post.php?action=eem_delete_term&term_id=75&eem_page=equine-event-manager-event-categories&_wpnonce=pqr678sample"
+                                 data-eem-action="eem-term-delete"
+                                 data-term-name="Roping">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete</a>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+
+                    <!--
+                      EMPTY STATE (shown when $rows is empty — no terms match search):
+                      <tr><td colspan="6" class="eem-table-empty">No categories match your filters.</td></tr>
+                    -->
+
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Mobile cards (≤782px) — rendered by render_mobile_card().
+                   "View Events" label uses cfg['object_plural'] = 'Events'. -->
+              <div class="eem-mobile-cards">
+                <div class="eem-mobile-card">
+                  <div class="eem-mobile-card-top">
+                    <a class="eem-mobile-card-id" href="/wp-admin/admin.php?page=equine-event-manager-event-categories&edit=74">Barrel Racing</a>
+                    <span class="eem-mobile-card-meta">3 items</span>
                   </div>
-                </td>
-                <td><span class="cat-slug">western</span></td>
-                <td><span class="cat-desc-empty">—</span></td>
-                <td><span class="cat-count">14</span></td>
-                <td>
-                  <div class="actions-cell">
-                    <div class="row-menu-wrap">
-                      <button class="more-btn" onclick="toggleRowMenu('cat-menu-1',event)">···</button>
-                      <div class="row-dropdown" id="cat-menu-1">
-                        <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</a>
-                        <a class="row-dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View Events</a>
-                        <a class="row-dd-item row-dd-danger" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>Delete</a>
-                      </div>
+                  <div class="eem-mobile-card-sub"><span class="eem-term-slug">barrel-racing</span></div>
+                  <div class="eem-mobile-card-bottom">
+                    <div class="eem-mobile-card-actions">
+                      <a class="eem-btn eem-btn-sm" href="/wp-admin/edit.php?post_type=en_event&en_event_category=barrel-racing">View Events</a>
+                      <a class="eem-btn eem-btn-sm" href="/wp-admin/admin.php?page=equine-event-manager-event-categories&edit=74">Edit</a>
                     </div>
                   </div>
-                </td>
-              </tr>
-              <tr>
-                <td class="col-cb"><input type="checkbox"></td>
-                <td>
-                  <a class="cat-name" href="#">— Reining</a>
-                  <div class="cat-row-actions">
-                    <a class="cat-row-action" href="#">Edit</a>
-                    <span class="cat-row-action-sep">|</span>
-                    <a class="cat-row-action" href="#">Delete</a>
-                    <span class="cat-row-action-sep">|</span>
-                    <a class="cat-row-action" href="#">View</a>
+                </div>
+                <div class="eem-mobile-card">
+                  <div class="eem-mobile-card-top">
+                    <a class="eem-mobile-card-id" href="/wp-admin/admin.php?page=equine-event-manager-event-categories&edit=76">— Junior Barrel Racing</a>
+                    <span class="eem-mobile-card-meta">1 item</span>
                   </div>
-                </td>
-                <td><span class="cat-slug">reining</span></td>
-                <td><span class="cat-desc">NRHA-affiliated reining events</span></td>
-                <td><span class="cat-count">6</span></td>
-                <td>
-                  <div class="actions-cell">
-                    <div class="row-menu-wrap"><button class="more-btn">···</button></div>
+                  <div class="eem-mobile-card-sub"><span class="eem-term-slug">junior-barrel-racing</span> · Open to riders 18 and under.</div>
+                  <div class="eem-mobile-card-bottom">
+                    <div class="eem-mobile-card-actions">
+                      <a class="eem-btn eem-btn-sm" href="/wp-admin/edit.php?post_type=en_event&en_event_category=junior-barrel-racing">View Events</a>
+                      <a class="eem-btn eem-btn-sm" href="/wp-admin/admin.php?page=equine-event-manager-event-categories&edit=76">Edit</a>
+                    </div>
                   </div>
-                </td>
-              </tr>
-              <tr>
-                <td class="col-cb"><input type="checkbox"></td>
-                <td>
-                  <a class="cat-name" href="#">— Cutting</a>
-                  <div class="cat-row-actions">
-                    <a class="cat-row-action" href="#">Edit</a>
-                    <span class="cat-row-action-sep">|</span>
-                    <a class="cat-row-action" href="#">Delete</a>
+                </div>
+                <div class="eem-mobile-card">
+                  <div class="eem-mobile-card-top">
+                    <a class="eem-mobile-card-id" href="/wp-admin/admin.php?page=equine-event-manager-event-categories&edit=78">Reining</a>
+                    <span class="eem-mobile-card-meta">4 items</span>
                   </div>
-                </td>
-                <td><span class="cat-slug">cutting</span></td>
-                <td><span class="cat-desc-empty">—</span></td>
-                <td><span class="cat-count">4</span></td>
-                <td>
-                  <div class="actions-cell">
-                    <div class="row-menu-wrap"><button class="more-btn">···</button></div>
+                  <div class="eem-mobile-card-sub"><span class="eem-term-slug">reining</span> · Western precision riding patterns.</div>
+                  <div class="eem-mobile-card-bottom">
+                    <div class="eem-mobile-card-actions">
+                      <a class="eem-btn eem-btn-sm" href="/wp-admin/edit.php?post_type=en_event&en_event_category=reining">View Events</a>
+                      <a class="eem-btn eem-btn-sm" href="/wp-admin/admin.php?page=equine-event-manager-event-categories&edit=78">Edit</a>
+                    </div>
                   </div>
-                </td>
-              </tr>
-              <tr>
-                <td class="col-cb"><input type="checkbox"></td>
-                <td>
-                  <a class="cat-name" href="#">English</a>
-                  <div class="cat-row-actions">
-                    <a class="cat-row-action" href="#">Edit</a>
-                    <span class="cat-row-action-sep">|</span>
-                    <a class="cat-row-action" href="#">Delete</a>
-                    <span class="cat-row-action-sep">|</span>
-                    <a class="cat-row-action" href="#">View</a>
+                </div>
+                <div class="eem-mobile-card">
+                  <div class="eem-mobile-card-top">
+                    <a class="eem-mobile-card-id" href="/wp-admin/admin.php?page=equine-event-manager-event-categories&edit=75">Roping</a>
+                    <span class="eem-mobile-card-meta">0 items</span>
                   </div>
-                </td>
-                <td><span class="cat-slug">english</span></td>
-                <td><span class="cat-desc-empty">—</span></td>
-                <td><span class="cat-count">3</span></td>
-                <td>
-                  <div class="actions-cell">
-                    <div class="row-menu-wrap"><button class="more-btn">···</button></div>
+                  <div class="eem-mobile-card-sub"><span class="eem-term-slug">roping</span></div>
+                  <div class="eem-mobile-card-bottom">
+                    <div class="eem-mobile-card-actions">
+                      <a class="eem-btn eem-btn-sm" href="/wp-admin/edit.php?post_type=en_event&en_event_category=roping">View Events</a>
+                      <a class="eem-btn eem-btn-sm" href="/wp-admin/admin.php?page=equine-event-manager-event-categories&edit=75">Edit</a>
+                    </div>
                   </div>
-                </td>
-              </tr>
-              <tr>
-                <td class="col-cb"><input type="checkbox"></td>
-                <td>
-                  <a class="cat-name" href="#">Speed Events</a>
-                  <div class="cat-row-actions">
-                    <a class="cat-row-action" href="#">Edit</a>
-                    <span class="cat-row-action-sep">|</span>
-                    <a class="cat-row-action" href="#">Delete</a>
-                  </div>
-                </td>
-                <td><span class="cat-slug">speed-events</span></td>
-                <td><span class="cat-desc">Barrel racing, pole bending, and similar timed events</span></td>
-                <td><span class="cat-count cat-count-zero">0</span></td>
-                <td>
-                  <div class="actions-cell">
-                    <div class="row-menu-wrap"><button class="more-btn">···</button></div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </div>
+                <!-- Empty state mobile: <div class="eem-mobile-card eem-mobile-card--empty">No categories match your filters.</div> -->
+              </div>
 
-          <div class="table-footer">
-            <div class="table-footer-info">5 categories</div>
-          </div>
+              <!-- Footer: sprintf(_n('%s category','%s categories',$count), number_format_i18n($count)) -->
+              <div class="eem-table-footer">
+                <span class="eem-table-footer-info">4 categories</span>
+              </div>
 
-        </div><!-- /table-panel -->
-      </div><!-- /split-body -->
-
-    </div><!-- /plugin-wrap -->
-
+            </div><!-- /.eem-term-table-panel -->
+          </div><!-- /.eem-term-split -->
+        </div><!-- /.eem-page-body -->
+      </div><!-- /.eem-page-wrap -->
+    </div><!-- /.eem-page -->
   </main>
 </div>
 
 <script>
-function toggleRowMenu(id,e){
-  e.stopPropagation();
-  var menu=document.getElementById(id);
-  document.querySelectorAll('.row-dropdown').forEach(function(d){if(d!==menu)d.classList.remove('open');});
-  menu.classList.toggle('open');
-}
-document.addEventListener('click',function(){
-  document.querySelectorAll('.row-dropdown').forEach(function(d){d.classList.remove('open');});
+// Delegated handler mirrors admin.js: data-eem-action="dropdown-toggle" opens/closes
+// the nearest .eem-row-menu-wrap; outside click closes all open dropdowns.
+// data-eem-action="eem-term-delete" prompts JS confirm with the term name.
+// data-eem-action="eem-term-toggle-all" checks/unchecks all .eem-term-bulk-form checkboxes.
+document.addEventListener('click', function (e) {
+  var toggleBtn = e.target.closest('[data-eem-action="dropdown-toggle"]');
+  if (toggleBtn) {
+    var wrap = toggleBtn.closest('.eem-row-menu-wrap');
+    var isOpen = wrap.classList.contains('open');
+    document.querySelectorAll('.eem-row-menu-wrap.open').forEach(function (w) { w.classList.remove('open'); });
+    if (!isOpen) {
+      wrap.classList.add('open');
+      toggleBtn.setAttribute('aria-expanded', 'true');
+    } else {
+      toggleBtn.setAttribute('aria-expanded', 'false');
+    }
+    return;
+  }
+
+  var deleteBtn = e.target.closest('[data-eem-action="eem-term-delete"]');
+  if (deleteBtn) {
+    var name = deleteBtn.getAttribute('data-term-name') || 'this category';
+    if (!confirm('Delete "' + name + '"? This cannot be undone.')) {
+      e.preventDefault();
+    }
+    return;
+  }
+
+  var selectAll = e.target.closest('[data-eem-action="eem-term-toggle-all"]');
+  if (selectAll) {
+    var checked = selectAll.checked;
+    document.querySelectorAll('[name="term_ids[]"]').forEach(function (cb) { cb.checked = checked; });
+    return;
+  }
+
+  if (!e.target.closest('.eem-row-menu-wrap')) {
+    document.querySelectorAll('.eem-row-menu-wrap.open').forEach(function (w) {
+      w.classList.remove('open');
+      var btn = w.querySelector('[data-eem-action="dropdown-toggle"]');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    });
+  }
 });
 </script>
-
 </body>
 </html>

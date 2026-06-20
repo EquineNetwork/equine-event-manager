@@ -1,269 +1,651 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stall Map — Admin / Stall &amp; RV Charts (v4 mockup)</title>
-<!--
-  v4 Stall Mapping — ADMIN "Pick from Layout" view (Stall & RV Charts page).
-  Multi-barn: each barn tab fetches its own CSV (montcrief.csv, burnett.csv).
-  Admin chrome: KPI row, action bar, occupancy, click-to-manage popover
-  (Assign to customer / Mark as Tack / Block). Same-label rectangle merge for
-  marked areas. Reference only (served via the preview server for the fetches).
--->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager &ndash; Stall Map Admin (By Location &ndash; Map)</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --navy:#031B4E; --ink:#18212f; --muted:#5f6f85; --line:#d9e2ec;
-    --bg:#eef2f8; --surface:#fff; --electric:#2563EB; --electric-soft:#eaf0ff;
-    --avail-border:#b9c6da; --resv:#dbe4f3; --resv-ink:#2b4a78;
-    --blocked:#9aa6b6; --tack:#E8A33D; --tack-soft:#fff5e6;
-    --land:#e8edf4; --land-ink:#6a7890; --good:#16A34A;
-    --chip:40px; --gap:4px; --radius:8px;
-    font-family:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);}
-  h1,h2,h3{font-family:"Space Grotesk","IBM Plex Sans",sans-serif;margin:0;}
-  .wrap{max-width:1240px;margin:0 auto;padding:22px 20px 60px;}
-  .crumbs{font-size:12px;color:var(--muted);margin-bottom:10px;}
-  .crumbs b{color:var(--navy);}
-  .page-head{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
-  .page-head h1{font-size:22px;color:var(--navy);} /* matches plugin .eem-plugin-title (Space Grotesk 22/700/navy) */
-  .page-head .spacer{flex:1;}
-  .btn{appearance:none;border:1px solid var(--line);border-radius:var(--radius);font-weight:700;font-size:13px;padding:9px 14px;cursor:pointer;background:#fff;color:var(--ink);display:inline-flex;align-items:center;gap:7px;}
-  .btn:hover{background:#f2f6fb;}
-  .btn-primary{background:var(--electric);border-color:var(--electric);color:#fff;}
-  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;}
-  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:0 8px 20px rgba(23,32,51,.04);}
-  .kpi .label{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;}
-  .kpi .val{font-size:30px;font-weight:800;color:var(--navy);font-family:"Space Grotesk",sans-serif;margin-top:4px;}
-  .kpi .mv{font-size:13px;color:var(--ink);line-height:1.5;}
-  .kpi .mv b{color:var(--navy);}
-  .actionbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
-  .panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 24px rgba(23,32,51,.05);overflow:hidden;}
-  .view-tabs{display:flex;gap:6px;padding:14px 16px 0;align-items:center;}
-  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;}
-  .seg button{appearance:none;border:0;background:#fff;color:var(--muted);font-weight:700;font-size:13px;padding:8px 14px;cursor:pointer;}
-  .seg button.active{background:var(--navy);color:#fff;}
-  .subtabs{display:flex;gap:18px;padding:12px 16px 0;border-bottom:1px solid var(--line);}
-  .subtab{font-size:13px;font-weight:700;color:var(--muted);padding-bottom:10px;cursor:pointer;border-bottom:2px solid transparent;}
-  .subtab.active{color:var(--electric);border-color:var(--electric);}
-  .barn-tabs{display:flex;gap:4px;padding:12px 16px 0;flex-wrap:wrap;}
-  .barn-tab{appearance:none;border:1px solid var(--line);border-bottom:0;background:#f6f9fd;color:var(--muted);font-weight:700;font-size:13px;padding:8px 14px;border-radius:8px 8px 0 0;cursor:pointer;}
-  .barn-tab.active{background:#fff;color:var(--navy);box-shadow:inset 0 -2px 0 var(--electric);}
-  .legend{display:flex;gap:14px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);font-size:12px;color:var(--muted);}
-  .legend span{display:inline-flex;align-items:center;gap:6px;}
-  .swatch{width:14px;height:14px;border-radius:4px;border:1px solid var(--line);display:inline-block;}
-  .sw-avail{background:#fff;border-color:var(--avail-border);}
-  .sw-resv{background:var(--resv);border-color:#bcccea;}
-  .sw-tack{background:var(--tack-soft);border-color:var(--tack);}
-  .sw-block{background:var(--blocked);border-color:var(--blocked);}
-  .gdot{width:11px;height:11px;border-radius:50%;display:inline-block;margin-left:2px;vertical-align:middle;}
-  .map-scroll{overflow:auto;padding:18px;background:#fbfcfe;max-height:640px;-webkit-overflow-scrolling:touch;}
-  .map-grid{display:grid;gap:var(--gap);width:max-content;}
-  .cell{width:var(--chip);height:var(--chip);}
-  .stall{position:relative;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:1px solid var(--avail-border);border-radius:5px;background:#fff;color:var(--navy);cursor:pointer;user-select:none;line-height:1;}
-  .stall:hover{outline:2px solid var(--electric);outline-offset:-1px;}
-  .stall.reserved{background:var(--resv);border-color:#bcccea;color:var(--resv-ink);}
-  .stall.blocked{background:repeating-linear-gradient(45deg,#9aa6b6,#9aa6b6 3px,#8593a5 3px,#8593a5 6px);border-color:var(--blocked);color:#fff;}
-  .stall.tack{border-color:var(--tack);background:var(--tack-soft);color:#9a6a14;}
-  .stall .tbadge{position:absolute;top:-5px;right:-5px;font-size:8px;background:var(--tack);color:#fff;border-radius:3px;padding:0 3px;font-weight:800;}
-  .landmark{display:flex;align-items:center;justify-content:center;text-align:center;font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--land-ink);background:var(--land);border:1px dashed #c4cedd;border-radius:5px;padding:2px;line-height:1.1;}
-  .pop{position:fixed;z-index:40;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 18px 44px rgba(8,15,30,.22);width:240px;display:none;}
-  .pop.open{display:block;}
-  .pop-head{padding:12px 14px;border-bottom:1px solid var(--line);}
-  .pop-head .num{font-size:15px;font-weight:800;color:var(--navy);}
-  .pop-head .st{font-size:12px;color:var(--muted);margin-top:2px;}
-  .pop-body{padding:8px;}
-  .pop-row{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;padding:9px 10px;border-radius:7px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;text-align:left;}
-  .pop-row:hover{background:#f2f6fb;}
-  .pop-row.danger{color:#b93742;}
-  .pop-row .ic{width:16px;text-align:center;}
-  .pop select{width:100%;padding:8px;border:1px solid var(--line);border-radius:7px;font-size:13px;margin-top:4px;}
-  .pop-search{width:100%;padding:8px;border:1px solid var(--line);border-radius:7px;font-size:13px;margin-bottom:6px;}
-  .pop-list{max-height:180px;overflow:auto;}
-  .pop-empty{padding:9px 10px;font-size:12px;color:var(--muted);}
+/* ─────────────────────────────────────────────────────────────────────────────
+   Stall Map Admin — "By Location – Map" sub-view of the Stall & RV Charts page
+   (admin.php?page=equine-event-manager-stall-charts&reservation_id=N&tab=map).
+
+   PHP renders:
+   - KPI cards: Total Stalls, Available Stalls, Total RV Lots, Available RV Lots
+   - Filter bar: Show (All/Stalls/RV) + View (By Customer/By Location-List/By Location-Map)
+   - Assign banner: JS-driven from window.eemStallChart.assignContext (null = hidden)
+   - Barn stats: server-rendered inside .eem-smap, one .eem-smap-barn-stat per barn
+   - Barn tabs: data-eem-smap-tabs (JS-populated from payload)
+   - Payload: <script type="application/json" data-eem-smap-payload>
+   - Zoom: −/Zoom/+ buttons with data-zoom="out|reset|in" (data-eem-smap-zoom)
+   - Popover: inside .eem-smap div (data-eem-smap-pop)
+   - Default chip size: 30px (task #25)
+
+   Brand tokens: electric #1668F2, navy #031B4E, radius 3px.
+   ───────────────────────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+svg{flex-shrink:0}
+a{text-decoration:none}a:hover{text-decoration:none}
+
+/* ── WP SHELL STUB ── */
+.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
+.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-admin-bar span.site{color:#fff;font-weight:600}
+.wp-body{display:flex;flex:1}
+.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
+.wp-sidebar-item{padding:8px 12px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
+.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
+.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
+.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+
+/* ── Breadcrumb + logo ── */
+.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.breadcrumb-logo-box{width:160px;height:36px;background:#031B4E;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:.12em;flex-shrink:0}
+.breadcrumb-sep{font-size:13px;color:#8c8f94}
+.breadcrumb-page{font-size:13px;color:#031B4E;font-weight:600}
+.breadcrumb-page a{color:#031B4E;font-weight:600}
+.breadcrumb-page a:hover{color:#1668F2}
+
+/* ── PLUGIN-WRAP (single bordered card) ── */
+.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
+
+/* PAGE HEADER inside wrap */
+.eem-stall-chart-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.plugin-header-left{flex:1;min-width:0}
+.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;line-height:1.2}
+.plugin-sub{font-size:13px;color:#64748b;margin-top:3px}
+.eem-header-actions{display:flex;gap:8px;flex-shrink:0;align-items:center}
+.eem-header-action-change{background:#fff;border:1px solid #c3c4c7;color:#1d2327;padding:6px 12px;border-radius:4px;font-size:12.5px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center}
+.eem-header-action-change:hover{border-color:#8c8f94;background:#f6f7f7}
+
+/* ── BODY ── */
+.eem-stall-chart-body{padding:18px 22px;background:#fff}
+
+/* ── KPI STAT CARDS ── */
+.eem-stall-chart-dm-bar{background:#f8fafc;border-bottom:1px solid #d9e2f2;padding:16px 22px;margin:-18px -22px 18px}
+.eem-stall-chart-dm-stats{display:flex;flex-wrap:wrap;gap:10px}
+.eem-scs-card{flex:1 1 0;min-width:0;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #d9e2f2;border-radius:6px;padding:10px 14px}
+.eem-scs-icon{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:6px;background:#e6eefc;color:#1668f2;font-size:16px;line-height:1}
+.eem-scs-num{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031b4e;line-height:1}
+.eem-scs-label{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#64748b;margin-left:2px}
+
+/* ── CONTROLS ROW (Show + View + actions) ── */
+.eem-stall-chart-filter-bar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 18px;background:#f0f4fb;border-bottom:1px solid #dcdcde;padding:14px 22px;margin:-18px -22px 18px}
+.eem-scf-group{display:flex;flex-direction:column;gap:5px}
+.eem-stall-chart-view-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#64748b}
+.eem-field-select{padding:7px 10px;border:1px solid #8c8f94;border-radius:3px;font-size:13px;font-family:inherit;color:#1d2327;background:#fff;outline:none;line-height:1.4}
+.eem-field-select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+.eem-stall-chart-view-select{min-width:200px}
+.eem-scf-actions{margin-left:auto;display:flex;gap:10px}
+
+/* ── BUTTONS ── */
+.eem-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;border:1px solid;text-decoration:none}
+.eem-btn-electric{background:#1668F2;color:#fff;border-color:#1668F2}
+.eem-btn-electric:hover{background:#1257d1;border-color:#1257d1}
+.eem-btn--ghost{background:#fff;color:#1d2327;border-color:#c3c4c7}
+.eem-btn--ghost:hover{background:#f6f7f7}
+
+/* ── ELECTRIC-BLUE ASSIGN BANNER (JS-rendered when assignContext is set) ── */
+.eem-assign-banner{margin:-18px -22px 18px;padding:14px 22px;background:#1668F2;color:#fff;font-size:14px}
+.eem-assign-banner strong{color:#fff}
+
+/* ══════════ MAP (eem-smap-*) — from assets/css/admin.css ~8541+ ══════════ */
+/* Default chip size is 30px (task #25 — lowered from 40px on load). */
+.eem-smap{--eem-smap-chip:30px;--eem-smap-gap:4px;padding:0 18px 4px}
+
+/* Barn stats bar: margin -40px cancels .eem-smap's 18px padding + body's 22px */
+.eem-smap-barn-stats{display:flex;flex-wrap:wrap;gap:10px 28px;padding:14px 22px;margin:0 -40px 12px;background:#f0f4fb;border-bottom:1px solid #d9e2f2}
+.eem-smap-barn-stat{flex:1 1 200px;background:transparent;border:0;padding:0}
+.eem-smap-barn-stat-name{font-weight:700;color:#031B4E;font-size:13px;margin-bottom:6px}
+.eem-smap-barn-stat-nums{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px}
+.eem-smap-stat{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:#031B4E;white-space:nowrap}
+.eem-smap-stat strong{font-weight:700}
+.eem-smap-stat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.eem-smap-stat-dot--total{background:#6B7A99}
+.eem-smap-stat-dot--avail{background:#15803d}
+.eem-smap-stat-dot--assigned{background:#1668F2}
+.eem-smap-stat-dot--tack{background:#b45309}
+.eem-smap-stat-dot--blocked{background:#b91c1c}
+.eem-smap-stat-avail strong{color:#16A34A}
+.eem-smap-stat-resv strong{color:#2b4a78}
+.eem-smap-stat-tack strong{color:#B5790F}
+.eem-smap-stat-block strong{color:#6b7280}
+
+/* Barn tabs */
+.eem-smap-barn-tabs{display:flex;gap:4px;flex-wrap:wrap;padding:10px 0 0}
+.eem-smap-barn-tab{appearance:none;border:1px solid #d9e2ec;border-bottom:0;background:#f6f9fd;color:#5f6f85;font-weight:700;font-size:13px;padding:8px 14px;border-radius:6px 6px 0 0;cursor:pointer}
+.eem-smap-barn-tab.active{background:#fff;color:#031B4E;box-shadow:inset 0 -2px 0 #1668F2}
+
+/* Legend */
+.eem-smap-legend{display:flex;gap:14px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid #d9e2ec;font-size:12px;color:#5f6f85;align-items:center}
+.eem-smap-legend span{display:inline-flex;align-items:center;gap:6px}
+.eem-smap-legend-hint{margin-left:auto;color:#8995a8}
+.eem-smap-sw{width:14px;height:14px;border-radius:3px;border:1px solid #d9e2ec;display:inline-block}
+.eem-smap-sw--avail{background:#fff;border-color:#b9c6da}
+.eem-smap-sw--resv{background:#dbe4f3;border-color:#bcccea}
+.eem-smap-sw--tack{background:#fff5e6;border-color:#E8A33D}
+.eem-smap-sw--block{background:#9aa6b6;border-color:#9aa6b6}
+
+/* Zoom bar: −/Zoom/+ buttons (data-zoom="out|reset|in") */
+.eem-smap-zoombar{display:flex;justify-content:flex-end;padding:8px 0 2px}
+.eem-smap-zoom{display:inline-flex;border:1px solid #d9e2ec;border-radius:3px;overflow:hidden}
+.eem-smap-zoom button{border:0;border-left:1px solid #d9e2ec;background:#fff;color:#031B4E;font-weight:700;font-size:13px;padding:5px 12px;line-height:1;cursor:pointer}
+.eem-smap-zoom button:first-child{border-left:0}
+.eem-smap-zoom button:hover{background:#eef4ff}
+.eem-smap-zoom button.is-active{background:#1668F2;color:#fff}
+
+/* Scroll area + grid */
+.eem-smap-scroll{overflow:auto;padding:18px 0;background:#fbfcfe;max-height:640px;-webkit-overflow-scrolling:touch;min-width:0;max-width:100%}
+.eem-smap-grid{display:grid;gap:1px;width:max-content;background:#D9E2F2;border:1px solid #D9E2F2}
+
+/* Grid cells */
+.eem-smap-cell{width:var(--eem-smap-chip);height:var(--eem-smap-chip)}
+.eem-smap-cell--gap{background:#eef1f6;background-image:repeating-linear-gradient(45deg,transparent,transparent 5px,#e2e7ef 5px,#e2e7ef 6px)}
+.eem-smap-stall{position:relative;display:flex;align-items:center;justify-content:center;font-size:clamp(5px,calc(var(--eem-smap-chip,30px)*0.32),13px);font-weight:700;border:0;background:#fff;color:#031B4E;cursor:pointer;user-select:none;line-height:1;overflow:hidden}
+.eem-smap-stall:hover{outline:2px solid #1668F2;outline-offset:-1px;z-index:1}
+.eem-smap-stall.is-reserved{background:#dbe4f3;color:#2b4a78}
+.eem-smap-stall.is-blocked{background:repeating-linear-gradient(45deg,#9aa6b6,#9aa6b6 3px,#8593a5 3px,#8593a5 6px);color:#fff}
+.eem-smap-stall.is-tack{background:#fff5e6;color:#9a6a14}
+
+/* Group accent: left border colored by group (--eem-grp CSS var) */
+.eem-smap-stall.is-grouped{border-left:max(2px,calc(var(--eem-smap-chip,30px)*0.14)) solid var(--eem-grp,transparent)}
+
+/* Tack badge */
+.eem-smap-tbadge{position:absolute;top:-5px;right:-5px;font-size:8px;background:#E8A33D;color:#fff;border-radius:3px;padding:0 3px;font-weight:800}
+
+/* Landmark (WASH, TACK, OFFICE, etc.) */
+.eem-smap-land{display:flex;align-items:center;justify-content:center;text-align:center;width:auto;height:auto;font-size:clamp(7px,calc(var(--eem-smap-chip,30px)*0.22),11px);font-weight:700;letter-spacing:.02em;color:#b45309;background:#fff7e6;border:0;padding:2px;line-height:1.15;overflow:hidden}
+
+/* ── CLICK-TO-MANAGE POPOVER (inside .eem-smap, positioned fixed by JS) ── */
+.eem-smap-pop{position:fixed;z-index:130;background:#fff;border:1px solid #d9e2ec;border-radius:6px;box-shadow:0 18px 44px rgba(8,15,30,.22);width:240px;display:none}
+.eem-smap-pop.open{display:block}
+.eem-smap-pop-head{padding:12px 14px;border-bottom:1px solid #d9e2ec}
+.eem-smap-pop-num{font-size:15px;font-weight:800;color:#031B4E}
+.eem-smap-pop-st{font-size:12px;color:#5f6f85;margin-top:2px}
+.eem-smap-pop-body{padding:8px}
+.eem-smap-pop-row{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;padding:9px 10px;border-radius:3px;font-size:13px;font-weight:600;color:#18212f;cursor:pointer;text-align:left;font-family:inherit}
+.eem-smap-pop-row:hover{background:#f2f6fb}
+.eem-smap-pop-row.danger{color:#b93742}
+.eem-smap-pop-row .ic{width:16px;text-align:center}
+.eem-smap-pop-search{width:100%;padding:8px;border:1px solid #d9e2ec;border-radius:3px;font-size:13px;margin-bottom:6px}
+.eem-smap-pop-list{max-height:180px;overflow:auto}
+.eem-smap-pop-empty{padding:9px 10px;font-size:12px;color:#5f6f85}
+
+/* Unsaved-layout banner (shown when auto-suggested assignments need saving) */
+.eem-stall-chart-unsaved-banner{display:flex;align-items:flex-start;gap:10px;padding:12px 22px;background:#fffbeb;border-bottom:1px solid #fde68a;font-size:13px;color:#92400e;margin:-18px -22px 18px}
+.eem-stall-chart-unsaved-banner svg{width:18px;height:18px;flex-shrink:0;margin-top:1px;color:#d97706}
+.eem-link-btn{background:none;border:none;color:#1668F2;font-weight:600;font-size:13px;cursor:pointer;padding:0;font-family:inherit;text-decoration:none}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="crumbs"><b>Equine Event Manager</b> / Stall &amp; RV Charts / 2026 Southeast Region Super Sort</div>
-  <div class="page-head">
-    <h1>Stall &amp; RV Chart — 2026 Southeast Region Super Sort</h1>
-    <span class="spacer"></span>
-    <button class="btn">Change Event</button>
-  </div>
-  <div class="kpis">
-    <div class="kpi"><div class="label">Daily Movement</div>
-      <div class="mv"><b>Jun 26:</b> Arriving 14, Departing 0<br><b>Jun 27:</b> Arriving 9, Departing 2<br><b>Jun 28:</b> Arriving 0, Departing 23</div></div>
-    <div class="kpi"><div class="label">Stall Units</div><div class="val" data-kpi-stalls>—</div></div>
-    <div class="kpi"><div class="label">RV Lots</div><div class="val">0</div></div>
-    <div class="kpi"><div class="label">Orders on Chart</div><div class="val">21</div></div>
-  </div>
-  <div class="actionbar">
-    <button class="btn btn-primary">Generate Assignments</button>
-    <button class="btn">Print View</button>
-    <button class="btn">Edit Reservation</button>
-  </div>
-  <div class="panel">
-    <div class="view-tabs"><div class="seg"><button class="active">All</button><button>Stalls</button><button>RV</button></div></div>
-    <div class="subtabs"><div class="subtab active">By Location (Map)</div><div class="subtab">By Customer</div></div>
-    <div class="barn-tabs" data-barn-tabs></div>
-    <div class="legend">
-      <span><i class="swatch sw-avail"></i> Available</span>
-      <span><i class="swatch sw-resv"></i> Assigned</span>
-      <span><i class="swatch sw-tack"></i> Tack</span>
-      <span><i class="swatch sw-block"></i> Blocked</span>
-      <span>Groups (left edge)<i class="gdot" style="background:#DC2626"></i><i class="gdot" style="background:#16A34A"></i><i class="gdot" style="background:#9333EA"></i><i class="gdot" style="background:#CA8A04"></i></span>
-      <span style="margin-left:auto;color:#8995a8">Click any stall to assign, mark tack, or block.</span>
-    </div>
-    <div class="map-scroll"><div class="map-grid" data-map-grid></div></div>
-  </div>
+
+<!-- ══ WP ADMIN BAR STUB ══ -->
+<div class="wp-admin-bar">
+  <span class="site">&#9776; en-event-manager.local</span>
+  <span>&#128172; 0</span>
+  <span>&#43; New</span>
 </div>
 
-<div class="pop" data-pop>
-  <div class="pop-head"><div class="num" data-pop-num>Stall</div><div class="st" data-pop-st></div></div>
-  <div class="pop-body" data-pop-body></div>
+<div class="wp-body">
+  <!-- ══ WP SIDEBAR STUB ══ -->
+  <nav class="wp-sidebar">
+    <div class="wp-sidebar-item">&#128202; Dashboard</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-label">Event Manager</div>
+    <div class="wp-sidebar-sub">Dashboard</div>
+    <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub">Orders</div>
+    <div class="wp-sidebar-sub active">Stall &amp; RV Charts</div>
+    <div class="wp-sidebar-sub">Reports</div>
+    <div class="wp-sidebar-sub">Settings</div>
+    <div class="wp-sidebar-sep"></div>
+    <div class="wp-sidebar-item">&#9881; Settings</div>
+  </nav>
+
+  <!-- ══ PAGE CONTENT ══ -->
+  <main class="wp-content">
+    <div class="breadcrumb">
+      <div class="breadcrumb-logo-box">EQUINE</div>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page"><a href="#">Stall &amp; RV Charts</a></span>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-page">2026 National Team Roping Championship</span>
+    </div>
+
+    <div class="plugin-wrap">
+      <!-- HEADER -->
+      <div class="eem-stall-chart-header">
+        <div class="plugin-header-left">
+          <div class="plugin-title">Stall &amp; RV Chart</div>
+          <div class="plugin-sub">2026 National Team Roping Championship &middot; Jul 9 &ndash; Jul 12</div>
+        </div>
+        <div class="eem-header-actions">
+          <a class="eem-header-action-change" href="#">Change Event</a>
+          <a class="eem-header-action-change" href="#">Edit Reservation</a>
+        </div>
+      </div>
+
+      <div class="eem-stall-chart-body">
+
+        <!-- KPI STAT BAR
+             PHP renders: Total Stalls, Available Stalls, Total RV Lots, Available RV Lots.
+             (The "Daily Movement bar removed" comment in the PHP confirms this shape.) -->
+        <div class="eem-stall-chart-dm-bar">
+          <div class="eem-stall-chart-dm-stats">
+            <div class="eem-scs-card">
+              <span class="eem-scs-icon" aria-hidden="true">&#9638;</span>
+              <span class="eem-scs-num">128</span>
+              <span class="eem-scs-label">Total Stalls</span>
+            </div>
+            <div class="eem-scs-card">
+              <span class="eem-scs-icon" aria-hidden="true">&#9638;</span>
+              <span class="eem-scs-num">94</span>
+              <span class="eem-scs-label">Available Stalls</span>
+            </div>
+            <div class="eem-scs-card">
+              <span class="eem-scs-icon" aria-hidden="true">&#11041;</span>
+              <span class="eem-scs-num">48</span>
+              <span class="eem-scs-label">Total RV Lots</span>
+            </div>
+            <div class="eem-scs-card">
+              <span class="eem-scs-icon" aria-hidden="true">&#11041;</span>
+              <span class="eem-scs-num">31</span>
+              <span class="eem-scs-label">Available RV Lots</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTROLS ROW
+             PHP: Show select (data-eem-action="sc-inv-select"), View select
+             (data-eem-action="stall-chart-view-select"), Generate Assignments
+             (data-eem-action="stall-chart-auto-assign-all"), Print View
+             (data-eem-action="stall-chart-print"). "By Location – Map" option only
+             visible when has_stall_map || has_rv_map. -->
+        <div class="eem-stall-chart-filter-bar">
+          <div class="eem-scf-group">
+            <label class="eem-stall-chart-view-label" for="eem-sc-inv-select">Show</label>
+            <select id="eem-sc-inv-select" class="eem-field-select eem-stall-chart-view-select" data-eem-action="sc-inv-select">
+              <option value="all" selected>All</option>
+              <option value="stalls">Stalls</option>
+              <option value="rv">RV</option>
+            </select>
+          </div>
+          <div class="eem-scf-group">
+            <label class="eem-stall-chart-view-label" for="eem-sc-view-select">View</label>
+            <select id="eem-sc-view-select" class="eem-field-select eem-stall-chart-view-select" data-eem-action="stall-chart-view-select">
+              <option value="customer">By Customer</option>
+              <option value="list">By Location &ndash; List</option>
+              <option value="map" selected>By Location &ndash; Map</option>
+            </select>
+          </div>
+          <div class="eem-scf-actions">
+            <button class="eem-btn eem-btn-electric" type="button" data-eem-action="stall-chart-auto-assign-all">
+              Generate Assignments
+            </button>
+            <button class="eem-btn eem-btn--ghost" type="button" data-eem-action="stall-chart-print">
+              Print View
+            </button>
+          </div>
+        </div>
+
+        <!-- ASSIGN BANNER
+             JS-driven: rendered from window.eemStallChart.assignContext when non-null.
+             PHP passes assignContext via inline <script>; the client inserts this banner
+             only when coming from Order Detail → "Assign Stalls". Shown here as a
+             realistic sample of the arriving-from-order-detail state. -->
+        <div class="eem-assign-banner" id="eem-assign-banner">
+          <strong>Assigning Smith, James (Order #00042)</strong> &mdash;
+          click an available stall for <strong>Jul 9 &ndash; Jul 12</strong> to place them.
+          <button type="button" class="eem-link-btn" style="margin-left:12px;color:#fff;border-bottom:1px solid rgba(255,255,255,.4)">Cancel</button>
+        </div>
+
+        <!-- ══════════ BY LOCATION – MAP (eem-smap) ══════════
+             PHP: render_stall_map_location_view() outputs:
+               .eem-smap[data-eem-smap][data-eem-smap-kind="stall"]
+                 .eem-smap-barn-stats[data-eem-smap-barn-stats]  ← server-rendered
+                   .eem-smap-barn-stat × N (one per barn)
+                 .eem-smap-barn-tabs[data-eem-smap-tabs]         ← JS-populated from payload
+                 .eem-smap-legend
+                 .eem-smap-zoombar > span.eem-smap-zoom[data-eem-smap-zoom]
+                   button[data-zoom="out"] −
+                   button[data-zoom="reset"] Zoom
+                   button[data-zoom="in"] +
+                 .eem-smap-scroll[data-eem-smap-scroll]
+                   .eem-smap-grid[data-eem-smap-grid]   ← JS-rendered from payload
+                 <script type="application/json" data-eem-smap-payload>...</script>
+                 .eem-smap-pop[data-eem-smap-pop]        ← JS-driven popover
+             -->
+        <div class="eem-smap" data-eem-smap data-eem-smap-kind="stall">
+
+          <!-- Barn availability stats (server-rendered) -->
+          <div class="eem-smap-barn-stats" data-eem-smap-barn-stats>
+            <div class="eem-smap-barn-stat">
+              <div class="eem-smap-barn-stat-name">Montcrief Barn</div>
+              <div class="eem-smap-barn-stat-nums">
+                <span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--total" aria-hidden="true"></i><strong>60</strong> total</span>
+                <span class="eem-smap-stat eem-smap-stat-avail"><i class="eem-smap-stat-dot eem-smap-stat-dot--avail" aria-hidden="true"></i><strong>42</strong> avail</span>
+                <span class="eem-smap-stat eem-smap-stat-resv"><i class="eem-smap-stat-dot eem-smap-stat-dot--assigned" aria-hidden="true"></i><strong>14</strong> assigned</span>
+                <span class="eem-smap-stat eem-smap-stat-tack"><i class="eem-smap-stat-dot eem-smap-stat-dot--tack" aria-hidden="true"></i><strong>2</strong> tack</span>
+                <span class="eem-smap-stat eem-smap-stat-block"><i class="eem-smap-stat-dot eem-smap-stat-dot--blocked" aria-hidden="true"></i><strong>2</strong> blocked</span>
+              </div>
+            </div>
+            <div class="eem-smap-barn-stat">
+              <div class="eem-smap-barn-stat-name">Burnett Barn</div>
+              <div class="eem-smap-barn-stat-nums">
+                <span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--total" aria-hidden="true"></i><strong>68</strong> total</span>
+                <span class="eem-smap-stat eem-smap-stat-avail"><i class="eem-smap-stat-dot eem-smap-stat-dot--avail" aria-hidden="true"></i><strong>52</strong> avail</span>
+                <span class="eem-smap-stat eem-smap-stat-resv"><i class="eem-smap-stat-dot eem-smap-stat-dot--assigned" aria-hidden="true"></i><strong>13</strong> assigned</span>
+                <span class="eem-smap-stat eem-smap-stat-tack"><i class="eem-smap-stat-dot eem-smap-stat-dot--tack" aria-hidden="true"></i><strong>1</strong> tack</span>
+                <span class="eem-smap-stat eem-smap-stat-block"><i class="eem-smap-stat-dot eem-smap-stat-dot--blocked" aria-hidden="true"></i><strong>2</strong> blocked</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Barn tabs (JS-populated from payload at runtime; pre-rendered here for mockup fidelity) -->
+          <div class="eem-smap-barn-tabs" data-eem-smap-tabs>
+            <button class="eem-smap-barn-tab active" data-barn="Montcrief Barn">Montcrief Barn</button>
+            <button class="eem-smap-barn-tab" data-barn="Burnett Barn">Burnett Barn</button>
+          </div>
+
+          <!-- Legend — Tack included for stall kind; omitted for RV kind per PHP -->
+          <div class="eem-smap-legend">
+            <span><i class="eem-smap-sw eem-smap-sw--avail"></i> Available</span>
+            <span><i class="eem-smap-sw eem-smap-sw--resv"></i> Assigned</span>
+            <span><i class="eem-smap-sw eem-smap-sw--tack"></i> Tack</span>
+            <span><i class="eem-smap-sw eem-smap-sw--block"></i> Blocked</span>
+            <span class="eem-smap-legend-hint">Click any stall to assign, mark tack, or block.</span>
+          </div>
+
+          <!-- Zoom bar: −/Zoom/+ (data-zoom="out|reset|in") per PHP render -->
+          <div class="eem-smap-zoombar">
+            <span class="eem-smap-zoom" data-eem-smap-zoom>
+              <button type="button" data-zoom="out" title="Zoom out" aria-label="Zoom out">&minus;</button>
+              <button type="button" data-zoom="reset" title="Reset zoom">Zoom</button>
+              <button type="button" data-zoom="in" title="Zoom in" aria-label="Zoom in">+</button>
+            </span>
+          </div>
+
+          <!-- Grid scroll + grid (JS-populated from payload) -->
+          <div class="eem-smap-scroll" data-eem-smap-scroll>
+            <div class="eem-smap-grid" data-eem-smap-grid></div>
+          </div>
+
+          <!-- Payload JSON (consumed by EEM.renderStallMaps() in admin.js) -->
+          <script type="application/json" data-eem-smap-payload>
+          {
+            "barns": [
+              {
+                "name": "Montcrief Barn",
+                "grid": [
+                  [{"t":"l","l":"WASH"},{"t":"l","l":"WASH"},{"t":"s","l":"100"},{"t":"s","l":"101"},{"t":"s","l":"102"},{"t":"s","l":"103"},{"t":"s","l":"104"},{"t":"s","l":"105"},{"t":"s","l":"106"},{"t":"s","l":"107"},{"t":"s","l":"108"},{"t":"s","l":"109"}],
+                  [{"t":"l","l":"WASH"},{"t":"l","l":"WASH"},{"t":"s","l":"111"},{"t":"s","l":"112"},{"t":"s","l":"113"},{"t":"s","l":"114"},{"t":"s","l":"115"},{"t":"s","l":"116"},{"t":"s","l":"117"},{"t":"s","l":"118"},{"t":"s","l":"119"},{"t":"s","l":"120"}],
+                  [{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""}],
+                  [{"t":"l","l":"TACK"},{"t":"l","l":"TACK"},{"t":"s","l":"200"},{"t":"s","l":"201"},{"t":"s","l":"202"},{"t":"s","l":"203"},{"t":"s","l":"204"},{"t":"s","l":"205"},{"t":"s","l":"206"},{"t":"s","l":"207"},{"t":"s","l":"208"},{"t":"s","l":"209"}],
+                  [{"t":"l","l":"TACK"},{"t":"l","l":"TACK"},{"t":"s","l":"211"},{"t":"s","l":"212"},{"t":"s","l":"213"},{"t":"s","l":"214"},{"t":"s","l":"215"},{"t":"s","l":"216"},{"t":"s","l":"217"},{"t":"s","l":"218"},{"t":"s","l":"219"},{"t":"s","l":"220"}]
+                ]
+              },
+              {
+                "name": "Burnett Barn",
+                "grid": [
+                  [{"t":"s","l":"A-01"},{"t":"s","l":"A-02"},{"t":"s","l":"A-03"},{"t":"s","l":"A-04"},{"t":"s","l":"A-05"},{"t":"s","l":"A-06"},{"t":"g","l":""},{"t":"l","l":"OFFICE"},{"t":"l","l":"OFFICE"}],
+                  [{"t":"s","l":"A-07"},{"t":"s","l":"A-08"},{"t":"s","l":"A-09"},{"t":"s","l":"A-10"},{"t":"s","l":"A-11"},{"t":"s","l":"A-12"},{"t":"g","l":""},{"t":"l","l":"OFFICE"},{"t":"l","l":"OFFICE"}],
+                  [{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""},{"t":"g","l":""}],
+                  [{"t":"s","l":"B-01"},{"t":"s","l":"B-02"},{"t":"s","l":"B-03"},{"t":"s","l":"B-04"},{"t":"s","l":"B-05"},{"t":"s","l":"B-06"},{"t":"s","l":"B-07"},{"t":"s","l":"B-08"},{"t":"s","l":"B-09"}]
+                ]
+              }
+            ],
+            "state": {
+              "100": {"s":"reserved","c":"Smith, James","g":"smith-barn"},
+              "101": {"s":"reserved","c":"Smith, James","g":"smith-barn"},
+              "102": {"s":"reserved","c":"Lee, Maria","g":"lee-team"},
+              "103": {"s":"tack","c":"Smith, James","g":"smith-barn"},
+              "104": {"s":"reserved","c":"Garcia, Antonio"},
+              "105": {"s":"available"},
+              "106": {"s":"available"},
+              "107": {"s":"blocked"},
+              "108": {"s":"available"},
+              "109": {"s":"available"},
+              "111": {"s":"available"},
+              "112": {"s":"reserved","c":"Nguyen, Thanh"},
+              "113": {"s":"available"},
+              "114": {"s":"available"},
+              "115": {"s":"blocked"},
+              "200": {"s":"reserved","c":"Patel, Rohan","g":"patel-stables"},
+              "201": {"s":"reserved","c":"Patel, Rohan","g":"patel-stables"},
+              "A-01": {"s":"reserved","c":"Brooks, Kelly"},
+              "A-02": {"s":"reserved","c":"Brooks, Kelly"},
+              "A-07": {"s":"tack","c":"Owens, Dana"},
+              "B-01": {"s":"reserved","c":"Carter, Logan"}
+            },
+            "groups": {
+              "smith-barn":    {"name":"Smith Barn",    "color":"#DC2626"},
+              "lee-team":      {"name":"Lee Team",      "color":"#16A34A"},
+              "patel-stables": {"name":"Patel Stables", "color":"#9333EA"}
+            },
+            "customers": ["Smith, James","Lee, Maria","Garcia, Antonio","Nguyen, Thanh","Patel, Rohan","Brooks, Kelly","Owens, Dana","Carter, Logan"],
+            "zoneQualified": false,
+            "kind": "stall"
+          }
+          </script>
+
+          <!-- Popover (inside .eem-smap; JS positions it fixed on stall click) -->
+          <div class="eem-smap-pop" data-eem-smap-pop>
+            <div class="eem-smap-pop-head">
+              <div class="eem-smap-pop-num" data-eem-smap-pop-num></div>
+              <div class="eem-smap-pop-st" data-eem-smap-pop-st></div>
+            </div>
+            <div class="eem-smap-pop-body" data-eem-smap-pop-body></div>
+          </div>
+
+        </div><!-- /eem-smap -->
+
+      </div><!-- /eem-stall-chart-body -->
+    </div><!-- /plugin-wrap -->
+  </main>
 </div>
 
 <script>
-var BARNS=['Montcrief','Burnett'];
-/* Customers display as "Last, First" everywhere (plugin-wide convention). */
-var CUSTOMERS=['Smith, James','Lee, Maria','Garcia, Antonio','Nguyen, Thanh','Patel, Rohan','Brooks, Kelly','Owens, Dana','Carter, Logan'];
-/* group reservations get a shared color accent on the map (left edge) */
-var GROUPS=[{name:'Smith Barn',color:'#DC2626'},{name:'4-H Team',color:'#16A34A'},{name:'Patel Stables',color:'#9333EA'},{name:'Lone Star',color:'#CA8A04'}];
-var grid=[];
-var state={}; // label -> {status,cust}
+/* ── Mockup-only JS: hydrates the grid from the payload embedded above.
+   Production: EEM.renderStallMaps() in assets/js/admin.js does this.
+   Key differences from old mockup script:
+   - Reads payload from <script[data-eem-smap-payload]> (not a JS BARNS var)
+   - Attributes use data-eem-smap-* namespace
+   - Zoom uses data-zoom="out|reset|in" (not data-chip="22|30|44")
+   - Default chip size 30px (task #25)
+   - Popover is inside .eem-smap (not top-level)
+   - Assign banner managed by assignContext (JS-driven, not static HTML)
+*/
 
-function parseGrid(csv){
-  var rows=csv.replace(/\r/g,'').split('\n').map(function(l){return l.split(',');});
-  if(rows.length && rows[rows.length-1].length===1 && rows[rows.length-1][0]==='') rows.pop();
-  var maxc=rows.reduce(function(m,r){return Math.max(m,r.length);},0);
-  return rows.map(function(r){var o=[];for(var c=0;c<maxc;c++){var v=(r[c]||'').trim();
-    if(v==='')o.push({type:'gap'});else if(/^\d+$/.test(v)||/^[A-Za-z]{0,3}-?\d+$/.test(v))o.push({type:'stall',label:v});else o.push({type:'landmark',label:v});}return o;});
-}
-function seed(label){
-  var n=parseInt(String(label).replace(/\D/g,''),10)||0; var h=(n*2654435761)%97;
-  var grp=Math.floor(n/8)%GROUPS.length; // cluster runs of ~8 into a shared group
-  if(h<24) return {status:'reserved',cust:CUSTOMERS[n%CUSTOMERS.length],group:(h<13?grp:null)};
-  if(h===41||h===67) return {status:'tack',cust:CUSTOMERS[n%CUSTOMERS.length],group:grp};
-  if(h===30) return {status:'blocked'};
-  return {status:'available'};
-}
-function render(){
-  var host=document.querySelector('[data-map-grid]');
-  var rows=grid.length, cols=grid[0]?grid[0].length:0;
-  host.style.gridTemplateColumns='repeat('+cols+', var(--chip))';
-  host.style.gridTemplateRows='repeat('+rows+', var(--chip))';
-  host.innerHTML='';
-  var stallCount=0, assigned=0;
-  var used=grid.map(function(r){return r.map(function(){return false;});});
-  for(var r=0;r<rows;r++){
-    for(var c=0;c<cols;c++){
-      if(used[r][c]) continue;
-      var cell=grid[r][c];
-      if(cell.type==='gap'){ used[r][c]=true; continue; }
-      if(cell.type==='stall'){
-        used[r][c]=true; stallCount++;
-        if(!state[cell.label]) state[cell.label]=seed(cell.label);
-        var s=state[cell.label];
-        if(s.status==='reserved'||s.status==='tack') assigned++;
-        var el=document.createElement('div');
-        el.className='cell stall '+(s.status==='available'?'':s.status);
-        el.textContent=cell.label; el.dataset.label=cell.label;
-        el.style.gridColumn=(c+1); el.style.gridRow=(r+1);
-        if(s.group!=null){ el.style.borderLeft='4px solid '+GROUPS[s.group].color; } // group accent
-        if(s.status==='tack'){var b=document.createElement('span');b.className='tbadge';b.textContent='T';el.appendChild(b);}
-        if(s.cust) el.title=cell.label+' — '+s.cust+(s.group!=null?' ('+GROUPS[s.group].name+')':'');
+var PAYLOAD = JSON.parse(document.querySelector('[data-eem-smap-payload]').textContent);
+var state   = {};
+var groups  = PAYLOAD.groups;
+var curBarn = '';
+
+// Seed state from payload
+Object.keys(PAYLOAD.state).forEach(function(lbl){ state[lbl] = PAYLOAD.state[lbl]; });
+
+// Assign-context banner (normally driven by window.eemStallChart.assignContext)
+var assignCtx = {
+  customer: 'Smith, James',
+  orderNumber: '#00042',
+  arrival: 'Jul 9',
+  departure: 'Jul 12',
+  kind: 'stall'
+};
+// Banner already in HTML; in production the JS would insert it dynamically.
+
+function renderGrid(barn) {
+  var host = document.querySelector('[data-eem-smap-grid]');
+  host.innerHTML = '';
+  var rows = barn.grid;
+  if (!rows.length) return;
+  var numRows = rows.length;
+  var numCols = rows[0].length;
+  host.style.gridTemplateColumns = 'repeat(' + numCols + ', var(--eem-smap-chip))';
+  host.style.gridTemplateRows    = 'repeat(' + numRows + ', var(--eem-smap-chip))';
+
+  var used = rows.map(function(r){ return r.map(function(){ return false; }); });
+
+  for (var r = 0; r < numRows; r++) {
+    for (var c = 0; c < numCols; c++) {
+      if (used[r][c]) continue;
+      var cell = rows[r][c];
+
+      if (cell.t === 'g') {
+        used[r][c] = true;
+        var gp = document.createElement('div');
+        gp.className = 'eem-smap-cell eem-smap-cell--gap';
+        gp.style.gridColumn = (c+1);
+        gp.style.gridRow    = (r+1);
+        host.appendChild(gp);
+        continue;
+      }
+
+      if (cell.t === 's') {
+        used[r][c] = true;
+        var s = state[cell.l] || {s:'available'};
+        var el = document.createElement('div');
+        var cls = 'eem-smap-cell eem-smap-stall';
+        if (s.s !== 'available') cls += ' is-' + s.s;
+        if (s.g) cls += ' is-grouped';
+        el.className = cls;
+        el.textContent = cell.l;
+        el.dataset.label = cell.l;
+        el.style.gridColumn = (c+1);
+        el.style.gridRow    = (r+1);
+        if (s.g && groups[s.g]) el.style.setProperty('--eem-grp', groups[s.g].color);
+        if (s.s === 'tack') {
+          var b = document.createElement('span');
+          b.className = 'eem-smap-tbadge';
+          b.textContent = 'T';
+          el.appendChild(b);
+        }
+        if (s.c) el.title = cell.l + ' — ' + s.c + (s.g && groups[s.g] ? ' (' + groups[s.g].name + ')' : '');
         host.appendChild(el);
         continue;
       }
-      var label=cell.label, w=1, h=1, ok=true;
-      while(c+w<cols && grid[r][c+w].type==='landmark' && grid[r][c+w].label===label && !used[r][c+w]) w++;
-      while(r+h<rows && ok){
-        for(var k=0;k<w;k++){ var cc=grid[r+h][c+k]; if(!(cc.type==='landmark'&&cc.label===label&&!used[r+h][c+k])){ ok=false; break; } }
-        if(ok) h++;
+
+      // Landmark: merge contiguous same-label cells into rectangle
+      var label = cell.l, w = 1, h = 1, ok = true;
+      while (c+w < numCols && rows[r][c+w].t === 'l' && rows[r][c+w].l === label && !used[r][c+w]) w++;
+      while (r+h < numRows && ok) {
+        for (var k = 0; k < w; k++) {
+          var cc = rows[r+h] && rows[r+h][c+k];
+          if (!cc || cc.t !== 'l' || cc.l !== label || used[r+h][c+k]) { ok = false; break; }
+        }
+        if (ok) h++;
       }
-      for(var i=0;i<h;i++) for(var j=0;j<w;j++) used[r+i][c+j]=true;
-      var d=document.createElement('div');
-      d.className='landmark';
-      d.style.gridColumn=(c+1)+' / span '+w; d.style.gridRow=(r+1)+' / span '+h;
-      // tall-narrow blocks (taller than wide) get vertical text so long labels
-      // (Watt Arena, Concession, French Room) fit instead of getting clipped.
-      if(h>w){ d.style.writingMode='vertical-rl'; d.style.textOrientation='mixed'; }
-      d.textContent=label; host.appendChild(d);
+      for (var i = 0; i < h; i++) for (var j = 0; j < w; j++) used[r+i][c+j] = true;
+      var d = document.createElement('div');
+      d.className = 'eem-smap-cell eem-smap-land';
+      d.style.gridColumn = (c+1) + ' / span ' + w;
+      d.style.gridRow    = (r+1) + ' / span ' + h;
+      if (h > w) { d.style.writingMode = 'vertical-rl'; d.style.textOrientation = 'mixed'; }
+      d.textContent = label;
+      host.appendChild(d);
     }
   }
-  document.querySelector('[data-kpi-stalls]').textContent=stallCount;
 }
 
-var pop=document.querySelector('[data-pop]');
-function openPop(el){
-  var label=el.dataset.label, s=state[label];
-  document.querySelector('[data-pop-num]').textContent='Stall '+label;
-  document.querySelector('[data-pop-st]').textContent =
-    s.status==='reserved'?('Assigned — '+s.cust+(s.group!=null?' · '+GROUPS[s.group].name:'')):
-    s.status==='tack'?('Tack stall — '+(s.cust||'')+(s.group!=null?' · '+GROUPS[s.group].name:'')):
-    s.status==='blocked'?'Blocked':'Available';
-  var body=document.querySelector('[data-pop-body]'); body.innerHTML='';
-  function row(ic,txt,cls,fn){var b=document.createElement('button');b.className='pop-row'+(cls?' '+cls:'');
-    b.innerHTML='<span class="ic">'+ic+'</span>'+txt;b.onclick=fn;body.appendChild(b);}
-  if(s.status==='available'){
-    // searchable customer typeahead (real events have hundreds of customers)
-    var search=document.createElement('input'); search.type='text'; search.className='pop-search'; search.placeholder='Search customer…';
-    var list=document.createElement('div'); list.className='pop-list';
-    function renderList(q){
-      list.innerHTML=''; q=(q||'').toLowerCase();
-      var hits=CUSTOMERS.filter(function(c){return c.toLowerCase().indexOf(q)!==-1;});
-      if(!hits.length){ list.innerHTML='<div class="pop-empty">No match</div>'; return; }
-      hits.forEach(function(c){
-        var b=document.createElement('button'); b.className='pop-row'; b.textContent=c;
-        b.onclick=function(){ state[label]={status:'reserved',cust:c}; render(); closePop(); };
+function loadBarn(name) {
+  curBarn = name;
+  var barn = PAYLOAD.barns.find(function(b){ return b.name === name; });
+  if (barn) renderGrid(barn);
+}
+
+// Barn tabs
+document.querySelector('[data-eem-smap-tabs]').addEventListener('click', function(ev) {
+  var t = ev.target.closest('.eem-smap-barn-tab');
+  if (!t) return;
+  document.querySelectorAll('.eem-smap-barn-tab').forEach(function(b){ b.classList.toggle('active', b === t); });
+  loadBarn(t.dataset.barn);
+});
+
+// Zoom: data-zoom="out|reset|in" (changes --eem-smap-chip CSS var)
+var chipSizes = [22, 30, 40, 50];
+var chipIdx   = 1; // default 30px (task #25)
+document.querySelector('[data-eem-smap-zoom]').addEventListener('click', function(ev) {
+  var b = ev.target.closest('button');
+  if (!b) return;
+  var op = b.dataset.zoom;
+  if (op === 'in'  && chipIdx < chipSizes.length - 1) chipIdx++;
+  if (op === 'out' && chipIdx > 0) chipIdx--;
+  if (op === 'reset') chipIdx = 1;
+  document.querySelector('[data-eem-smap]').style.setProperty('--eem-smap-chip', chipSizes[chipIdx] + 'px');
+});
+
+// Popover
+var pop = document.querySelector('[data-eem-smap-pop]');
+function closePop() { pop.classList.remove('open'); }
+function openPop(el) {
+  var label = el.dataset.label;
+  var s     = state[label] || {s:'available'};
+  document.querySelector('[data-eem-smap-pop-num]').textContent = 'Stall ' + label;
+  var stDesc = s.s === 'reserved' ? ('Assigned — ' + s.c + (s.g && groups[s.g] ? ' · ' + groups[s.g].name : ''))
+             : s.s === 'tack'     ? ('Tack stall — ' + (s.c || ''))
+             : s.s === 'blocked'  ? 'Blocked' : 'Available';
+  document.querySelector('[data-eem-smap-pop-st]').textContent = stDesc;
+
+  var body = document.querySelector('[data-eem-smap-pop-body]');
+  body.innerHTML = '';
+  function prow(ic, txt, cls, fn) {
+    var b = document.createElement('button');
+    b.className = 'eem-smap-pop-row' + (cls ? ' ' + cls : '');
+    b.innerHTML = '<span class="ic">' + ic + '</span>' + txt;
+    b.onclick = fn;
+    body.appendChild(b);
+  }
+  if (s.s === 'available') {
+    // In assign-context mode, clicking available stall assigns the pending order.
+    // In normal mode, shows customer search.
+    var search = document.createElement('input');
+    search.type = 'text'; search.className = 'eem-smap-pop-search'; search.placeholder = 'Search customer…';
+    var list = document.createElement('div'); list.className = 'eem-smap-pop-list';
+    function renderList(q) {
+      list.innerHTML = ''; q = (q || '').toLowerCase();
+      var hits = PAYLOAD.customers.filter(function(c){ return c.toLowerCase().indexOf(q) !== -1; });
+      if (!hits.length) { list.innerHTML = '<div class="eem-smap-pop-empty">No match</div>'; return; }
+      hits.forEach(function(c) {
+        var b = document.createElement('button'); b.className = 'eem-smap-pop-row'; b.textContent = c;
+        b.onclick = function() { state[label] = {s:'reserved',c:c}; loadBarn(curBarn); closePop(); };
         list.appendChild(b);
       });
     }
-    search.oninput=function(){ renderList(search.value); };
+    search.oninput = function() { renderList(search.value); };
     body.appendChild(search); body.appendChild(list); renderList('');
     setTimeout(function(){ search.focus(); }, 0);
-    row('⛔','Block stall','danger',function(){state[label]={status:'blocked'};render();closePop();});
-  } else if(s.status==='reserved'){
-    row('🏷','Mark as Tack stall','',function(){state[label].status='tack';render();closePop();});
-    row('↔','Move to another stall','',function(){closePop();});
-    row('✕','Unassign','danger',function(){state[label]={status:'available'};render();closePop();});
-  } else if(s.status==='tack'){
-    row('🏷','Unmark Tack (keep assigned)','',function(){state[label].status='reserved';render();closePop();});
-    row('✕','Unassign','danger',function(){state[label]={status:'available'};render();closePop();});
-  } else if(s.status==='blocked'){
-    row('✓','Unblock stall','',function(){state[label]={status:'available'};render();closePop();});
+    prow('&#9940;', 'Block stall', 'danger', function(){ state[label]={s:'blocked'}; loadBarn(curBarn); closePop(); });
+  } else if (s.s === 'reserved') {
+    prow('&#127991;', 'Mark as Tack stall', '', function(){ state[label].s='tack'; loadBarn(curBarn); closePop(); });
+    prow('&#8596;', 'Move to another stall', '', function(){ closePop(); });
+    prow('&#10005;', 'Unassign', 'danger', function(){ state[label]={s:'available'}; loadBarn(curBarn); closePop(); });
+  } else if (s.s === 'tack') {
+    prow('&#127991;', 'Unmark Tack (keep assigned)', '', function(){ state[label].s='reserved'; loadBarn(curBarn); closePop(); });
+    prow('&#10005;', 'Unassign', 'danger', function(){ state[label]={s:'available'}; loadBarn(curBarn); closePop(); });
+  } else if (s.s === 'blocked') {
+    prow('&#10003;', 'Unblock stall', '', function(){ state[label]={s:'available'}; loadBarn(curBarn); closePop(); });
   }
   pop.classList.add('open');
 }
-function closePop(){pop.classList.remove('open');}
 
-function loadBarn(name){
-  return fetch('./'+name.toLowerCase()+'.csv').then(function(r){return r.text();}).then(function(csv){
-    grid=parseGrid(csv); render();
-  });
-}
-
-/* build barn tabs */
-var tabHost=document.querySelector('[data-barn-tabs]');
-BARNS.forEach(function(b,i){ var t=document.createElement('button'); t.className='barn-tab'+(i===0?' active':''); t.dataset.barn=b; t.textContent=b; tabHost.appendChild(t); });
-tabHost.addEventListener('click',function(ev){
-  var t=ev.target.closest('.barn-tab'); if(!t) return;
-  document.querySelectorAll('.barn-tab').forEach(function(b){b.classList.toggle('active',b===t);});
-  loadBarn(t.dataset.barn);
+document.querySelector('[data-eem-smap-grid]').addEventListener('click', function(ev) {
+  var s = ev.target.closest('.eem-smap-stall');
+  if (!s) return;
+  var rect = s.getBoundingClientRect();
+  pop.style.left = Math.min(rect.right + 8, window.innerWidth - 256) + 'px';
+  pop.style.top  = Math.min(rect.top, window.innerHeight - 300) + 'px';
+  openPop(s);
+  ev.stopPropagation();
 });
-document.querySelector('[data-map-grid]').addEventListener('click',function(ev){
-  var s=ev.target.closest('.stall'); if(!s) return;
-  var rect=s.getBoundingClientRect();
-  pop.style.left=Math.min(rect.right+8, window.innerWidth-256)+'px';
-  pop.style.top=Math.min(rect.top, window.innerHeight-260)+'px';
-  openPop(s); ev.stopPropagation();
+document.addEventListener('click', function(ev) {
+  if (!ev.target.closest('[data-eem-smap-pop]')) closePop();
 });
-document.addEventListener('click',function(ev){ if(!ev.target.closest('[data-pop]')) closePop(); });
 
-loadBarn('Montcrief');
+// Init: load first barn
+loadBarn(PAYLOAD.barns[0].name);
 </script>
 </body>
 </html>

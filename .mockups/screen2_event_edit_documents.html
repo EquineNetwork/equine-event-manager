@@ -3,481 +3,722 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EEM – Screen 2: Event Edit (Sheets &amp; Results section)</title>
+<title>Equine Event Manager – Edit Event – Connections &amp; Media + Sheets &amp; Results</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5}
-a{text-decoration:none;color:inherit}
+/* ─────────────────────────────────────────────────────────────────────────────
+   Edit Event – full page mockup
+   Source: admin/class-eem-event-editor-page.php (render + body_media + render_rail)
+   Focuses on the Connections & Media card (all fields as rendered) and the
+   Sheets & Results embedded card + right rail.
+   Brand tokens: electric #1668F2, navy #031B4E, amber #F5A623, radius 3px.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --eem-navy: #031B4E;
+  --eem-electric: #1668F2;
+  --eem-electric-hover: #1355cc;
+  --eem-amber: #F5A623;
+  --eem-green: #22C55E;
+  --eem-red: #EF4444;
+  --eem-purple: #8B5CF6;
+  --eem-border-soft: #f0f0f1;
+  --eem-border-card: #c3c4c7;
+  --eem-gray-50: #f8fafc;
+  --eem-text: #1d2327;
+  --eem-text-secondary: #6B7A99;
+  --eem-text-muted: #8c8f94;
+  --eem-radius-sm: 2px;
+  --eem-radius: 3px;
+  --eem-radius-lg: 6px;
+  --eem-info-bg: #EEF4FF;
+  --eem-type-rv-bg: #F5F3FF;
+  --eem-type-addon-bg: #FFF7ED;
+  --eem-type-addon-text: #c2410c;
+  --eem-font-display: 'Space Grotesk', system-ui, sans-serif;
+  --eem-font-ui: 'IBM Plex Sans', system-ui, sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--eem-font-ui); background: #f0f0f1; color: var(--eem-text); font-size: 14px; line-height: 1.5; display: flex; flex-direction: column; min-height: 100vh; }
+svg { flex-shrink: 0; }
+a { text-decoration: none; color: var(--eem-electric); }
+a:hover { text-decoration: none; color: var(--eem-electric-hover); }
 
+/* ── WP SHELL STUB ── */
+.wp-admin-bar { height: 32px; background: #1d2327; display: flex; align-items: center; padding: 0 12px; gap: 16px; flex-shrink: 0; position: sticky; top: 0; z-index: 200; }
+.wp-admin-bar span { font-size: 13px; color: #c3c4c7; cursor: pointer; }
+.wp-admin-bar span.site { color: #fff; font-weight: 600; }
+.wp-body { display: flex; flex: 1; }
+.wp-sidebar { width: 160px; min-width: 160px; background: #1d2327; min-height: calc(100vh - 32px); }
+.wp-sidebar-label { padding: 8px 12px 4px; font-size: 10px; color: #8c8f94; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; }
+.wp-sidebar-sub { padding: 6px 12px 6px 28px; font-size: 13px; color: #c3c4c7; cursor: pointer; }
+.wp-sidebar-sub.active { color: #90c4ff; font-weight: 600; }
+.wp-content { flex: 1; padding: 12px 20px 60px; min-width: 0; }
 
-/* ── WP SHELL ── */
-.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0}
-.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
-.wp-admin-bar span.site{color:#fff;font-weight:600}
-.wp-body{display:flex;min-height:100vh}
-.wp-sidebar{width:160px;min-width:160px;background:#1d2327}
-.wp-sidebar-sep{height:1px;background:rgba(255,255,255,.07);margin:4px 0}
-.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
-.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
-.wp-sidebar-sub:hover{color:#fff}
-.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
-.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
-
-/* Breadcrumb */
-.breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-.breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb;flex-shrink:0}
-.breadcrumb-sep{font-size:13px;color:#8c8f94}
-.breadcrumb-page{font-size:13px;color:#50575e}
-.breadcrumb-page a{color:#50575e}
-.breadcrumb-page a:hover{color:#1668F2}
+/* ── Breadcrumb ── */
+.breadcrumb { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.breadcrumb-logo-box { width: 160px; height: 36px; background: #e0e0e0; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #999; border: 1px dashed #bbb; flex-shrink: 0; }
+.breadcrumb-sep { font-size: 13px; color: var(--eem-text-muted); }
+.breadcrumb-page a { font-size: 13px; color: var(--eem-navy); font-weight: 600; }
+.breadcrumb-page a:hover { color: var(--eem-electric); }
+.breadcrumb-page.current { font-size: 13px; color: var(--eem-navy); font-weight: 600; }
 
 /* ── PLUGIN WRAP ── */
-.plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
-.plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.plugin-header-left{flex:1}
-.plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;margin-bottom:4px}
-.plugin-subtitle{font-size:13px;color:#6B7A99}
+.eem-plugin-wrap { background: #fff; border: 1px solid var(--eem-border-card); border-radius: 4px; overflow: hidden; }
+.eem-plugin-header { padding: 18px 22px; border-bottom: 1px solid #dcdcde; }
+.eem-plugin-title { font-family: var(--eem-font-display); font-size: 22px; font-weight: 700; color: var(--eem-navy); line-height: 1.2; }
+.eem-plugin-subtitle { font-size: 13px; color: var(--eem-text-secondary); margin-top: 4px; max-width: 680px; }
 
-/* ── BUTTONS ── */
-.btn-primary{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:9px 18px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;text-decoration:none}
-.btn-primary:hover{background:#1257d1;color:#fff}
-.btn-primary svg{width:13px;height:13px}
-.btn-secondary{background:#fff;color:#1d2327;border:1px solid #8c8f94;padding:8px 16px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.btn-secondary:hover{background:#f6f7f7}
+/* ── 2-col editor body ── */
+.eem-event-editor-body { display: flex; gap: 22px; padding: 18px 22px; align-items: flex-start; }
+.eem-edit-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+.eem-edit-rail { width: 280px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
 
-/* ── CARDS / SECTIONS ── */
-.card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden;margin-bottom:14px}
-.section-header{display:flex;align-items:center;justify-content:space-between;padding:13px 18px;background:#fff;border-bottom:1px solid #f0f0f1;gap:10px}
-.section-header-left{display:flex;align-items:center;gap:10px}
-.section-icon{width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.section-icon svg{width:14px;height:14px}
-.icon-blue{background:#EEF4FF;color:#1668F2}
-.icon-green{background:#F0FDF4;color:#15803d}
-.icon-orange{background:#FFF7ED;color:#c2410c}
-.icon-teal{background:#F0FDFA;color:#0d9488}
-.section-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E}
-.section-body{padding:16px 18px}
+/* ── SECTION CARDS ── */
+.eem-reservation-editor-section { background: #fff; border: 1px solid var(--eem-border-card); border-radius: var(--eem-radius-lg); overflow: hidden; }
+.eem-section-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; cursor: pointer; border-bottom: 1px solid var(--eem-border-soft); }
+.eem-section-header-left { display: flex; align-items: center; gap: 12px; }
+.eem-section-icon { width: 34px; height: 34px; border-radius: var(--eem-radius); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.eem-section-icon svg { width: 17px; height: 17px; }
+.eem-section-icon--navy { background: #e8ecf5; color: var(--eem-navy); }
+.eem-section-icon--blue { background: var(--eem-info-bg); color: var(--eem-electric); }
+.eem-section-icon--purple { background: var(--eem-type-rv-bg); color: #7c3aed; }
+.eem-section-icon--orange { background: var(--eem-type-addon-bg); color: var(--eem-type-addon-text); }
+.eem-section-icon--teal { background: #ecfdf5; color: #0d9488; }
+.eem-section-title { font-family: var(--eem-font-display); font-size: 15px; font-weight: 600; color: var(--eem-navy); }
+.eem-section-chevron { color: var(--eem-text-muted); transition: transform .15s; }
+.eem-section-chevron svg { width: 16px; height: 16px; }
+.eem-section-body { padding: 18px; }
 
-/* Field rows */
-.field-row{display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start;padding:12px 0;border-bottom:1px solid #f0f0f1}
-.field-row:first-child{padding-top:0}
-.field-row:last-child{border-bottom:none;padding-bottom:0}
-.field-label{font-size:13.5px;font-weight:600;color:#1d2327;padding-top:9px}
-.field-label-sub{font-size:12px;color:#6B7A99;font-weight:400;margin-top:2px}
-.field-control{display:flex;flex-direction:column;gap:6px}
-.field-input{padding:8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;width:100%;outline:none}
-.field-input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-.field-hint{font-size:12px;color:#6B7A99;line-height:1.6}
-.field-select{padding:8px 28px 8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13.5px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none;width:100%;outline:none;cursor:pointer}
-.field-select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
+/* collapsed state placeholder */
+.eem-section-body.is-collapsed { display: none; }
 
-/* ════════════════════════════════
-   SCREEN 1 — ADMIN: RESULTS PAGE
-   ════════════════════════════════ */
+/* ── FIELD ROWS ── */
+.eem-field-row { display: flex; gap: 18px; padding: 12px 0; border-bottom: 1px solid var(--eem-border-soft); }
+.eem-field-row:last-child { border-bottom: none; padding-bottom: 0; }
+.eem-field-row:first-child { padding-top: 0; }
+.eem-field-label { width: 170px; flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--eem-navy); }
+.eem-field-label-sub { font-size: 11px; font-weight: 400; color: var(--eem-text-muted); margin-top: 2px; }
+.eem-field-control { flex: 1; min-width: 0; }
+.eem-field-hint { display: block; font-size: 11.5px; color: var(--eem-text-muted); margin-top: 6px; }
+.eem-field-hint a { color: var(--eem-electric); }
+.eem-field-input { width: 100%; padding: 7px 11px; border: 1px solid var(--eem-border-card); border-radius: var(--eem-radius); font-size: 13px; font-family: var(--eem-font-ui); color: var(--eem-text); }
+.eem-field-input:focus { outline: none; border-color: var(--eem-electric); box-shadow: 0 0 0 1px var(--eem-electric); }
+.eem-field-select { width: 100%; padding: 7px 11px; border: 1px solid var(--eem-border-card); border-radius: var(--eem-radius); font-size: 13px; font-family: var(--eem-font-ui); color: var(--eem-text); background: #fff; }
+.eem-field-textarea { min-height: 110px; resize: vertical; }
 
-/* Event selector card */
-.event-selector{padding:16px 22px;border-bottom:1px solid #dcdcde;background:#f9f9fa;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.event-selector-label{font-size:13px;font-weight:600;color:#1d2327;white-space:nowrap}
-.event-selector select{padding:8px 28px 8px 12px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;appearance:none;min-width:320px;outline:none;cursor:pointer;flex:1;max-width:420px}
-.event-selector select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-.event-meta-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#EEF4FF;border:1px solid #c0d8ff;border-radius:12px;font-size:12px;color:#1668F2;font-weight:600;white-space:nowrap}
+/* ── Button label affix (CTA field) ── */
+.eem-btn-label-wrap { display: flex; align-items: stretch; border: 1px solid var(--eem-border-card); border-radius: var(--eem-radius); overflow: hidden; }
+.eem-btn-label-prefix { padding: 7px 11px; background: var(--eem-gray-50); color: var(--eem-text-muted); font-size: 13px; white-space: nowrap; border-right: 1px solid var(--eem-border-card); }
+.eem-btn-label-input { flex: 1; padding: 7px 11px; border: none; font-size: 13px; font-family: var(--eem-font-ui); color: var(--eem-text); }
+.eem-btn-label-input:focus { outline: none; box-shadow: 0 0 0 1px var(--eem-electric) inset; }
 
-/* Document type tabs */
-.doc-tabs{display:flex;border-bottom:1px solid #dcdcde}
-.doc-tab{padding:11px 22px;font-size:13.5px;font-weight:600;color:#50575e;cursor:pointer;border-bottom:3px solid transparent;display:flex;align-items:center;gap:8px;white-space:nowrap}
-.doc-tab:hover{color:#031B4E}
-.doc-tab.active{color:#031B4E;border-bottom-color:#1668F2}
-.doc-tab-count{font-size:11px;font-weight:700;background:#f0f0f1;color:#6B7A99;padding:2px 7px;border-radius:10px}
-.doc-tab.active .doc-tab-count{background:#EEF4FF;color:#1668F2}
+/* ── FILE ROW ── */
+.eem-file-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.eem-file-name { flex: 1; min-width: 140px; font-size: 13px; color: var(--eem-text); background: var(--eem-gray-50); border: 1px solid var(--eem-border-card); border-radius: var(--eem-radius); padding: 7px 11px; }
+.eem-file-name.is-empty { color: var(--eem-text-muted); font-style: italic; }
+.eem-btn-upload { padding: 7px 13px; border: 1px solid var(--eem-border-card); background: #fff; border-radius: var(--eem-radius); font-size: 12.5px; font-weight: 600; color: var(--eem-text); cursor: pointer; font-family: var(--eem-font-ui); }
+.eem-btn-upload:hover { border-color: var(--eem-electric); color: var(--eem-electric); background: var(--eem-info-bg); }
+
+/* ── TOGGLE CHIP (Featured Event) ── */
+.eem-toggle-chip { display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 13px; color: var(--eem-text); user-select: none; }
+.eem-toggle { display: inline-block; width: 36px; height: 20px; border-radius: 10px; position: relative; flex-shrink: 0; transition: background .15s; }
+.eem-toggle--on { background: var(--eem-electric); }
+.eem-toggle--off { background: #c3c4c7; }
+.eem-toggle::after { content: ''; position: absolute; top: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: left .15s; }
+.eem-toggle--on::after { left: 19px; }
+.eem-toggle--off::after { left: 3px; }
+
+/* ── SHEETS & RESULTS EMBED ── */
+.eem-sr-embed-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.eem-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--eem-radius); font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--eem-font-ui); text-decoration: none; border: 1px solid transparent; }
+.eem-btn-secondary { background: #fff; border-color: var(--eem-border-card); color: var(--eem-text); }
+.eem-btn-secondary:hover { border-color: var(--eem-electric); color: var(--eem-electric); background: var(--eem-info-bg); }
+.eem-btn-electric { background: var(--eem-electric); color: #fff; border-color: var(--eem-electric); }
+.eem-btn-electric:hover { background: var(--eem-electric-hover); border-color: var(--eem-electric-hover); color: #fff; }
+.eem-sr-embedded .eem-sr-body { margin: 0 -18px -16px; }
+
+.eem-sr-tabs { display: flex; border-bottom: 1px solid var(--eem-border-card); }
+.eem-sr-tab { padding: 11px 22px; font-size: 13.5px; font-weight: 600; color: #50575e; cursor: pointer; border: none; background: transparent; border-bottom: 3px solid transparent; display: flex; align-items: center; gap: 8px; white-space: nowrap; font-family: var(--eem-font-ui); }
+.eem-sr-tab:hover { color: var(--eem-navy); }
+.eem-sr-tab.is-active { color: var(--eem-navy); border-bottom-color: var(--eem-electric); }
+.eem-sr-tab-count { font-size: 11px; font-weight: 700; background: var(--eem-border-soft); color: var(--eem-text-secondary); padding: 2px 7px; border-radius: 10px; }
+.eem-sr-tab.is-active .eem-sr-tab-count { background: #EEF4FF; color: var(--eem-electric); }
+.eem-sr-panel[hidden] { display: none; }
+
+/* Add discipline bar */
+.eem-sr-add-discipline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 14px 18px; border-bottom: 1px solid var(--eem-border-soft); border-top: 1px solid var(--eem-border-soft); }
+.eem-sr-discipline-input { flex: 1; min-width: 220px; max-width: 380px; }
 
 /* Discipline group */
-.discipline-group{margin-bottom:0}
-.discipline-header{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:#f9f9fa;border-bottom:1px solid #e5e7eb;border-top:1px solid #e5e7eb}
-.discipline-header:first-of-type{border-top:none}
-.discipline-name{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;display:flex;align-items:center;gap:8px}
-.discipline-count{font-size:11px;font-weight:600;color:#6B7A99;background:#e5e7eb;padding:2px 8px;border-radius:10px}
-.btn-add-doc{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border:1px dashed #c3c4c7;border-radius:4px;font-size:12px;font-weight:600;color:#1668F2;background:#fff;cursor:pointer;font-family:'IBM Plex Sans',sans-serif}
-.btn-add-doc:hover{border-color:#1668F2;border-style:solid;background:#EEF4FF}
-.btn-add-doc svg{width:11px;height:11px}
+.eem-sr-group-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; background: var(--eem-gray-50); border-bottom: 1px solid #e5e7eb; border-top: 1px solid #e5e7eb; gap: 10px; }
+.eem-sr-group-name { font-family: var(--eem-font-display); font-size: 13px; font-weight: 700; color: var(--eem-navy); display: flex; align-items: center; gap: 8px; }
+.eem-sr-group-count { font-size: 11px; font-weight: 600; color: var(--eem-text-secondary); background: var(--eem-border-soft); padding: 2px 8px; border-radius: 10px; }
+.eem-sr-group-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.eem-sr-group-link { border: none; background: transparent; color: var(--eem-electric); font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 2px; font-family: var(--eem-font-ui); }
+.eem-sr-group-link:hover { color: var(--eem-electric-hover); }
+.eem-sr-group-link.is-danger { color: #b91c1c; }
+.eem-sr-add-file-btn { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border: 1px dashed var(--eem-border-card); border-radius: var(--eem-radius); font-size: 12px; font-weight: 600; color: var(--eem-electric); background: #fff; cursor: pointer; font-family: var(--eem-font-ui); }
+.eem-sr-add-file-btn:hover { border-color: var(--eem-electric); border-style: solid; background: #EEF4FF; }
 
 /* Document rows */
-.doc-row{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid #f0f0f1;flex-wrap:wrap}
-.doc-row:last-child{border-bottom:none}
-.doc-row-icon{width:32px;height:32px;background:#fee2e2;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.doc-row-icon svg{width:15px;height:15px;color:#b91c1c}
-.doc-row-info{flex:1;min-width:0}
-.doc-row-name{font-size:13.5px;font-weight:600;color:#031B4E;display:block;margin-bottom:1px}
-.doc-row-meta{font-size:12px;color:#6B7A99;display:flex;gap:10px;flex-wrap:wrap}
-.doc-row-actions{display:flex;gap:6px;flex-shrink:0}
-.doc-action-btn{width:30px;height:30px;border-radius:4px;border:1px solid #c3c4c7;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#50575e}
-.doc-action-btn:hover{background:#f6f7f7}
-.doc-action-btn svg{width:13px;height:13px}
-.doc-action-btn.danger{border-color:#fecaca;color:#b91c1c}
-.doc-action-btn.danger:hover{background:#fef2f2}
-.doc-status{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;letter-spacing:.03em;white-space:nowrap}
-.doc-status::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
-.status-live{background:#dcfce7;color:#15803d}
-.status-live::before{background:#16a34a}
-.status-draft{background:#fef3c7;color:#a16207}
-.status-draft::before{background:#ca8a04}
+.eem-sr-row { display: flex; align-items: center; gap: 12px; padding: 10px 18px; border-bottom: 1px solid var(--eem-border-soft); flex-wrap: wrap; }
+.eem-sr-row--pending { background: #fffbeb; }
+.eem-sr-row-icon { width: 32px; height: 32px; background: #fee2e2; border-radius: var(--eem-radius); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #b91c1c; }
+.eem-sr-row-icon svg { width: 15px; height: 15px; }
+.eem-sr-row-icon--pending { background: #fef3c7; color: #ca8a04; }
+.eem-sr-row-info { flex: 1; min-width: 0; }
+.eem-sr-row-name { font-size: 13.5px; font-weight: 600; color: var(--eem-navy); display: block; margin-bottom: 1px; }
+.eem-sr-row-meta { font-size: 12px; color: var(--eem-text-secondary); display: flex; gap: 10px; flex-wrap: wrap; }
+.eem-sr-row-meta--pending { color: #ca8a04; font-weight: 600; }
+.eem-status-badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 10px; letter-spacing: .02em; }
+.eem-status-active { background: #dcfce7; color: #15803d; }
+.eem-sr-live-badge { white-space: nowrap; }
+.eem-sr-row-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
+.eem-sr-action-btn { width: 30px; height: 30px; border-radius: var(--eem-radius); border: 1px solid var(--eem-border-card); background: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #50575e; text-decoration: none; }
+.eem-sr-action-btn:hover { background: #f6f7f7; }
+.eem-sr-action-btn svg { width: 13px; height: 13px; }
+.eem-sr-action-btn.is-danger { border-color: #fecaca; color: #b91c1c; }
+.eem-sr-upload-result-btn { padding: 7px 14px; border: 1px solid #ca8a04; color: #a16207; background: #fefce8; border-radius: var(--eem-radius); font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--eem-font-ui); }
+.eem-sr-upload-result-btn:hover { background: #fef9c3; }
 
-/* Add document panel */
-.add-doc-panel{background:#f9f9fa;border:1px dashed #c3c4c7;border-radius:4px;padding:16px 18px;margin:12px 18px}
-.add-doc-panel-title{font-size:13px;font-weight:700;color:#031B4E;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-.add-doc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
-.add-doc-field{display:flex;flex-direction:column;gap:4px}
-.add-doc-label{font-size:12px;font-weight:600;color:#1d2327}
-.add-doc-input{padding:7px 11px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;outline:none}
-.add-doc-input:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-.add-doc-input::placeholder{color:#b0b0b0}
-.add-doc-select{padding:7px 28px 7px 11px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;appearance:none;outline:none;cursor:pointer;width:100%}
-.add-doc-select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-.file-upload-row{display:flex;align-items:center;gap:8px}
-.file-upload-name{flex:1;padding:7px 11px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-style:italic;color:#8c8f94;background:#f3f4f5}
-.btn-upload{padding:7px 14px;border:1px solid #8c8f94;border-radius:4px;font-size:13px;font-weight:500;font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;cursor:pointer;white-space:nowrap}
-.btn-upload:hover{background:#f6f7f7}
-.add-doc-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
-.btn-cancel{padding:7px 14px;border:1px solid #c3c4c7;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;color:#50575e;background:#fff;cursor:pointer}
-.btn-cancel:hover{background:#f6f7f7}
+/* ── RAIL CARDS ── */
+.eem-rail-card { background: #fff; border: 1px solid var(--eem-border-card); border-radius: var(--eem-radius-lg); overflow: hidden; }
+.eem-rail-header { padding: 12px 16px; border-bottom: 1px solid var(--eem-border-soft); background: var(--eem-gray-50); }
+.eem-rail-title { font-family: var(--eem-font-display); font-size: 13px; font-weight: 700; color: var(--eem-navy); text-transform: uppercase; letter-spacing: .04em; }
+.eem-rail-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.eem-rail-btn { width: 100%; justify-content: center; }
+.eem-rail-divider { height: 1px; background: var(--eem-border-soft); margin: 2px 0; }
+.eem-publish-row { font-size: 13px; color: var(--eem-text-secondary); }
+.eem-publish-row strong { color: var(--eem-navy); }
 
-/* ═══════════════════════════════════════
-   SCREEN 2 — ADD EVENT RESULTS SECTION
-   ═══════════════════════════════════════ */
-.edit-body{padding:18px 22px;display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start}
-.edit-main{display:flex;flex-direction:column;gap:14px}
-.edit-rail{display:flex;flex-direction:column;gap:14px;position:sticky;top:44px}
-.rail-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}
-.rail-header{padding:11px 16px;border-bottom:1px solid #dcdcde;background:#f3f4f5}
-.rail-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E}
-.rail-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
-.rail-hint{font-size:12.5px;color:#6B7A99;line-height:1.5}
-.btn-save-draft{width:100%;background:#fff;color:#1d2327;border:1px solid #8c8f94;padding:9px;border-radius:4px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
-.btn-save-draft:hover{background:#f6f7f7}
-.btn-update{width:100%;background:#1668F2;color:#fff;border:1px solid #1668F2;padding:10px;border-radius:4px;font-size:13.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
-.btn-update:hover{background:#1257d1}
-.publish-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#1d2327}
-.publish-row svg{width:14px;height:14px;color:#6B7A99;flex-shrink:0}
-.publish-row strong{color:#031B4E;font-weight:600}
-.publish-row a{color:#1668F2;font-size:12px;font-weight:600;margin-left:auto}
-.publish-divider{height:1px;background:#f0f0f1}
+/* Event Categories checklist */
+.eem-checklist { display: flex; flex-direction: column; gap: 6px; }
+.eem-checklist-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--eem-text); cursor: pointer; }
+.eem-checklist-item input[type="checkbox"] { margin: 0; }
+.eem-checklist-empty { font-size: 13px; color: var(--eem-text-muted); font-style: italic; }
+.eem-checklist-footer { margin-top: 6px; }
+.eem-add-term-link { font-size: 12px; color: var(--eem-electric); }
+.eem-add-term-link:hover { color: var(--eem-electric-hover); }
 
-/* Summary badges in rail */
-.doc-summary{display:flex;flex-direction:column;gap:6px}
-.doc-summary-row{display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#1d2327}
-.doc-summary-num{font-family:'Space Grotesk',sans-serif;font-weight:700;color:#031B4E;font-size:15px}
-.doc-summary-label{color:#6B7A99;font-size:12px}
+/* Featured Image */
+.eem-featured-img { border: 2px dashed var(--eem-border-card); border-radius: var(--eem-radius); cursor: pointer; overflow: hidden; min-height: 120px; display: flex; align-items: center; justify-content: center; }
+.eem-featured-img:hover { border-color: var(--eem-electric); }
+.eem-featured-img img { width: 100%; display: block; }
+.eem-featured-img-placeholder { text-align: center; padding: 24px 16px; color: var(--eem-text-muted); }
+.eem-featured-img-placeholder p { font-size: 13px; line-height: 1.5; }
+.eem-featured-img-placeholder strong { color: var(--eem-navy); }
 
-/* ═══════════════════════════════════
-   SCREEN 3 — PUBLIC: EVENTS LIST
-   ═══════════════════════════════════ */
-.public-page{background:#f8f8f8;min-height:100vh;font-family:'IBM Plex Sans',sans-serif}
-.public-header{background:#031B4E;padding:14px 32px;display:flex;align-items:center;justify-content:space-between}
-.public-header-logo{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#fff}
-.public-header-nav{display:flex;gap:20px}
-.public-header-nav a{font-size:13px;color:rgba(255,255,255,.75);font-weight:500}
-.public-header-nav a:hover{color:#fff}
-.public-hero{background:#031B4E;padding:36px 32px 32px;border-bottom:1px solid rgba(255,255,255,.1)}
-.public-hero h1{font-family:'Space Grotesk',sans-serif;font-size:28px;font-weight:700;color:#fff;margin-bottom:6px}
-.public-hero p{font-size:14px;color:rgba(255,255,255,.65);max-width:560px}
-.public-body{max-width:960px;margin:0 auto;padding:28px 24px}
-.public-filters{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
-.public-filter-btn{padding:7px 16px;border:1px solid #c3c4c7;border-radius:20px;font-size:13px;font-weight:600;color:#50575e;background:#fff;cursor:pointer;font-family:'IBM Plex Sans',sans-serif}
-.public-filter-btn:hover{border-color:#031B4E;color:#031B4E}
-.public-filter-btn.active{background:#031B4E;color:#fff;border-color:#031B4E}
+/* Sheets & Results rail */
+.eem-sr-rail-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+.eem-sr-rail-label { font-size: 13px; color: var(--eem-text-secondary); }
+.eem-sr-rail-num { font-family: var(--eem-font-display); font-size: 16px; font-weight: 700; color: var(--eem-navy); }
+.eem-rail-hint { font-size: 11.5px; color: var(--eem-text-muted); line-height: 1.45; }
 
-/* Event card */
-.event-card{background:#fff;border:1px solid #dcdcde;border-radius:6px;margin-bottom:12px;overflow:hidden;display:flex}
-.event-card-date-bar{width:72px;min-width:72px;background:#031B4E;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 8px;flex-shrink:0}
-.event-card-month{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.08em}
-.event-card-day{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#fff;line-height:1}
-.event-card-year{font-size:10px;color:rgba(255,255,255,.5);margin-top:2px}
-.event-card-body{flex:1;padding:14px 16px;min-width:0}
-.event-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px}
-.event-card-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E;text-decoration:none}
-.event-card-title:hover{color:#1668F2}
-.event-status-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
-.event-status-pill::before{content:'';width:5px;height:5px;border-radius:50%}
-.pill-upcoming{background:#EEF4FF;color:#1668F2}
-.pill-upcoming::before{background:#1668F2}
-.pill-ongoing{background:#dcfce7;color:#15803d}
-.pill-ongoing::before{background:#16a34a}
-.pill-past{background:#f3f4f5;color:#6B7A99}
-.pill-past::before{background:#9ca3af}
-.event-card-meta{font-size:12.5px;color:#6B7A99;display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap}
-.event-card-meta span{display:flex;align-items:center;gap:5px}
-.event-card-meta svg{width:12px;height:12px}
-.event-card-actions{display:flex;gap:8px;flex-wrap:wrap}
+/* Event Setup meter */
+.eem-completeness-label { font-size: 12px; font-weight: 600; color: var(--eem-text-secondary); margin-bottom: 6px; }
+.eem-completeness-track { height: 6px; background: var(--eem-border-soft); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+.eem-completeness-fill { height: 100%; background: var(--eem-electric); border-radius: 3px; transition: width .3s; }
+.eem-completeness-items { display: flex; flex-direction: column; gap: 6px; }
+.eem-comp-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--eem-text-secondary); }
+.eem-comp-item.is-done { color: var(--eem-text); }
+.eem-comp-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.eem-comp-item.is-done .eem-comp-dot { background: var(--eem-green); }
+.eem-comp-item.is-todo .eem-comp-dot { background: var(--eem-border-card); }
+.eem-comp-optional { font-size: 11px; color: var(--eem-text-muted); }
 
-/* Action buttons on event card */
-.card-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-size:12.5px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;white-space:nowrap;text-decoration:none;border:1px solid}
-.card-btn svg{width:12px;height:12px}
-.card-btn-primary{background:#1668F2;color:#fff;border-color:#1668F2}
-.card-btn-primary:hover{background:#1257d1;color:#fff}
-.card-btn-outline{background:#fff;color:#1d2327;border-color:#c3c4c7}
-.card-btn-outline:hover{background:#f6f7f7;border-color:#8c8f94}
-.card-btn-results{background:#031B4E;color:#fff;border-color:#031B4E}
-.card-btn-results:hover{background:#04256a;color:#fff}
-.card-btn-draw{background:#fff;color:#0d9488;border-color:#0d9488}
-.card-btn-draw:hover{background:#F0FDFA;color:#0d9488}
+/* ── Mobile sticky save ── */
+.eem-sticky-save { display: none; }
 
-/* ═══════════════════════════════════════
-   SCREEN 4 — PUBLIC: EVENT RESULTS PAGE
-   ═══════════════════════════════════════ */
-.results-hero{background:#031B4E;padding:32px 32px 0}
-.results-hero-eyebrow{font-size:12px;font-weight:600;color:rgba(255,255,255,.5);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px}
-.results-hero-eyebrow a{color:rgba(255,255,255,.5)}
-.results-hero-eyebrow a:hover{color:rgba(255,255,255,.8)}
-.results-hero h1{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;color:#fff;margin-bottom:6px}
-.results-hero-meta{display:flex;gap:16px;flex-wrap:wrap;padding-bottom:20px}
-.results-hero-meta span{font-size:13px;color:rgba(255,255,255,.6);display:flex;align-items:center;gap:6px}
-.results-hero-meta svg{width:13px;height:13px}
-/* Doc type tabs pinned to bottom of hero */
-.results-type-tabs{display:flex;gap:0;margin-top:4px}
-.results-type-tab{padding:11px 24px;font-size:14px;font-weight:600;color:rgba(255,255,255,.55);cursor:pointer;border-bottom:3px solid transparent;display:flex;align-items:center;gap:8px}
-.results-type-tab:hover{color:rgba(255,255,255,.85)}
-.results-type-tab.active{color:#fff;border-bottom-color:#C8FF00}
-.results-type-tab-count{font-size:11px;font-weight:700;background:rgba(255,255,255,.15);padding:2px 7px;border-radius:10px}
-.results-type-tab.active .results-type-tab-count{background:rgba(200,255,0,.25);color:#C8FF00}
-
-.results-body{max-width:860px;margin:0 auto;padding:28px 24px}
-.results-discipline{margin-bottom:28px}
-.results-discipline-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#6B7A99;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
-.results-discipline-title::after{content:'';flex:1;height:1px;background:#e5e7eb}
-
-/* Result item */
-.result-item{display:flex;align-items:center;gap:12px;padding:10px 14px;background:#fff;border:1px solid #e5e7eb;border-radius:4px;margin-bottom:6px;text-decoration:none}
-.result-item:hover{border-color:#1668F2;background:#fafcff}
-.result-item-icon{width:34px;height:34px;background:#fee2e2;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.result-item-icon svg{width:16px;height:16px;color:#b91c1c}
-.result-item-info{flex:1;min-width:0}
-.result-item-name{font-size:13.5px;font-weight:600;color:#031B4E;display:block;margin-bottom:1px}
-.result-item-meta{font-size:12px;color:#6B7A99}
-.result-item-arrow{color:#c3c4c7;flex-shrink:0}
-.result-item-arrow svg{width:16px;height:16px}
-.result-item:hover .result-item-arrow{color:#1668F2}
-
-/* Day label */
-.day-label{font-size:12px;font-weight:700;color:#8c8f94;letter-spacing:.06em;text-transform:uppercase;padding:8px 0 4px;display:flex;align-items:center;gap:8px}
-.day-label::after{content:'';flex:1;height:1px;background:#f0f0f1}
-
-/* Empty state */
-.empty-state{text-align:center;padding:40px 20px;color:#8c8f94}
-.empty-state svg{width:36px;height:36px;color:#c3c4c7;margin:0 auto 10px;display:block}
-.empty-state p{font-size:13px}
-.empty-state strong{color:#50575e;font-size:14px;display:block;margin-bottom:4px}
+@media (max-width: 1024px) {
+  .eem-event-editor-body { flex-direction: column; }
+  .eem-edit-rail { width: 100%; }
+}
+@media (max-width: 767px) {
+  .wp-sidebar { display: none; }
+  .eem-field-row { flex-direction: column; gap: 6px; }
+  .eem-field-label { width: auto; }
+  .eem-sr-tabs { overflow-x: auto; flex-wrap: nowrap; }
+  .eem-sticky-save { display: flex; gap: 10px; position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px; background: #fff; border-top: 1px solid var(--eem-border-card); z-index: 100; }
+  .eem-sticky-save .eem-btn { flex: 1; justify-content: center; }
+}
 </style>
 </head>
 <body>
 
-<!-- ── SCREEN NAVIGATION ── -->
-<!-- ════════════════════════════════════
-     SCREEN 1 — ADMIN: RESULTS MANAGER
-     ════════════════════════════════════ -->
+<!-- WP admin bar stub -->
 <div class="wp-admin-bar">
-  <span>&#9776;</span><span class="site">My Equestrian Site</span><span>+ New</span>
-  <span style="margin-left:auto">Howdy, whitney</span>
+  <span class="site">⬛ EN Event Manager</span>
+  <span>＋ New</span>
+  <span style="margin-left:auto">Howdy, Whitney ▾</span>
 </div>
+
 <div class="wp-body">
+  <!-- WP sidebar stub -->
   <nav class="wp-sidebar">
-    <div class="wp-sidebar-sep"></div>
     <div class="wp-sidebar-label">Event Manager</div>
+    <div class="wp-sidebar-sub">Dashboard</div>
     <div class="wp-sidebar-sub active">Events</div>
-    <div class="wp-sidebar-sub">Orders</div>
     <div class="wp-sidebar-sub">Reservations</div>
+    <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
     <div class="wp-sidebar-sub">Sheets &amp; Results</div>
+    <div class="wp-sidebar-sub">Orders</div>
+    <div class="wp-sidebar-sub">Reports</div>
     <div class="wp-sidebar-sub">Settings</div>
   </nav>
+
   <main class="wp-content">
+
+    <!-- Breadcrumb -->
     <div class="breadcrumb">
-      <div class="breadcrumb-logo-box">Plugin Logo</div>
-      <span class="breadcrumb-sep">/</span>
-      <span class="breadcrumb-page"><a href="#">Events</a> &nbsp;/&nbsp; 2026 Southeast Region Super Sort</span>
+      <div class="breadcrumb-logo-box">EQUINE logo</div>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-page"><a href="#">Events</a></span>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-page current">Edit Event</span>
     </div>
-    <div class="plugin-wrap">
-      <div class="plugin-header">
-        <div class="plugin-header-left">
-          <h1 class="plugin-title">2026 Southeast Region Super Sort</h1>
-          <div class="plugin-subtitle">Jun 14–18, 2026 · Georgia National Fairgrounds · NRHA Southeast</div>
-        </div>
-        <button class="btn-primary">Update Event</button>
-      </div>
 
-      <div class="edit-body">
-        <div class="edit-main">
+    <div class="eem-plugin-wrap">
+      <header class="eem-plugin-header">
+        <div class="eem-plugin-title">Edit Event</div>
+        <div class="eem-plugin-subtitle">Create or edit an event. Set the dates, venue, producer, and content, then optionally link a reservation setup to enable stall and RV bookings.</div>
+      </header>
 
-          <!-- ── DOCUMENTS SECTION ── -->
-          <div class="card">
-            <div class="section-header" style="background:#f9f9fa">
-              <div class="section-header-left">
-                <div class="section-icon icon-orange">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      <div class="eem-event-editor-body">
+        <!-- ─────────────────────── MAIN COLUMN ─────────────────────── -->
+        <div class="eem-edit-main">
+
+          <!-- CARD: Event Title (collapsed for focus) -->
+          <section class="eem-reservation-editor-section">
+            <div class="eem-section-header" onclick="toggleSection(this)">
+              <div class="eem-section-header-left">
+                <div class="eem-section-icon eem-section-icon--navy">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
                 </div>
-                <span class="section-title">Sheets &amp; Results</span>
+                <div class="eem-section-title">Event Title</div>
               </div>
-              <a href="#" class="btn-secondary" style="font-size:12px;padding:5px 12px">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                Manage in Sheets &amp; Results
-              </a>
+              <div class="eem-section-chevron" style="transform:rotate(-90deg)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
             </div>
-
-            <div class="doc-tabs" style="border-top:none">
-              <div class="doc-tab active" onclick="switchDocTab('s2','drawsheets')" id="s2-tab-drawsheets">Draw Sheets <span class="doc-tab-count">8</span></div>
-              <div class="doc-tab" onclick="switchDocTab('s2','results')" id="s2-tab-results">Results <span class="doc-tab-count">7</span></div>
+            <div class="eem-section-body is-collapsed">
+              <input class="eem-field-input" type="text" name="en_event[title]" value="2026 Super Sort — Open 4D" placeholder="Enter event title…" />
+              <span class="eem-field-hint">This becomes the page title and is shown in all event cards and listings.</span>
             </div>
+          </section>
 
-            <div class="section-body" style="padding:0">
+          <!-- CARD: Event Details (collapsed for focus) -->
+          <section class="eem-reservation-editor-section">
+            <div class="eem-section-header" onclick="toggleSection(this)">
+              <div class="eem-section-header-left">
+                <div class="eem-section-icon eem-section-icon--blue">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                </div>
+                <div class="eem-section-title">Event Details</div>
+              </div>
+              <div class="eem-section-chevron" style="transform:rotate(-90deg)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+            <div class="eem-section-body is-collapsed">
+              <!-- collapsed -->
+            </div>
+          </section>
 
-              <div id="s2-drawsheets">
-              <div class="discipline-header">
-                <div class="discipline-name">Barrel Racing <span class="discipline-count">2 files</span></div>
-                <button class="btn-add-doc">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Add File
-                </button>
+          <!-- CARD: Description (collapsed for focus) -->
+          <section class="eem-reservation-editor-section">
+            <div class="eem-section-header" onclick="toggleSection(this)">
+              <div class="eem-section-header-left">
+                <div class="eem-section-icon eem-section-icon--blue">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                </div>
+                <div class="eem-section-title">Description</div>
               </div>
-              <div class="doc-row">
-                <div class="doc-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-                <div class="doc-row-info">
-                  <span class="doc-row-name">Open 5D Draw Sheet</span>
-                  <div class="doc-row-meta"><span>Jun 14</span></div>
-                </div>
-                <span class="doc-status status-live">Live</span>
-                <div class="doc-row-actions">
-                  <button class="doc-action-btn danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
-                </div>
-              </div>
-              <div class="doc-row">
-                <div class="doc-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-                <div class="doc-row-info">
-                  <span class="doc-row-name">19U Barrels Draw</span>
-                  <div class="doc-row-meta"><span>Jun 16</span></div>
-                </div>
-                <span class="doc-status status-live">Live</span>
-                <div class="doc-row-actions">
-                  <button class="doc-action-btn danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
-                </div>
-              </div>
-              <div class="discipline-header">
-                <div class="discipline-name">Breakaway Roping <span class="discipline-count">1 file</span></div>
-                <button class="btn-add-doc">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  Add File
-                </button>
-              </div>
-              <div class="doc-row">
-                <div class="doc-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-                <div class="doc-row-info">
-                  <span class="doc-row-name">15U Breakaway Draw Sheet</span>
-                  <div class="doc-row-meta"><span>Jun 12</span></div>
-                </div>
-                <span class="doc-status status-live">Live</span>
-                <div class="doc-row-actions">
-                  <button class="doc-action-btn danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
-                </div>
-              </div>
-              </div><!-- /s2-drawsheets -->
+              <div class="eem-section-chevron" style="transform:rotate(-90deg)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+            <div class="eem-section-body is-collapsed">
+              <!-- collapsed -->
+            </div>
+          </section>
 
-              <div id="s2-results" style="display:none">
-                <div class="discipline-header">
-                  <div class="discipline-name">Barrel Racing <span class="discipline-count">3 files</span></div>
-                  <button class="btn-add-doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add File</button>
+          <!-- ===== CARD: Connections & Media (EXPANDED — all fields) ===== -->
+          <section class="eem-reservation-editor-section">
+            <div class="eem-section-header" onclick="toggleSection(this)">
+              <div class="eem-section-header-left">
+                <div class="eem-section-icon eem-section-icon--purple">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16.5 9.4 7.55 4.24M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.27 6.96 8.73 5.05 8.73-5.05M12 22.08V12"/></svg>
                 </div>
-                <div class="doc-row">
-                  <div class="doc-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-                  <div class="doc-row-info"><span class="doc-row-name">Open Long Go Results</span><div class="doc-row-meta"><span>1st Go</span><span>Jun 14</span></div></div>
-                  <span class="doc-status status-live">Live</span>
-                  <div class="doc-row-actions"><button class="doc-action-btn danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></div>
+                <div class="eem-section-title">Connections &amp; Media</div>
+              </div>
+              <div class="eem-section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+            <div class="eem-section-body">
+
+              <!-- Button Label (CTA) -->
+              <div class="eem-field-row">
+                <div class="eem-field-label">Button Label<div class="eem-field-label-sub">CTA on event cards</div></div>
+                <div class="eem-field-control">
+                  <div class="eem-btn-label-wrap">
+                    <span class="eem-btn-label-prefix">Button</span>
+                    <input class="eem-btn-label-input" type="text" name="en_event[cta_label]" value="Reserve Now" />
+                  </div>
+                  <span class="eem-field-hint">Text shown on the primary action button on the event page and cards.</span>
                 </div>
-                <div class="doc-row">
-                  <div class="doc-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-                  <div class="doc-row-info"><span class="doc-row-name">Open 5D Final Round</span><div class="doc-row-meta"><span>Finals</span><span>Jun 15</span></div></div>
-                  <span class="doc-status status-live">Live</span>
-                  <div class="doc-row-actions"><button class="doc-action-btn danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></div>
+              </div>
+
+              <!-- Website -->
+              <div class="eem-field-row">
+                <div class="eem-field-label">Website</div>
+                <div class="eem-field-control">
+                  <input class="eem-field-input" type="url" name="en_event[website]" value="" placeholder="https://…" />
                 </div>
-                <div class="discipline-header">
-                  <div class="discipline-name">Breakaway Roping <span class="discipline-count">2 files</span></div>
-                  <button class="btn-add-doc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add File</button>
+              </div>
+
+              <!-- Facebook URL -->
+              <div class="eem-field-row">
+                <div class="eem-field-label">Facebook URL</div>
+                <div class="eem-field-control">
+                  <input class="eem-field-input" type="url" name="en_event[facebook]" value="https://facebook.com/events/supersort2026" placeholder="https://facebook.com/…" />
                 </div>
-                <div class="doc-row">
-                  <div class="doc-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-                  <div class="doc-row-info"><span class="doc-row-name">15U Breakaway Semi Finals Average</span><div class="doc-row-meta"><span>Average</span><span>Jun 12</span></div></div>
-                  <span class="doc-status status-live">Live</span>
-                  <div class="doc-row-actions"><button class="doc-action-btn danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></div>
+              </div>
+
+              <!-- Instagram URL -->
+              <div class="eem-field-row">
+                <div class="eem-field-label">Instagram URL</div>
+                <div class="eem-field-control">
+                  <input class="eem-field-input" type="url" name="en_event[instagram]" value="" placeholder="https://instagram.com/…" />
                 </div>
-              </div><!-- /s2-results -->
+              </div>
+
+              <!-- Event Flyer PDF -->
+              <div class="eem-field-row">
+                <div class="eem-field-label">Event Flyer PDF<div class="eem-field-label-sub">Optional</div></div>
+                <div class="eem-field-control">
+                  <div class="eem-file-row">
+                    <input type="hidden" name="en_event[flyer_id]" id="eem-event-flyer-id" value="4821" />
+                    <div class="eem-file-name" id="eem-event-flyer-name">2026-Super-Sort-Flyer.pdf</div>
+                    <button type="button" class="eem-btn-upload" data-eem-action="event-editor-pick-flyer">Add File</button>
+                    <button type="button" class="eem-btn-upload" id="eem-event-flyer-clear" data-eem-action="event-editor-clear-flyer">Remove</button>
+                  </div>
+                  <span class="eem-field-hint">Customers can open or download the flyer from the event page.</span>
+                </div>
+              </div>
+
+              <!-- Featured Event toggle -->
+              <div class="eem-field-row">
+                <div class="eem-field-label">Featured Event<div class="eem-field-label-sub">Widgets &amp; shortcodes</div></div>
+                <div class="eem-field-control">
+                  <label class="eem-toggle-chip" data-eem-action="event-editor-toggle-featured">
+                    <span class="eem-toggle eem-toggle--on" id="eem-event-featured-toggle"></span>
+                    <input type="hidden" name="en_event[featured]" id="eem-event-featured-input" value="1" />
+                    <span>Include in featured widgets and shortcodes</span>
+                  </label>
+                </div>
+              </div>
 
             </div>
-          </div><!-- /documents card -->
+          </section>
 
-        </div><!-- /edit-main -->
+          <!-- ===== CARD: Sheets & Results (embedded manager) ===== -->
+          <section class="eem-reservation-editor-section">
+            <div class="eem-section-header" onclick="toggleSection(this)">
+              <div class="eem-section-header-left">
+                <div class="eem-section-icon eem-section-icon--orange">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                </div>
+                <div class="eem-section-title">Sheets &amp; Results</div>
+              </div>
+              <div class="eem-section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+            </div>
+            <div class="eem-section-body">
+              <div class="eem-sr-embedded">
+                <div class="eem-sr-embed-bar">
+                  <span class="eem-field-hint" style="margin-top:0">Files go live immediately when saved.</span>
+                  <a class="eem-btn eem-btn-secondary" href="#">Manage in Sheets &amp; Results</a>
+                </div>
 
-        <aside class="edit-rail">
-          <div class="rail-card">
-            <div class="rail-header"><span class="rail-title">Publish</span></div>
-            <div class="rail-body">
-              <button class="btn-save-draft">Save Draft</button>
-              <div class="publish-divider"></div>
-              <div class="publish-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Status: <strong>Published</strong><a href="#">Edit</a></div>
-              <div class="publish-divider"></div>
-              <button class="btn-update">Update Event</button>
+                <div class="eem-sr-body">
+                  <!-- Tabs -->
+                  <div class="eem-sr-tabs">
+                    <button type="button" class="eem-sr-tab is-active" data-sr-tab="drawsheets" onclick="srTab('drawsheets',this)">Draw Sheets <span class="eem-sr-tab-count">3</span></button>
+                    <button type="button" class="eem-sr-tab" data-sr-tab="results" onclick="srTab('results',this)">Results <span class="eem-sr-tab-count">1</span></button>
+                  </div>
+
+                  <!-- Add discipline -->
+                  <div class="eem-sr-add-discipline">
+                    <input type="text" class="eem-field-input eem-sr-discipline-input" placeholder="New discipline (e.g. Barrel Racing)…">
+                    <button type="button" class="eem-btn eem-btn-secondary">Add Discipline</button>
+                  </div>
+
+                  <!-- ===== DRAW SHEETS PANEL ===== -->
+                  <div class="eem-sr-panel" data-sr-panel="drawsheets">
+
+                    <!-- Discipline: Barrel Racing -->
+                    <div class="eem-sr-group-head">
+                      <div class="eem-sr-group-name">Barrel Racing <span class="eem-sr-group-count">2 files</span></div>
+                      <div class="eem-sr-group-actions">
+                        <button type="button" class="eem-sr-group-link">Rename</button>
+                        <button type="button" class="eem-sr-group-link is-danger">Delete</button>
+                        <button type="button" class="eem-sr-add-file-btn">+ Add File</button>
+                      </div>
+                    </div>
+
+                    <div class="eem-sr-row">
+                      <div class="eem-sr-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                      <div class="eem-sr-row-info">
+                        <span class="eem-sr-row-name">Open 4D — Go 1 Draw</span>
+                        <div class="eem-sr-row-meta"><span>1.2 MB</span><span>Uploaded Jun 14, 2026</span></div>
+                      </div>
+                      <span class="eem-status-badge eem-status-active eem-sr-live-badge">Live</span>
+                      <div class="eem-sr-row-actions">
+                        <a class="eem-sr-action-btn" href="#" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+                        <button type="button" class="eem-sr-action-btn" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+                        <button type="button" class="eem-sr-action-btn is-danger" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                      </div>
+                    </div>
+
+                    <div class="eem-sr-row">
+                      <div class="eem-sr-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                      <div class="eem-sr-row-info">
+                        <span class="eem-sr-row-name">Open 4D — Go 2 Draw</span>
+                        <div class="eem-sr-row-meta"><span>1.1 MB</span><span>Uploaded Jun 15, 2026</span></div>
+                      </div>
+                      <span class="eem-status-badge eem-status-active eem-sr-live-badge">Live</span>
+                      <div class="eem-sr-row-actions">
+                        <a class="eem-sr-action-btn" href="#" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+                        <button type="button" class="eem-sr-action-btn" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+                        <button type="button" class="eem-sr-action-btn is-danger" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+                      </div>
+                    </div>
+
+                    <!-- Discipline: Pole Bending -->
+                    <div class="eem-sr-group-head">
+                      <div class="eem-sr-group-name">Pole Bending <span class="eem-sr-group-count">1 file</span></div>
+                      <div class="eem-sr-group-actions">
+                        <button type="button" class="eem-sr-group-link">Rename</button>
+                        <button type="button" class="eem-sr-group-link is-danger">Delete</button>
+                        <button type="button" class="eem-sr-add-file-btn">+ Add File</button>
+                      </div>
+                    </div>
+
+                    <div class="eem-sr-row">
+                      <div class="eem-sr-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                      <div class="eem-sr-row-info">
+                        <span class="eem-sr-row-name">Pole Bending — Draw</span>
+                        <div class="eem-sr-row-meta"><span>820 KB</span><span>Uploaded Jun 15, 2026</span></div>
+                      </div>
+                      <span class="eem-status-badge eem-status-active eem-sr-live-badge">Live</span>
+                      <div class="eem-sr-row-actions">
+                        <a class="eem-sr-action-btn" href="#" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+                        <button type="button" class="eem-sr-action-btn" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+                        <button type="button" class="eem-sr-action-btn is-danger" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+                      </div>
+                    </div>
+                  </div><!-- /.eem-sr-panel[drawsheets] -->
+
+                  <!-- ===== RESULTS PANEL ===== -->
+                  <div class="eem-sr-panel" data-sr-panel="results" hidden>
+
+                    <div class="eem-sr-group-head">
+                      <div class="eem-sr-group-name">Barrel Racing <span class="eem-sr-group-count">1 of 2 uploaded</span></div>
+                    </div>
+
+                    <div class="eem-sr-row">
+                      <div class="eem-sr-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                      <div class="eem-sr-row-info">
+                        <span class="eem-sr-row-name">Open 4D — Go 1 Results</span>
+                        <div class="eem-sr-row-meta"><span>640 KB</span><span>Uploaded Jun 16, 2026</span></div>
+                      </div>
+                      <span class="eem-status-badge eem-status-active eem-sr-live-badge">Live</span>
+                      <div class="eem-sr-row-actions">
+                        <a class="eem-sr-action-btn" href="#" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+                        <button type="button" class="eem-sr-action-btn" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+                        <button type="button" class="eem-sr-action-btn is-danger" title="Remove result PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+                      </div>
+                    </div>
+
+                    <!-- Pending result -->
+                    <div class="eem-sr-row eem-sr-row--pending">
+                      <div class="eem-sr-row-icon eem-sr-row-icon--pending"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                      <div class="eem-sr-row-info">
+                        <span class="eem-sr-row-name">Open 4D — Go 2 Results</span>
+                        <div class="eem-sr-row-meta eem-sr-row-meta--pending">No result uploaded yet</div>
+                      </div>
+                      <div class="eem-sr-row-actions">
+                        <button type="button" class="eem-sr-upload-result-btn">Upload Result PDF</button>
+                      </div>
+                    </div>
+
+                    <div class="eem-sr-group-head">
+                      <div class="eem-sr-group-name">Pole Bending <span class="eem-sr-group-count">0 of 1 uploaded</span></div>
+                    </div>
+
+                    <div class="eem-sr-row eem-sr-row--pending">
+                      <div class="eem-sr-row-icon eem-sr-row-icon--pending"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                      <div class="eem-sr-row-info">
+                        <span class="eem-sr-row-name">Pole Bending — Results</span>
+                        <div class="eem-sr-row-meta eem-sr-row-meta--pending">No result uploaded yet</div>
+                      </div>
+                      <div class="eem-sr-row-actions">
+                        <button type="button" class="eem-sr-upload-result-btn">Upload Result PDF</button>
+                      </div>
+                    </div>
+                  </div><!-- /.eem-sr-panel[results] -->
+
+                </div><!-- /.eem-sr-body -->
+              </div><!-- /.eem-sr-embedded -->
+            </div>
+          </section>
+
+          <!-- CARD: Link Reservation (toggle-gated, collapsed by default when no link) -->
+          <section class="eem-reservation-editor-section">
+            <div class="eem-section-header">
+              <div class="eem-section-header-left">
+                <div class="eem-section-icon eem-section-icon--teal">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+                </div>
+                <div class="eem-section-title">Link Reservation</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <label class="eem-toggle-chip" onclick="event.stopPropagation()">
+                  <span class="eem-toggle eem-toggle--on"></span>
+                </label>
+                <div class="eem-section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
+              </div>
+            </div>
+            <div class="eem-section-body">
+              <div class="eem-field-row">
+                <div class="eem-field-label">Reservation Setup<div class="eem-field-label-sub">Choose or create</div></div>
+                <div class="eem-field-control">
+                  <select class="eem-field-select" name="en_event[reservation_id]">
+                    <option value="0">No linked reservation</option>
+                    <option value="6519" selected>NTR 2026 — Super Sort Open 4D (NTR 6519)</option>
+                    <option value="6320">Spring Classic — Barrel Racing (6320)</option>
+                  </select>
+                  <span class="eem-field-hint">Choose an existing reservation setup to render its booking flow on this event page.</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div><!-- /.eem-edit-main -->
+
+        <!-- ─────────────────────── RIGHT RAIL ─────────────────────── -->
+        <aside class="eem-edit-rail">
+
+          <!-- Publish card -->
+          <div class="eem-rail-card">
+            <div class="eem-rail-header"><span class="eem-rail-title">Publish</span></div>
+            <div class="eem-rail-body">
+              <button type="button" class="eem-btn eem-btn-secondary eem-rail-btn" data-eem-action="event-editor-save" data-save-kind="save_draft">Save Draft</button>
+              <a class="eem-btn eem-btn-secondary eem-rail-btn" href="#" target="_blank" rel="noopener">Preview</a>
+              <div class="eem-rail-divider"></div>
+              <div class="eem-publish-row">Status: <strong id="eem-event-status-label">Published</strong></div>
+              <div class="eem-rail-divider"></div>
+              <button type="button" class="eem-btn eem-btn-electric eem-rail-btn" data-eem-action="event-editor-save" data-save-kind="publish">Update Event</button>
             </div>
           </div>
-          <div class="rail-card">
-            <div class="rail-header"><span class="rail-title">Sheets &amp; Results</span></div>
-            <div class="rail-body">
-              <div class="doc-summary">
-                <div class="doc-summary-row">
-                  <span class="doc-summary-label">Draw Sheets</span>
-                  <span class="doc-summary-num">8</span>
-                </div>
-                <div class="doc-summary-row">
-                  <span class="doc-summary-label">Results</span>
-                  <span class="doc-summary-num">7</span>
-                </div>
+
+          <!-- Event Categories card -->
+          <div class="eem-rail-card">
+            <div class="eem-rail-header"><span class="eem-rail-title">Event Categories</span></div>
+            <div class="eem-rail-body">
+              <div class="eem-checklist">
+                <label class="eem-checklist-item">
+                  <input type="checkbox" name="en_event[categories][]" value="3" checked /> Barrel Racing
+                </label>
+                <label class="eem-checklist-item">
+                  <input type="checkbox" name="en_event[categories][]" value="5" /> Pole Bending
+                </label>
+                <label class="eem-checklist-item">
+                  <input type="checkbox" name="en_event[categories][]" value="7" /> Open Events
+                </label>
               </div>
-              <div class="publish-divider"></div>
-              <div class="rail-hint">Both buttons will appear on the public event listing.</div>
-              <a href="#" class="btn-secondary" style="font-size:12px;padding:6px 12px;justify-content:center">
-                Open Sheets &amp; Results →
-              </a>
+              <div class="eem-checklist-footer"><a class="eem-add-term-link" href="#">+ Add New Category</a></div>
             </div>
           </div>
-        </aside>
-      </div>
-    </div>
+
+          <!-- Featured Image card -->
+          <div class="eem-rail-card">
+            <div class="eem-rail-header"><span class="eem-rail-title">Featured Image</span></div>
+            <div class="eem-rail-body">
+              <input type="hidden" name="en_event[thumbnail_id]" id="eem-event-thumb-id" value="0" />
+              <div class="eem-featured-img" id="eem-event-featured-img" data-eem-action="event-editor-pick-thumb">
+                <div class="eem-featured-img-placeholder">
+                  <p><strong>Set featured image</strong></p>
+                  <p>Click to upload or select from Media Library</p>
+                </div>
+              </div>
+              <a href="#" class="eem-add-term-link" data-eem-action="event-editor-clear-thumb" id="eem-event-thumb-clear" style="display:none">Remove featured image</a>
+            </div>
+          </div>
+
+          <!-- Sheets & Results summary card -->
+          <div class="eem-rail-card">
+            <div class="eem-rail-header"><span class="eem-rail-title">Sheets &amp; Results</span></div>
+            <div class="eem-rail-body">
+              <div class="eem-sr-rail-row"><span class="eem-sr-rail-label">Draw Sheets</span><span class="eem-sr-rail-num">3</span></div>
+              <div class="eem-sr-rail-row"><span class="eem-sr-rail-label">Results</span><span class="eem-sr-rail-num">1</span></div>
+              <div class="eem-rail-divider"></div>
+              <div class="eem-rail-hint">The Draw Sheets and Results buttons appear on the public event listing once files are uploaded.</div>
+              <a class="eem-btn eem-btn-secondary eem-rail-btn" href="#">Open Sheets &amp; Results →</a>
+            </div>
+          </div>
+
+          <!-- Event Setup meter card -->
+          <div class="eem-rail-card">
+            <div class="eem-rail-header"><span class="eem-rail-title">Event Setup</span></div>
+            <div class="eem-rail-body">
+              <div class="eem-completeness" id="eem-event-completeness" data-required="5">
+                <div class="eem-completeness-label">Progress</div>
+                <div class="eem-completeness-track"><div class="eem-completeness-fill" id="eem-event-completeness-fill" style="width:60%"></div></div>
+                <div class="eem-completeness-items">
+                  <div class="eem-comp-item is-done" data-comp="title">
+                    <span class="eem-comp-dot" aria-hidden="true"></span> Add title
+                  </div>
+                  <div class="eem-comp-item is-done" data-comp="dates">
+                    <span class="eem-comp-dot" aria-hidden="true"></span> Set event dates
+                  </div>
+                  <div class="eem-comp-item is-todo" data-comp="venue">
+                    <span class="eem-comp-dot" aria-hidden="true"></span> Select a venue
+                  </div>
+                  <div class="eem-comp-item is-done" data-comp="desc">
+                    <span class="eem-comp-dot" aria-hidden="true"></span> Add description
+                  </div>
+                  <div class="eem-comp-item is-todo" data-comp="thumb">
+                    <span class="eem-comp-dot" aria-hidden="true"></span> Set featured image
+                  </div>
+                  <div class="eem-comp-item is-done" data-comp="reservation">
+                    <span class="eem-comp-dot" aria-hidden="true"></span> Link reservation <span class="eem-comp-optional">(optional)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </aside><!-- /.eem-edit-rail -->
+
+      </div><!-- /.eem-event-editor-body -->
+    </div><!-- /.eem-plugin-wrap -->
   </main>
 </div>
+
+<!-- Mobile sticky save bar -->
+<div class="eem-sticky-save">
+  <button type="button" class="eem-btn eem-btn-secondary" data-eem-action="event-editor-save" data-save-kind="save_draft">Save Draft</button>
+  <button type="button" class="eem-btn eem-btn-electric" data-eem-action="event-editor-save" data-save-kind="publish">Update Event</button>
 </div>
 
-
-<!-- ═══════════════════════════════
-     SCREEN 3 — PUBLIC EVENTS LIST
-     ═══════════════════════════════ -->
-<style>
-/* ── Flyer card variant ── */
-.event-card-flyer{background:#fff;border:1px solid #dcdcde;border-radius:6px;margin-bottom:12px;overflow:hidden;display:flex}
-.event-card-flyer-thumb{width:140px;min-width:140px;position:relative;flex-shrink:0;background:#e5e7eb;overflow:hidden}
-.event-card-flyer-thumb img{width:100%;height:100%;object-fit:cover;display:block}
-.event-card-flyer-thumb-placeholder{width:100%;height:100%;min-height:140px;background:linear-gradient(135deg,#031B4E 0%,#1668F2 100%);display:flex;align-items:center;justify-content:center}
-.event-card-flyer-thumb-placeholder svg{width:32px;height:32px;color:rgba(255,255,255,.3)}
-.countdown-badge{position:absolute;top:10px;left:10px;background:#fff;border-radius:20px;padding:4px 10px;font-size:12px;font-weight:700;color:#031B4E;box-shadow:0 2px 8px rgba(0,0,0,.18);white-space:nowrap}
-.countdown-badge.ongoing{background:#dcfce7;color:#15803d}
-
-/* View toggle */
-.view-toggle{display:flex;align-items:center;gap:6px;background:#f3f4f5;border-radius:6px;padding:3px;margin-left:auto}
-.view-toggle-btn{padding:5px 12px;border-radius:4px;font-size:12px;font-weight:600;color:#6B7A99;cursor:pointer;border:none;background:transparent;font-family:'IBM Plex Sans',sans-serif;display:flex;align-items:center;gap:5px;white-space:nowrap}
-.view-toggle-btn svg{width:13px;height:13px}
-.view-toggle-btn.active{background:#fff;color:#031B4E;box-shadow:0 1px 3px rgba(0,0,0,.1)}
-.view-toggle-btn:hover:not(.active){color:#031B4E}
-
-.list-view{display:none}
-.list-view.active{display:block}
-.public-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap}
-</style>
-
 <script>
-function switchDocTab(screen,tab){['drawsheets','results'].forEach(t=>{var te=document.getElementById(screen+'-tab-'+t);if(te)te.classList.toggle('active',t===tab);var p=document.getElementById(screen+'-'+t);if(p)p.style.display=(t===tab)?'':'none';});}
+function toggleSection(header) {
+  var body = header.nextElementSibling;
+  var chevron = header.querySelector('.eem-section-chevron');
+  if (!body) { return; }
+  var collapsed = body.classList.toggle('is-collapsed');
+  if (chevron) { chevron.style.transform = collapsed ? 'rotate(-90deg)' : ''; }
+}
+function srTab(name, btn) {
+  document.querySelectorAll('.eem-sr-tab').forEach(function (t) { t.classList.remove('is-active'); });
+  btn.classList.add('is-active');
+  document.querySelectorAll('.eem-sr-panel').forEach(function (p) {
+    p.hidden = (p.getAttribute('data-sr-panel') !== name);
+  });
+}
 </script>
 </body>
 </html>

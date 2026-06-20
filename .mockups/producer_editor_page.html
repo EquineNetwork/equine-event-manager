@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Producer Editor (Add / Edit) — Equine Event Manager</title>
+<style>
+/* ───────── Brand tokens (from assets/css/admin.css) ───────── */
+:root{
+  --eem-electric:#1668F2; --eem-navy:#031B4E; --eem-text:#1d2327; --eem-text-muted:#6B7A99;
+  --eem-text-placeholder:#a7aaad; --eem-surface:#fff; --eem-radius:3px;
+  --eem-border-input:1px solid #8c8f94; --eem-focus-ring:0 0 0 1px #1668F2;
+  --eem-select-height:38px; --eem-info-bg:#EEF4FE;
+  --eem-font-display:'Space Grotesk','Segoe UI',sans-serif;
+  --eem-font-ui:'IBM Plex Sans','Segoe UI',sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#f0f0f1;color:var(--eem-text);font-family:var(--eem-font-ui);font-size:13px}
+
+/* ── WP-admin shell stub ── */
+.wpwrap{display:flex;min-height:100vh}
+#adminmenuback{width:160px;background:#1d2327;flex-shrink:0}
+#adminmenu{padding:12px 0;color:#c3c4c7;font-size:13px}
+#adminmenu .menu-top{padding:8px 14px;color:#f0f0f1}
+#adminmenu .current{background:var(--eem-electric);color:#fff;font-weight:600;border-radius:0}
+#adminmenu .sub{padding:5px 14px 5px 28px;color:#a7aaad;font-size:12.5px}
+#wpbody{flex:1;min-width:0}
+#wpbody-content{padding:18px 22px}
+
+/* ── Breadcrumb + logo ── */
+.eem-breadcrumb{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.breadcrumb-logo-box{width:170px;height:38px;object-fit:contain;flex-shrink:0}
+.eem-breadcrumb-trail{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--eem-text-muted)}
+.eem-breadcrumb-trail a{color:var(--eem-electric);text-decoration:none}
+.eem-breadcrumb-trail a:hover{color:#1257d1}
+.eem-breadcrumb-sep{color:#c3c4c7}
+.eem-breadcrumb-current{color:var(--eem-navy);font-weight:600}
+
+/* ── Page shell ── */
+.eem-page{max-width:1100px}
+.eem-plugin-wrap{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}
+.eem-plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.eem-plugin-header-left{flex:1;min-width:0}
+.eem-plugin-title{font-family:var(--eem-font-display);font-size:22px;font-weight:700;color:var(--eem-navy);line-height:1.2;margin:0 0 4px}
+.eem-plugin-subtitle{font-size:13px;color:var(--eem-text-muted);line-height:1.45}
+
+/* ── Editor two-column body ── */
+.eem-event-editor-body{padding:18px 22px;display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start}
+.eem-edit-main{display:flex;flex-direction:column;gap:0;min-width:0}
+.eem-edit-rail{display:flex;flex-direction:column;gap:14px;position:sticky;top:20px}
+
+/* ── Flat section cards ── */
+.eem-reservation-editor-section{overflow:hidden;border-bottom:1px solid #e2e4e7;padding:14px 0}
+.eem-reservation-editor-section:last-child{border-bottom:none}
+.eem-section-header{display:flex;align-items:center;justify-content:space-between;padding:0 0 6px;gap:10px;cursor:pointer;user-select:none}
+.eem-section-header-left{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.eem-section-header-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.eem-section-icon{width:28px;height:28px;border-radius:var(--eem-radius);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.eem-section-icon svg{width:15px;height:15px}
+.eem-section-icon--blue{background:var(--eem-info-bg);color:var(--eem-electric)}
+.eem-section-icon--navy{background:var(--eem-info-bg);color:var(--eem-navy)}
+.eem-section-title{font-family:var(--eem-font-display);font-size:14px;font-weight:700;color:var(--eem-navy)}
+.eem-section-chevron{color:var(--eem-text-muted);width:16px;height:16px;flex-shrink:0;transition:transform .2s}
+.eem-section-chevron svg{width:16px;height:16px}
+.eem-section-collapsed .eem-section-chevron{transform:rotate(-90deg)}
+.eem-section-body{padding:6px 0 0}
+.eem-section-body.hidden{display:none}
+
+/* ── Field grid ── */
+.eem-event-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px}
+.eem-event-editor-field{display:flex;flex-direction:column;gap:4px}
+.eem-event-editor-field--full{grid-column:1 / -1}
+.eem-event-editor-field__label{font-size:12.5px;font-weight:600;color:var(--eem-navy)}
+input.eem-field-input,textarea.eem-field-textarea{margin:0;padding:8px 11px;border:var(--eem-border-input);border-radius:var(--eem-radius);font-size:13.5px;font-family:var(--eem-font-ui);color:var(--eem-navy);background:var(--eem-surface);width:100%;max-width:100%;outline:none}
+input.eem-field-input{height:var(--eem-select-height);box-sizing:border-box}
+input.eem-field-input:focus,textarea.eem-field-textarea:focus{border-color:var(--eem-electric);box-shadow:var(--eem-focus-ring)}
+input.eem-field-input::placeholder,textarea.eem-field-textarea::placeholder{color:var(--eem-text-placeholder)}
+textarea.eem-field-textarea{resize:vertical;min-height:90px;line-height:1.6;height:auto}
+
+/* ── Right rail cards ── */
+.eem-rail-card{background:#fff;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}
+.eem-rail-header{padding:11px 16px;border-bottom:1px solid #dcdcde;background:#f3f4f5;display:flex;align-items:center;justify-content:space-between}
+.eem-rail-title{font-family:var(--eem-font-display);font-size:13px;font-weight:700;color:var(--eem-navy)}
+.eem-rail-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.eem-rail-btn{width:100%;text-align:center;justify-content:center}
+.eem-rail-divider{height:1px;background:#f0f0f1;margin:4px 0}
+.eem-publish-row{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--eem-text)}
+.eem-publish-row strong{color:var(--eem-navy);font-weight:600}
+.eem-checklist{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:var(--eem-radius);padding:10px 12px;background:#fafafa}
+.eem-checklist-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--eem-text);cursor:pointer}
+.eem-checklist-item input[type=checkbox]{accent-color:#1668F2;width:14px;height:14px;cursor:pointer;flex-shrink:0}
+.eem-checklist-empty{font-size:12.5px;color:#8c8f94;font-style:italic}
+.eem-checklist-footer{margin-top:8px}
+a.eem-add-term-link,a.eem-add-term-link:visited{font-size:12.5px;color:#1668F2;font-weight:600;text-decoration:none}
+a.eem-add-term-link:hover{color:#1257d1;text-decoration:none}
+
+/* ── Buttons ── */
+.eem-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--eem-radius);font-size:13px;font-weight:600;font-family:var(--eem-font-ui);cursor:pointer;border:1px solid transparent;text-decoration:none;line-height:1.4}
+.eem-btn-secondary{background:#fff;border-color:#8c8f94;color:var(--eem-navy)}
+.eem-btn-secondary:hover{background:#f6f7f7}
+.eem-btn-electric{background:var(--eem-electric);color:#fff}
+.eem-btn-electric:hover{background:#1257d1}
+
+/* ── Mobile sticky save ── */
+.eem-sticky-save{display:none}
+
+/* ── Toast ── */
+.eem-toast{position:fixed;top:24px;right:24px;background:var(--eem-navy);color:#fff;padding:12px 18px;border-radius:6px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(3,27,78,.25);opacity:0;transform:translateY(-8px);transition:.25s;z-index:9999}
+.eem-toast.show{opacity:1;transform:translateY(0)}
+
+@media(max-width:980px){
+  #adminmenuback{display:none}
+  .eem-event-editor-body{grid-template-columns:1fr;padding:12px;gap:14px}
+  .eem-event-editor-grid{grid-template-columns:1fr}
+  .eem-edit-rail{position:static}
+  .eem-sticky-save{display:flex;position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #dcdcde;padding:8px 14px;gap:8px;justify-content:flex-end;z-index:50}
+  .eem-edit-rail .eem-rail-card:first-child{display:none}
+}
+</style>
+</head>
+<body class="wp-admin eem-shell-page eem-shell-page--editor">
+<div class="wpwrap">
+  <!-- WP admin menu stub -->
+  <div id="adminmenuback">
+    <ul id="adminmenu">
+      <li class="menu-top">Event Manager</li>
+      <li class="sub">Dashboard</li>
+      <li class="sub">Reservations</li>
+      <li class="sub">Orders</li>
+      <li class="sub current">Producers</li>
+      <li class="sub">Venues</li>
+      <li class="sub">Settings</li>
+    </ul>
+  </div>
+
+  <div id="wpbody"><div id="wpbody-content">
+
+    <!-- Breadcrumb (logo / Producers / Edit Producer) -->
+    <div class="eem-breadcrumb">
+      <img class="breadcrumb-logo-box" src="Equine Event Manager Logo.png" alt="Equine Event Manager">
+      <nav class="eem-breadcrumb-trail">
+        <a href="#">Producers</a>
+        <span class="eem-breadcrumb-sep">›</span>
+        <span class="eem-breadcrumb-current">Edit Producer</span>
+      </nav>
+    </div>
+
+    <div class="eem-page eem-event-editor">
+      <div class="eem-plugin-wrap">
+        <header class="eem-plugin-header">
+          <div class="eem-plugin-header-left">
+            <h1 class="eem-plugin-title">Edit Producer</h1>
+            <div class="eem-plugin-subtitle">Set the producer name, contact info, and website. Linked events inherit this organizer profile automatically.</div>
+          </div>
+        </header>
+
+        <!--
+          data-ajax-url and data-list-url are set server-side.
+          save_kind values: "save_draft" | "publish"
+          JS uses delegated click on [data-eem-action="producer-editor-save"].
+        -->
+        <form class="eem-event-editor-form" id="eem-producer-editor-form"
+              data-producer-id="412"
+              data-nonce="demo_nonce"
+              data-ajax-url="/wp-admin/admin-ajax.php"
+              data-list-url="/wp-admin/admin.php?page=equine-event-manager-producers"
+              onsubmit="return false;">
+          <div class="eem-event-editor-body">
+
+            <!-- Main column -->
+            <div class="eem-edit-main">
+
+              <!-- Producer Name -->
+              <div class="eem-reservation-editor-section">
+                <div class="eem-section-header" data-eem-action="reservation-editor-toggle-collapse">
+                  <div class="eem-section-header-left">
+                    <div class="eem-section-icon eem-section-icon--navy" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <span class="eem-section-title">Producer Name</span>
+                  </div>
+                  <div class="eem-section-header-right">
+                    <span class="eem-section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                  </div>
+                </div>
+                <div class="eem-section-body">
+                  <div class="eem-event-editor-grid">
+                    <label class="eem-event-editor-field eem-event-editor-field--full">
+                      <span class="eem-event-editor-field__label">Name</span>
+                      <input type="text" name="producer[title]" value="Lazy J Rodeo Productions" class="eem-field-input" placeholder="Producer name">
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Contact Details -->
+              <div class="eem-reservation-editor-section">
+                <div class="eem-section-header" data-eem-action="reservation-editor-toggle-collapse">
+                  <div class="eem-section-header-left">
+                    <div class="eem-section-icon eem-section-icon--blue" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
+                    </div>
+                    <span class="eem-section-title">Contact Details</span>
+                  </div>
+                  <div class="eem-section-header-right">
+                    <span class="eem-section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                  </div>
+                </div>
+                <div class="eem-section-body">
+                  <div class="eem-event-editor-grid">
+                    <label class="eem-event-editor-field">
+                      <span class="eem-event-editor-field__label">Primary Contact</span>
+                      <input type="text" name="producer[contact_name]" value="Jake Daniels" class="eem-field-input" placeholder="">
+                    </label>
+                    <label class="eem-event-editor-field">
+                      <span class="eem-event-editor-field__label">Email</span>
+                      <input type="email" name="producer[email]" value="jake@lazyjrodeo.com" class="eem-field-input" placeholder="">
+                    </label>
+                    <label class="eem-event-editor-field">
+                      <span class="eem-event-editor-field__label">Phone</span>
+                      <input type="text" name="producer[phone]" value="(406) 555-0142" class="eem-field-input" placeholder="">
+                    </label>
+                    <label class="eem-event-editor-field">
+                      <span class="eem-event-editor-field__label">Website</span>
+                      <input type="url" name="producer[website]" value="https://lazyjrodeo.com" class="eem-field-input" placeholder="">
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Description -->
+              <div class="eem-reservation-editor-section">
+                <div class="eem-section-header" data-eem-action="reservation-editor-toggle-collapse">
+                  <div class="eem-section-header-left">
+                    <div class="eem-section-icon eem-section-icon--blue" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    </div>
+                    <span class="eem-section-title">Description</span>
+                  </div>
+                  <div class="eem-section-header-right">
+                    <span class="eem-section-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
+                  </div>
+                </div>
+                <div class="eem-section-body">
+                  <div class="eem-event-editor-grid">
+                    <label class="eem-event-editor-field eem-event-editor-field--full">
+                      <span class="eem-event-editor-field__label">Description</span>
+                      <textarea name="producer[description]" rows="6" class="eem-field-textarea">Family-run rodeo production company based in Montana, organizing PRCA-sanctioned events across the Mountain West since 1998.</textarea>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+            </div><!-- /eem-edit-main -->
+
+            <!-- Right rail -->
+            <aside class="eem-edit-rail">
+
+              <!-- Publish card -->
+              <div class="eem-rail-card">
+                <div class="eem-rail-header"><span class="eem-rail-title">Publish</span></div>
+                <div class="eem-rail-body">
+                  <button type="button" class="eem-btn eem-btn-secondary eem-rail-btn"
+                          data-eem-action="producer-editor-save" data-save-kind="save_draft">Save Draft</button>
+                  <div class="eem-rail-divider"></div>
+                  <div class="eem-publish-row">Status: <strong id="eem-producer-status-label">Published</strong></div>
+                  <div class="eem-rail-divider"></div>
+                  <!--
+                    Button label is "Update Producer" when post_status=publish,
+                    "Publish Producer" when post_status=draft.
+                  -->
+                  <button type="button" class="eem-btn eem-btn-electric eem-rail-btn"
+                          data-eem-action="producer-editor-save" data-save-kind="publish">Update Producer</button>
+                </div>
+              </div>
+
+              <!-- Producer Categories card -->
+              <!--
+                Taxonomy: en_producer_category
+                Child terms are indented with padding-left:14px and prefixed "— "
+                "Add New Category" link goes to:
+                  admin.php?page=equine-event-manager-producer-categories
+              -->
+              <div class="eem-rail-card">
+                <div class="eem-rail-header"><span class="eem-rail-title">Producer Categories</span></div>
+                <div class="eem-rail-body">
+                  <div class="eem-checklist">
+                    <label class="eem-checklist-item">
+                      <input type="checkbox" name="producer[categories][]" value="1" checked> Rodeo
+                    </label>
+                    <label class="eem-checklist-item" style="padding-left:14px;">
+                      <input type="checkbox" name="producer[categories][]" value="2" checked> — PRCA
+                    </label>
+                    <label class="eem-checklist-item" style="padding-left:14px;">
+                      <input type="checkbox" name="producer[categories][]" value="3"> — Youth Series
+                    </label>
+                    <label class="eem-checklist-item">
+                      <input type="checkbox" name="producer[categories][]" value="4"> Barrel Racing
+                    </label>
+                    <label class="eem-checklist-item">
+                      <input type="checkbox" name="producer[categories][]" value="5"> Team Roping
+                    </label>
+                  </div>
+                  <div class="eem-checklist-footer">
+                    <a class="eem-add-term-link"
+                       href="/wp-admin/admin.php?page=equine-event-manager-producer-categories"
+                       target="_blank" rel="noopener">+ Add New Category</a>
+                  </div>
+                </div>
+              </div>
+
+            </aside>
+
+          </div><!-- /eem-event-editor-body -->
+        </form>
+      </div><!-- /eem-plugin-wrap -->
+    </div><!-- /eem-page -->
+
+  </div></div><!-- /wpbody -->
+</div><!-- /wpwrap -->
+
+<!-- Mobile sticky save (hidden on desktop, fixed-bottom on mobile) -->
+<div class="eem-sticky-save">
+  <button type="button" class="eem-btn eem-btn-secondary"
+          data-eem-action="producer-editor-save" data-save-kind="save_draft">Save Draft</button>
+  <button type="button" class="eem-btn eem-btn-electric"
+          data-eem-action="producer-editor-save" data-save-kind="publish">Update Producer</button>
+</div>
+
+<!-- Toast (shown via EEM.showSaveToast on AJAX success/error) -->
+<div class="eem-toast" id="eem-toast">Producer saved.</div>
+
+<script>
+// Section collapse/expand — delegated, matching admin.js pattern
+document.addEventListener('click', function (ev) {
+  var header = ev.target.closest('[data-eem-action="reservation-editor-toggle-collapse"]');
+  if (header) {
+    var section = header.closest('.eem-reservation-editor-section');
+    var body = section && section.querySelector('.eem-section-body');
+    if (section) section.classList.toggle('eem-section-collapsed');
+    if (body) body.classList.toggle('hidden');
+  }
+});
+
+// Mockup-only toast shim (real site uses EEM.showSaveToast from admin.js)
+window.EEM = window.EEM || {};
+EEM.showSaveToast = function (msg) {
+  var t = document.getElementById('eem-toast');
+  if (!t) return;
+  t.textContent = msg || 'Saved';
+  t.classList.add('show');
+  setTimeout(function () { t.classList.remove('show'); }, 2200);
+};
+
+// Mockup-only save handler wired to [data-eem-action="producer-editor-save"]
+document.addEventListener('click', function (ev) {
+  var btn = ev.target.closest('[data-eem-action="producer-editor-save"]');
+  if (!btn) return;
+  ev.preventDefault();
+  EEM.showSaveToast('Producer saved.');
+  var sl = document.getElementById('eem-producer-status-label');
+  if (sl && btn.dataset.saveKind === 'publish') sl.textContent = 'Published';
+  if (sl && btn.dataset.saveKind === 'save_draft') sl.textContent = 'Draft';
+});
+</script>
+</body>
+</html>

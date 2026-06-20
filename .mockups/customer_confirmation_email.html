@@ -4,11 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reservation Confirmation – 2026 Southeast Region Super Sort</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <!--
-  NOTE FOR PHASE 3: This template uses a <style> block for design-time readability.
-  Production mailer code must inline CSS at send-time via a library (Premailer / juice / similar)
-  to ensure compatibility across Outlook, Gmail, Apple Mail, and Yahoo. See DEC-1.
+  EMAIL TEMPLATE — Customer Confirmation (C11). Mockup mirror of
+  templates/emails/confirmation.php. Production code authors styles in this
+  <style> block and inlines them at SEND-TIME via Emogrifier
+  (EEM_Mailer::inline_css) — many clients strip the <style> tag. DO NOT
+  hand-inline styles in the PHP template.
+
+  NOTE: No Google Fonts <link> tag — web fonts are not supported in most email
+  clients and are stripped before Emogrifier runs. The PHP template omits it too.
+  Font stack falls back to system fonts (IBM Plex Sans / Space Grotesk loaded via
+  inline @font-face if ever needed, but currently font-family stacks are the only
+  font mechanism used here).
+
+  EMAIL-SAFE GLYPHS: this template intentionally uses HTML entities, NOT inline
+  <svg>, for icons (check &#10003;, star &#9733;, down-arrow &#8595;, phone
+  &#9742;, envelope &#9993;) because Outlook desktop does not render inline SVG.
+  Keep it that way.
 -->
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -19,17 +31,16 @@ a:hover{text-decoration:none}
 /* Wrapper */
 .wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:4px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)}
 
-/* ── HEADER BAND (DEC-7: white + navy bottom border) ── */
+/* ── HEADER BAND (white + navy bottom border) ── */
 .email-header{background:#fff;padding:28px 36px;border-bottom:3px solid #031B4E}
-.logo-box{width:160px;height:36px;background:#e0e0e0;border:1px dashed #bbb;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;margin-bottom:16px}
+.logo-img{max-width:160px;max-height:40px;display:block;margin-bottom:16px}
 .header-event{font-size:22px;font-weight:700;color:#031B4E;margin-bottom:4px;font-family:'Space Grotesk',sans-serif;line-height:1.2;letter-spacing:-.01em}
 .header-dates{font-size:13px;color:#50575e}
 
-/* ── CONFIRMATION BAR (DEC-8 revised: soft Electric Blue info accent) ── */
+/* ── CONFIRMATION BAR (soft Electric Blue info accent) ── */
 .confirm-bar{background:#F0F4FB;border-bottom:1px solid #D9E2F2;padding:14px 36px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .confirm-bar-left{display:flex;align-items:center;gap:12px}
 .confirm-check{width:28px;height:28px;background:#1668F2;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
-.confirm-check svg{width:16px;height:16px}
 .confirm-text{font-size:14px;font-weight:700;color:#031B4E}
 .confirm-text-sub{font-weight:400;color:#50575e;font-size:13px;display:block;margin-top:2px}
 .confirm-amount{text-align:right}
@@ -44,7 +55,7 @@ a:hover{text-decoration:none}
 .greeting strong{color:#031B4E}
 .greeting a{color:#1668F2;font-weight:600}
 
-/* ── ORDER META (DEC-9, DEC-10: flat type-badges, no dots, per-type colors) ── */
+/* ── ORDER META (flat type-badges, no dots, per-type colors) ── */
 .order-meta{display:flex;gap:6px;margin-bottom:24px;flex-wrap:wrap}
 .type-badge{padding:3px 9px;border-radius:3px;font-size:11.5px;font-weight:600;white-space:nowrap;display:inline-block;line-height:1.5}
 .type-stall{background:#EEF4FF;color:#1668F2;border:1px solid #c0d8ff}
@@ -52,7 +63,7 @@ a:hover{text-decoration:none}
 .type-addon{background:#FFF7ED;color:#c2410c;border:1px solid #fed7aa}
 .type-group{background:#F0FDF4;color:#15803d;border:1px solid #bbf7d0}
 
-/* ── ASSIGNMENTS SECTION (soft-blue info accent — kept) ── */
+/* ── ASSIGNMENTS SECTION (soft-blue info accent) ── */
 .assignments-section{background:#F0F4FB;border:1px solid #D9E2F2;border-radius:4px;padding:14px 16px;margin:0 0 22px}
 .assignments-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E;margin-bottom:10px}
 .assignments-table{width:100%;border-collapse:collapse}
@@ -64,7 +75,7 @@ a:hover{text-decoration:none}
 .hosted-link{display:inline-block;margin-top:10px;color:#1668F2;font-size:12.5px;font-weight:600}
 .hosted-link:hover{color:#1257d1}
 
-/* ── LINE ITEMS (DEC-2 mixed-case label, DEC-3 light thead) ── */
+/* ── LINE ITEMS (mixed-case label, light thead) ── */
 .items-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E;margin-bottom:10px}
 .items-table-wrap{margin-bottom:20px}
 .items-table{width:100%;border-collapse:collapse;border:1px solid #e5e7eb;border-radius:4px;overflow:hidden}
@@ -85,43 +96,40 @@ a:hover{text-decoration:none}
 .totals-label{font-size:14px;font-weight:700;color:#031B4E}
 .totals-value{font-size:17px;font-weight:800;color:#1668F2;font-variant-numeric:tabular-nums}
 
-/* ── SPECIAL REQUESTS (DEC-4: soft-blue info accent) ── */
+/* ── SPECIAL REQUESTS (soft-blue info accent) ── */
 .special-requests{background:#F0F4FB;border:1px solid #D9E2F2;border-radius:4px;padding:14px 16px;margin-bottom:22px}
 .special-requests-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;margin-bottom:4px}
 .special-requests-body{font-size:13px;color:#1a1a2e;line-height:1.55}
 
-/* ── WHAT'S NEXT (kept green — appropriate "informational/upcoming" semantic) ── */
+/* ── WHAT'S NEXT — EVENT DAY INFO (green "upcoming/positive" semantic) ── */
 .whats-next{background:#F0FDF4;border:1px solid #BBF7D0;border-radius:4px;padding:14px 16px;margin:0 0 22px}
 .whats-next-head{display:flex;align-items:center;gap:8px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#15803d;margin-bottom:10px}
-.whats-next-head svg{width:15px;height:15px;color:#15803d;flex-shrink:0}
 .whats-next-body p{font-size:13px;line-height:1.6;color:#1d2327;margin:0 0 7px}
 .whats-next-body p:last-child{margin-bottom:0}
 .whats-next-body strong{color:#031B4E;font-weight:600}
 
-/* ── ATTACHMENT NOTE (soft-blue info accent) ── */
+/* ── ATTACHMENT NOTE (soft-blue info accent; shown only when a PDF is attached) ── */
 .attachment-note{background:#F0F4FB;border:1px solid #D9E2F2;border-radius:4px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:22px}
 .attach-icon{width:36px;height:36px;background:#1668F2;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
-.attach-icon svg{width:18px;height:18px}
 .attach-text-title{display:block;font-size:13.5px;font-weight:700;color:#031B4E;margin-bottom:2px}
 .attach-text-body{font-size:12.5px;color:#50575e;line-height:1.45}
 
-/* ── SUPPORT BLOCK (DEC-5 SVG icons; aligned to standard light-gray bg) ── */
+/* ── SUPPORT BLOCK (entity icons; standard light-gray bg) ── */
 .support-block{background:#f3f4f5;border:1px solid #e5e7eb;border-radius:4px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px}
 .support-left-title{display:block;font-size:13.5px;font-weight:700;color:#031B4E;margin-bottom:2px}
 .support-left-sub{font-size:12.5px;color:#50575e}
 .support-contact{text-align:right;font-size:13px;color:#1668F2;font-weight:600}
 .support-contact-row{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:4px}
 .support-contact-row:last-child{margin-bottom:0}
-.support-contact-row svg{width:13px;height:13px;color:#1668F2;flex-shrink:0}
 .support-contact-row a{color:#1668F2;font-weight:600}
 .support-contact-row a:hover{color:#1257d1}
 
-/* ── CANCELLATION POLICY (per-reservation, standard light-gray card) ── */
+/* ── CANCELLATION POLICY (per-reservation; standard light-gray card) ── */
 .cancellation-policy{background:#f3f4f5;border:1px solid #e5e7eb;border-radius:4px;padding:14px 16px;margin-bottom:22px}
 .cancellation-policy-title{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;margin-bottom:6px}
 .cancellation-policy-body{font-size:12.5px;line-height:1.55;color:#50575e;margin:0}
 
-/* ── FOOTER (DEC-7 consistent: white with top divider, not heavy navy) ── */
+/* ── FOOTER (white with top divider) ── */
 .email-footer{background:#fff;border-top:1px solid #e5e7eb;padding:18px 36px;text-align:center}
 .footer-event{font-size:13px;font-weight:600;color:#031B4E;margin-bottom:4px}
 .footer-legal{font-size:11.5px;color:#8c8f94}
@@ -148,9 +156,6 @@ a:hover{text-decoration:none}
   .items-table thead th,.items-table td{padding:7px 8px}
   .totals-row{justify-content:stretch}
   .totals-inner{min-width:0;width:100%}
-  .attachment-note{padding:10px 12px;gap:10px}
-  .attach-icon{width:30px;height:30px}
-  .attach-icon svg{width:15px;height:15px}
   .support-block{flex-direction:column;align-items:flex-start;gap:10px;padding:12px}
   .support-contact{text-align:left}
   .support-contact-row{justify-content:flex-start}
@@ -174,19 +179,17 @@ a:hover{text-decoration:none}
 <body>
 <div class="wrap">
 
-  <!-- HEADER (DEC-7: white bg + navy bottom border) -->
+  <!-- HEADER (white bg + navy bottom border). Real template: <img class="logo-img"> rendered only when a logo_url is configured. -->
   <div class="email-header">
-    <div class="logo-box">Business Logo</div>
+    <div class="logo-img" style="width:160px;height:40px;background:#e0e0e0;border:1px dashed #bbb;border-radius:4px;line-height:40px;text-align:center;font-size:11px;color:#999;">Business Logo</div>
     <div class="header-event">2026 Southeast Region Super Sort</div>
     <div class="header-dates">May 8, 2026 – May 10, 2026</div>
   </div>
 
-  <!-- CONFIRMATION BAR (DEC-8: green success palette) -->
+  <!-- CONFIRMATION BAR — email-safe check glyph (&#10003;), not inline SVG -->
   <div class="confirm-bar">
     <div class="confirm-bar-left">
-      <div class="confirm-check">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
+      <div class="confirm-check"><span style="font-size:20px;line-height:1;">&#10003;</span></div>
       <div>
         <div class="confirm-text">Order #00020 confirmed</div>
         <div class="confirm-text-sub">Payment received on April 24, 2026</div>
@@ -201,9 +204,9 @@ a:hover{text-decoration:none}
   <!-- BODY -->
   <div class="email-body">
 
-    <p class="greeting">Hi <strong>Whitney</strong>, your reservation is confirmed and payment received. A full summary is below, a PDF receipt is attached, and you can <a href="#">view your order online ↗</a> anytime.</p>
+    <p class="greeting">Hi <strong>Whitney</strong>, your reservation is confirmed and payment received. A full summary is below. You can <a href="#">view your order online ↗</a> anytime.</p>
 
-    <!-- Order meta pills (DEC-9, DEC-10: flat type-badges, per-type colors, no dots) -->
+    <!-- Order meta pills (flat type-badges, per-type colors, no dots) -->
     <div class="order-meta">
       <span class="type-badge type-stall">Stall</span>
       <span class="type-badge type-rv">RV</span>
@@ -211,7 +214,7 @@ a:hover{text-decoration:none}
       <span class="type-badge type-group">Group</span>
     </div>
 
-    <!-- Stall Assignments -->
+    <!-- Stall / RV Assignments -->
     <div class="assignments-section">
       <div class="assignments-title">Your Assignments</div>
       <table class="assignments-table" cellpadding="0" cellspacing="0">
@@ -231,7 +234,7 @@ a:hover{text-decoration:none}
       <a href="#" class="hosted-link">View or print your order online ↗</a>
     </div>
 
-    <!-- Line Items (DEC-2 mixed-case title, DEC-3 light thead) -->
+    <!-- Line Items (mixed-case title, light thead) -->
     <div class="items-title">Purchased Items</div>
     <div class="items-table-wrap">
       <table class="items-table">
@@ -264,38 +267,36 @@ a:hover{text-decoration:none}
       </div>
     </div>
 
-    <!-- Special Requests (DEC-4: soft-blue info accent, mixed-case label) -->
+    <!-- Special Requests -->
     <div class="special-requests">
       <div class="special-requests-title">Special Requests</div>
-      <div class="special-requests-body">Test TEst Test</div>
+      <div class="special-requests-body">Please assign our stalls together near the wash rack if possible.</div>
     </div>
 
-    <!-- What's Next (kept green palette — "upcoming/positive" semantic fits) -->
+    <!-- What's Next — Event Day Info. Conditional on _eem_event_day_enabled; star glyph (&#9733;), email-safe. Labels match templates/emails/confirmation.php exactly. -->
     <div class="whats-next">
       <div class="whats-next-head">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span style="font-size:18px;line-height:1;">&#9733;</span>
         <span>What's Next — Event Day Info</span>
       </div>
       <div class="whats-next-body">
-        <p><strong>Check-in opens:</strong> Friday, May 8 at 7:00 AM at the main barn office.</p>
-        <p><strong>What to bring:</strong> Coggins certificate (within 12 months), feed and water buckets, your own bedding if you prefer to top up the shavings provided.</p>
+        <p><strong>Check-In/Check-Out Instructions:</strong> Check-in opens Friday, May 8 at 7:00 AM at the main barn office. Checkout by 12:00 PM on departure day.</p>
+        <p><strong>What to bring:</strong> Coggins certificate (within 12 months), feed and water buckets, and your own bedding if you prefer to top up the shavings provided.</p>
         <p><strong>Parking:</strong> Truck and trailer parking is on the east side of the barns. Day-trip parking is in the front lot.</p>
-        <p><strong>Questions on event day:</strong> Call the event hotline at <strong>555-555-5555</strong>.</p>
+        <p><strong>Event Contact:</strong> Call the event hotline at 555-555-5555.</p>
       </div>
     </div>
 
-    <!-- PDF attachment note (DEC-5: SVG paperclip icon) -->
+    <!-- PDF attachment note — down-arrow glyph (&#8595;). Shown only when show_pdf_note is set (a PDF receipt is actually attached). -->
     <div class="attachment-note">
-      <div class="attach-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-      </div>
+      <div class="attach-icon"><span style="font-size:18px;line-height:1;font-weight:700;">&#8595;</span></div>
       <div>
         <span class="attach-text-title">PDF Receipt Attached</span>
         <span class="attach-text-body">A full copy of this receipt is attached to this email as a PDF for your records.</span>
       </div>
     </div>
 
-    <!-- Support (DEC-5: SVG phone + envelope icons; standard light-gray bg) -->
+    <!-- Support — phone (&#9742;) + envelope (&#9993;) glyphs, email-safe -->
     <div class="support-block">
       <div>
         <span class="support-left-title">Questions about your reservation?</span>
@@ -303,17 +304,17 @@ a:hover{text-decoration:none}
       </div>
       <div class="support-contact">
         <div class="support-contact-row">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+          <span style="font-size:16px;line-height:1;">&#9742;</span>
           <a href="tel:5555555555">555-555-5555</a>
         </div>
         <div class="support-contact-row">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <span style="font-size:16px;line-height:1;">&#9993;</span>
           <a href="mailto:office@rsnc.us">office@rsnc.us</a>
         </div>
       </div>
     </div>
 
-    <!-- Cancellation Policy (per-reservation; Phase 3 sources from reservation's override OR event default) -->
+    <!-- Cancellation Policy (per-reservation: reservation override OR inherited event default; rendered only when non-empty) -->
     <div class="cancellation-policy">
       <div class="cancellation-policy-title">Cancellation Policy</div>
       <p class="cancellation-policy-body">Cancellations made more than 14 days before the event will receive a full refund. Cancellations within 14 days of the event are non-refundable. Cancellations within 48 hours of the event will forfeit stall and lot deposits. Please contact the event office for any extenuating circumstances.</p>
@@ -321,9 +322,9 @@ a:hover{text-decoration:none}
 
   </div><!-- /email-body -->
 
-  <!-- FOOTER (DEC-7 consistent: white + top divider, not navy band) -->
+  <!-- FOOTER (white + top divider) -->
   <div class="email-footer">
-    <div class="footer-event">2026 Southeast Region Super Sort · May 8–10, 2026</div>
+    <div class="footer-event">2026 Southeast Region Super Sort · May 8, 2026 – May 10, 2026</div>
     <div class="footer-legal">This email was sent to info@wmpromotions.com · Order #00020</div>
   </div>
 

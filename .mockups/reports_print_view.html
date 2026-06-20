@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Revenue by Reservation — NTR 6519</title>
+	<!--
+		MOCKUP: Reports print view (standalone print/PDF output).
+		Source of truth: EEM_Reports_Page::render_print_view()
+		(admin/class-eem-reports-page.php). Triggered live by
+		?page=equine-event-manager-reports&eem_report_print=<slug> in a new tab.
+		No WP-admin chrome. Locked rpt-pv-* styling. Sticky Print/Save-PDF toolbar.
+		Styles copied verbatim from the render method in render_print_view().
+
+		Key behaviors from PHP:
+		- print_columns: some reports supply a subset of column indices for the
+		  print view (trimming verbose/PII columns). CSV still uses the full dataset.
+		- groups: if the report has a `groups` array, rows render with amber band
+		  per group + per-group count. Otherwise rows are flat; summary rows get the
+		  navy band (rpt-pv-summary) based on summary_row_count.
+		- note_sections: optional supplementary sub-tables below the main table
+		  (e.g. per-type breakdown for the Shavings report).
+		- meta subtitle = reservation title (or "All reservations") from pdf_meta().
+		- document title = report title + " — " + reservation title.
+		- @page size:landscape.
+
+		Sample data below = Revenue by Reservation report for NTR 6519,
+		grouped by payment status (groups path), with a note section.
+	-->
+	<style>
+		*{box-sizing:border-box}
+		body{font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1d2327;background:#f0f0f1;margin:0;padding:0;font-size:12px}
+		.rpt-pv-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 24px;background:#f1f5f9;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:10}
+		.rpt-pv-toolbar-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E}
+		.rpt-pv-toolbar-actions{display:flex;gap:8px}
+		.rpt-pv-btn{font:inherit;font-weight:600;font-size:13px;padding:8px 16px;border-radius:3px;border:1px solid #c3c4c7;background:#fff;color:#1d2327;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+		.rpt-pv-btn--primary{background:#1668F2;border-color:#1668F2;color:#fff}
+		.rpt-pv-body{padding:24px}
+		.rpt-pv-doc{max-width:1000px;margin:0 auto;background:#fff;border:1px solid #e2e4e7;border-radius:3px;overflow:hidden}
+		.rpt-pv-head{padding:20px 22px;border-bottom:2px solid #031B4E}
+		.rpt-pv-report-type{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#1668F2;margin-bottom:4px}
+		.rpt-pv-title{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#031B4E;margin:0}
+		.rpt-pv-event{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;color:#031B4E;margin-top:6px}
+		.rpt-pv-meta{font-size:12px;color:#50575e;margin-top:4px}
+		.rpt-pv-table{width:100%;border-collapse:collapse}
+		.rpt-pv-table th{text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#031B4E;padding:6px 12px;background:#f8fafc;border-top:1px solid #d9e2f2;border-bottom:1px solid #d9e2f2}
+		.rpt-pv-table td{padding:7px 12px;font-size:11px;color:#1d2327;border-bottom:1px solid #f0f0f1}
+		.rpt-pv-table tbody tr:nth-child(even) td{background:#f8fafc}
+		.rpt-pv-summary td{background:#031B4E!important;color:#fff!important;font-weight:700;font-size:11px}
+		.rpt-pv-group td{background:#fdf4e7;color:#b45309;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:11px;border-top:1px solid #f3e2c4;border-bottom:1px solid #f3e2c4}
+		.rpt-pv-group td .rpt-pv-group-count{font-weight:600;color:#92400e}
+		.rpt-pv-total{padding:12px 22px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E;border-top:1px solid #d9e2f2;background:#f8fafc}
+		.rpt-pv-empty{padding:28px 22px;text-align:center;color:#646970}
+		.rpt-pv-note-section{margin-top:24px;padding-top:16px;border-top:1px solid #d9e2f2}
+		.rpt-pv-note-section__label{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;margin-bottom:8px;padding:0 0 0 2px}
+		.rpt-pv-table--note{margin-top:4px}
+		@page{size:landscape}
+		@media print{
+			.rpt-pv-toolbar{display:none}
+			body{background:#fff;padding:0}
+			.rpt-pv-doc{border:0;border-radius:0;max-width:none}
+			*{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
+		}
+	</style>
+</head>
+<body>
+	<!-- Sticky toolbar — hidden on print via @media print -->
+	<div class="rpt-pv-toolbar">
+		<div class="rpt-pv-toolbar-title">Revenue by Reservation</div>
+		<div class="rpt-pv-toolbar-actions">
+			<button type="button" class="rpt-pv-btn rpt-pv-btn--primary" onclick="window.print()">Print / Save PDF</button>
+			<button type="button" class="rpt-pv-btn" onclick="window.close()">Close</button>
+		</div>
+	</div>
+
+	<div class="rpt-pv-body">
+		<div class="rpt-pv-doc">
+
+			<!-- Header: report type label, title, optional event_header, meta subtitle + generated stamp -->
+			<div class="rpt-pv-head">
+				<div class="rpt-pv-report-type">Report</div>
+				<h1 class="rpt-pv-title">Revenue by Reservation</h1>
+				<!-- event_header rendered only when non-empty; sourced from the reservation/event title -->
+				<div class="rpt-pv-event">Spring Barrel Classic 2026</div>
+				<!--
+					meta subtitle = pdf_meta()['subtitle']
+					= reservation post title when reservation_id filter is set,
+					  or "All reservations" when no filter.
+					Shown before the · separator, then the generated timestamp.
+				-->
+				<div class="rpt-pv-meta">NTR 6519 &nbsp;·&nbsp; Generated June 20, 2026 2:14 pm</div>
+			</div>
+
+			<!--
+				Main table — groups path (report has `groups` array):
+				amber band per group with group label + unit count,
+				then flat rows inside each group.
+				When no groups, rows are flat with summary_row_count navy rows at top.
+			-->
+			<table class="rpt-pv-table">
+				<thead>
+					<tr>
+						<!-- print_columns subset: verbose/PII columns like full address are excluded -->
+						<th>Date</th>
+						<th>Order #</th>
+						<th>Customer</th>
+						<th>Stalls</th>
+						<th>RV Lots</th>
+						<th>Add-Ons</th>
+						<th>Conv. Fee</th>
+						<th>Tax</th>
+						<th>Total</th>
+					</tr>
+				</thead>
+				<tbody>
+					<!-- Group: Paid — amber band -->
+					<tr class="rpt-pv-group">
+						<td colspan="9">
+							Paid
+							<span class="rpt-pv-group-count">3 units</span>
+						</td>
+					</tr>
+					<tr>
+						<td>Apr 18, 2026</td>
+						<td>#00128</td>
+						<td>Dana Whitfield</td>
+						<td>$160.00</td>
+						<td>$90.00</td>
+						<td>$24.00</td>
+						<td>$8.32</td>
+						<td>$22.34</td>
+						<td>$304.66</td>
+					</tr>
+					<tr>
+						<td>Apr 19, 2026</td>
+						<td>#00131</td>
+						<td>Marcus Hale</td>
+						<td>$240.00</td>
+						<td>$0.00</td>
+						<td>$45.00</td>
+						<td>$9.99</td>
+						<td>$23.43</td>
+						<td>$318.42</td>
+					</tr>
+					<tr>
+						<td>Apr 20, 2026</td>
+						<td>#00137</td>
+						<td>Priya Raman</td>
+						<td>$80.00</td>
+						<td>$135.00</td>
+						<td>$0.00</td>
+						<td>$7.31</td>
+						<td>$18.62</td>
+						<td>$240.93</td>
+					</tr>
+
+					<!-- Group: Unpaid — amber band -->
+					<tr class="rpt-pv-group">
+						<td colspan="9">
+							Unpaid
+							<span class="rpt-pv-group-count">2 units</span>
+						</td>
+					</tr>
+					<tr>
+						<td>Apr 21, 2026</td>
+						<td>#00140</td>
+						<td>Cole Jensen</td>
+						<td>$160.00</td>
+						<td>$0.00</td>
+						<td>$12.00</td>
+						<td>$5.61</td>
+						<td>$14.28</td>
+						<td>$191.89</td>
+					</tr>
+					<tr>
+						<td>Apr 22, 2026</td>
+						<td>#00142</td>
+						<td>Erin Voss</td>
+						<td>$320.00</td>
+						<td>$180.00</td>
+						<td>$36.00</td>
+						<td>$15.81</td>
+						<td>$40.27</td>
+						<td>$592.08</td>
+					</tr>
+				</tbody>
+			</table>
+
+			<!--
+				rpt-pv-total: shows total_label if report provides one,
+				otherwise "%d row(s)" from count($rows).
+				When groups are used, count($rows) is still all data rows (not group bands).
+			-->
+			<div class="rpt-pv-total">5 rows</div>
+
+			<!--
+				note_sections: optional supplementary sub-tables below the main table.
+				Each entry: { label, headers[], rows[][] }.
+				Skipped when the section's rows array is empty.
+			-->
+			<div class="rpt-pv-note-section">
+				<div class="rpt-pv-note-section__label">Revenue by Category</div>
+				<table class="rpt-pv-table rpt-pv-table--note">
+					<thead>
+						<tr>
+							<th>Category</th>
+							<th>Units</th>
+							<th>Gross</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr><td>Stall Reservations</td><td>24</td><td>$960.00</td></tr>
+						<tr><td>RV Lots</td><td>9</td><td>$405.00</td></tr>
+						<tr><td>Add-Ons</td><td>11</td><td>$117.00</td></tr>
+					</tbody>
+				</table>
+			</div>
+
+		</div><!-- /.rpt-pv-doc -->
+	</div><!-- /.rpt-pv-body -->
+
+	<!-- document.title set by JS to match server-generated $doc_title -->
+	<script>document.title = 'Revenue by Reservation — NTR 6519';</script>
+</body>
+</html>

@@ -10,6 +10,10 @@
   - General Add-Ons are ungated (purchasable without a stall/RV).
   - Event Pre-Entries: an additional purchasable section (class/division pre-entries) when configured.
   - "Pick Your Stalls" picker shown below renders from _en_stall_rows; labels display #-prefixed.
+  - Additional Shavings is a dedicated collapsible section, rendered AFTER RV and BEFORE Add-Ons.
+  - Section card headers use a bare electric-blue SVG icon (no chip) + navy uppercase title text, left-aligned.
+  - Reserve Now / Complete Reservation buttons are solid electric blue (#1668F2), no gradient.
+  - Order sidebar "Reserve Now" button is solid electric blue.
 -->
 <html lang="en">
 <head>
@@ -45,26 +49,26 @@ img{display:block;max-width:100%}
 .hero-meta-val{font-size:13px;color:#031B4E;font-weight:500}
 .hero-meta-sub{font-size:12px;color:#6B7A99}
 .hero-ctas{display:flex;gap:10px;flex-wrap:wrap}
+/* Reserve Now — solid electric blue, no gradient */
 .btn-reserve{background:#1668F2;color:#fff;padding:12px 26px;border-radius:8px;font-size:14px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;border:none;letter-spacing:.01em}
+.btn-reserve:hover{background:#0d52cc}
 .btn-directions{background:#fff;color:#031B4E;border:1.5px solid #D9E2F2;padding:11px 20px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;font-family:'IBM Plex Sans',sans-serif}
-
-/* ── MOBILE ORDER SUMMARY BANNER (hidden on desktop) ── */
-.mobile-order-banner{display:none;background:#031B4E;padding:14px 16px;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:50}
-.mob-banner-label{font-size:12px;color:#90aed4;font-weight:500}
-.mob-banner-total{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700;color:#fff}
-.mob-banner-btn{background:#1668F2;color:#fff;border:none;padding:9px 16px;border-radius:8px;font-size:13px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;white-space:nowrap;cursor:pointer}
 
 /* ── PAGE BODY ── */
 .page-body{display:grid;grid-template-columns:1fr 340px;gap:28px;padding:28px 40px 60px;align-items:start;max-width:1440px;margin:0 auto}
 
 /* ── FORM SECTIONS ── */
 .form-section{background:#fff;border-radius:8px;border:1px solid #D9E2F2;margin-bottom:16px;overflow:hidden}
-.section-header{padding:16px 22px;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
-.section-header-left{display:flex;flex-direction:column;gap:2px}
+
+/* Section header — bare blue SVG icon + navy uppercase title, left-aligned */
+.section-header{padding:16px 22px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #F0F4FB;cursor:pointer}
+.section-header-left{display:flex;align-items:center;gap:10px}
+.section-icon{display:inline-flex;align-items:center;color:#1668F2;flex-shrink:0}
+.section-icon svg{width:18px;height:18px;stroke-width:2}
 .section-title{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#031B4E}
 .section-desc{font-size:13px;color:#6B7A99;font-weight:400;margin-top:1px}
-.section-body{padding:0 22px 20px}
-.section-body-padded{padding:4px 22px 20px}
+.section-body{padding:16px 22px 20px}
+.section-body-padded{padding:16px 22px 20px}
 
 /* Toggle */
 .toggle{width:44px;height:24px;background:#D9E2F2;border-radius:8px;position:relative;cursor:pointer;flex-shrink:0}
@@ -93,11 +97,34 @@ img{display:block;max-width:100%}
 .stay-dates-note{font-size:13px;color:#6B7A99}
 .stay-dates-note strong{color:#031B4E}
 
+/* Check-In / Check-Out time pills */
+.stay-times{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.time-card{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid #D9E2F2;border-radius:8px;background:#F0F4FB}
+.time-card-icon{display:inline-flex;color:#1668F2}
+.time-card-icon svg{width:22px;height:22px}
+.time-card-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#8a9ab8}
+.time-card-val{font-size:16px;font-weight:600;color:#031B4E;display:block;margin-top:2px}
+
+/* Event Day Info lines */
+.event-day-info{margin-top:14px;padding-top:14px;border-top:1px dashed #D9E2F2;display:flex;flex-direction:column;gap:8px}
+.event-day-info p{font-size:13px;color:#4a5a7a;line-height:1.6}
+.event-day-info p strong{color:#031B4E}
+.event-day-info a{color:#1668F2;font-weight:600}
+
+/* Required Documents */
+.req-doc-row{padding:12px 0;border-top:1px solid #F0F4FB}
+.req-doc-row:first-child{border-top:0}
+.req-doc-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.req-doc-name{font-size:14px;font-weight:600;color:#031B4E}
+.req-doc-badge{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#b06f12;background:#FFF4E2;padding:2px 8px;border-radius:8px}
+.req-doc-btn{display:inline-block;padding:7px 14px;border:1.5px solid #1668F2;color:#1668F2;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;background:#fff}
+.req-doc-status{margin-left:10px;font-size:12px;color:#6B7A99}
+
 /* Products */
 .products-header{display:flex;justify-content:space-between;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8a9ab8;padding:0 0 8px;border-bottom:1px solid #EEF2F9;margin-bottom:4px}
 .product-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #F0F4FB;gap:12px}
 .product-row:last-of-type{border-bottom:1px solid #D9E2F2}
-.addon-row:last-of-type{border-bottom:1px solid #D9E2F2}.product-info{flex:1;min-width:0}
+.product-info{flex:1;min-width:0}
 .product-name{font-size:14px;font-weight:600;color:#031B4E}
 .product-sub{font-size:12px;color:#6B7A99;margin-top:2px}
 .product-auto-badge{display:inline-block;background:#EEF4FF;color:#1668F2;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;letter-spacing:.04em;margin-left:6px;vertical-align:middle}
@@ -112,9 +139,6 @@ img{display:block;max-width:100%}
 .stall-assign-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .stall-assign-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#031B4E}
 .stall-assign-desc{font-size:12.5px;color:#6B7A99;line-height:1.6;margin-bottom:12px}
-.stall-barn-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
-.stall-barn-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#4a5a7a;white-space:nowrap}
-.stall-barn-select{flex:1;min-width:140px;max-width:220px}
 .view-map-btn{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:#1668F2;border:1.5px solid #D9E2F2;padding:7px 12px;border-radius:8px;cursor:pointer;background:#fff;white-space:nowrap}
 .stall-legend{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap}
 .legend-item{display:flex;align-items:center;gap:5px;font-size:12px;color:#4a5a7a;font-weight:500}
@@ -123,9 +147,8 @@ img{display:block;max-width:100%}
 .legend-dot.reserved{background:#F5F5F7;border-color:#E5E7EB}
 .legend-dot.blocked{background:#F5F5F7;border-color:#E5E7EB;border-style:dashed}
 
-/* Row-aware customer picker — rendered from admin's Stall Rows config */
+/* Row-aware customer picker */
 .stall-picker{display:flex;flex-direction:column;gap:14px;margin-bottom:6px}
-.stall-row-section{}
 .stall-row-section-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;gap:10px;flex-wrap:wrap}
 .stall-row-section-name{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#031B4E;font-family:'Space Grotesk',sans-serif}
 .stall-row-section-meta{font-size:11.5px;color:#6B7A99;font-weight:500}
@@ -134,8 +157,6 @@ img{display:block;max-width:100%}
 .picker-stall-row-side{display:flex;flex-wrap:wrap;gap:6px}
 .picker-stall-row-aisle{height:10px;background:repeating-linear-gradient(90deg,transparent 0 6px,#D9E2F2 6px 10px);margin:3px 0;border-radius:2px;position:relative}
 .picker-stall-row-aisle::after{content:'aisle';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#FAFBFE;color:#8c8f94;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:0 8px;border-radius:2px;line-height:1}
-
-/* Customer-facing stall boxes — bigger touch target than admin */
 .picker-stall{min-width:44px;height:38px;padding:0 8px;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid #D9E2F2;border-radius:6px;background:#fff;font-size:13px;font-weight:600;color:#031B4E;font-family:'IBM Plex Sans',sans-serif;line-height:1;text-align:center;white-space:nowrap;cursor:pointer;transition:border-color .1s,background .1s,box-shadow .1s;user-select:none}
 .picker-stall:hover{border-color:#1668F2;background:#EEF4FF}
 .picker-stall.selected{background:#1668F2;color:#fff;border-color:#1668F2;box-shadow:0 2px 6px rgba(22,104,242,.2)}
@@ -144,7 +165,7 @@ img{display:block;max-width:100%}
 .picker-stall.reserved{text-decoration:line-through}
 .picker-stall.blocked{border-style:dashed;text-decoration:line-through}
 
-/* Selection summary at the bottom */
+/* Selection summary */
 .stall-selection-summary{margin-top:14px;padding:12px 14px;background:#fff;border:1.5px solid #D9E2F2;border-radius:6px}
 .stall-selection-summary-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .stall-selection-count{font-size:13px;color:#031B4E;font-weight:600}
@@ -153,7 +174,6 @@ img{display:block;max-width:100%}
 .stall-selection-list strong{color:#031B4E;font-weight:600}
 .stall-selection-warn{font-size:12px;color:#b45309;background:#FFFBEB;border:1px solid #fde68a;border-radius:4px;padding:8px 10px;margin-top:8px;display:none}
 .stall-selection-warn.show{display:block}
-
 .stall-hint{font-size:12px;color:#6B7A99;margin-top:10px;line-height:1.5}
 
 /* Add-on rows */
@@ -177,7 +197,9 @@ img{display:block;max-width:100%}
 .card-icon.visa{background:#1a1f71;color:#fff}
 .card-icon.mc{background:#eb001b;color:#fff}
 .stripe-note{font-size:12px;color:#8a9ab8;margin-top:8px}
+/* Complete Reservation button — solid electric blue */
 .complete-btn{width:100%;background:#1668F2;color:#fff;border:none;padding:15px;border-radius:8px;font-size:15px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;letter-spacing:.01em}
+.complete-btn:hover{background:#0d52cc}
 
 /* ── ORDER SIDEBAR ── */
 .order-sidebar{position:sticky;top:20px}
@@ -196,7 +218,9 @@ img{display:block;max-width:100%}
 .order-total-row{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:800;color:#031B4E;border-top:2px solid #D9E2F2;padding-top:12px;margin-top:8px;margin-bottom:14px;font-family:'Space Grotesk',sans-serif}
 .order-total-row span:last-child{color:#1668F2}
 .order-info-box{background:#EEF7F5;border:1px solid #b3e4da;border-radius:8px;padding:9px 12px;font-size:12px;color:#0a5c4a;line-height:1.6;margin-bottom:12px;display:flex;gap:7px}
-.order-reserve-btn{width:100%;background:linear-gradient(90deg,#1668F2,#26D0B5);color:#fff;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+/* Reserve Now button — solid electric blue, no gradient */
+.order-reserve-btn{width:100%;background:#1668F2;color:#fff;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:700;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.order-reserve-btn:hover{background:#0d52cc}
 .order-secure{text-align:center;font-size:11px;color:#8a9ab8;margin-top:9px}
 
 /* ── MOBILE BOTTOM ORDER DRAWER (shown on mobile) ── */
@@ -221,7 +245,6 @@ img{display:block;max-width:100%}
    MOBILE  (≤ 767px)
    ════════════════════════════ */
 @media (max-width:767px){
-  /* Hero stacks vertically */
   .hero-inner{grid-template-columns:1fr;min-height:auto}
   .hero-img-col{padding:16px 16px 0}
   .hero-img-col svg{max-width:100%;height:260px}
@@ -235,34 +258,16 @@ img{display:block;max-width:100%}
   .hero-meta-item:last-child{border-bottom:none}
   .hero-ctas{flex-direction:column}
   .btn-reserve,.btn-directions{width:100%;text-align:center;justify-content:center}
-
-  /* Page body */
   .page-body{padding:12px 12px 100px}
-
-  /* Section cards */
   .section-header{padding:14px 16px}
-  .section-body{padding:0 16px 16px}
-  .section-body-padded{padding:4px 16px 16px}
-
-  /* All multi-col grids collapse to single column */
-  .field-row.cols-2,
-  .field-row.cols-3,
-  .field-row.cols-4{grid-template-columns:1fr}
-
-  /* Stall picker — slightly smaller boxes on mobile */
+  .section-body{padding:12px 16px 16px}
+  .section-body-padded{padding:12px 16px 16px}
+  .field-row.cols-2,.field-row.cols-3,.field-row.cols-4{grid-template-columns:1fr}
   .picker-stall{min-width:40px;height:34px;font-size:12px}
-  .stall-barn-row{flex-direction:column;align-items:flex-start;gap:8px}
-  .stall-barn-select{max-width:100%;width:100%}
-
-  /* Product rows */
   .product-row{flex-wrap:wrap;gap:8px}
   .product-info{width:100%}
   .qty-control{margin-left:auto}
-
-  /* Billing sub-boxes */
   .billing-sub-box{padding:14px 12px}
-
-  /* Mobile drawer */
   .mob-drawer-btn{padding:12px 18px;font-size:13px}
 }
 
@@ -277,19 +282,17 @@ img{display:block;max-width:100%}
   .complete-btn{font-size:14px;padding:13px}
 }
 
-/* Agreement Notice (below Order Summary, controlled by admin Agreement card) */
+/* Agreement Notice */
 .agreement-notice{display:flex;align-items:flex-start;gap:10px;background:#FFFBEB;border:1px solid #fbbf24;border-radius:8px;padding:14px 16px;margin-top:14px;font-family:'IBM Plex Sans',sans-serif}
 .agreement-notice-icon{flex-shrink:0;width:18px;height:18px;color:#f59e0b;margin-top:1px}
 .agreement-notice-text{font-size:13.5px;line-height:1.55;color:#1d2327}
 .agreement-notice-text strong{font-weight:700;color:#031B4E}
-.agreement-notice-link{color:#1668F2;text-decoration:underline;font-weight:500}
-.agreement-notice-link:hover{color:#0d5cd9}
+.agreement-notice-link{color:#1668F2;font-weight:500}
 @media(max-width:900px){
   .agreement-notice{margin:14px 0;font-size:13px}
   .agreement-notice-icon{width:16px;height:16px}
   .agreement-notice-text{font-size:13px}
 }
-
 </style>
 </head>
 <body>
@@ -329,7 +332,7 @@ img{display:block;max-width:100%}
         <div class="hero-meta-item">
           <div class="hero-meta-label">Producer</div>
           <div class="hero-meta-val">RSNC USA</div>
-          <div class="hero-meta-sub">970-897-2901 · office@rsnc.us</div>
+          <div class="hero-meta-sub"><a href="tel:9708972901">970-897-2901</a> · <a href="mailto:office@rsnc.us">office@rsnc.us</a></div>
         </div>
       </div>
       <div class="hero-ctas">
@@ -359,6 +362,9 @@ img{display:block;max-width:100%}
     <div class="form-section">
       <div class="section-header">
         <div class="section-header-left">
+          <span class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </span>
           <div class="section-title">Contact Information</div>
         </div>
       </div>
@@ -386,6 +392,14 @@ img{display:block;max-width:100%}
             </div>
           </div>
         </div>
+        <!-- Group Name field (shown when Group Reservations enabled on the reservation) -->
+        <div class="field-row">
+          <div class="field-group">
+            <label class="field-label">Group Name</label>
+            <input class="field-input" type="text" placeholder="Optional — enter group name to be placed together">
+            <span style="font-size:12px;color:#6B7A99;margin-top:4px">Optional — if you're travelling with a group, enter the group name so we can try to place you together.</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -393,12 +407,36 @@ img{display:block;max-width:100%}
     <div class="form-section">
       <div class="section-header">
         <div class="section-header-left">
+          <span class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </span>
           <div class="section-title">Stay Details</div>
         </div>
       </div>
       <div class="section-body-padded">
         <p class="stay-info-text">Welcome to the 2026 Southeast Region Super Sort at Georgia National Fairgrounds! Stabling is available from Thursday, May 7 through Sunday, May 9. All competitors are required to purchase a minimum of 2 bags of shavings per stall at check-in.</p>
         <p class="stay-dates-note"><strong>Available reservation dates:</strong> May 8, 2026 to May 10, 2026</p>
+        <div class="stay-times">
+          <div class="time-card">
+            <span class="time-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></span>
+            <span><span class="time-card-label">Check-In</span><span class="time-card-val">after 2:00pm</span></span>
+          </div>
+          <div class="time-card">
+            <span class="time-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
+            <span><span class="time-card-label">Check-Out</span><span class="time-card-val">by 11:00am</span></span>
+          </div>
+        </div>
+        <div class="event-day-info">
+          <p><strong>Check-In/Check-Out Instructions:</strong> Check in at the show office (Barn A entrance) starting Friday at 2:00 PM. Bring your confirmation email.</p>
+          <p><strong>What to bring:</strong> Negative Coggins (within 12 months), proof of vaccination, your own buckets and muck tools.</p>
+          <p><strong>Parking:</strong> Trailer parking is in the North Lot. Overnight rigs must have an RV reservation — no dry-camping in the trailer lot.</p>
+          <p><strong>Event Contact:</strong> Show office: <a href="tel:5593935352">(559) 393-5352</a> · After-hours grounds: <a href="tel:5595550142">(559) 555-0142</a></p>
+        </div>
+        <!-- Download Venue Map link (shown when venue_map_enabled and a file is uploaded) -->
+        <a href="#" style="display:inline-flex;align-items:center;gap:6px;margin-top:14px;color:#1668F2;font-size:13px;font-weight:600">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download Venue Map
+        </a>
       </div>
     </div>
 
@@ -406,12 +444,15 @@ img{display:block;max-width:100%}
     <div class="form-section">
       <div class="section-header">
         <div class="section-header-left">
+          <span class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18M3 9h18M3 15h18"/></svg>
+          </span>
           <div class="section-title">Stall Reservations</div>
         </div>
         <div class="toggle on"></div>
       </div>
       <div class="section-body">
-        <p class="stay-info-text">Reserve stalls for the duration of your stay. Stall assignments are available by barn selection below, or one will be automatically assigned after checkout.</p>
+        <p class="stay-info-text">Reserve stalls for the duration of your stay. Stall assignments are available by selection below, or one will be automatically assigned after checkout.</p>
         <p class="stay-dates-note" style="margin-bottom:16px"><strong>Available reservation dates:</strong> May 8, 2026 to May 10, 2026</p>
 
         <div class="field-row cols-4" style="margin-bottom:18px">
@@ -436,8 +477,8 @@ img{display:block;max-width:100%}
         <div class="products-header"><span>Product</span><span>QTY</span></div>
         <div class="product-row">
           <div class="product-info">
-            <div class="product-name">Stalls – $1.00 per night</div>
-            <div class="product-sub">2 bags of shavings are required to be purchased per stall.</div>
+            <div class="product-name">Stalls – $40.00 per night</div>
+            <div class="product-sub">2 bags of shavings are required per stall at check-in.</div>
           </div>
           <div class="qty-control">
             <button class="qty-btn">−</button>
@@ -445,10 +486,11 @@ img{display:block;max-width:100%}
             <button class="qty-btn">+</button>
           </div>
         </div>
+        <!-- Required Shavings — auto-added inside Stall section, not editable -->
         <div class="product-row">
           <div class="product-info">
             <div class="product-name" style="color:#B0BDD4">Required Shavings – $10.00 per bag <span class="product-auto-badge">Auto-added</span></div>
-            <div class="product-sub">Automatically added to cart.</div>
+            <div class="product-sub">Automatically added: 2 bags per stall reserved.</div>
           </div>
           <div class="qty-control">
             <button class="qty-btn" style="opacity:.45;cursor:default">−</button>
@@ -457,7 +499,7 @@ img{display:block;max-width:100%}
           </div>
         </div>
 
-        <!-- STALL ASSIGNMENT -->
+        <!-- STALL PICKER (from _en_stall_rows) -->
         <div class="stall-assign-box">
           <div class="stall-assign-header">
             <div class="stall-assign-title">Pick Your Stalls</div>
@@ -472,30 +514,29 @@ img{display:block;max-width:100%}
           </div>
 
           <div class="stall-picker">
-
-            <!-- Red Barn Row A — one-sided, 100–111. 100 + 102 blocked by admin; 104, 107 reserved by other customers. -->
+            <!-- Red Barn Row A — one-sided, 100–111. 100 + 102 blocked; 104, 107 reserved. -->
             <div class="stall-row-section">
               <div class="stall-row-section-head">
                 <div class="stall-row-section-name">Red Barn Row A</div>
                 <div class="stall-row-section-meta">12 stalls · One-sided</div>
               </div>
               <div class="picker-stall-row">
-                <div class="picker-stall blocked">100</div>
-                <div class="picker-stall">101</div>
-                <div class="picker-stall blocked">102</div>
-                <div class="picker-stall">103</div>
-                <div class="picker-stall reserved">104</div>
-                <div class="picker-stall">105</div>
-                <div class="picker-stall">106</div>
-                <div class="picker-stall reserved">107</div>
-                <div class="picker-stall">108</div>
-                <div class="picker-stall">109</div>
-                <div class="picker-stall">110</div>
-                <div class="picker-stall">111</div>
+                <div class="picker-stall blocked">#100</div>
+                <div class="picker-stall">#101</div>
+                <div class="picker-stall blocked">#102</div>
+                <div class="picker-stall">#103</div>
+                <div class="picker-stall reserved">#104</div>
+                <div class="picker-stall">#105</div>
+                <div class="picker-stall">#106</div>
+                <div class="picker-stall reserved">#107</div>
+                <div class="picker-stall">#108</div>
+                <div class="picker-stall">#109</div>
+                <div class="picker-stall">#110</div>
+                <div class="picker-stall">#111</div>
               </div>
             </div>
 
-            <!-- Red Barn Row B — back-to-back, top 112-123 / bot 124-135. Customer has picked 124 + 125 (adjacent). 113, 128 reserved. -->
+            <!-- Red Barn Row B — back-to-back, top 112-123 / bot 124-135. Customer picked 124 + 125; 113, 128 reserved. -->
             <div class="stall-row-section">
               <div class="stall-row-section-head">
                 <div class="stall-row-section-name">Red Barn Row B</div>
@@ -503,59 +544,58 @@ img{display:block;max-width:100%}
               </div>
               <div class="picker-stall-row back-to-back">
                 <div class="picker-stall-row-side">
-                  <div class="picker-stall">112</div>
-                  <div class="picker-stall reserved">113</div>
-                  <div class="picker-stall">114</div>
-                  <div class="picker-stall">115</div>
-                  <div class="picker-stall">116</div>
-                  <div class="picker-stall">117</div>
-                  <div class="picker-stall">118</div>
-                  <div class="picker-stall">119</div>
-                  <div class="picker-stall">120</div>
-                  <div class="picker-stall">121</div>
-                  <div class="picker-stall">122</div>
-                  <div class="picker-stall">123</div>
+                  <div class="picker-stall">#112</div>
+                  <div class="picker-stall reserved">#113</div>
+                  <div class="picker-stall">#114</div>
+                  <div class="picker-stall">#115</div>
+                  <div class="picker-stall">#116</div>
+                  <div class="picker-stall">#117</div>
+                  <div class="picker-stall">#118</div>
+                  <div class="picker-stall">#119</div>
+                  <div class="picker-stall">#120</div>
+                  <div class="picker-stall">#121</div>
+                  <div class="picker-stall">#122</div>
+                  <div class="picker-stall">#123</div>
                 </div>
                 <div class="picker-stall-row-aisle"></div>
                 <div class="picker-stall-row-side">
-                  <div class="picker-stall selected">124</div>
-                  <div class="picker-stall selected">125</div>
-                  <div class="picker-stall">126</div>
-                  <div class="picker-stall">127</div>
-                  <div class="picker-stall reserved">128</div>
-                  <div class="picker-stall">129</div>
-                  <div class="picker-stall">130</div>
-                  <div class="picker-stall">131</div>
-                  <div class="picker-stall">132</div>
-                  <div class="picker-stall">133</div>
-                  <div class="picker-stall">134</div>
-                  <div class="picker-stall">135</div>
+                  <div class="picker-stall selected">#124</div>
+                  <div class="picker-stall selected">#125</div>
+                  <div class="picker-stall">#126</div>
+                  <div class="picker-stall">#127</div>
+                  <div class="picker-stall reserved">#128</div>
+                  <div class="picker-stall">#129</div>
+                  <div class="picker-stall">#130</div>
+                  <div class="picker-stall">#131</div>
+                  <div class="picker-stall">#132</div>
+                  <div class="picker-stall">#133</div>
+                  <div class="picker-stall">#134</div>
+                  <div class="picker-stall">#135</div>
                 </div>
               </div>
             </div>
 
-            <!-- Yellow Barn Row A — one-sided, custom labels Y1-Y12. Y5 reserved. -->
+            <!-- Yellow Barn Row A — one-sided, prefixed labels Y1-Y12. Y5 reserved. -->
             <div class="stall-row-section">
               <div class="stall-row-section-head">
                 <div class="stall-row-section-name">Yellow Barn Row A</div>
                 <div class="stall-row-section-meta">12 stalls · One-sided</div>
               </div>
               <div class="picker-stall-row">
-                <div class="picker-stall">Y1</div>
-                <div class="picker-stall">Y2</div>
-                <div class="picker-stall">Y3</div>
-                <div class="picker-stall">Y4</div>
-                <div class="picker-stall reserved">Y5</div>
-                <div class="picker-stall">Y6</div>
-                <div class="picker-stall">Y7</div>
-                <div class="picker-stall">Y8</div>
-                <div class="picker-stall">Y9</div>
-                <div class="picker-stall">Y10</div>
-                <div class="picker-stall">Y11</div>
-                <div class="picker-stall">Y12</div>
+                <div class="picker-stall">#Y1</div>
+                <div class="picker-stall">#Y2</div>
+                <div class="picker-stall">#Y3</div>
+                <div class="picker-stall">#Y4</div>
+                <div class="picker-stall reserved">#Y5</div>
+                <div class="picker-stall">#Y6</div>
+                <div class="picker-stall">#Y7</div>
+                <div class="picker-stall">#Y8</div>
+                <div class="picker-stall">#Y9</div>
+                <div class="picker-stall">#Y10</div>
+                <div class="picker-stall">#Y11</div>
+                <div class="picker-stall">#Y12</div>
               </div>
             </div>
-
           </div>
 
           <!-- Selection summary -->
@@ -570,7 +610,7 @@ img{display:block;max-width:100%}
           <p class="stall-hint">Want different stalls? Tap a selected stall to deselect it, then pick another. To add or remove total stalls, use the +/− buttons in the product list above.</p>
         </div>
 
-        <div class="subtotal-row"><span>Stall Subtotal</span><span>$4.00</span></div>
+        <div class="subtotal-row"><span>Stall Subtotal</span><span>$160.00</span></div>
       </div>
     </div>
 
@@ -578,6 +618,9 @@ img{display:block;max-width:100%}
     <div class="form-section">
       <div class="section-header">
         <div class="section-header-left">
+          <span class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="6" width="15" height="12" rx="2"/><path d="M16 9h4l3 3v6h-7"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg>
+          </span>
           <div class="section-title">RV Reservations</div>
         </div>
         <div class="toggle on"></div>
@@ -614,20 +657,57 @@ img{display:block;max-width:100%}
             <button class="qty-btn">+</button>
           </div>
         </div>
-        <div class="addon-row">
-          <div class="addon-left">
-            <div class="addon-checkbox"></div>
-            <div><div class="addon-label">Water – $10.00 <span class="addon-price-badge">Add-On</span></div></div>
-          </div>
-        </div>
         <div class="subtotal-row"><span>RV Subtotal</span><span>$40.00</span></div>
       </div>
     </div>
 
-    <!-- ADD-ONS -->
+    <!-- ADDITIONAL SHAVINGS (dedicated section, after RV, before Add-Ons) -->
     <div class="form-section">
       <div class="section-header">
         <div class="section-header-left">
+          <span class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </span>
+          <div class="section-title">Additional Shavings</div>
+        </div>
+        <div class="toggle on"></div>
+      </div>
+      <div class="section-body">
+        <p class="stay-info-text">Optional shavings products available for purchase.</p>
+        <div class="products-header"><span>Product</span><span>QTY</span></div>
+        <div class="product-row">
+          <div class="product-info">
+            <div class="product-name">Pine Shavings – $12.00 per bag</div>
+            <div class="product-sub">3.5 Cu. Ft. compressed bale</div>
+          </div>
+          <div class="qty-control">
+            <button class="qty-btn">−</button>
+            <span class="qty-num">0</span>
+            <button class="qty-btn">+</button>
+          </div>
+        </div>
+        <div class="product-row">
+          <div class="product-info">
+            <div class="product-name">Cedar Shavings – $14.00 per bag</div>
+            <div class="product-sub">3.0 Cu. Ft. compressed bale</div>
+          </div>
+          <div class="qty-control">
+            <button class="qty-btn">−</button>
+            <span class="qty-num">0</span>
+            <button class="qty-btn">+</button>
+          </div>
+        </div>
+        <div class="subtotal-row"><span>Shavings Subtotal</span><span>$0.00</span></div>
+      </div>
+    </div>
+
+    <!-- ADD-ONS (general add-ons, ungated — purchasable without stall/RV) -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-header-left">
+          <span class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          </span>
           <div class="section-title">Add-Ons</div>
         </div>
         <div class="toggle on"></div>
@@ -636,8 +716,19 @@ img{display:block;max-width:100%}
         <div class="products-header"><span>Product</span><span>QTY</span></div>
         <div class="product-row">
           <div class="product-info">
-            <div class="product-name">Shavings – $12.00 per bag</div>
-            <div class="product-sub">3.5 Cu. Ft.</div>
+            <div class="product-name">Stall Mats – $25.00 each</div>
+            <div class="product-sub">Rubber interlocking mat set</div>
+          </div>
+          <div class="qty-control">
+            <button class="qty-btn">−</button>
+            <span class="qty-num">0</span>
+            <button class="qty-btn">+</button>
+          </div>
+        </div>
+        <div class="product-row">
+          <div class="product-info">
+            <div class="product-name">Fan Rental – $15.00 per day</div>
+            <div class="product-sub">20" barn fan, per-day rental</div>
           </div>
           <div class="qty-control">
             <button class="qty-btn">−</button>
@@ -649,16 +740,49 @@ img{display:block;max-width:100%}
       </div>
     </div>
 
+    <!-- EVENT PRE-ENTRIES (purchasable class/division pre-entries when configured) -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-header-left">
+          <span class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v12"/></svg>
+          </span>
+          <div class="section-title">Event Pre-Entries</div>
+        </div>
+        <div class="toggle on"></div>
+      </div>
+      <div class="section-body">
+        <p class="stay-info-text">Reserve division entries in advance and skip the line at check-in.</p>
+        <div class="products-header"><span>Division</span><span>QTY</span></div>
+        <div class="product-row">
+          <div class="product-info"><div class="product-name">Novice Division</div><div class="product-sub">$30.00 per entry · 12 spots left.</div></div>
+          <div class="qty-control"><button class="qty-btn">−</button><span class="qty-num">1</span><button class="qty-btn">+</button></div>
+        </div>
+        <div class="product-row">
+          <div class="product-info"><div class="product-name">Open 4D</div><div class="product-sub">$60.00 per entry · 5 spots left.</div></div>
+          <div class="qty-control"><button class="qty-btn">−</button><span class="qty-num">0</span><button class="qty-btn">+</button></div>
+        </div>
+        <div class="product-row">
+          <div class="product-info"><div class="product-name">Senior 4D</div><div class="product-sub">$55.00 per entry</div></div>
+          <div class="qty-control"><button class="qty-btn">−</button><span class="qty-num">0</span><button class="qty-btn">+</button></div>
+        </div>
+        <div class="subtotal-row"><span>Pre-Entries Subtotal</span><span>$30.00</span></div>
+      </div>
+    </div>
+
     <!-- GROUP RESERVATION -->
     <div class="form-section">
       <div class="section-header">
         <div class="section-header-left">
+          <span class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span>
           <div class="section-title">Group Reservation</div>
         </div>
         <div class="toggle on"></div>
       </div>
       <div class="section-body">
-        <p class="stay-info-text">Turn this on to capture the total rider count and a first and last name for each rider in the group.</p>
+        <p class="stay-info-text">This is a group reservation — we'll capture the rider count and a first and last name for each rider. Switch the toggle off if you're not booking for a group.</p>
         <div class="products-header"><span>Product</span><span>QTY</span></div>
         <div class="product-row">
           <div class="product-info">
@@ -689,10 +813,35 @@ img{display:block;max-width:100%}
       </div>
     </div>
 
+    <!-- REQUIRED DOCUMENTS -->
+    <div class="form-section">
+      <div class="section-header">
+        <div class="section-header-left">
+          <span class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </span>
+          <div class="section-title">Required Documents</div>
+        </div>
+      </div>
+      <div class="section-body-padded">
+        <div class="req-doc-row">
+          <div class="req-doc-head"><span class="req-doc-name">Coggins Certificate</span><span class="req-doc-badge">Required</span></div>
+          <div><label class="req-doc-btn">Choose File</label><span class="req-doc-status">✓ coggins-2026.pdf</span></div>
+        </div>
+        <div class="req-doc-row">
+          <div class="req-doc-head"><span class="req-doc-name">Proof of Vaccination</span><span class="req-doc-badge">Required</span></div>
+          <div><label class="req-doc-btn">Choose File</label><span class="req-doc-status">No file chosen</span></div>
+        </div>
+      </div>
+    </div>
+
     <!-- SPECIAL REQUESTS -->
     <div class="form-section">
       <div class="section-header">
         <div class="section-header-left">
+          <span class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </span>
           <div class="section-title">Special Requests</div>
         </div>
       </div>
@@ -706,6 +855,9 @@ img{display:block;max-width:100%}
     <div class="form-section">
       <div class="section-header">
         <div class="section-header-left">
+          <span class="section-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
+          </span>
           <div class="section-title">Billing &amp; Payment</div>
         </div>
       </div>
@@ -728,7 +880,7 @@ img{display:block;max-width:100%}
             <div class="field-group"><label class="field-label">ZIP / Postal Code <span class="req">*</span></label><input class="field-input" placeholder="31069"></div>
           </div>
           <div class="field-row">
-            <div class="field-group"><label class="field-label">Country <span class="req">*</span></label><select class="field-select"><option>United States</option><option>Canada</option></select></div>
+            <div class="field-group"><label class="field-label">Country <span class="req">*</span></label><select class="field-select"><option selected>United States</option><option>Canada</option></select></div>
           </div>
         </div>
 
@@ -745,9 +897,10 @@ img{display:block;max-width:100%}
             <div class="field-group"><label class="field-label">Expiration Date <span class="req">*</span></label><input class="field-input" placeholder="MM / YY"></div>
             <div class="field-group"><label class="field-label">Security Code <span class="req">*</span></label><input class="field-input" placeholder="CVC"></div>
           </div>
-          <p class="stripe-note">Card details are processed securely. Enter any valid test card to complete a sample order: 4242 4242 4242 4242.</p>
+          <p class="stripe-note">Card details are processed securely through Authorize.net. Enter your card details to complete your reservation.</p>
         </div>
 
+        <!-- Complete Reservation — solid electric blue -->
         <button class="complete-btn">Complete Reservation</button>
       </div>
     </div>
@@ -764,8 +917,8 @@ img{display:block;max-width:100%}
         <div class="order-event-name">2026 Southeast Region Super Sort</div>
         <div class="order-event-dates">May 7–9, 2026 · Perry, GA</div>
         <div class="order-line">
-          <div><span class="order-line-label">Stalls (×2, 2 nights)</span><span class="order-line-qty">Nightly · Red Barn #122, #124</span></div>
-          <span class="order-line-price">$4.00</span>
+          <div><span class="order-line-label">Stalls (×2, 2 nights)</span><span class="order-line-qty">Nightly · #124, #125</span></div>
+          <span class="order-line-price">$160.00</span>
         </div>
         <div class="order-line">
           <div><span class="order-line-label">Required Shavings (×4)</span><span class="order-line-qty">Auto-added · $10/bag</span></div>
@@ -776,12 +929,17 @@ img{display:block;max-width:100%}
           <span class="order-line-price">$40.00</span>
         </div>
         <div class="order-line">
+          <div><span class="order-line-label">Novice Division Entry</span><span class="order-line-qty">Pre-Entry · $30/entry</span></div>
+          <span class="order-line-price">$30.00</span>
+        </div>
+        <div class="order-line">
           <div><span class="order-line-label">Group — 2 Riders</span><span class="order-line-qty">Group reservation</span></div>
           <span class="order-line-price">$0.00</span>
         </div>
         <div class="order-divider"></div>
-        <div class="order-total-row"><span>Total Amount Due</span><span>$84.00</span></div>
+        <div class="order-total-row"><span>Total Amount Due</span><span>$270.00</span></div>
         <div class="order-info-box"><span>ℹ</span><span>Your reservation will be confirmed by email after checkout. Changes can be requested through your account.</span></div>
+        <!-- Reserve Now — solid electric blue -->
         <button class="order-reserve-btn">Reserve Now</button>
         <div class="order-secure">🔒 Secured Checkout · SSL Encrypted</div>
       </div>
@@ -804,7 +962,6 @@ img{display:block;max-width:100%}
   const picker = document.querySelector('.stall-picker');
   if(!picker) return;
 
-  /* Read the desired stall count from the +/- quantity stepper above */
   function getMaxStalls(){
     const qty = document.querySelector('.qty-num');
     const n = qty ? parseInt(qty.textContent, 10) : 0;
@@ -823,7 +980,7 @@ img{display:block;max-width:100%}
     const warnEl  = document.querySelector('.stall-selection-warn');
     if(countEl) countEl.innerHTML = `<strong>${selected.length}</strong> of ${max} stalls selected`;
     if(listEl)  listEl.innerHTML = selected.length
-      ? `Your stalls: <strong>${selected.map(el => '#' + el.textContent).join(', ')}</strong>`
+      ? `Your stalls: <strong>${selected.map(el => el.textContent).join(', ')}</strong>`
       : `<em style="color:#8c8f94">Tap stalls below to pick them, or leave blank for auto-assignment.</em>`;
     if(warnEl) warnEl.classList.toggle('show', selected.length >= max && max > 0);
   }
@@ -839,7 +996,6 @@ img{display:block;max-width:100%}
     } else {
       const selected = getSelected();
       if(selected.length >= max){
-        /* At max: dim warn briefly, but don't add */
         const warn = document.querySelector('.stall-selection-warn');
         if(warn){
           warn.classList.add('show');
