@@ -246,35 +246,9 @@ field, invisible to structured reporting. Now fully structured.
 
 ---
 
-## 🎨 Active page redesigns + strict mobile polish (from 2026-06-20 drafts)
+## 🎨 Page redesigns
 
-Two page redesigns Whitney delivered as mockup drafts (`stall_chart_detail.DRAFTA`, `daily_movement_page.DRAFT`),
-plus a new exhaustive mobile-polish goal. Tracked as tasks #33–#45. **⚠️ Coordination:** the parallel
-chat is in Daily Movement / Shavings — do Stall Charts first, hold #33 until that lands, to avoid
-`admin.php` / `admin.css` / `admin.js` merge conflicts. **⚠️ #41/#42 need backend data** (per-day
-availability counts; cleaning timestamps + who-cleaned) — confirm what's stored before building.
-
-**Daily Movement**
-- [ ] **#33** — compact per-day overview rail (replace the tall metric cards); tappable to filter Date. *(CSS/markup)*
-
-**Stall Charts — DRAFT A** (focused "Show" + floor/tablet polish)
-- [ ] **#34 (SC-1)** — "Show" as a segmented control (Stalls / RV / Both); default **Stalls** (not All)
-- [ ] **#35 (SC-2)** — "Show" collapses the whole page to the chosen inventory (KPIs, By-Customer cols+rows, By-Location sections, Map)
-- [ ] **#36 (SC-3)** — sticky Show + View, remembered **per user** (per-user meta)
-- [ ] **#37 (SC-4)** — auto-hide RV (option + KPI cards) when the event has no RV inventory
-- [ ] **#38 (SC-5)** — "Available" KPI cards green emphasis *(CSS)*
-- [ ] **#39 (SC-6)** — quick-filter chips (All / Needs cleaning + count / Available / Blocked) + "View Daily Movement →" link
-- [ ] **#40 (SC-7)** — Today-column emphasis (highlight + "Today" tag)
-- [ ] **#41 (SC-8)** — per-day availability metrics in barn header rows (avail / N-to-clean / N-blocked) ⚠️ *needs data*
-- [ ] **#42 (SC-9)** — cleaning accountability meta ("Checked out 7:55a → flagged", "Cleaned 8:42a · Maria") ⚠️ *needs data*
-- [ ] **#43 (SC-10)** — checkout→cleaning auto-note banner *(markup/CSS)*
-- [ ] **#44 (SC-11)** — mobile/floor focus (hide future-day columns + checkbox on phones; enlarge today's target) *(CSS)*
-
-**Strict mobile polish (NEW — Whitney 2026-06-20)**
-- [ ] **#45** — a dedicated, **exhaustive** mobile/touch pass over **every single page** (admin + customer)
-  **AND every print view**: responsive layout, big tap targets, zero horizontal overflow, readable density
-  on phone + tablet, fewest-taps flows. Enumerate a page-by-page checklist at kickoff. Part of execution-order
-  #3 (Mobile/PWA); pairs with the PWA wrapper + facility role (`docs/PWA-FACILITY-SPEC.md`).
+- [ ] Update all pages to match new mockups Whitney is working on.
 
 ---
 
