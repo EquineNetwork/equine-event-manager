@@ -419,6 +419,8 @@ class EEM_Reservation_Editor_Page {
 				return __( 'This section is disabled. Enable it to let customers register groups of riders.', 'equine-event-manager' );
 			case 'fees':
 				return __( 'This section is disabled. Enable it to charge a convenience fee at checkout.', 'equine-event-manager' );
+			case 'shavings':
+				return __( 'This section is disabled. Enable it to offer additional shavings bag products to customers.', 'equine-event-manager' );
 			case 'addons':
 				return __( 'This section is disabled. Enable it to offer optional add-ons to customers.', 'equine-event-manager' );
 			case 'agreement':
@@ -448,6 +450,7 @@ class EEM_Reservation_Editor_Page {
 	private static function compute_section_is_enabled( $section_key, array $data ) {
 		$meta_map = array(
 			'checkin'      => 'checkin_checkout_enabled',
+			'shavings'     => 'additional_shavings_enabled',
 			'addons'       => 'general_addons_enabled',
 			'group'        => 'group_reservations_enabled',
 			'fees'         => 'convenience_fee_enabled',
@@ -880,6 +883,7 @@ class EEM_Reservation_Editor_Page {
 			'eventday'     => '_section-eventday.php',
 			'stall'             => '_section-stall.php',
 			'rv'                => '_section-rv.php',
+			'shavings'          => '_section-shavings.php',
 			'addons'            => '_section-addons.php',
 			'group'        => '_section-group.php',
 			'fees'         => '_section-fees.php',
@@ -910,6 +914,7 @@ class EEM_Reservation_Editor_Page {
 			array( 'key' => 'eventday',     'title' => __( 'Event Day Info',          'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'map-pin',   'enable_toggle' => true,  'collapsed' => false ),
 			array( 'key' => 'stall',        'title' => __( 'Stall Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'icon_key' => 'grid',      'enable_toggle' => true,  'collapsed' => false ),
 			array( 'key' => 'rv',                'title' => __( 'RV Reservations',         'equine-event-manager' ), 'icon_tone' => 'purple', 'icon_key' => 'truck',     'enable_toggle' => true,  'collapsed' => true  ), // mockup line 650
+			array( 'key' => 'shavings',          'title' => __( 'Additional Shavings',     'equine-event-manager' ), 'icon_tone' => 'amber',  'icon_key' => 'package',   'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'addons',            'title' => __( 'General Add-Ons',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'plus',      'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'group',        'title' => __( 'Group Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'icon_key' => 'users',     'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'fees',         'title' => __( 'Convenience Fee',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'dollar',    'enable_toggle' => true,  'collapsed' => true  ),

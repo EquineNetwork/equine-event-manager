@@ -321,6 +321,11 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-033-doc-satisfied.php';
 			eem_mig_033_doc_satisfied();
 		}
+
+		if ( ! get_option( 'eem_mig_034_additional_shavings_items_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-034-additional-shavings-items.php';
+			eem_mig_034_additional_shavings_items();
+		}
 	}
 
 	/**
@@ -381,6 +386,7 @@ class EEM_Activator {
 			departure_date date DEFAULT NULL,
 			required_shavings_qty int(11) unsigned NOT NULL DEFAULT 0,
 			additional_shavings_qty int(11) unsigned NOT NULL DEFAULT 0,
+			additional_shavings_items text NULL DEFAULT NULL,
 			unit_price decimal(10,2) NOT NULL DEFAULT 0.00,
 			subtotal decimal(10,2) NOT NULL DEFAULT 0.00,
 			convenience_fee decimal(10,2) NOT NULL DEFAULT 0.00,

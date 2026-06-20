@@ -43,6 +43,7 @@ class EEM_Reservations_CPT {
 		'stalls_enabled'             => 'stalls',
 		'rv_enabled'                 => 'rv',
 		'checkin_checkout_enabled'   => 'checkin',
+		'additional_shavings_enabled' => 'shavings',
 		'general_addons_enabled'     => 'addons',
 		'group_reservations_enabled' => 'group',
 		'convenience_fee_enabled'    => 'fees',
@@ -1412,6 +1413,8 @@ class EEM_Reservations_CPT {
 			// Agreement" when blank.
 			'venue_agreement_link_label'      => isset( $source['venue_agreement_link_label'] ) ? sanitize_text_field( $source['venue_agreement_link_label'] ) : '',
 			'venue_agreement_text'            => isset( $source['venue_agreement_text'] ) ? sanitize_textarea_field( $source['venue_agreement_text'] ) : '',
+			'additional_shavings_enabled'      => ( isset( $source['additional_shavings_enabled'] ) && '1' === (string) $source['additional_shavings_enabled'] ) ? 1 : 0,
+			'additional_shavings_products'     => isset( $source['additional_shavings_products'] ) && is_array( $source['additional_shavings_products'] ) ? $this->sanitize_additional_shavings_products( $source['additional_shavings_products'] ) : ( isset( $existing['additional_shavings_products'] ) ? (array) $existing['additional_shavings_products'] : array() ),
 			'general_addons_enabled'          => ( isset( $source['general_addons_enabled'] ) && '1' === (string) $source['general_addons_enabled'] ) ? 1 : 0,
 			// Required Documents — section toggle + description + repeatable
 			// line items (each: name + required-before-checkout flag). Customer
@@ -1947,6 +1950,8 @@ class EEM_Reservations_CPT {
 			'venue_agreement_label'           => __( 'I agree to the venue terms and conditions.', 'equine-event-manager' ),
 			'venue_agreement_link_label'      => '', // C7.X.12 VV-4 — empty default; customer-facing falls back to "Venue Agreement".
 			'venue_agreement_text'            => '',
+			'additional_shavings_enabled'      => 0,
+			'additional_shavings_products'     => array(),
 			'general_addons_enabled'          => 0,
 			'group_reservations_enabled'      => 0,
 			// C7.C.1.4.A Decision N1 — NEW meta key defaults.
@@ -2363,6 +2368,34 @@ class EEM_Reservations_CPT {
 	 * @param array $addons Raw add-on rows.
 	 * @return array
 	 */
+	/**
+	 * Sanitize submitted Additional Shavings product rows.
+	 *
+	 * Each row: name (product type, e.g. "Large Flake") + price per bag.
+	 * Rows with a blank name are dropped.
+	 *
+	 * @param array $products Raw product rows from form submission.
+	 * @return array<int,array{name:string,price:string}>
+	 */
+	private function sanitize_additional_shavings_products( $products ): array {
+		$sanitized = array();
+		foreach ( (array) $products as $product ) {
+			if ( ! is_array( $product ) ) {
+				continue;
+			}
+			$name  = isset( $product['name'] ) ? sanitize_text_field( $product['name'] ) : '';
+			$price = isset( $product['price'] ) ? $this->sanitize_money_value( $product['price'] ) : '0.00';
+			if ( '' === $name ) {
+				continue;
+			}
+			$sanitized[] = array(
+				'name'  => $name,
+				'price' => $price,
+			);
+		}
+		return array_values( $sanitized );
+	}
+
 	private function sanitize_general_addons( $addons ) {
 		$sanitized = array();
 
