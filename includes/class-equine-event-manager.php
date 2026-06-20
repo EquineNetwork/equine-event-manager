@@ -348,6 +348,9 @@ class EEM_Plugin {
 		// (refund_order_component + persist_component_refund) via the
 		// new public process_amount_refund() adapter on EEM_Admin.
 		add_action( 'wp_ajax_eem_order_refund_single', array( $this->admin, 'handle_ajax_refund_single' ) );
+		// Editable arrival/departure dates on Order Detail (with refund-on-shorter
+		// / balance-on-longer handling). See EEM_Admin::handle_ajax_edit_dates.
+		add_action( 'wp_ajax_eem_order_edit_dates', array( $this->admin, 'handle_ajax_edit_dates' ) );
 
 		// v2 — order cancellation (single + bulk step). Cancel is terminal,
 		// frees inventory, and emails the customer; independent of refunds.

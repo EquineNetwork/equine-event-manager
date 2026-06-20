@@ -405,6 +405,30 @@ class EEM_Orders_Repository {
 	}
 
 	/**
+	 * Read a single raw component row (all columns) by table slug + row id.
+	 * Used by callers that need pricing columns the grouped-order payload
+	 * doesn't expose (unit_price, qty, subtotal, tax_rate, convenience_fee) —
+	 * e.g. the Order Detail "Edit Dates" recompute. Returns null if absent.
+	 *
+	 * @param string $table  Component table slug ('stall' | 'rv').
+	 * @param int    $row_id Row id.
+	 * @return array<string, mixed>|null
+	 */
+	public function get_component_row( string $table, int $row_id ): ?array {
+		global $wpdb;
+
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				'SELECT * FROM ' . $this->get_table_name( $table ) . ' WHERE id = %d', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name from internal allowlist.
+				absint( $row_id )
+			),
+			ARRAY_A
+		);
+
+		return is_array( $row ) ? $row : null;
+	}
+
+	/**
 	 * Update payment details across every component in an order.
 	 *
 	 * @param string $order_key        Order key.

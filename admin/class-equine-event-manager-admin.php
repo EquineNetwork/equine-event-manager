@@ -9631,6 +9631,194 @@ class EEM_Admin {
 	}
 
 	/**
+	 * AJAX endpoint: edit a stall/RV component's arrival/departure dates.
+	 *
+	 * The dates always update (so reports reflect actual stall/RV usage — e.g. a
+	 * no-show that shortens the billable stay). When the night count changes the
+	 * admin chooses, in the modal, what to do about money:
+	 *   - Shorter stay + 'refund' → dispatch a real refund for the per-night
+	 *     delta through the existing refund engine (order total unchanged; the
+	 *     refund is tracked exactly like any partial refund).
+	 *   - Longer stay + 'charge' → raise each component row's subtotal/total/tax
+	 *     by the per-night delta so the difference surfaces as Balance Due
+	 *     (live card-charging — C14 — is not built yet; admin collects later).
+	 *   - 'none' (or shorter+no-refund / longer+no-charge) → dates only.
+	 *
+	 * Per-night cost is unit_price × qty summed across the section's component
+	 * rows; nights are a plain day diff (the dominant nightly-stay model).
+	 *
+	 * @return void
+	 */
+	public function handle_ajax_edit_dates(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'code' => 'capability', 'message' => __( 'You do not have permission to edit orders.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$order_key = isset( $_POST['order_key'] ) ? sanitize_text_field( wp_unslash( $_POST['order_key'] ) ) : '';
+		$nonce     = isset( $_POST['_eem_edit_dates_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['_eem_edit_dates_nonce'] ) ) : '';
+
+		if ( '' === $order_key || ! wp_verify_nonce( $nonce, 'eem_edit_dates_' . $order_key ) ) {
+			wp_send_json_error( array( 'code' => 'nonce', 'message' => __( 'Security check failed. Please reload and try again.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$component   = isset( $_POST['component'] ) ? sanitize_key( wp_unslash( $_POST['component'] ) ) : '';
+		$arrival     = isset( $_POST['arrival'] ) ? sanitize_text_field( wp_unslash( $_POST['arrival'] ) ) : '';
+		$departure   = isset( $_POST['departure'] ) ? sanitize_text_field( wp_unslash( $_POST['departure'] ) ) : '';
+		$money_action = isset( $_POST['money_action'] ) ? sanitize_key( wp_unslash( $_POST['money_action'] ) ) : 'none';
+
+		if ( ! in_array( $component, array( 'stall', 'rv' ), true ) ) {
+			wp_send_json_error( array( 'code' => 'component', 'message' => __( 'Unknown reservation section.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$a_ts = strtotime( $arrival );
+		$d_ts = strtotime( $departure );
+		if ( ! $a_ts || ! $d_ts || $d_ts <= $a_ts ) {
+			wp_send_json_error( array( 'code' => 'dates', 'message' => __( 'Departure must be after arrival.', 'equine-event-manager' ) ), 400 );
+		}
+		$arrival   = gmdate( 'Y-m-d', $a_ts );
+		$departure = gmdate( 'Y-m-d', $d_ts );
+
+		$order = $this->orders_repository->get_order( $order_key );
+		if ( ! is_array( $order ) ) {
+			wp_send_json_error( array( 'code' => 'not_found', 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		// Gather this section's component rows.
+		$rows = array();
+		foreach ( (array) ( isset( $order['components'] ) ? $order['components'] : array() ) as $c ) {
+			if ( isset( $c['table'] ) && $component === $c['table'] ) {
+				$raw = $this->orders_repository->get_component_row( $component, (int) $c['row_id'] );
+				if ( is_array( $raw ) ) {
+					$rows[] = $raw;
+				}
+			}
+		}
+		if ( empty( $rows ) ) {
+			wp_send_json_error( array( 'code' => 'no_rows', 'message' => __( 'This order has no editable dates for that section.', 'equine-event-manager' ) ), 400 );
+		}
+
+		// Old nights from the first row's stored dates (all rows in a section
+		// share the order's dates); new nights from the requested dates.
+		$first      = $rows[0];
+		$old_arr    = isset( $first['arrival_date'] ) ? (string) $first['arrival_date'] : '';
+		$old_dep    = isset( $first['departure_date'] ) ? (string) $first['departure_date'] : '';
+		$old_nights = ( $old_arr && $old_dep ) ? max( 0, (int) round( ( strtotime( $old_dep ) - strtotime( $old_arr ) ) / DAY_IN_SECONDS ) ) : 0;
+		$new_nights = max( 0, (int) round( ( $d_ts - $a_ts ) / DAY_IN_SECONDS ) );
+		$delta      = $new_nights - $old_nights;
+
+		// Per-night cost for the whole section = Σ(unit_price × qty).
+		$qty_col      = 'rv' === $component ? 'rv_qty' : 'stall_quantity';
+		$per_night    = 0.0;
+		foreach ( $rows as $r ) {
+			$unit = isset( $r['unit_price'] ) ? (float) $r['unit_price'] : 0.0;
+			$qty  = isset( $r[ $qty_col ] ) ? max( 1, (int) $r[ $qty_col ] ) : 1;
+			$per_night += $unit * $qty;
+		}
+
+		$refunded_amount = 0.0;
+		$balance_added   = 0.0;
+
+		// 1) Always update the dates on every row in the section.
+		foreach ( $rows as $r ) {
+			$this->orders_repository->update_component_fields(
+				$component,
+				(int) $r['id'],
+				array( 'arrival_date' => $arrival, 'departure_date' => $departure ),
+				array( '%s', '%s' )
+			);
+		}
+
+		// 2) Money handling, only when nights changed AND the admin opted in.
+		if ( $delta < 0 && 'refund' === $money_action ) {
+			$refund_amt = round( $per_night * abs( $delta ), 2 );
+			if ( $refund_amt > 0 ) {
+				$reason = sprintf(
+					/* translators: 1: night count, 2: section label */
+					__( 'Stay shortened by %1$d night(s) — %2$s date edit.', 'equine-event-manager' ),
+					abs( $delta ),
+					'rv' === $component ? __( 'RV', 'equine-event-manager' ) : __( 'stall', 'equine-event-manager' )
+				);
+				$result = $this->process_amount_refund( $order_key, $refund_amt, $reason );
+				if ( is_wp_error( $result ) ) {
+					wp_send_json_error( array(
+						'code'    => $result->get_error_code(),
+						'message' => sprintf(
+							/* translators: %s: refund engine error */
+							__( 'Dates were updated, but the refund failed: %s', 'equine-event-manager' ),
+							$result->get_error_message()
+						),
+					), 400 );
+				}
+				$refunded_amount = (float) $result['refunded_amount'];
+			}
+		} elseif ( $delta > 0 && 'charge' === $money_action ) {
+			// Raise each row's subtotal/total/tax by its share of the per-night
+			// delta so the difference becomes Balance Due. amount_paid is left
+			// untouched; a fully-paid row drops to partially_paid.
+			foreach ( $rows as $r ) {
+				$unit       = isset( $r['unit_price'] ) ? (float) $r['unit_price'] : 0.0;
+				$qty        = isset( $r[ $qty_col ] ) ? max( 1, (int) $r[ $qty_col ] ) : 1;
+				$row_add    = round( $unit * $qty * $delta, 2 );
+				if ( $row_add <= 0 ) {
+					continue;
+				}
+				$tax_rate   = isset( $r['tax_rate'] ) ? (float) $r['tax_rate'] : 0.0;
+				$new_sub    = round( (float) $r['subtotal'] + $row_add, 2 );
+				$new_total  = round( (float) $r['total'] + $row_add, 2 );
+				$new_tax    = $tax_rate > 0 ? round( (float) $r['tax'] + ( $row_add * $tax_rate ), 2 ) : ( isset( $r['tax'] ) ? (float) $r['tax'] : 0.0 );
+				$fields     = array( 'subtotal' => $new_sub, 'total' => $new_total, 'tax' => $new_tax );
+				$formats    = array( '%f', '%f', '%f' );
+				// Re-open payment status if the row was fully settled.
+				if ( isset( $r['payment_status'] ) && 'paid' === $r['payment_status'] ) {
+					$fields['payment_status'] = 'partially_paid';
+					$formats[]                = '%s';
+				}
+				$this->orders_repository->update_component_fields( $component, (int) $r['id'], $fields, $formats );
+				$balance_added += $row_add;
+			}
+		}
+
+		// 3) Telemetry.
+		if ( class_exists( 'EEM_Activity_Log' ) ) {
+			$current_user = wp_get_current_user();
+			EEM_Activity_Log::write(
+				'order_dates_edited',
+				array(
+					'order_key'      => $order_key,
+					'component'      => $component,
+					'old_arrival'    => $old_arr,
+					'old_departure'  => $old_dep,
+					'new_arrival'    => $arrival,
+					'new_departure'  => $departure,
+					'old_nights'     => $old_nights,
+					'new_nights'     => $new_nights,
+					'refunded'       => $refunded_amount,
+					'balance_added'  => $balance_added,
+				),
+				array(
+					'actor_type'  => 'user',
+					'actor_id'    => (int) get_current_user_id(),
+					'actor_label' => $current_user ? $current_user->display_name : '',
+				)
+			);
+		}
+
+		$msg = __( 'Dates updated.', 'equine-event-manager' );
+		if ( $refunded_amount > 0 ) {
+			/* translators: %s: refunded amount */
+			$msg = sprintf( __( 'Dates updated and $%s refunded.', 'equine-event-manager' ), number_format( $refunded_amount, 2 ) );
+		} elseif ( $balance_added > 0 ) {
+			/* translators: %s: amount added to balance due */
+			$msg = sprintf( __( 'Dates updated; $%s added to balance due.', 'equine-event-manager' ), number_format( $balance_added, 2 ) );
+		}
+
+		wp_send_json_success( array(
+			'requires_reload' => true,
+			'message'         => $msg,
+		) );
+	}
+
+	/**
 	 * AJAX endpoint: cancel a single order (v2 — order cancellation).
 	 *
 	 * Sets the order to cancelled (terminal; frees its stall/RV inventory) and,

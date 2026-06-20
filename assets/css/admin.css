@@ -4831,6 +4831,33 @@ a.eem-btn-collect-banner:focus {
 	white-space: nowrap;
 }
 
+/* Card header right cluster — nights badge + Edit Dates button. */
+.eem-order-card__header-right {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-shrink: 0;
+}
+
+/* Edit Dates modal — night-delta impact + money choice. */
+.eem-edit-dates-impact {
+	margin-top: 4px;
+	padding: 12px;
+	border: 1px solid var(--eem-border);
+	border-radius: var(--eem-radius);
+	background: var(--eem-gray-50, #f8fafc);
+}
+.eem-edit-dates-impact__text {
+	margin: 0 0 8px;
+	font-weight: 600;
+	color: var(--eem-navy);
+}
+.eem-edit-dates-money {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
 /* Detail table (label/value pairs). VIS-1 token applied to label-column bg. */
 .eem-detail-table {
 	width: 100%;
@@ -5072,6 +5099,32 @@ a.eem-btn-collect-banner:focus {
 	font-size: 20px;
 	font-weight: 700;
 	color: var(--eem-electric);
+}
+
+/* Payment breakdown (Order Total / Amount Paid lines above the emphasized
+   grand-total row). Renders when a balance is outstanding. */
+.eem-order-summary__totals {
+	margin-top: 4px;
+}
+.eem-order-summary__pay-line {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 5px 14px;
+	font-size: 13px;
+	color: var(--eem-navy);
+}
+.eem-order-summary__pay-line--paid {
+	color: var(--eem-text-secondary);
+}
+/* Outstanding-balance variant of the grand-total panel — amber to match the
+   Payment Outstanding banner, signalling money is still owed. */
+.eem-order-summary__grand-total--due {
+	background: #fff7ed;
+	border-color: #fdba74;
+}
+.eem-order-summary__grand-total--due .eem-order-summary__grand-val {
+	color: #c2410c;
 }
 
 /* C6.A.2: per-section type badge + Section Total row inside summary. */

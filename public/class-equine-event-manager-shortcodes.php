@@ -7686,6 +7686,13 @@ RV Lot: " . $rv_lot['name'] );
 		if ( '' !== $docs_html && false !== strpos( $html, '</body>' ) ) {
 			$html = str_replace( '</body>', $docs_html . '</body>', $html );
 		}
+		// Print view (admin "Print Receipt" button) — open straight into the
+		// browser print dialog. Docs upload card is suppressed in the markup
+		// above only for PDF; here it's harmless but print CSS hides it.
+		$want_print = isset( $_REQUEST['print'] ) && '1' === sanitize_key( wp_unslash( $_REQUEST['print'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- token-bearer read, no state change.
+		if ( $want_print && false !== strpos( $html, '</body>' ) ) {
+			$html = str_replace( '</body>', '<script>window.addEventListener("load",function(){window.print();});</script></body>', $html );
+		}
 		echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		exit;
 	}

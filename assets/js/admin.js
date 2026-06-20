@@ -1777,6 +1777,166 @@
 		});
 	}
 
+	/* Order Detail — Edit Dates modal. One shared modal populated from the
+	   clicked "Edit Dates" button's data attributes (component, current dates,
+	   per-night cost). Live-recomputes the night delta + $ impact as the dates
+	   change and surfaces a refund (shorter) / charge-to-balance (longer)
+	   choice. Reloads on success so every total + badge re-renders. */
+	var _eemEditDatesCtx = { perNight: 0 };
+
+	function eemEditDatesModal() { return document.getElementById('eem-order-edit-dates-modal'); }
+
+	function openEditDatesModal(btn) {
+		var modal = eemEditDatesModal();
+		if (!modal || !btn) return;
+		_eemEditDatesCtx.perNight = parseFloat(btn.getAttribute('data-per-night')) || 0;
+		var component = btn.getAttribute('data-component') || '';
+		var arrival = btn.getAttribute('data-arrival') || '';
+		var departure = btn.getAttribute('data-departure') || '';
+		var label = btn.getAttribute('data-section-label') || '';
+
+		modal.querySelector('[data-eem-edit-dates-component]').value = component;
+		modal.querySelector('#eem-edit-dates-arrival').value = arrival;
+		modal.querySelector('#eem-edit-dates-departure').value = departure;
+		var labelEl = modal.querySelector('[data-eem-edit-dates-section-label]');
+		if (labelEl) { labelEl.textContent = 'Editing the ' + label + ' reservation dates. Reports update to match; choose below whether to adjust payment.'; }
+
+		var errEl = modal.querySelector('[data-eem-edit-dates-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+
+		// Reset the baseline so recompute re-captures THIS component's prefilled
+		// dates (a prior open may have left a stale baseline).
+		modal.removeAttribute('data-orig-arrival');
+		modal.removeAttribute('data-orig-departure');
+
+		// Bind the date inputs to live recompute (once).
+		if (!modal.hasAttribute('data-eem-dates-bound')) {
+			modal.setAttribute('data-eem-dates-bound', '1');
+			['#eem-edit-dates-arrival', '#eem-edit-dates-departure'].forEach(function (sel) {
+				var el = modal.querySelector(sel);
+				if (el) el.addEventListener('change', recomputeEditDatesImpact);
+			});
+		}
+
+		recomputeEditDatesImpact();
+		modal.classList.add('open');
+		modal.setAttribute('aria-hidden', 'false');
+		closeAllDropdowns();
+	}
+
+	function closeEditDatesModal() {
+		var modal = eemEditDatesModal();
+		if (!modal) return;
+		modal.classList.remove('open');
+		modal.setAttribute('aria-hidden', 'true');
+	}
+
+	function _eemNights(a, b) {
+		var at = Date.parse(a), bt = Date.parse(b);
+		if (isNaN(at) || isNaN(bt) || bt <= at) return 0;
+		return Math.round((bt - at) / 86400000);
+	}
+
+	function recomputeEditDatesImpact() {
+		var modal = eemEditDatesModal();
+		if (!modal) return;
+		var arrival = modal.querySelector('#eem-edit-dates-arrival').value;
+		var departure = modal.querySelector('#eem-edit-dates-departure').value;
+		var impact = modal.querySelector('[data-eem-edit-dates-impact]');
+		var textEl = modal.querySelector('[data-eem-edit-dates-impact-text]');
+		var applyLabel = modal.querySelector('[data-eem-edit-dates-money-apply-label]');
+		var applyRadio = modal.querySelector('[data-eem-edit-dates-money-apply]');
+
+		// Original nights derive from the button's data (stored on open via the
+		// arrival/departure that were prefilled). We compare current inputs to
+		// those prefilled originals captured in dataset on the modal.
+		var origArrival = modal.getAttribute('data-orig-arrival');
+		var origDeparture = modal.getAttribute('data-orig-departure');
+		// First call after open: capture the prefilled values as the baseline.
+		if (origArrival === null) {
+			modal.setAttribute('data-orig-arrival', arrival);
+			modal.setAttribute('data-orig-departure', departure);
+			origArrival = arrival; origDeparture = departure;
+		}
+
+		var oldN = _eemNights(origArrival, origDeparture);
+		var newN = _eemNights(arrival, departure);
+		var delta = newN - oldN;
+		var perNight = _eemEditDatesCtx.perNight;
+
+		// Reset money choice to "none" whenever the impact changes.
+		var noneRadio = modal.querySelector('input[name="money_choice"][value="none"]');
+		if (noneRadio) noneRadio.checked = true;
+
+		if (delta === 0 || !newN) {
+			if (impact) impact.hidden = true;
+			return;
+		}
+
+		var amt = (Math.abs(delta) * perNight);
+		var amtStr = '$' + amt.toFixed(2);
+		if (delta < 0) {
+			if (textEl) textEl.textContent = 'This shortens the stay by ' + Math.abs(delta) + ' night(s).';
+			if (applyLabel) applyLabel.textContent = 'Refund the customer ' + amtStr + ' (' + Math.abs(delta) + ' night(s))';
+		} else {
+			if (textEl) textEl.textContent = 'This lengthens the stay by ' + delta + ' night(s).';
+			if (applyLabel) applyLabel.textContent = 'Charge ' + amtStr + ' more — added to balance due (' + delta + ' night(s))';
+		}
+		if (applyRadio) applyRadio.value = 'apply';
+		if (impact) impact.hidden = false;
+	}
+
+	function submitEditDatesForm() {
+		var modal = eemEditDatesModal();
+		if (!modal) return;
+		var form = modal.querySelector('[data-eem-edit-dates-form]');
+		if (!form) return;
+		var errEl = modal.querySelector('[data-eem-edit-dates-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+
+		var arrival = modal.querySelector('#eem-edit-dates-arrival').value;
+		var departure = modal.querySelector('#eem-edit-dates-departure').value;
+		if (!arrival || !departure || Date.parse(departure) <= Date.parse(arrival)) {
+			errEl.textContent = 'Departure must be after arrival.';
+			errEl.hidden = false;
+			return;
+		}
+
+		// Translate the radio choice + delta into the server's money_action.
+		var origArrival = modal.getAttribute('data-orig-arrival');
+		var origDeparture = modal.getAttribute('data-orig-departure');
+		var delta = _eemNights(arrival, departure) - _eemNights(origArrival, origDeparture);
+		var applyChosen = !!(modal.querySelector('input[name="money_choice"][value="apply"]') && modal.querySelector('input[name="money_choice"][value="apply"]').checked);
+		var moneyAction = 'none';
+		if (applyChosen && delta < 0) moneyAction = 'refund';
+		else if (applyChosen && delta > 0) moneyAction = 'charge';
+		modal.querySelector('[data-eem-edit-dates-money]').value = moneyAction;
+
+		var confirmBtn = modal.querySelector('[data-eem-action="order-edit-dates-confirm"]');
+		if (confirmBtn) confirmBtn.disabled = true;
+
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST', credentials: 'same-origin', body: new FormData(form)
+		}).then(function (r) {
+			return r.json().catch(function () { return { success: false, data: { message: 'Unexpected server response.' } }; });
+		}).then(function (json) {
+			if (confirmBtn) confirmBtn.disabled = false;
+			if (!json || !json.success) {
+				errEl.textContent = (json && json.data && json.data.message) ? json.data.message : 'Could not update dates.';
+				errEl.hidden = false;
+				return;
+			}
+			if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+				window.EEM.showSaveToast((json.data && json.data.message) || 'Dates updated.');
+			}
+			setTimeout(function () { window.location.reload(); }, 600);
+		}).catch(function () {
+			if (confirmBtn) confirmBtn.disabled = false;
+			errEl.textContent = 'Network error. Please try again.';
+			errEl.hidden = false;
+		});
+	}
+
 	/* v2 — Single-order Cancel modal (Order Detail page). Cancel is terminal:
 	   frees inventory + emails the customer. Reloads on success so the status
 	   badge, More menu, and payment banner all re-render correctly. */
@@ -2856,6 +3016,16 @@
 		},
 		'order-refund-single-confirm': function () {
 			submitOrderRefundForm();
+		},
+		/* Order Detail — Edit Dates modal (editable arrival/departure). */
+		'order-edit-dates-open': function (target) {
+			openEditDatesModal(target);
+		},
+		'order-edit-dates-close': function () {
+			closeEditDatesModal();
+		},
+		'order-edit-dates-confirm': function () {
+			submitEditDatesForm();
 		},
 		/* v2 — Single-order Cancel modal (Order Detail page). */
 		'order-cancel-single': function () {

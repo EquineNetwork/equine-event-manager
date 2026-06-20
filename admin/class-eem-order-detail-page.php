@@ -215,6 +215,8 @@ class EEM_Order_Detail_Page {
 
 		<?php $this->render_refund_modal( $order ); ?>
 
+		<?php $this->render_edit_dates_modal( $order ); ?>
+
 		<?php $this->render_cancel_modal( $order ); ?>
 		<?php $this->render_mark_paid_modal( $order ); ?>
 
@@ -344,7 +346,9 @@ class EEM_Order_Detail_Page {
 		// C12 — hosted receipt links (token-bearer order_key).
 		$order_key        = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
 		$receipt_view_url = '' !== $order_key ? add_query_arg( array( 'eem_receipt' => $order_key ), home_url( '/' ) ) : '';
-		$receipt_pdf_url  = '' !== $order_key ? add_query_arg( array( 'eem_receipt' => $order_key, 'download' => 'pdf' ), home_url( '/' ) ) : '';
+		// Print view = hosted receipt document with an auto-print trigger so the
+		// admin lands on the print dialog (browser → save as PDF / print).
+		$receipt_print_url = '' !== $order_key ? add_query_arg( array( 'eem_receipt' => $order_key, 'print' => '1' ), home_url( '/' ) ) : '';
 
 		ob_start();
 		?>
@@ -354,17 +358,14 @@ class EEM_Order_Detail_Page {
 			<a class="eem-btn eem-btn-electric" href="#" data-eem-action="order-add-items"><?php esc_html_e( 'Add Items', 'equine-event-manager' ); ?></a>
 		<?php endif; ?>
 		<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $back_url ); ?>"><?php esc_html_e( 'Back to Orders', 'equine-event-manager' ); ?></a>
-		<?php if ( '' !== $receipt_pdf_url ) : ?>
-			<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $receipt_pdf_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Download Receipt', 'equine-event-manager' ); ?></a>
+		<?php if ( '' !== $receipt_print_url ) : ?>
+			<a class="eem-btn eem-btn-ghost" href="<?php echo esc_url( $receipt_print_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Print Receipt', 'equine-event-manager' ); ?></a>
 		<?php endif; ?>
 		<div class="eem-row-menu-wrap eem-order-detail-more">
 			<button type="button" class="eem-btn eem-btn-ghost" data-eem-action="dropdown-toggle" aria-haspopup="true" aria-expanded="false"><?php esc_html_e( 'More', 'equine-event-manager' ); ?> &#9662;</button>
 			<div class="eem-row-dropdown">
 				<?php if ( '' !== $receipt_view_url ) : ?>
 					<a class="eem-row-dd-item" href="<?php echo esc_url( $receipt_view_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View Receipt', 'equine-event-manager' ); ?></a>
-				<?php endif; ?>
-				<?php if ( '' !== $receipt_pdf_url ) : ?>
-					<a class="eem-row-dd-item" href="<?php echo esc_url( $receipt_pdf_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Download PDF Receipt', 'equine-event-manager' ); ?></a>
 				<?php endif; ?>
 				<a class="eem-row-dd-item" href="#" data-eem-action="order-export-csv-single"><?php esc_html_e( 'Export CSV', 'equine-event-manager' ); ?></a>
 				<a class="eem-row-dd-item" href="#" data-eem-action="order-refund-single"><?php esc_html_e( 'Refund Order', 'equine-event-manager' ); ?></a>
@@ -389,15 +390,26 @@ class EEM_Order_Detail_Page {
 	 * @return void
 	 */
 	private function render_payment_banner( array $order, $status_slug ) {
-		$outstanding_states = array( 'unpaid', 'invoice-sent', 'partially-paid' );
-		if ( ! in_array( $status_slug, $outstanding_states, true ) ) {
+		// Terminal states never nag.
+		if ( in_array( $status_slug, array( 'cancelled', 'refunded', 'partially-refunded' ), true ) ) {
 			return;
 		}
 
-		$amount = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
-		$msg    = 'invoice-sent' === $status_slug
-			? __( 'Invoice has been sent. Awaiting payment.', 'equine-event-manager' )
-			: __( 'No payment received yet for this order.', 'equine-event-manager' );
+		// Balance-driven: any real outstanding amount surfaces the banner —
+		// including a fully-"paid" order whose total rose after a stall/RV or
+		// custom line item was added (the delta is genuinely uncollected).
+		$amount = $this->compute_balance_due( $order );
+		if ( $amount <= 0.005 ) {
+			return;
+		}
+
+		if ( 'invoice-sent' === $status_slug ) {
+			$msg = __( 'Invoice has been sent. Awaiting payment.', 'equine-event-manager' );
+		} elseif ( 'unpaid' === $status_slug ) {
+			$msg = __( 'No payment received yet for this order.', 'equine-event-manager' );
+		} else {
+			$msg = __( 'A balance is due after the order was updated.', 'equine-event-manager' );
+		}
 		?>
 		<div class="eem-order-payment-banner" role="status">
 			<div class="eem-order-payment-banner__left">
@@ -486,9 +498,19 @@ class EEM_Order_Detail_Page {
 						<div class="eem-order-card__subtitle"><?php echo esc_html( $event_title ); ?></div>
 					<?php endif; ?>
 				</div>
-				<?php if ( $nights > 0 ) : ?>
-					<span class="eem-order-card__nights"><?php echo esc_html( sprintf( _n( '%d Night', '%d Nights', $nights, 'equine-event-manager' ), $nights ) ); ?></span>
-				<?php endif; ?>
+				<div class="eem-order-card__header-right">
+					<?php if ( $nights > 0 ) : ?>
+						<span class="eem-order-card__nights"><?php echo esc_html( sprintf( _n( '%d Night', '%d Nights', $nights, 'equine-event-manager' ), $nights ) ); ?></span>
+					<?php endif; ?>
+					<?php if ( '' !== $arrival && '' !== $departure ) : ?>
+						<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="order-edit-dates-open"
+							data-component="stall"
+							data-arrival="<?php echo esc_attr( $arrival ); ?>"
+							data-departure="<?php echo esc_attr( $departure ); ?>"
+							data-per-night="<?php echo esc_attr( $nights > 0 ? number_format( $subtotal / $nights, 2, '.', '' ) : '0.00' ); ?>"
+							data-section-label="<?php esc_attr_e( 'stall', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Edit Dates', 'equine-event-manager' ); ?></button>
+					<?php endif; ?>
+				</div>
 			</div>
 			<table class="eem-detail-table">
 				<tr><td><?php esc_html_e( 'Stay Type', 'equine-event-manager' ); ?></td><td><?php echo esc_html( ucwords( str_replace( '_', ' ', $stay_type ) ) ); ?></td></tr>
@@ -631,9 +653,19 @@ class EEM_Order_Detail_Page {
 						<div class="eem-order-card__subtitle"><?php echo esc_html( $event_title ); ?></div>
 					<?php endif; ?>
 				</div>
-				<?php if ( $nights > 0 ) : ?>
-					<span class="eem-order-card__nights"><?php echo esc_html( sprintf( _n( '%d Night', '%d Nights', $nights, 'equine-event-manager' ), $nights ) ); ?></span>
-				<?php endif; ?>
+				<div class="eem-order-card__header-right">
+					<?php if ( $nights > 0 ) : ?>
+						<span class="eem-order-card__nights"><?php echo esc_html( sprintf( _n( '%d Night', '%d Nights', $nights, 'equine-event-manager' ), $nights ) ); ?></span>
+					<?php endif; ?>
+					<?php if ( '' !== $arrival && '' !== $departure ) : ?>
+						<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="order-edit-dates-open"
+							data-component="rv"
+							data-arrival="<?php echo esc_attr( $arrival ); ?>"
+							data-departure="<?php echo esc_attr( $departure ); ?>"
+							data-per-night="<?php echo esc_attr( $nights > 0 ? number_format( $subtotal / $nights, 2, '.', '' ) : '0.00' ); ?>"
+							data-section-label="<?php esc_attr_e( 'RV', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Edit Dates', 'equine-event-manager' ); ?></button>
+					<?php endif; ?>
+				</div>
 			</div>
 			<table class="eem-detail-table">
 				<tr><td><?php esc_html_e( 'Stay Type', 'equine-event-manager' ); ?></td><td><?php echo esc_html( ucwords( str_replace( '_', ' ', $stay_type ) ) ); ?></td></tr>
@@ -915,13 +947,94 @@ class EEM_Order_Detail_Page {
 						<button type="button" class="eem-link-btn" data-eem-action="order-add-discount-open"><?php esc_html_e( '+ Add Discount', 'equine-event-manager' ); ?></button>
 					</div>
 				<?php endif; ?>
-				<div class="eem-order-summary__grand-total">
-					<span class="eem-order-summary__grand-label"><?php esc_html_e( 'Total', 'equine-event-manager' ); ?></span>
-					<span class="eem-order-summary__grand-val"><?php echo esc_html( '$' . number_format_i18n( $total, 2 ) ); ?></span>
+				<?php
+				// Payment breakdown so paid vs. outstanding is never ambiguous.
+				// $total is the recomputed grand total (incl. custom items /
+				// discount, computed above). amount_paid is the authoritative
+				// collected figure; the balance is the difference.
+				$summary_status = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
+				$amount_paid    = $this->compute_amount_paid( $order );
+				$balance_due    = round( max( 0.0, $total - $amount_paid ), 2 );
+				$is_refunded    = ( 'refunded' === $summary_status || 'partially-refunded' === $summary_status );
+				?>
+				<div class="eem-order-summary__totals">
+					<?php if ( $is_refunded ) : ?>
+						<div class="eem-order-summary__grand-total">
+							<span class="eem-order-summary__grand-label"><?php esc_html_e( 'Total Refunded', 'equine-event-manager' ); ?></span>
+							<span class="eem-order-summary__grand-val"><?php echo esc_html( '$' . number_format_i18n( $total, 2 ) ); ?></span>
+						</div>
+					<?php elseif ( $balance_due > 0.005 ) : ?>
+						<div class="eem-order-summary__pay-line">
+							<span><?php esc_html_e( 'Order Total', 'equine-event-manager' ); ?></span>
+							<span><?php echo esc_html( '$' . number_format_i18n( $total, 2 ) ); ?></span>
+						</div>
+						<div class="eem-order-summary__pay-line eem-order-summary__pay-line--paid">
+							<span><?php esc_html_e( 'Amount Paid', 'equine-event-manager' ); ?></span>
+							<span><?php echo esc_html( '−$' . number_format_i18n( $amount_paid, 2 ) ); ?></span>
+						</div>
+						<div class="eem-order-summary__grand-total eem-order-summary__grand-total--due">
+							<span class="eem-order-summary__grand-label"><?php esc_html_e( 'Balance Due', 'equine-event-manager' ); ?></span>
+							<span class="eem-order-summary__grand-val"><?php echo esc_html( '$' . number_format_i18n( $balance_due, 2 ) ); ?></span>
+						</div>
+					<?php else : ?>
+						<div class="eem-order-summary__grand-total">
+							<span class="eem-order-summary__grand-label"><?php esc_html_e( 'Total Paid', 'equine-event-manager' ); ?></span>
+							<span class="eem-order-summary__grand-val"><?php echo esc_html( '$' . number_format_i18n( $total, 2 ) ); ?></span>
+						</div>
+					<?php endif; ?>
 				</div>
 			</div>
 		</div>
 		<?php
+	}
+
+	/**
+	 * The order's true grand total including order-level adjustments
+	 * (component totals + custom line items − discount). The repo's
+	 * $order['total'] is component-only; this layers the adjustments the
+	 * Order Summary / Collect Payment surfaces add on top.
+	 *
+	 * @param array<string, mixed> $order
+	 * @return float
+	 */
+	private function compute_grand_total( array $order ): float {
+		$base = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		$custom = 0.0;
+		$discount = 0.0;
+		if ( '' !== $order_key && class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			$adj      = EEM_Order_Adjustments_Repo::get_for_order( $order_key );
+			$custom   = isset( $adj['custom_items_total'] ) ? (float) $adj['custom_items_total'] : 0.0;
+			$discount = ( isset( $adj['discount'] ) && is_array( $adj['discount'] ) ) ? (float) $adj['discount']['amount'] : 0.0;
+		}
+		return round( $base + $custom - $discount, 2 );
+	}
+
+	/**
+	 * Amount actually collected on the order. Reads the authoritative
+	 * amount_paid aggregate (mig-029). Legacy fallback: a 'paid' order with no
+	 * recorded amount_paid is treated as having collected its component total
+	 * (any custom items added afterward remain the unpaid portion).
+	 *
+	 * @param array<string, mixed> $order
+	 * @return float
+	 */
+	private function compute_amount_paid( array $order ): float {
+		$paid = isset( $order['amount_paid'] ) ? (float) $order['amount_paid'] : 0.0;
+		if ( $paid <= 0.005 && isset( $order['status_slug'] ) && 'paid' === $order['status_slug'] ) {
+			$paid = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		}
+		return round( $paid, 2 );
+	}
+
+	/**
+	 * Outstanding balance: grand total − amount collected, floored at 0.
+	 *
+	 * @param array<string, mixed> $order
+	 * @return float
+	 */
+	private function compute_balance_due( array $order ): float {
+		return round( max( 0.0, $this->compute_grand_total( $order ) - $this->compute_amount_paid( $order ) ), 2 );
 	}
 
 	/**
@@ -1304,6 +1417,73 @@ class EEM_Order_Detail_Page {
 				<footer class="eem-modal-foot eem-modal-foot--split">
 					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="order-refund-single-close"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
 					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="order-refund-single-confirm"><?php esc_html_e( 'Confirm refund', 'equine-event-manager' ); ?></button>
+				</footer>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Edit-Dates modal — lets the admin change a stall/RV section's arrival /
+	 * departure dates so reports reflect actual usage (e.g. a no-show that
+	 * shortens the billable stay). One shared modal, populated client-side from
+	 * the clicked "Edit Dates" button's data attributes (component, current
+	 * dates, per-night cost). When the night count changes the modal surfaces a
+	 * money choice: refund the per-night delta (shorter) or add it to the
+	 * balance due (longer). Dispatches eem_order_edit_dates.
+	 *
+	 * @param array<string, mixed> $order
+	 * @return void
+	 */
+	private function render_edit_dates_modal( array $order ) {
+		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		if ( '' === $order_key ) {
+			return;
+		}
+		?>
+		<div class="eem-modal" id="eem-order-edit-dates-modal" role="dialog" aria-modal="true" aria-labelledby="eem-order-edit-dates-title" aria-hidden="true">
+			<div class="eem-modal-card">
+				<header class="eem-modal-head">
+					<h2 class="eem-modal-title" id="eem-order-edit-dates-title"><?php esc_html_e( 'Edit Dates', 'equine-event-manager' ); ?></h2>
+					<button type="button" class="eem-modal-close" data-eem-action="order-edit-dates-close" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">&times;</button>
+				</header>
+				<form class="eem-modal-body" method="post" data-eem-edit-dates-form>
+					<?php wp_nonce_field( 'eem_edit_dates_' . $order_key, '_eem_edit_dates_nonce' ); ?>
+					<input type="hidden" name="action" value="eem_order_edit_dates" />
+					<input type="hidden" name="order_key" value="<?php echo esc_attr( $order_key ); ?>" />
+					<input type="hidden" name="component" value="" data-eem-edit-dates-component />
+					<input type="hidden" name="money_action" value="none" data-eem-edit-dates-money />
+
+					<p class="eem-order-refund-summary" data-eem-edit-dates-section-label></p>
+
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-edit-dates-arrival"><?php esc_html_e( 'Arrival date', 'equine-event-manager' ); ?></label>
+						<input type="date" class="eem-field-input" id="eem-edit-dates-arrival" name="arrival" required />
+					</div>
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-edit-dates-departure"><?php esc_html_e( 'Departure date', 'equine-event-manager' ); ?></label>
+						<input type="date" class="eem-field-input" id="eem-edit-dates-departure" name="departure" required />
+					</div>
+
+					<div class="eem-edit-dates-impact" data-eem-edit-dates-impact hidden>
+						<p class="eem-edit-dates-impact__text" data-eem-edit-dates-impact-text></p>
+						<div class="eem-edit-dates-money" data-eem-edit-dates-money-choice>
+							<label class="eem-order-refund-notify">
+								<input type="radio" name="money_choice" value="apply" data-eem-edit-dates-money-apply />
+								<span data-eem-edit-dates-money-apply-label></span>
+							</label>
+							<label class="eem-order-refund-notify">
+								<input type="radio" name="money_choice" value="none" checked />
+								<?php esc_html_e( 'Update dates only — no payment change', 'equine-event-manager' ); ?>
+							</label>
+						</div>
+					</div>
+
+					<div class="eem-order-refund-error" data-eem-edit-dates-error hidden></div>
+				</form>
+				<footer class="eem-modal-foot eem-modal-foot--split">
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="order-edit-dates-close"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="order-edit-dates-confirm"><?php esc_html_e( 'Save Dates', 'equine-event-manager' ); ?></button>
 				</footer>
 			</div>
 		</div>
