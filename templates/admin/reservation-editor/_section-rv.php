@@ -191,7 +191,7 @@ echo '</div>'; // .eem-rv-nightly-content
 			<span class="eem-pkg-sep">&ndash;</span>
 			<input type="date" class="eem-pkg-date-input" value="<?php echo esc_attr( $pkg['end_date'] ); ?>" data-field="end_date">
 			<div class="eem-pkg-price-wrap"><span class="eem-pkg-price-sym">$</span><input type="number" step="0.01" min="0" class="eem-pkg-price-input" value="<?php echo esc_attr( $_price_fmt ); ?>" data-field="price"></div>
-			<div class="eem-pkg-price-wrap eem-pkg-eb-wrap" title="<?php esc_attr_e( 'Early Bird Price', 'equine-event-manager' ); ?>"><span class="eem-pkg-price-sym eem-pkg-price-sym--eb">EB</span><input type="number" step="0.01" min="0" class="eem-pkg-price-input" value="<?php echo esc_attr( ( null !== $pkg['early_bird_price'] && '' !== (string) $pkg['early_bird_price'] ) ? number_format( (float) $pkg['early_bird_price'], 2, '.', '' ) : '' ); ?>" data-field="early_bird_price"></div>
+			<div class="eem-pkg-price-wrap eem-pkg-eb-wrap" title="<?php esc_attr_e( 'Early Bird Price', 'equine-event-manager' ); ?>"><span class="eem-pkg-price-sym">$</span><input type="number" step="0.01" min="0" class="eem-pkg-price-input" value="<?php echo esc_attr( ( null !== $pkg['early_bird_price'] && '' !== (string) $pkg['early_bird_price'] ) ? number_format( (float) $pkg['early_bird_price'], 2, '.', '' ) : '' ); ?>" data-field="early_bird_price"></div>
 			<button type="button" class="eem-row-card-delete" data-eem-action="rv-package-delete" data-package-id="<?php echo (int) $pkg['id']; ?>" title="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
 		</div>
 		<?php endforeach; ?>
@@ -211,7 +211,7 @@ echo '</div>'; // .eem-rv-nightly-content
 			<span class="eem-pkg-sep">&ndash;</span>
 			<input type="date" class="eem-pkg-date-input" id="eem-rv-pkg-end">
 			<div class="eem-pkg-price-wrap"><span class="eem-pkg-price-sym">$</span><input type="number" step="0.01" min="0" class="eem-pkg-price-input" id="eem-rv-pkg-price"></div>
-			<div class="eem-pkg-price-wrap eem-pkg-eb-wrap" title="<?php esc_attr_e( 'Early Bird Price', 'equine-event-manager' ); ?>"><span class="eem-pkg-price-sym eem-pkg-price-sym--eb">EB</span><input type="number" step="0.01" min="0" class="eem-pkg-price-input" id="eem-rv-pkg-eb-price"></div>
+			<div class="eem-pkg-price-wrap eem-pkg-eb-wrap" title="<?php esc_attr_e( 'Early Bird Price', 'equine-event-manager' ); ?>"><span class="eem-pkg-price-sym">$</span><input type="number" step="0.01" min="0" class="eem-pkg-price-input" id="eem-rv-pkg-eb-price"></div>
 			<input type="number" min="0" step="1" class="eem-pkg-name-input" id="eem-rv-pkg-max-qty" placeholder="<?php esc_attr_e( 'Unlimited', 'equine-event-manager' ); ?>" style="max-width:100px">
 		</div>
 		<div class="eem-package-form-actions">
