@@ -246,10 +246,6 @@ class EEM_Reports_Page {
 							<?php endforeach; ?>
 						</select>
 					</div>
-					<div class="eem-reports-filter-actions">
-						<a class="eem-filter-reset" href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::MENU_SLUG ) ); ?>"><?php esc_html_e( 'Reset', 'equine-event-manager' ); ?></a>
-						<button class="eem-btn eem-btn-electric" type="submit"><?php esc_html_e( 'Apply', 'equine-event-manager' ); ?></button>
-					</div>
 				</div>
 			</form>
 		</div>

@@ -8041,7 +8041,12 @@ function duplicateReservationAjax(target) {
 				inp.value = val;
 			});
 		}
-		if (resSelect) { resSelect.addEventListener('change', syncExports); }
+		if (resSelect) {
+			resSelect.addEventListener('change', function () {
+				syncExports();
+				form.submit();
+			});
+		}
 		syncExports();
 	});
 })();
