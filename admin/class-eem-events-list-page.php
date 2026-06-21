@@ -97,16 +97,22 @@ class EEM_Events_List_Page {
 		$counts = array( 'all' => 0, 'publish' => 0, 'draft' => 0, 'trash' => 0 );
 		$rows   = array();
 		foreach ( $posts as $p ) {
+			$title = get_the_title( $p->ID );
+			// Skip untitled / auto-draft ghost posts.
+			if ( '' === $title || '(no title)' === $title ) {
+				continue;
+			}
 			if ( isset( $counts[ $p->post_status ] ) ) {
 				$counts[ $p->post_status ]++;
 			}
-			$venue_id    = absint( get_post_meta( $p->ID, '_equine_event_manager_event_venue_id', true ) );
-			$producer_id = absint( get_post_meta( $p->ID, '_equine_event_manager_event_producer_id', true ) );
-			$start       = (string) get_post_meta( $p->ID, '_equine_event_manager_event_start_date', true );
-			$end         = (string) get_post_meta( $p->ID, '_equine_event_manager_event_end_date', true );
+			$meta        = EEM_Native_Event_Repo::get( $p->ID );
+			$venue_id    = (int) $meta['venue_id'];
+			$producer_id = (int) $meta['producer_id'];
+			$start       = (string) $meta['start_date'];
+			$end         = (string) $meta['end_date'];
 			$rows[]      = array(
 				'id'            => $p->ID,
-				'title'         => get_the_title( $p->ID ),
+				'title'         => $title,
 				'status'        => $p->post_status,
 				'start'         => $start,
 				'end'           => $end,
@@ -118,12 +124,6 @@ class EEM_Events_List_Page {
 			);
 		}
 		$counts['all'] = $counts['publish'] + $counts['draft'];
-
-		// Stats.
-		$stat_total    = $counts['all'];
-		$stat_pub      = $counts['publish'];
-		$stat_linked   = array_sum( $reservation_counts );
-		$upcoming      = self::upcoming_events( $rows );
 
 		// Producer filter options (published producers).
 		$producer_options = get_posts( array(
@@ -169,13 +169,6 @@ class EEM_Events_List_Page {
 		eem_render_page_open( array(
 			'title'      => __( 'Events', 'equine-event-manager' ),
 			'subtitle'   => __( 'Manage your equine events. Each event can be linked to a reservation setup for stall, RV, and add-on bookings.', 'equine-event-manager' ),
-			'meta'       => sprintf(
-				'<div class="eem-page-meta-links"><a href="%s">%s</a><a href="%s">%s</a></div>',
-				esc_url( EEM_Venues_Page::url() ),
-				esc_html__( 'View Venues', 'equine-event-manager' ),
-				esc_url( EEM_Producers_Page::url() ),
-				esc_html__( 'View Producers', 'equine-event-manager' )
-			),
 			'actions'    => sprintf(
 				'<a class="eem-btn eem-btn-electric" href="%s">+ %s</a>',
 				esc_url( admin_url( 'post-new.php?post_type=en_event' ) ),
@@ -184,9 +177,7 @@ class EEM_Events_List_Page {
 			'breadcrumb' => array( array( 'label' => __( 'Events', 'equine-event-manager' ) ) ),
 		) );
 
-		self::render_stats( $upcoming, $stat_total, $stat_pub, $stat_linked );
-		self::render_status_tabs( $status, $counts );
-		self::render_toolbar( $search, $producer, $producer_options, $total );
+		self::render_toolbar( $search, $status, $counts, $producer, $producer_options, $total );
 		self::render_table( $page_rows, $orderby, $order, $status, $search, $producer );
 		self::render_footer( $total, $paged, $pages, $status, $orderby, $order, $search, $producer );
 
@@ -223,31 +214,6 @@ class EEM_Events_List_Page {
 	 * @param array<int,array<string,mixed>> $rows All event rows.
 	 * @return array<int,array{label:string,title:string}>
 	 */
-	private static function upcoming_events( array $rows ): array {
-		$today    = gmdate( 'Y-m-d' );
-		$upcoming = array_filter( $rows, static function ( $r ) use ( $today ) {
-			return 'publish' === $r['status'] && '' !== $r['start'] && $r['start'] >= $today;
-		} );
-		usort( $upcoming, static function ( $a, $b ) {
-			return strcmp( (string) $a['start'], (string) $b['start'] );
-		} );
-		$out = array();
-		foreach ( array_slice( $upcoming, 0, 3 ) as $r ) {
-			$out[] = array(
-				'label' => mysql2date( 'M j', $r['start'] ),
-				'title' => $r['title'],
-			);
-		}
-		return $out;
-	}
-
-	/**
-	 * Format an event's start/end dates as a display range.
-	 *
-	 * @param string $start Y-m-d start date.
-	 * @param string $end   Y-m-d end date.
-	 * @return string
-	 */
 	private static function format_date_range( string $start, string $end ): string {
 		if ( '' === $start ) {
 			return '';
@@ -269,100 +235,67 @@ class EEM_Events_List_Page {
 	 * @param array<int,array{label:string,title:string}> $upcoming
 	 * @return void
 	 */
-	private static function render_stats( array $upcoming, int $total, int $published, int $linked ): void {
-		echo '<div class="eem-venues-stats">';
-		// Wide upcoming card.
-		echo '<div class="eem-stat-card eem-stat-card--wide">';
-		echo '<div class="eem-stat-card-label">' . esc_html__( 'Current + Upcoming', 'equine-event-manager' ) . '</div>';
-		if ( empty( $upcoming ) ) {
-			echo '<div class="eem-stat-card-rows"><div class="eem-stat-card-row">' . esc_html__( 'No upcoming events scheduled.', 'equine-event-manager' ) . '</div></div>';
-		} else {
-			echo '<div class="eem-stat-card-rows">';
-			foreach ( $upcoming as $u ) {
-				printf(
-					'<div class="eem-stat-card-row"><strong>%s:</strong> %s</div>',
-					esc_html( $u['label'] ),
-					esc_html( $u['title'] )
-				);
-			}
-			echo '</div>';
-		}
-		echo '</div>';
-
-		$cards = array(
-			array( __( 'Total Events', 'equine-event-manager' ), $total ),
-			array( __( 'Published', 'equine-event-manager' ), $published ),
-			array( __( 'Linked Reservations', 'equine-event-manager' ), $linked ),
-		);
-		foreach ( $cards as $c ) {
-			printf(
-				'<div class="eem-stat-card"><div class="eem-stat-card-label">%s</div><div class="eem-stat-card-num">%s</div></div>',
-				esc_html( $c[0] ),
-				esc_html( number_format_i18n( (int) $c[1] ) )
-			);
-		}
-		echo '</div>';
-	}
-
 	/**
-	 * Status tabs (All / Published / Draft / Trash).
+	 * Toolbar row 1 — producer filter (left) + status pills (right).
+	 * Toolbar row 2 — search form + item count.
 	 *
-	 * @param array<string,int> $counts
+	 * @param string    $search           Current search term.
+	 * @param string    $active_tab       Active status tab key.
+	 * @param array     $counts           Per-status counts.
+	 * @param int       $producer         Selected producer id (0 = all).
+	 * @param WP_Post[] $producer_options Published producer posts.
+	 * @param int       $total            Total filtered rows (for item count).
 	 * @return void
 	 */
-	private static function render_status_tabs( string $active, array $counts ): void {
+	private static function render_toolbar( string $search, string $active_tab, array $counts, int $producer, array $producer_options, int $total ): void {
 		$tabs = array(
 			'all'     => __( 'All', 'equine-event-manager' ),
 			'publish' => __( 'Published', 'equine-event-manager' ),
 			'draft'   => __( 'Draft', 'equine-event-manager' ),
 			'trash'   => __( 'Trash', 'equine-event-manager' ),
 		);
-		echo '<nav class="eem-status-tabs" aria-label="' . esc_attr__( 'Filter events by status', 'equine-event-manager' ) . '">';
-		$first = true;
-		foreach ( $tabs as $key => $label ) {
-			if ( ! $first ) {
-				echo '<span class="eem-status-tab-sep" aria-hidden="true">|</span>';
-			}
-			$first     = false;
-			$is_active = $key === $active;
-			printf(
-				'<a class="eem-status-tab%s" href="%s"%s>%s <span class="eem-status-tab-count">(%s)</span></a>',
-				$is_active ? ' is-active' : '',
-				esc_url( self::url( array( 'status' => $key ) ) ),
-				$is_active ? ' aria-current="page"' : '',
-				esc_html( $label ),
-				esc_html( number_format_i18n( (int) ( $counts[ $key ] ?? 0 ) ) )
-			);
-		}
-		echo '</nav>';
-	}
-
-	/**
-	 * Toolbar — producer filter + search + item count.
-	 *
-	 * @param WP_Post[] $producer_options
-	 * @return void
-	 */
-	private static function render_toolbar( string $search, int $producer, array $producer_options, int $total ): void {
 		?>
 		<div class="eem-list-toolbar">
-			<form class="eem-search-form eem-events-toolbar-form" role="search" method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
-				<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
-				<div class="eem-list-toolbar-left">
-					<select class="eem-toolbar-select eem-field-select" name="producer" aria-label="<?php esc_attr_e( 'Filter by producer', 'equine-event-manager' ); ?>">
+			<div class="eem-list-toolbar-left">
+				<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
+					<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
+					<select class="eem-toolbar-select" name="producer" onchange="this.form.submit()" aria-label="<?php esc_attr_e( 'Filter by producer', 'equine-event-manager' ); ?>">
 						<option value="0"><?php esc_html_e( 'All producers', 'equine-event-manager' ); ?></option>
 						<?php foreach ( $producer_options as $po ) : ?>
 							<option value="<?php echo esc_attr( (string) $po->ID ); ?>" <?php selected( $producer, $po->ID ); ?>><?php echo esc_html( get_the_title( $po->ID ) ); ?></option>
 						<?php endforeach; ?>
 					</select>
-				</div>
-				<div class="eem-list-toolbar-right">
-					<span class="eem-search-wrap eem-search-wrap--attached">
-						<svg class="eem-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+				</form>
+			</div>
+			<div class="eem-list-toolbar-right">
+				<nav class="eem-filter-tabs" role="tablist" aria-label="<?php esc_attr_e( 'Filter by status', 'equine-event-manager' ); ?>">
+					<?php foreach ( $tabs as $id => $label ) : ?>
+						<?php $is_active = ( $id === $active_tab ); ?>
+						<a class="eem-filter-tab<?php echo $is_active ? ' active' : ''; ?>"
+						   href="<?php echo esc_url( self::url( array( 'status' => $id ) ) ); ?>"
+						   role="tab" aria-selected="<?php echo $is_active ? 'true' : 'false'; ?>"
+						   <?php echo $is_active ? 'aria-current="page"' : ''; ?>>
+							<?php echo esc_html( $label ); ?>
+							<span class="eem-filter-tab-count"><?php echo esc_html( number_format_i18n( (int) ( $counts[ $id ] ?? 0 ) ) ); ?></span>
+						</a>
+					<?php endforeach; ?>
+				</nav>
+			</div>
+		</div>
+		<div class="eem-list-toolbar eem-toolbar-controls">
+			<div class="eem-list-toolbar-left"></div>
+			<div class="eem-list-toolbar-right">
+				<form method="get" class="eem-search-form" role="search" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
+					<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
+					<input type="hidden" name="status" value="<?php echo esc_attr( $active_tab ); ?>" />
+					<?php if ( $producer > 0 ) : ?>
+						<input type="hidden" name="producer" value="<?php echo esc_attr( (string) $producer ); ?>" />
+					<?php endif; ?>
+					<div class="eem-search-wrap">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 						<input class="eem-search-input" type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" />
-					</span>
-					<button type="submit" class="eem-toolbar-btn eem-search-btn"><?php esc_html_e( 'Search Events', 'equine-event-manager' ); ?></button>
-				</div>
+					</div>
+				</form>
 				<span class="eem-item-count"><?php
 					echo esc_html( sprintf(
 						/* translators: %s: item count */
@@ -370,17 +303,11 @@ class EEM_Events_List_Page {
 						number_format_i18n( $total )
 					) );
 				?></span>
-			</form>
+			</div>
 		</div>
 		<?php
 	}
 
-	/**
-	 * Desktop table + mobile cards.
-	 *
-	 * @param array<int,array<string,mixed>> $rows
-	 * @return void
-	 */
 	private static function render_table( array $rows, string $orderby, string $order, string $status, string $search, int $producer ): void {
 		?>
 		<div class="eem-desktop-table">
