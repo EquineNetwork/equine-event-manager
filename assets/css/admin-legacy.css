@@ -9084,7 +9084,7 @@ body.eem-shell-page--orders .eem-orders-guide__head {
 
 body.eem-shell-page--orders .eem-orders-guide__head h2 {
 	margin: 0 !important;
-	font-family: "Space Grotesk", sans-serif !important;
+	font-family: var(--eem-font-display) !important;
 	font-size: 1.125rem !important;
 	font-weight: 700 !important;
 	color: #031b4e !important;
@@ -9665,7 +9665,7 @@ body.eem-shell-page .eem-shell-header__title,
 body.eem-shell-page .postbox h2,
 body.eem-shell-page .postbox > .hndle,
 body.eem-shell-page .postbox .hndle span {
-	font-family: "Space Grotesk", "IBM Plex Sans", sans-serif !important;
+	font-family: var(--eem-font-display) !important;
 	color: var(--eem-guide-text) !important;
 }
 
@@ -9814,7 +9814,7 @@ body.eem-shell-page--reservations .wp-list-table tbody th {
 }
 
 body.eem-shell-page--reservations .wp-list-table tbody .column-title a.row-title {
-	font-family: "Space Grotesk", "IBM Plex Sans", sans-serif !important;
+	font-family: var(--eem-font-display) !important;
 	font-weight: 700 !important;
 	color: var(--eem-guide-text) !important;
 }

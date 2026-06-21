@@ -31,12 +31,13 @@ All `.mockups/` files fully implemented and verified. Mockup cleanup pending (se
 
 - [ ] **Page-background color sweep** — some admin pages still show the bare WordPress gray (`#f0f0f1`) below/around the plugin content instead of the plugin's page background. Confirmed visible on **Stall & RV Charts** (gray band fills the area below the reservations table). Audit every admin page and ensure the plugin background color paints the full content area (`#wpcontent` / `#wpbody-content` / `.eem-page` wrapper) edge-to-edge — no WP gray showing through on any page. Likely a missing `body.eem-shell-page` background rule or a `.eem-page` that doesn't stretch to full height.
 - [ ] **Global card padding consistency sweep** — audit every admin card (`.eem-card`, `.eem-div-detail-card`, page-body sections, toolbar rows, stat grids) for padding drift; establish a single canonical inner-padding token and normalize all cards to it.
-- [ ] **Mockup cleanup** — reference-check then delete `reservation_overview_page.html` + `events_admin_page.html` (suspected zero-ref). `event_entry_editor_page.html` superseded by `division_editor_page.html` — remove in same pass.
+- [ ] **Mockup cleanup** — `reservation_overview_page.html` is LIVE (hidden submenu "View Event", slug `equine-event-manager-reservation-overview`); page browser-verified 2026-06-21 as fully styled/on-brand, no port needed — do NOT delete. `events_admin_page.html` is LIVE (referenced in `class-eem-events-list-page.php`), do NOT delete. `event_entry_editor_page.html` — may have been renamed rather than superseded by `division_editor_page.html`; confirm before deleting.
 - [ ] Global control/button radius sweep → 8px (currently base `.eem-btn` = 4px, `input.eem-field-input` = 3px; mockups want 8px). Includes locked primary/secondary/danger button system + dead legacy control-CSS / `!important` strip.
 - [ ] Space Grotesk → IBM Plex Sans plugin-wide.
 - [ ] **MED-4** — Admin Collect Payment (Auth.net) double-charge window. Non-atomic `already_paid` check vs live charge → double-click can fire two authCaptures. Fix: per-order `GET_LOCK` around read→charge→mark. ⚠️ payment path — Whitney sign-off + live test required.
 - [ ] **LOW-3/4** — Minor Stripe confirm no already-paid recheck (no 2nd charge risk) + mark-paid-manual non-atomic duplicate note. Low priority.
 - [ ] Reports — visual verify Customer List + Refund Log render correctly in browser.
+- [ ] **Full end-to-end functionality sweep** — systematic browser walkthrough of every major flow: create event → create reservation → create order → collect payment → add entries/divisions → upload sheets/results → run reports → send notifications → refund. Seed data as needed. Verify every button, form submission, and AJAX action works correctly. Document any broken flows found.
 
 ---
 
