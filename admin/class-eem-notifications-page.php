@@ -111,61 +111,83 @@ class EEM_Notifications_Page {
 				<p class="eem-table-empty"><?php esc_html_e( 'No events yet. Create a reservation first.', 'equine-event-manager' ); ?></p>
 			<?php else : ?>
 				<div class="eem-notif-grid">
-					<div class="eem-notif-field">
-						<label class="eem-field-label" for="eem-notif-event"><?php esc_html_e( 'Event', 'equine-event-manager' ); ?></label>
-						<select class="eem-field-select" id="eem-notif-event" data-eem-notif-event data-eem-choices data-eem-choices-search="<?php esc_attr_e( 'Search events…', 'equine-event-manager' ); ?>">
-							<option value=""><?php esc_html_e( 'Select an event…', 'equine-event-manager' ); ?></option>
-							<?php foreach ( $events as $eid => $label ) : ?>
-								<option value="<?php echo esc_attr( (string) $eid ); ?>"><?php echo esc_html( $label ); ?></option>
-							<?php endforeach; ?>
-						</select>
+					<!-- Event picker card -->
+					<div class="eem-card eem-notif-event-card">
+						<div class="eem-card-header">
+							<h2 class="eem-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><?php esc_html_e( 'Event', 'equine-event-manager' ); ?></h2>
+						</div>
+						<div class="eem-card-body">
+							<div class="eem-notif-field" style="margin-bottom:0">
+								<label class="eem-field-label" for="eem-notif-event"><?php esc_html_e( 'Select an event', 'equine-event-manager' ); ?></label>
+								<select class="eem-field-select" id="eem-notif-event" data-eem-notif-event data-eem-choices data-eem-choices-search="<?php esc_attr_e( 'Search events…', 'equine-event-manager' ); ?>">
+									<option value=""><?php esc_html_e( 'Select an event…', 'equine-event-manager' ); ?></option>
+									<?php foreach ( $events as $eid => $label ) : ?>
+										<option value="<?php echo esc_attr( (string) $eid ); ?>"><?php echo esc_html( $label ); ?></option>
+									<?php endforeach; ?>
+								</select>
+							</div>
+						</div>
 					</div>
 
-					<div class="eem-notif-audience" data-eem-notif-audience hidden>
-						<div class="eem-notif-field">
-							<label class="eem-field-label" for="eem-notif-include"><?php esc_html_e( 'Send to', 'equine-event-manager' ); ?></label>
-							<select class="eem-field-select" id="eem-notif-include" data-eem-notif-include>
-								<?php foreach ( $segments as $key => $label ) : ?>
-									<option value="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></option>
-								<?php endforeach; ?>
-							</select>
+					<!-- Audience card (always visible) -->
+					<div class="eem-card eem-notif-audience" data-eem-notif-audience>
+						<div class="eem-card-header">
+							<h2 class="eem-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg><?php esc_html_e( 'Audience', 'equine-event-manager' ); ?></h2>
 						</div>
-						<div class="eem-notif-field">
-							<label class="eem-field-label" for="eem-notif-exclude"><?php esc_html_e( 'But not', 'equine-event-manager' ); ?></label>
-							<select class="eem-field-select" id="eem-notif-exclude" data-eem-notif-exclude>
-								<option value=""><?php esc_html_e( '— no exclusion —', 'equine-event-manager' ); ?></option>
-								<?php foreach ( $segments as $key => $label ) : ?>
-									<?php if ( 'all' === $key ) { continue; } ?>
-									<option value="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></option>
-								<?php endforeach; ?>
-							</select>
+						<div class="eem-card-body">
+							<div class="eem-notif-audience-grid">
+								<div class="eem-notif-field">
+									<label class="eem-field-label" for="eem-notif-include"><?php esc_html_e( 'Send to', 'equine-event-manager' ); ?></label>
+									<select class="eem-field-select" id="eem-notif-include" data-eem-notif-include>
+										<?php foreach ( $segments as $key => $label ) : ?>
+											<option value="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></option>
+										<?php endforeach; ?>
+									</select>
+								</div>
+								<div class="eem-notif-field">
+									<label class="eem-field-label" for="eem-notif-exclude"><?php esc_html_e( 'But not', 'equine-event-manager' ); ?></label>
+									<select class="eem-field-select" id="eem-notif-exclude" data-eem-notif-exclude>
+										<option value=""><?php esc_html_e( '— no exclusion —', 'equine-event-manager' ); ?></option>
+										<?php foreach ( $segments as $key => $label ) : ?>
+											<?php if ( 'all' === $key ) { continue; } ?>
+											<option value="<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></option>
+										<?php endforeach; ?>
+									</select>
+								</div>
+								<div class="eem-notif-field">
+									<label class="eem-field-label" for="eem-notif-payment"><?php esc_html_e( 'Payment', 'equine-event-manager' ); ?></label>
+									<select class="eem-field-select" id="eem-notif-payment" data-eem-notif-payment>
+										<option value="all"><?php esc_html_e( 'Any', 'equine-event-manager' ); ?></option>
+										<option value="paid"><?php esc_html_e( 'Paid only', 'equine-event-manager' ); ?></option>
+										<option value="unpaid"><?php esc_html_e( 'Unpaid only', 'equine-event-manager' ); ?></option>
+									</select>
+								</div>
+							</div>
+							<p class="eem-notif-count" data-eem-notif-count>
+								<span class="eem-status-badge eem-status-active" data-eem-notif-count-badge>0</span>
+								<span data-eem-notif-count-label><?php esc_html_e( 'recipients', 'equine-event-manager' ); ?></span>
+							</p>
 						</div>
-						<div class="eem-notif-field">
-							<label class="eem-field-label" for="eem-notif-payment"><?php esc_html_e( 'Payment', 'equine-event-manager' ); ?></label>
-							<select class="eem-field-select" id="eem-notif-payment" data-eem-notif-payment>
-								<option value="all"><?php esc_html_e( 'Any', 'equine-event-manager' ); ?></option>
-								<option value="paid"><?php esc_html_e( 'Paid only', 'equine-event-manager' ); ?></option>
-								<option value="unpaid"><?php esc_html_e( 'Unpaid only', 'equine-event-manager' ); ?></option>
-							</select>
-						</div>
-						<p class="eem-notif-count" data-eem-notif-count>
-							<span class="eem-status-badge eem-status-active" data-eem-notif-count-badge>0</span>
-							<span data-eem-notif-count-label><?php esc_html_e( 'recipients', 'equine-event-manager' ); ?></span>
-						</p>
 					</div>
 
-					<div class="eem-notif-compose" data-eem-notif-compose hidden>
-						<div class="eem-notif-field">
-							<label class="eem-field-label" for="eem-notif-subject"><?php esc_html_e( 'Subject', 'equine-event-manager' ); ?></label>
-							<input class="eem-field-input" id="eem-notif-subject" type="text" maxlength="200" data-eem-notif-subject />
+					<!-- Compose card (always visible) -->
+					<div class="eem-card eem-notif-compose" data-eem-notif-compose>
+						<div class="eem-card-header">
+							<h2 class="eem-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><?php esc_html_e( 'Compose', 'equine-event-manager' ); ?></h2>
 						</div>
-						<div class="eem-notif-field">
-							<label class="eem-field-label" for="eem-notif-body"><?php esc_html_e( 'Message', 'equine-event-manager' ); ?></label>
-							<textarea class="eem-field-input eem-field-textarea" id="eem-notif-body" rows="9" data-eem-notif-body></textarea>
-						</div>
-						<div class="eem-notif-actions">
-							<button type="button" class="eem-btn eem-btn-electric" data-eem-action="notifications-send"><?php esc_html_e( 'Send Notification', 'equine-event-manager' ); ?></button>
-							<span class="eem-notif-send-status" data-eem-notif-status></span>
+						<div class="eem-card-body">
+							<div class="eem-notif-field">
+								<label class="eem-field-label" for="eem-notif-subject"><?php esc_html_e( 'Subject', 'equine-event-manager' ); ?></label>
+								<input class="eem-field-input" id="eem-notif-subject" type="text" maxlength="200" data-eem-notif-subject />
+							</div>
+							<div class="eem-notif-field">
+								<label class="eem-field-label" for="eem-notif-body"><?php esc_html_e( 'Message', 'equine-event-manager' ); ?></label>
+								<textarea class="eem-field-input eem-field-textarea" id="eem-notif-body" rows="9" data-eem-notif-body></textarea>
+							</div>
+							<div class="eem-notif-actions">
+								<button type="button" class="eem-btn eem-btn-electric" data-eem-action="notifications-send"><?php esc_html_e( 'Send Notification', 'equine-event-manager' ); ?></button>
+								<span class="eem-notif-send-status" data-eem-notif-status></span>
+							</div>
 						</div>
 					</div>
 				</div>

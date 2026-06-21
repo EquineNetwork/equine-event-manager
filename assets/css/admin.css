@@ -11792,22 +11792,30 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
    The page body has padding:0 (list pages self-pad via their toolbar/table),
    so this custom page carries its own 18px gutter to align with the header
    inset instead of sitting flush against the card border. */
-.eem-notifications { padding: 18px; }
-.eem-notif-grid { max-width: 720px; }
-.eem-notif-field { margin-bottom: 16px; }
-.eem-notif-field .eem-field-select { min-width: 280px; max-width: 100%; }
-.eem-notif-audience { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; align-items: end; padding: 16px 0 4px; border-top: 1px solid var(--eem-border, #D9E2F2); margin-top: 4px; }
-.eem-notif-audience .eem-notif-field { margin-bottom: 14px; }
-.eem-notif-count { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin: 2px 0 4px; font-size: 13px; color: var(--eem-muted, #64748b); }
+/* Notifications page — stacked cards (Event / Audience / Compose) + history card.
+   Mockup: .mockups/notifications_page.html. */
+.eem-notifications { padding: 0; }
+.eem-notif-grid { max-width: 760px; }
+/* Event card holds the Choices.js typeahead — it must let the search dropdown
+   escape the card (.eem-card is overflow:hidden) and stack above the cards below. */
+.eem-notif-event-card { overflow: visible; position: relative; z-index: 30; }
+.eem-notif-grid > .eem-card { margin-bottom: 16px; }
+.eem-notif-field { margin-bottom: 14px; }
+.eem-notif-field:last-child { margin-bottom: 0; }
+.eem-notif-field .eem-field-select { width: 100%; max-width: 100%; }
+/* Audience: three side-by-side selects inside the card body. */
+.eem-notif-audience-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.eem-notif-audience-grid .eem-notif-field { margin-bottom: 0; }
+.eem-notif-audience-grid .eem-field-select { min-width: 0; }
+.eem-notif-audience .eem-notif-count { display: flex; align-items: center; gap: 8px; padding: 18px 0 4px; border-top: 1px solid #f0f4fb; margin: 14px 0 0; font-size: 13px; color: var(--eem-muted, #64748b); }
 .eem-notif-count [data-eem-notif-count-badge] { font-variant-numeric: tabular-nums; }
-.eem-notif-compose { padding-top: 14px; border-top: 1px solid var(--eem-border, #D9E2F2); }
-.eem-notif-actions { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+.eem-notif-actions { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
 .eem-notif-send-status { font-size: 13px; color: var(--eem-muted, #64748b); }
-.eem-notif-history { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--eem-border, #D9E2F2); }
-.eem-notif-history-title { font-size: 15px; font-weight: 700; color: var(--eem-navy, #031B4E); margin: 0 0 12px; }
-.eem-notif-history p.eem-table-empty { margin: 0; padding: 28px; text-align: center; color: var(--eem-muted, #64748b); background: var(--eem-bg-alt, #fafafa); border: 1px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); }
-.eem-notif-history .eem-desktop-table { border: 1px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); overflow: hidden; }
-@media (max-width: 782px) { .eem-notif-audience { grid-template-columns: 1fr; } }
+.eem-notif-history { margin-top: 8px; max-width: 760px; }
+.eem-notif-history-title { font-size: 15px; font-weight: 700; color: #0d1b3e; margin: 0 0 12px; }
+.eem-notif-history p.eem-table-empty { margin: 0; padding: 28px; text-align: center; color: var(--eem-muted, #64748b); background: #fff; border: 1px solid #e2e8f4; border-radius: 10px; }
+.eem-notif-history .eem-desktop-table { border: 1px solid #e2e8f4; border-radius: 10px; overflow: hidden; }
+@media (max-width: 782px) { .eem-notif-audience-grid { grid-template-columns: 1fr; } }
 
 /* ── Venues (v2 Facility Layout Templates) ─────────────────────────────────
    Page body has padding:0 (custom page rendering into .eem-page-body); the

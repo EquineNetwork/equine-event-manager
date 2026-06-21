@@ -71,12 +71,10 @@
 	}
 
 	function onEventChange() {
+		// Audience + Compose stay visible at all times (Whitney 2026-06-20); picking
+		// an event just refreshes the division options and the recipient count.
 		var rid = currentEvent();
-		if (!rid) {
-			if (audience) { audience.hidden = true; }
-			if (compose) { compose.hidden = true; }
-			return;
-		}
+		if (!rid) { return; }
 		post('eem_notifications_event_meta', { reservation_id: rid }).then(function (resp) {
 			if (!resp || !resp.success || !resp.data) { return; }
 			addDivisionOptions(resp.data.divisions || []);
@@ -84,8 +82,6 @@
 			if (excludeSel) { excludeSel.value = ''; }
 			if (paymentSel) { paymentSel.value = 'all'; }
 			setCount(resp.data.count || 0);
-			if (audience) { audience.hidden = false; }
-			if (compose) { compose.hidden = false; }
 		}).catch(function () {});
 	}
 
