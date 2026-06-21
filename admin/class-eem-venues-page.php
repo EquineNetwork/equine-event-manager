@@ -196,8 +196,7 @@ class EEM_Venues_Page {
 			'breadcrumb' => array( array( 'label' => __( 'Venues', 'equine-event-manager' ) ) ),
 		) );
 
-		self::render_status_tabs( $status, $counts );
-		self::render_toolbar( $search, $total );
+		self::render_toolbar( $search, $total, $status, $counts );
 		self::render_table( $page_rows, $orderby, $order, $status, $search );
 		self::render_footer( $total, $paged, $pages, $status, $orderby, $order, $search );
 
@@ -256,18 +255,14 @@ class EEM_Venues_Page {
 			'draft'   => __( 'Draft', 'equine-event-manager' ),
 			'trash'   => __( 'Trash', 'equine-event-manager' ),
 		);
-		echo '<nav class="eem-status-tabs" aria-label="' . esc_attr__( 'Filter venues by status', 'equine-event-manager' ) . '">';
-		$first = true;
+		echo '<nav class="eem-filter-tabs" role="tablist" aria-label="' . esc_attr__( 'Filter venues by status', 'equine-event-manager' ) . '">';
 		foreach ( $tabs as $key => $label ) {
-			if ( ! $first ) {
-				echo '<span class="eem-status-tab-sep" aria-hidden="true">|</span>';
-			}
-			$first   = false;
 			$is_active = $key === $active;
 			printf(
-				'<a class="eem-status-tab%s" href="%s"%s>%s <span class="eem-status-tab-count">(%s)</span></a>',
-				$is_active ? ' is-active' : '',
+				'<a class="eem-filter-tab%s" href="%s" role="tab" aria-selected="%s"%s>%s <span class="eem-filter-tab-count">%s</span></a>',
+				$is_active ? ' active' : '',
 				esc_url( self::url( array( 'status' => $key ) ) ),
+				$is_active ? 'true' : 'false',
 				$is_active ? ' aria-current="page"' : '',
 				esc_html( $label ),
 				esc_html( number_format_i18n( (int) ( $counts[ $key ] ?? 0 ) ) )
@@ -281,10 +276,10 @@ class EEM_Venues_Page {
 	 *
 	 * @return void
 	 */
-	private static function render_toolbar( string $search, int $total ): void {
+	private static function render_toolbar( string $search, int $total, string $status, array $counts ): void {
 		?>
 		<div class="eem-list-toolbar eem-toolbar-controls">
-			<div class="eem-list-toolbar-left"></div>
+			<div class="eem-list-toolbar-left"><?php self::render_status_tabs( $status, $counts ); ?></div>
 			<div class="eem-list-toolbar-right">
 				<form class="eem-search-form" role="search" method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
 					<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
