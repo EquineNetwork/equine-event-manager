@@ -11831,7 +11831,14 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-venue-card .eem-card-body > .eem-table th:last-child,
 .eem-venue-card .eem-card-body > .eem-table td:last-child { padding-right: 18px; }
 .eem-venue-source-badge { background: var(--eem-bg-alt, #eef2fb); color: var(--eem-navy, #031B4E); }
-.eem-venue-layout-name { font-weight: 600; color: var(--eem-navy, #031B4E); }
+/* Saved-layout name renders as a link-styled button: click it to open the
+   layout viewer (replaces the former blue "View" button). */
+.eem-venue-layout-name { background: none; border: none; padding: 0; margin: 0; font-family: inherit; font-size: 14px; font-weight: 700; color: #0d1b3e; cursor: pointer; text-align: left; }
+.eem-venue-layout-name:hover { color: var(--eem-electric); }
+/* Source column (folded in from the former Event Sources card). */
+.eem-venue-source-cell { font-size: 12px; color: #64748b; }
+.eem-venue-source-line + .eem-venue-source-line { margin-top: 2px; }
+.eem-venue-source-type { color: #94a3b8; }
 
 /* Save/Load Layout toolbar inside the stall + RV builders (Slice 3).
    White card + left accent so it reads as an intentional feature block (the
