@@ -28,7 +28,7 @@ Files in `.mockups/`:
 - [x] **`add_event_page.html`** — branded Add/Edit Event editor (implemented, uncommitted as 2.7.545)
 - [x] **`screen2_event_edit_documents.html`** — Event editor EDIT state with Sheets & Results section expanded (same commit as above)
 - [ ] **`screen1_sheets_results_manager.html`** — standalone Sheets & Results admin manager page (event selector + Draw Sheets / Results tabs, discipline groups, add-file panel)
-- [ ] **`taxonomy_categories_admin_page.html`** — Event Categories taxonomy admin (Add form + table with slug/count/meatball)
+- [x] **`taxonomy_categories_admin_page.html`** — Event Categories taxonomy admin (already fully implemented — PHP + CSS match mockup)
 - [ ] **`daily_movement_print_view.html`** — Daily Movement print view (`&print=1`); per-day sections, arriving/departing groups
 - [ ] **`reports_print_view.html`** — Reports print view (grouped table + category summary)
 - [ ] **`screen3_public_events_list.html`** — customer-facing `[en_events view="list"]` styling (public.css)

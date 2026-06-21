@@ -270,7 +270,11 @@ class EEM_Term_Categories_Page {
 		}
 		?>
 		<div class="eem-term-form-panel">
-			<h2 class="eem-term-form-title"><?php echo $is_edit ? esc_html__( 'Edit Category', 'equine-event-manager' ) : esc_html__( 'Add New Category', 'equine-event-manager' ); ?></h2>
+			<div class="eem-term-form-title eem-card-title">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+				<?php echo $is_edit ? esc_html__( 'Edit Category', 'equine-event-manager' ) : esc_html__( 'Add New Category', 'equine-event-manager' ); ?>
+			</div>
+			<div class="eem-term-form-body">
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="eem_save_term" />
 				<input type="hidden" name="eem_page" value="<?php echo esc_attr( $slug ); ?>" />
@@ -315,6 +319,7 @@ class EEM_Term_Categories_Page {
 					<?php endif; ?>
 				</div>
 			</form>
+			</div><!-- /.eem-term-form-body -->
 		</div>
 		<?php
 	}

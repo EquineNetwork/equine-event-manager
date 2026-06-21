@@ -12010,19 +12010,55 @@ a.eem-tpl-link:focus { font-size: 12px; color: var(--eem-electric, #1668F2); mar
    ========================================================================== */
 
 /* Split body: form panel (fixed) + table panel (fluid). */
-.eem-term-split { display: flex; align-items: flex-start; gap: 0; }
-.eem-term-form-panel { width: 320px; min-width: 280px; flex-shrink: 0; border-right: 1px solid var(--eem-border, #dcdcde); padding: 20px 22px 28px; }
-.eem-term-form-title { font-family: 'Space Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: var(--eem-navy, #031B4E); margin: 0 0 18px; }
-.eem-term-form-actions { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.eem-term-split { display: flex; align-items: flex-start; gap: 20px; }
+
+/* Left panel: white card with "Add / Edit Category" header strip. */
+.eem-term-form-panel {
+	width: 300px;
+	min-width: 280px;
+	flex-shrink: 0;
+	background: #fff;
+	border: 1px solid var(--eem-border-card);
+	border-radius: 10px;
+	overflow: hidden;
+}
+.eem-term-form-panel .eem-term-form-title {
+	font-family: 'Space Grotesk', sans-serif;
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--eem-navy, #031B4E);
+	margin: 0;
+	padding: 13px 18px;
+	border-bottom: 1px solid var(--eem-border-card);
+}
+.eem-term-form-body {
+	padding: 16px 18px 20px;
+}
+.eem-term-form-body form {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+.eem-term-form-actions { display: flex; align-items: center; gap: 10px; }
+
 /* Stack the form fields in the narrow panel (label above a full-width input) —
    the shared .eem-field-row is a 200px label grid that squishes the input here. */
-.eem-term-form-panel .eem-field-row { display: block; padding: 0; border-bottom: none; margin-bottom: 16px; }
+.eem-term-form-panel .eem-field-row { display: block; padding: 0; border-bottom: none; margin-bottom: 0; }
 .eem-term-form-panel .eem-field-label { padding-top: 0; margin-bottom: 5px; }
 .eem-term-form-panel .eem-field-input,
 .eem-term-form-panel .eem-field-select,
 .eem-term-form-panel .eem-field-textarea { width: 100%; }
 .eem-term-form-panel .eem-field-hint { margin-top: 5px; }
-.eem-term-table-panel { flex: 1; min-width: 0; padding: 0; }
+
+/* Right panel: white card, overflow hidden so border-radius clips toolbar/table/footer. */
+.eem-term-table-panel {
+	flex: 1;
+	min-width: 0;
+	background: #fff;
+	border: 1px solid var(--eem-border-card);
+	border-radius: 10px;
+	overflow: hidden;
+}
 
 /* Toolbar: bulk form + search form + count, on one flex row. Internal padding
    so the search box + Apply/Search buttons inset from the panel edges. */
@@ -12055,8 +12091,7 @@ a.eem-term-name:hover { color: var(--eem-electric, #1668F2); }
 
 @media (max-width: 767px) {
 	.eem-term-split { flex-direction: column; }
-	.eem-term-form-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--eem-border, #dcdcde); padding: 18px 16px; }
-	.eem-term-table-panel { padding: 0; }
+	.eem-term-form-panel { width: 100%; }
 	.eem-term-toolbar { padding: 14px 16px 12px; }
 }
 
