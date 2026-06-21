@@ -62,7 +62,6 @@ Files in `.mockups/`:
 5. **Upload .xlsx → Stall Grid** — parse `.xlsx` into stall rows via `ZipArchive` + `SimpleXML`; no new Composer deps. Include "Download Example Template" link.
 6. **Entry-aware Dashboard metrics** — Entries Sold count + entry revenue KPI card; Upcoming Events card (when Native Events is ON); gate on feature flags.
 7. **Mobile + PWA** — responsive/touch audit on all admin + customer pages (tablet ~768px, phone ~390px); PWA wrapper (`manifest.json` + service worker + install prompt).
-8. **"Accept Deposits" option** — deposit toggle + amount on stall/RV pricing; customer pays deposit at checkout; balance collected at event via Collect Payment.
 
 ### v3 — Architecture + Deferred Features
 
