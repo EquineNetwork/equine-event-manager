@@ -38,110 +38,114 @@ $c   = function ( $key, $default = '' ) use ( $ctx ) {
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'IBM Plex Sans','DejaVu Sans','Helvetica Neue',Helvetica,Arial,sans-serif; color: #1d2327; background: #fff; font-size: 12.5px; line-height: 1.5; }
+body { font-family: 'IBM Plex Sans','DejaVu Sans','Helvetica Neue',Helvetica,Arial,sans-serif; color: #0d1b3e; background: #fff; font-size: 12.5px; line-height: 1.5; }
 /* max-width fits a Letter page's printable area (~554pt) so Dompdf doesn't clip
    the right edge; @page margin handles the PDF insets. Web view is centered. */
 .sheet { width: 100%; max-width: 700px; margin: 0 auto; padding: 22px 24px; }
 a { color: #1668F2; text-decoration: none; }
-.navy { color: #031B4E; }
-.muted { color: #50575e; }
-h1,h2,h3 { font-family: 'Space Grotesk','DejaVu Sans','Helvetica Neue',Arial,sans-serif; }
-/* Section/title classes also use the display face. */
-.event-name,.receipt-tag,.dblock-title,.section-label,.assignments-title,.rct,.tbl-label,.special-note-label,.cancellation-policy-title,.totals-inner tr.grand td { font-family: 'Space Grotesk','DejaVu Sans','Helvetica Neue',Arial,sans-serif; }
+.navy { color: #0d1b3e; }
+.muted { color: #64748b; }
+h1,h2,h3 { font-family: 'IBM Plex Sans','DejaVu Sans','Helvetica Neue',Arial,sans-serif; }
+/* Section/title classes share the same IBM Plex Sans stack (no separate display face). */
+.event-name,.receipt-tag,.dblock-title,.section-label,.assignments-title,.rct,.tbl-label,.special-note-label,.cancellation-policy-title,.totals-inner tr.grand td { font-family: 'IBM Plex Sans','DejaVu Sans','Helvetica Neue',Arial,sans-serif; }
 
-/* Header */
-.header-table { width: 100%; border-bottom: 2px solid #031B4E; padding-bottom: 16px; margin-bottom: 16px; }
+/* Header — electric-blue accent rule. */
+.header-table { width: 100%; border-bottom: 2px solid #1668F2; padding-bottom: 16px; margin-bottom: 16px; }
 .header-table td { vertical-align: top; }
 .logo-img { max-width: 160px; max-height: 36px; display: block; margin-bottom: 10px; }
 .receipt-tag { font-size: 12px; font-weight: 600; color: #1668F2; margin-bottom: 4px; }
-.event-name { font-size: 20px; font-weight: 700; color: #031B4E; margin-bottom: 3px; line-height: 1.2; }
-.event-sub { font-size: 12px; color: #50575e; }
-.order-box { background: #F0F4FB; border: 1px solid #D9E2F2; border-radius: 4px; padding: 12px 16px; }
-.order-box .obl { font-size: 11.5px; font-weight: 600; color: #50575e; }
-.order-box .obv { font-size: 13.5px; font-weight: 700; color: #031B4E; margin-bottom: 8px; }
+.event-name { font-size: 20px; font-weight: 700; color: #0d1b3e; margin-bottom: 3px; line-height: 1.2; }
+.event-sub { font-size: 12px; color: #64748b; }
+/* Order box — flat (no card chrome), right-aligned text. */
+.order-box { background: transparent; border: none; padding: 0 0 8px 0; text-align: right; }
+.order-box .obl { font-size: 11.5px; font-weight: 600; color: #64748b; }
+.order-box .obv { font-size: 13.5px; font-weight: 700; color: #0d1b3e; margin-bottom: 8px; }
 .order-box .obv.paid { font-size: 17px; color: #1668F2; margin-bottom: 0; }
-.receipt-status-pill { display: inline-block; margin-top: 8px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; background: #FCEAEA; color: #B3261E; border: 1px solid #E6A6A0; }
+.receipt-status-pill { display: inline-block; margin-top: 6px; padding: 2px 9px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
 
 /* Refund / void status banner */
-.refund-banner { margin: 0 0 16px; padding: 12px 16px; border-radius: 4px; background: #FCEAEA; border: 1px solid #E6A6A0; color: #7A1A12; font-size: 13px; }
+.refund-banner { margin: 0 0 16px; padding: 12px 16px; border-radius: 6px; background: #FCEAEA; border: 1px solid #E6A6A0; color: #7A1A12; font-size: 13px; }
 .refund-banner-label { font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
 .refund-banner-detail { margin-left: 6px; }
 .totals-inner tr.refunded-row td { color: #B3261E; font-weight: 700; }
 
-/* Customer + Billing */
+/* Customer + Billing — flat blocks (no card chrome). */
 .details-table { width: 100%; margin-bottom: 16px; border-spacing: 0; table-layout: fixed; }
 .details-table > tbody > tr > td { width: 50%; vertical-align: top; }
 .details-table td.dleft { padding-right: 6px; }
 .details-table td.dright { padding-left: 6px; }
-.dblock { background: #f3f4f5; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px 14px; }
-.dblock-title { font-size: 13px; font-weight: 700; color: #031B4E; margin-bottom: 9px; }
-.dl { font-size: 11.5px; font-weight: 600; color: #50575e; }
-.dv { font-size: 13px; font-weight: 500; color: #1d2327; margin-bottom: 6px; }
+.dblock { background: transparent; border: none; padding: 12px 0; }
+.dblock-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 9px; }
+.dl { font-size: 11.5px; font-weight: 600; color: #64748b; }
+.dv { font-size: 13px; font-weight: 500; color: #0d1b3e; margin-bottom: 6px; }
 .gap { width: 12px; }
 
-/* Section label */
-.section-label { font-size: 13px; font-weight: 700; color: #031B4E; margin-bottom: 8px; }
+/* Section label — small-caps muted. */
+.section-label { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; padding-top: 4px; }
 
-/* Assignments */
-.assignments { background: #F0F4FB; border: 1px solid #D9E2F2; border-radius: 4px; padding: 12px 14px; margin-bottom: 16px; }
-.assignments-title { font-size: 13px; font-weight: 700; color: #031B4E; margin-bottom: 8px; }
+/* Assignments — flat, top-border divider. */
+.assignments { background: transparent; border: none; border-top: 1px solid #e2e8f4; padding: 12px 0; margin-bottom: 16px; }
+.assignments-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
 .assignments table { width: 100%; border-collapse: collapse; }
-.assignments td { vertical-align: top; padding: 5px 0; border-bottom: 1px solid #E5EAF2; font-size: 12.5px; }
+.assignments td { vertical-align: top; padding: 5px 0; border-bottom: 1px solid #e2e8f4; font-size: 12.5px; }
 .assignments tr:last-child td { border-bottom: none; }
-.assign-label { font-weight: 700; color: #031B4E; width: 90px; }
-.assign-nights { color: #50575e; font-size: 12px; text-align: right; }
+.assign-label { font-weight: 700; color: #0d1b3e; width: 90px; }
+.assign-nights { color: #64748b; font-size: 12px; text-align: right; }
 
 /* Reservation summary cards */
 .cards-table { width: 100%; margin-bottom: 16px; border-spacing: 0; }
 .cards-table > tbody > tr > td { vertical-align: top; padding-bottom: 10px; }
-.res-card { border: 1px solid #e5e7eb; border-radius: 4px; }
-.rch { background: #f3f4f5; border-bottom: 1px solid #dcdcde; padding: 8px 12px; }
-.rct { font-size: 13px; font-weight: 700; color: #031B4E; }
-.rcb { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 3px; background: #EEF4FF; color: #1668F2; border: 1px solid #c0d8ff; float: right; }
+.res-card { border: 1px solid #e2e8f4; border-radius: 6px; overflow: hidden; }
+.rch { background: #f8faff; border-bottom: 1px solid #e2e8f4; padding: 8px 12px; overflow: hidden; }
+.rct { font-size: 13px; font-weight: 700; color: #0d1b3e; }
+.rcb { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 20px; background: #eff6ff; color: #1668F2; border: 1px solid #bfdbfe; float: right; }
 .rcb.rv { background: #F5F3FF; color: #6d28d9; border-color: #ddd6fe; }
 .rcb.group { background: #F0FDF4; color: #15803d; border-color: #bbf7d0; }
+.rcb.addon { background: #FFF7ED; color: #c2410c; border-color: #fed7aa; }
 .rcbody { padding: 10px 12px; }
 .rcbody table { width: 100%; border-collapse: collapse; }
 .rcbody td { width: 50%; vertical-align: top; padding: 3px 0; }
-.rfl { font-size: 11.5px; font-weight: 600; color: #50575e; }
-.rfv { font-size: 12.5px; font-weight: 500; color: #1d2327; }
+.rfl { font-size: 11.5px; font-weight: 600; color: #64748b; }
+.rfv { font-size: 12.5px; font-weight: 500; color: #0d1b3e; }
 
 /* Line items */
-.tbl-label { font-size: 13px; font-weight: 700; color: #031B4E; margin-bottom: 8px; }
-.items-table { width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; margin-bottom: 16px; }
-.items-table thead tr { background: #f3f4f5; }
-.items-table thead th { padding: 8px 10px; font-size: 11.5px; font-weight: 600; color: #1d2327; text-align: left; border-bottom: 1px solid #dcdcde; }
+.tbl-label { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; padding-top: 4px; }
+.items-table { width: 100%; border-collapse: collapse; border: 1px solid #e2e8f4; margin-bottom: 16px; }
+.items-table thead tr { background: transparent; }
+.items-table thead th { padding: 8px 10px; font-size: 10px; font-weight: 700; color: #94a3b8; text-align: left; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 2px solid #e2e8f4; }
 .items-table thead th.c { text-align: center; }
 .items-table thead th.r { text-align: right; }
-.items-table tbody td { padding: 7px 10px; font-size: 12px; border-bottom: 1px solid #f0f0f1; }
+.items-table tbody td { padding: 7px 10px; font-size: 12px; border-bottom: 1px solid #f0f4fb; }
 .items-table tbody tr:last-child td { border-bottom: none; }
-.items-table tbody tr:nth-child(even) td { background: #f9f9f9; }
-.ts { font-size: 11.5px; font-weight: 600; color: #50575e; }
-.tc { text-align: center; color: #50575e; }
-.tr-cell { text-align: right; font-weight: 700; color: #031B4E; }
+.items-table tbody tr:nth-child(even) td { background: transparent; }
+.ts { font-size: 11.5px; font-weight: 600; color: #64748b; }
+.tc { text-align: center; color: #64748b; }
+.tr-cell { text-align: right; font-weight: 700; color: #0d1b3e; }
 
-/* Special requests */
-.special-note { background: #F0F4FB; border: 1px solid #D9E2F2; border-radius: 4px; padding: 10px 14px; margin-bottom: 14px; }
-.special-note-label { font-size: 12.5px; font-weight: 700; color: #031B4E; margin-bottom: 3px; }
-.special-note-text { font-size: 12.5px; color: #1d2327; }
+/* Special requests — flat, top-border divider. */
+.special-note { background: transparent; border: none; border-top: 1px solid #e2e8f4; padding: 10px 0; margin-bottom: 14px; }
+.special-note-label { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 3px; }
+.special-note-text { font-size: 12.5px; color: #0d1b3e; }
 
 /* Totals */
 .totals-table { width: 100%; margin-bottom: 16px; border-spacing: 0; }
 .totals-inner { width: 280px; float: right; }
 .totals-inner table { width: 100%; border-collapse: collapse; }
-.totals-inner td { padding: 5px 0; font-size: 12.5px; border-bottom: 1px solid #f0f0f1; }
-.totals-inner td.tl { color: #50575e; }
-.totals-inner td.tv { text-align: right; font-weight: 600; color: #1d2327; }
-.totals-inner tr.subtotal td { font-weight: 700; color: #031B4E; }
-.totals-inner tr.grand td { border-top: 2px solid #031B4E; border-bottom: none; padding-top: 8px; font-family: 'Space Grotesk',Arial,sans-serif; }
-.totals-inner tr.grand td.tl { font-weight: 800; color: #031B4E; font-size: 14px; }
+.totals-inner td { padding: 5px 0; font-size: 12.5px; border-bottom: 1px solid #f0f4fb; font-family: 'IBM Plex Sans','DejaVu Sans',sans-serif; }
+.totals-inner td.tl { color: #64748b; }
+.totals-inner td.tv { text-align: right; font-weight: 600; color: #0d1b3e; }
+.totals-inner tr.subtotal td { font-weight: 700; color: #0d1b3e; }
+.totals-inner tr.grand td { border-top: 2px solid #1668F2; border-bottom: none; padding-top: 8px; font-family: 'IBM Plex Sans','DejaVu Sans',Arial,sans-serif; }
+.totals-inner tr.grand td.tl { font-weight: 800; color: #0d1b3e; font-size: 14px; }
 .totals-inner tr.grand td.tv { font-weight: 800; color: #1668F2; font-size: 15px; }
+.totals-inner tr.grand.due td.tl { color: #c2410c; }
+.totals-inner tr.grand.due td.tv { color: #c2410c; }
 .clear { clear: both; }
 
-/* Cancellation */
-.cancellation-policy { background: #f3f4f5; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px 14px; margin-bottom: 16px; }
-.cancellation-policy-title { font-size: 13px; font-weight: 700; color: #031B4E; margin-bottom: 5px; }
-.cancellation-policy-body { font-size: 11.5px; line-height: 1.55; color: #50575e; }
+/* Cancellation — flat, top-border divider. */
+.cancellation-policy { background: transparent; border: none; border-top: 1px solid #e2e8f4; padding: 12px 0; margin-bottom: 16px; }
+.cancellation-policy-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 5px; }
+.cancellation-policy-body { font-size: 11.5px; line-height: 1.55; color: #64748b; }
 
 /* Footer — fixed/running footer repeats on every PDF page (Dompdf); the web view
    shows a normal in-flow footer instead (toggled by media type). */
