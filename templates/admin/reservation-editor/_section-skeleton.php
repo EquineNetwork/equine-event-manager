@@ -55,6 +55,9 @@ if ( ! function_exists( 'eem_render_reservation_editor_section' ) ) {
 			'icon_key'      => '', // C7.B.3 — Feather glyph name per EEM_Dashboard_Icons registry
 			'enable_toggle' => true,
 			'collapsed'     => false,
+			// When false, the section is permanently open: no chevron, no
+			// collapse click target, no collapsed state (Division editor cards).
+			'collapsible'   => true,
 			'body_html'     => '',
 			// C7.C.1.1 — header-toggle initial state. Was hardcoded
 			// `--on` for every section even when the underlying meta
@@ -91,12 +94,20 @@ if ( ! function_exists( 'eem_render_reservation_editor_section' ) ) {
 		// source of --disabled, leaving first-render incorrect).
 		$is_disabled         = $args['enable_toggle'] && ! $args['is_enabled'];
 		$effective_collapsed = $is_disabled || $args['collapsed'];
+		// Non-collapsible sections are always open and carry no collapse chrome.
+		if ( ! $args['collapsible'] ) {
+			$effective_collapsed = false;
+		}
+		$header_action_attr = $args['collapsible'] ? ' data-eem-action="reservation-editor-toggle-collapse"' : '';
 
 		$card_classes = 'eem-card eem-reservation-editor-section';
 		if ( $effective_collapsed ) {
 			$card_classes .= ' eem-section-collapsed';
 		}
 		$header_classes = 'eem-section-header';
+		if ( ! $args['collapsible'] ) {
+			$header_classes .= ' eem-section-header--static';
+		}
 		if ( ! $effective_collapsed ) {
 			$header_classes .= ' is-open';
 		}
@@ -109,7 +120,7 @@ if ( ! function_exists( 'eem_render_reservation_editor_section' ) ) {
 		}
 		?>
 		<section class="<?php echo esc_attr( $card_classes ); ?>" id="card-<?php echo esc_attr( $args['key'] ); ?>">
-			<div class="<?php echo esc_attr( $header_classes ); ?>" data-eem-action="reservation-editor-toggle-collapse" data-eem-section="<?php echo esc_attr( $args['key'] ); ?>">
+			<div class="<?php echo esc_attr( $header_classes ); ?>"<?php echo $header_action_attr; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static attribute string. ?> data-eem-section="<?php echo esc_attr( $args['key'] ); ?>">
 				<div class="eem-section-header-left">
 					<div class="eem-section-icon eem-section-icon--<?php echo esc_attr( $args['icon_tone'] ); ?>" aria-hidden="true"><?php
 						// C7.B.3 — inline SVG glyph per mockup chip pattern.
@@ -133,6 +144,7 @@ if ( ! function_exists( 'eem_render_reservation_editor_section' ) ) {
 							<span class="eem-enable-toggle__label" data-eem-enable-label="<?php echo esc_attr( $args['key'] ); ?>"><?php echo esc_html( $enable_label_text ); ?></span>
 						</div>
 					<?php endif; ?>
+					<?php if ( $args['collapsible'] ) : ?>
 					<div class="eem-section-chevron" aria-hidden="true"><?php
 						// C7.C.1.3 — emit the chevron-down glyph. Prior to
 						// this, the container was empty and rendered as a
@@ -145,6 +157,7 @@ if ( ! function_exists( 'eem_render_reservation_editor_section' ) ) {
 							echo EEM_Dashboard_Icons::svg( 'chevron-down' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped helper output.
 						}
 					?></div>
+					<?php endif; ?>
 				</div>
 			</div>
 			<div class="<?php echo esc_attr( $body_classes ); ?>" id="body-<?php echo esc_attr( $args['key'] ); ?>">

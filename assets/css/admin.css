@@ -6935,6 +6935,10 @@ a.eem-dashboard-qa-btn:focus {
 	cursor: pointer;
 	user-select: none;
 }
+/* Non-collapsible sections (Division editor): header is not a click target. */
+.eem-section-header--static {
+	cursor: default;
+}
 /* Flat sections: no header border — the section's own hairline divider is the
    only separator (this rule otherwise stacked a 2nd line on expanded sections). */
 .eem-section-header.is-open {
@@ -7982,14 +7986,41 @@ a.eem-header-action-view,
 	border-color: #8c8f94;
 	background: #f6f7f7;
 }
+/* View Event = bright electric primary (overrides a.eem-btn-primary's navy). */
+a.eem-header-action-view {
+	background: var(--eem-electric);
+	border-color: var(--eem-electric);
+	color: #fff;
+}
+a.eem-header-action-view:hover {
+	background: var(--eem-electric-hover, #1257d1);
+	border-color: var(--eem-electric-hover, #1257d1);
+	color: #fff;
+}
 .eem-header-typeahead {
 	margin-top: 10px;
+}
+/* Event-search field: wrap holds the magnifier icon + the input. */
+.eem-event-search-wrap {
+	position: relative;
+	display: block;
+	max-width: 420px;
+}
+.eem-event-search-icon {
+	position: absolute;
+	left: 11px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 14px;
+	height: 14px;
+	color: #94a3b8;
+	pointer-events: none;
 }
 input.eem-event-search-input {
 	width: 100%;
 	max-width: 420px;
 	padding: 8px 12px;
-	border: 1px solid #8c8f94;
+	border: 1.5px solid #d0daea;
 	border-radius: var(--eem-radius);
 	font-size: 13px;
 	font-family: inherit;
@@ -7999,16 +8030,27 @@ input.eem-event-search-input {
 	box-sizing: border-box;
 	margin: 0; /* C7.X.15 Issue 3 — reset WP core forms.css 'input, select { margin: 0 1px; }' */
 }
+.eem-event-search-wrap input.eem-event-search-input {
+	max-width: none;
+	padding-left: 32px;
+}
 input.eem-event-search-input:focus {
 	border-color: var(--eem-electric);
-	box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12);
+	box-shadow: 0 0 0 3px rgba(22, 104, 242, 0.1);
 }
 .eem-event-search-results {
-	border: 1px solid #dcdcde;
+	border: 1px solid #e2e8f4;
 	border-radius: var(--eem-radius);
 	background: #fff;
 	margin-top: 4px;
 	overflow: hidden;
+}
+/* No chrome when there are no results — otherwise the empty box renders as a
+   stray gray border/line under the event selector (Whitney 2026-06-20). */
+.eem-event-search-results:empty {
+	border: none;
+	background: transparent;
+	margin-top: 0;
 }
 .eem-event-option {
 	padding: 10px 12px;

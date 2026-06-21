@@ -885,9 +885,12 @@ class EEM_Entries {
 							data-current-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>"
 							data-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"
 							data-search-nonce="<?php echo esc_attr( $search_nonce ); ?>">
-							<input type="text" class="eem-event-search-input" id="eem-entry-event-search-input"
-								placeholder="<?php esc_attr_e( "Search events\xe2\x80\xa6", 'equine-event-manager' ); ?>"
-								data-eem-input-action="entry-filter-events" autocomplete="off">
+							<span class="eem-event-search-wrap">
+								<svg class="eem-event-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+								<input type="text" class="eem-event-search-input" id="eem-entry-event-search-input"
+									placeholder="<?php esc_attr_e( 'Search Events', 'equine-event-manager' ); ?>"
+									data-eem-input-action="entry-filter-events" autocomplete="off">
+							</span>
 							<div class="eem-event-search-results" id="eem-entry-event-search-results"></div>
 							<?php if ( $has_linked_event ) : ?>
 								<button type="button" class="eem-header-typeahead-cancel" data-eem-action="entry-cancel-change">
@@ -981,6 +984,7 @@ class EEM_Entries {
 							'icon_key'      => 'package',
 							'enable_toggle' => false,
 							'collapsed'     => false,
+							'collapsible'   => false,
 							'body_html'     => $eem_division_body,
 						) );
 						eem_render_reservation_editor_section( array(
@@ -990,6 +994,7 @@ class EEM_Entries {
 							'icon_key'      => 'file-text',
 							'enable_toggle' => false,
 							'collapsed'     => false,
+							'collapsible'   => false,
 							'body_html'     => $eem_desc_body,
 						) );
 						?>

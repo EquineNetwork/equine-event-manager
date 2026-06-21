@@ -4243,6 +4243,9 @@
 			var stickyBar = document.getElementById('eem-sticky-save');
 			var rid = stickyBar ? (stickyBar.dataset.eemReservationId || '0') : '0';
 			document.querySelectorAll('.eem-reservation-editor-section[id]').forEach(function (card) {
+				// Skip non-collapsible sections (Division editor) — they have no
+				// chevron, so a stale "collapsed" state would strand them closed.
+				if (!card.querySelector('[data-eem-action="reservation-editor-toggle-collapse"]')) { return; }
 				var key = 'eem-section-STATE-' + rid + '-' + card.id;
 				var saved = sessionStorage.getItem(key);
 				if (!saved) { return; }
