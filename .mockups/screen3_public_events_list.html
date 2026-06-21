@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <title>Public Events List — [en_events] (Equine Event Manager)</title>
 <!--
   CUSTOMER-FACING mockup of the [en_events view="list"] shortcode output.
@@ -29,11 +30,14 @@
   /* --- Minimal public-page frame so the shortcode block has a theme-like host --- */
   body {
     margin: 0;
-    background: #eef1f6;
+    background: transparent;
     font-family: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
     color: #031B4E;
   }
   .theme-host {
+    border: 1px solid #e2e8f4;
+    border-radius: 10px;
+    overflow: hidden;
     max-width: 880px;
     margin: 0 auto;
     padding: 40px 24px 64px;
@@ -87,19 +91,18 @@
   }
   .eem-event-list-row {
     display: grid;
-    grid-template-columns: 150px minmax(0, 1fr);
+    grid-template-columns: 110px 56px minmax(0, 1fr);
     gap: 20px;
     align-items: center;
-    padding: 14px;
-    border: 1px solid #D9E2F2;
-    border-radius: 8px;
+    padding: 16px 20px;
+    border: 1px solid #e2e8f4;
+    border-radius: 10px;
     background: #fff;
-    box-shadow: 0 1px 3px rgba(3, 27, 78, 0.06);
     transition: border-color 0.15s, box-shadow 0.15s;
   }
   .eem-event-list-row:hover {
-    border-color: #b9ccef;
-    box-shadow: 0 4px 14px rgba(3, 27, 78, 0.08);
+    border-color: #1668F2;
+    box-shadow: 0 4px 14px rgba(22, 104, 242, 0.08);
   }
   /* images="no" variant — sidebar/compact mode */
   .eem-event-list--no-images {
@@ -130,6 +133,38 @@
   }
   .eem-event-list--no-images .eem-event-list-row__media {
     display: none;
+  }
+  .eem-event-list-row__date-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    flex-shrink: 0;
+    line-height: 1;
+    gap: 2px;
+    padding: 4px 0;
+  }
+  .eem-event-list-row__dow {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #94a3b8;
+  }
+  .eem-event-list-row__day {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #0d1b3e;
+    letter-spacing: -.03em;
+    line-height: 1;
+  }
+  .eem-event-list-row__month {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: #64748b;
   }
   .eem-event-list-row__media {
     position: relative;
@@ -182,23 +217,43 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 5px;
+    gap: 3px;
     min-width: 0;
   }
   .eem-event-list-row__producer {
     font-family: "IBM Plex Sans", system-ui, sans-serif;
-    font-size: 15px;
-    font-weight: 500;
-    color: #6B7A99;
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    text-decoration: none;
+  }
+  .eem-event-list-row__producer:hover {
+    color: #1668F2;
   }
   .eem-event-list-row__venue {
     display: flex;
     align-items: center;
     gap: 6px;
-    margin-top: 2px;
+    margin-top: 4px;
     font-family: "IBM Plex Sans", system-ui, sans-serif;
-    font-size: 14px;
-    color: #6B7A99;
+    font-size: 12px;
+    font-weight: 400;
+    color: #94a3b8;
+  }
+  .eem-event-list-row__venue-name {
+    font-weight: 700;
+    color: #0d1b3e;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .eem-event-list-row__venue-city {
+    font-weight: 400;
+    color: #94a3b8;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 12px;
   }
   .eem-event-list-row__pin {
     display: inline-block;
@@ -212,17 +267,17 @@
   }
   /* Theme-proof the event title */
   .eem-event-list-row__title {
-    margin: 0 !important;
-    color: #031B4E;
+    margin: 2px 0 0 !important;
+    color: #0d1b3e;
     font-family: "IBM Plex Sans", system-ui, sans-serif !important;
-    font-size: 1.5rem !important;
-    font-weight: 700 !important;
-    line-height: 1.15 !important;
-    letter-spacing: -0.01em;
-    text-transform: none !important;
+    font-size: 1.35rem !important;
+    font-weight: 800 !important;
+    line-height: 1.1 !important;
+    letter-spacing: -0.02em;
+    text-transform: uppercase !important;
   }
   .eem-event-list-row__title a {
-    color: #031B4E !important;
+    color: #0d1b3e !important;
     font-family: inherit !important;
     font-size: inherit !important;
     font-weight: inherit !important;
@@ -230,28 +285,22 @@
   }
   .eem-event-list-row__title a:hover,
   .eem-event-list-row__title a:focus { color: #1668F2 !important; }
-  .eem-event-list-row__date {
-    margin: 0;
-    font-family: "IBM Plex Sans", system-ui, sans-serif !important;
-    font-size: 14px !important;
-    font-weight: 500 !important;
-    color: #6B7A99 !important;
-  }
   /* Action buttons — Draw Sheets (teal outline) and Results (navy fill).
      These render only when Sheets & Results feature is ON and docs are uploaded. */
   .eem-event-list-row__actions {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
+    margin-top: 10px;
   }
   .eem-event-list-row__btn {
     display: inline-flex;
     align-items: center;
-    padding: 7px 16px;
-    border-radius: 6px;
-    border: 1px solid transparent;
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1.5px solid transparent;
     font-family: "IBM Plex Sans", system-ui, sans-serif;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     line-height: 1.2;
     white-space: nowrap;
@@ -261,21 +310,21 @@
   a.eem-event-list-row__btn--draw,
   a.eem-event-list-row__btn--draw:link,
   a.eem-event-list-row__btn--draw:visited {
-    background: #ffffff !important;
-    color: #0d9488 !important;
-    border-color: #0d9488 !important;
+    background: #f1f4f9 !important;
+    color: #4a6080 !important;
+    border-color: #c8d4e4 !important;
   }
   a.eem-event-list-row__btn--draw:hover,
-  a.eem-event-list-row__btn--draw:focus { background: #F0FDFA !important; color: #0d9488 !important; }
+  a.eem-event-list-row__btn--draw:focus { background: #1668F2 !important; color: #fff !important; border-color: #1668F2 !important; }
   a.eem-event-list-row__btn--results,
   a.eem-event-list-row__btn--results:link,
   a.eem-event-list-row__btn--results:visited {
-    background: #031B4E !important;
+    background: #0d1b3e !important;
     color: #ffffff !important;
-    border-color: #031B4E !important;
+    border-color: #0d1b3e !important;
   }
   a.eem-event-list-row__btn--results:hover,
-  a.eem-event-list-row__btn--results:focus { background: #04256a !important; color: #ffffff !important; }
+  a.eem-event-list-row__btn--results:focus { background: #1668F2 !important; border-color: #1668F2 !important; color: #ffffff !important; }
 
   /* view-link: shown in some CSS but NOT rendered in the current list row markup */
   .eem-event-list-row__view-link {
@@ -300,48 +349,74 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
     margin-top: 20px;
+    padding: 14px 0 4px;
   }
   .eem-event-pagination__link,
   .eem-event-pagination__current {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0 14px;
-    border-radius: 14px;
-    border: 1px solid #d9e2ec;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 8px;
+    border-radius: 6px;
+    border: 1.5px solid #e2e8f4;
     background: #fff;
-    color: #172033;
-    font-size: 0.95rem;
-    font-weight: 800;
+    color: #0d1b3e;
+    font-size: 12px;
+    font-weight: 600;
     text-decoration: none;
-    box-shadow: 0 10px 24px rgba(23, 32, 51, 0.05);
+    font-family: "IBM Plex Sans", sans-serif;
   }
   .eem-event-pagination__current {
-    background: #172033;
-    border-color: #172033;
+    background: #1668F2;
+    border-color: #1668F2;
     color: #fff;
   }
   .eem-event-pagination__link:hover,
-  .eem-event-pagination__link:focus { border-color: #172033; color: #172033; }
+  .eem-event-pagination__link:focus { border-color: #1668F2; color: #1668F2; background: #eff6ff; }
 
   /* Single-column collapse on narrow screens */
   @media (max-width: 600px) {
+    .eem-event-list { gap: 10px; margin: 16px 0; }
     .eem-event-list-row {
-      grid-template-columns: 100px minmax(0, 1fr);
-      gap: 14px;
+      grid-template-columns: 1fr;
+      gap: 0;
+      padding: 0;
+      overflow: hidden;
     }
-    .eem-event-list-row__title { font-size: 1.25rem !important; }
+    .eem-event-list-row__media {
+      aspect-ratio: 16 / 7;
+      border-radius: 0;
+      border: none;
+      border-bottom: 1px solid #e2e8f4;
+    }
+    .eem-event-list-row__media img {
+      object-fit: cover;
+    }
+    .eem-event-list-row__date-col {
+      flex-direction: row;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 14px 0;
+      justify-content: flex-start;
+    }
+    .eem-event-list-row__dow { font-size: 10px; }
+    .eem-event-list-row__day { font-size: 1.4rem; }
+    .eem-event-list-row__month { font-size: 10px; }
+    .eem-event-list-row__content {
+      padding: 6px 14px 14px;
+    }
+    .eem-event-list-row__title { font-size: 1.1rem !important; }
+    .eem-event-list-row__actions { margin-top: 8px; }
+    .eem-event-list-row__btn { flex: 1; justify-content: center; }
   }
 </style>
 </head>
 <body>
   <div class="theme-host">
-    <h1 class="theme-host__heading">Upcoming Events</h1>
-    <p class="theme-host__sub">Rendered by <code>[en_events view="list"]</code> — current &amp; upcoming events (timeframe="current_upcoming" default). Sources: TEC + GEMS.</p>
 
     <!-- render_events_shortcode() → list branch wrapper -->
     <div class="eem-event-list" data-eem-events-page="1">
@@ -350,7 +425,7 @@
            (Draw Sheets + Results show only when EEM_Sheet_Entries::has_drawsheets()
             and has_results() return true for this event_id) -->
       <article class="eem-event-list-row">
-        <div class="eem-event-list-row__media">
+                <div class="eem-event-list-row__media">
           <div class="eem-event-list-row__media-badge">
             <span class="eem-event-list-row__media-badge-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" role="presentation" focusable="false">
@@ -362,13 +437,17 @@
           </div>
           <img src="https://placehold.co/300x400/eef2fb/8a9ab8?text=Event+Flyer" alt="Spring Classic Barrel Race flyer" />
         </div>
+        <div class="eem-event-list-row__date-col">
+          <span class="eem-event-list-row__dow">THU</span>
+          <span class="eem-event-list-row__day">26</span>
+          <span class="eem-event-list-row__month">JUN</span>
+        </div>
         <div class="eem-event-list-row__content">
-          <div class="eem-event-list-row__date">Jun 26 – Jun 28, 2026</div>
           <h3 class="eem-event-list-row__title"><a href="#event-1">Spring Classic Barrel Race</a></h3>
           <div class="eem-event-list-row__producer">Mountain West Productions</div>
           <div class="eem-event-list-row__venue">
             <span class="eem-event-list-row__pin" aria-hidden="true"></span>
-            <span>Cam-Plex Equestrian Center · Gillette, WY</span>
+            <span class="eem-event-list-row__venue-name">Cam-Plex Equestrian Center</span><span class="eem-event-list-row__venue-city"> · Gillette, WY</span>
           </div>
           <!-- Actions block: only emitted when sr_has_draw || sr_has_res -->
           <div class="eem-event-list-row__actions">
@@ -381,7 +460,7 @@
       <!-- Row 2 — placeholder media (no featured image), no badge (event not imminent),
            no action buttons (no Sheets & Results docs uploaded) -->
       <article class="eem-event-list-row">
-        <div class="eem-event-list-row__media">
+                <div class="eem-event-list-row__media">
           <div class="eem-event-list-row__media-placeholder" aria-hidden="true">
             <span class="eem-event-list-row__media-placeholder-icon">
               <svg viewBox="0 0 24 24" fill="none" role="presentation" focusable="false">
@@ -392,13 +471,17 @@
             </span>
           </div>
         </div>
+        <div class="eem-event-list-row__date-col">
+          <span class="eem-event-list-row__dow">SAT</span>
+          <span class="eem-event-list-row__day">11</span>
+          <span class="eem-event-list-row__month">JUL</span>
+        </div>
         <div class="eem-event-list-row__content">
-          <div class="eem-event-list-row__date">Jul 11, 2026</div>
           <h3 class="eem-event-list-row__title"><a href="#event-2">Summer Open Horse Show</a></h3>
           <div class="eem-event-list-row__producer">High Plains Saddle Club</div>
           <div class="eem-event-list-row__venue">
             <span class="eem-event-list-row__pin" aria-hidden="true"></span>
-            <span>Laramie County Fairgrounds · Cheyenne, WY</span>
+            <span class="eem-event-list-row__venue-name">Laramie County Fairgrounds</span><span class="eem-event-list-row__venue-city"> · Cheyenne, WY</span>
           </div>
           <!-- No actions block — Sheets & Results not enabled or no docs uploaded -->
         </div>
@@ -406,7 +489,7 @@
 
       <!-- Row 3 — flyer + "Tomorrow" badge, Results button only (draw sheets not uploaded) -->
       <article class="eem-event-list-row">
-        <div class="eem-event-list-row__media">
+                <div class="eem-event-list-row__media">
           <div class="eem-event-list-row__media-badge">
             <span class="eem-event-list-row__media-badge-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" role="presentation" focusable="false">
@@ -418,13 +501,17 @@
           </div>
           <img src="https://placehold.co/300x400/eef2fb/8a9ab8?text=Rodeo" alt="Frontier Days Ranch Rodeo flyer" />
         </div>
+        <div class="eem-event-list-row__date-col">
+          <span class="eem-event-list-row__dow">SUN</span>
+          <span class="eem-event-list-row__day">21</span>
+          <span class="eem-event-list-row__month">JUN</span>
+        </div>
         <div class="eem-event-list-row__content">
-          <div class="eem-event-list-row__date">Jun 21 – Jun 24, 2026</div>
           <h3 class="eem-event-list-row__title"><a href="#event-3">Frontier Days Ranch Rodeo</a></h3>
           <div class="eem-event-list-row__producer">Equine Network Events</div>
           <div class="eem-event-list-row__venue">
             <span class="eem-event-list-row__pin" aria-hidden="true"></span>
-            <span>Frontier Park Arena · Cheyenne, WY</span>
+            <span class="eem-event-list-row__venue-name">Frontier Park Arena</span><span class="eem-event-list-row__venue-city"> · Cheyenne, WY</span>
           </div>
           <div class="eem-event-list-row__actions">
             <a class="eem-event-list-row__btn eem-event-list-row__btn--results" href="#results-3">Results</a>
@@ -434,7 +521,7 @@
 
       <!-- Row 4 — placeholder, no producer (producer['name'] empty), no actions -->
       <article class="eem-event-list-row">
-        <div class="eem-event-list-row__media">
+                <div class="eem-event-list-row__media">
           <div class="eem-event-list-row__media-placeholder" aria-hidden="true">
             <span class="eem-event-list-row__media-placeholder-icon">
               <svg viewBox="0 0 24 24" fill="none" role="presentation" focusable="false">
@@ -445,13 +532,17 @@
             </span>
           </div>
         </div>
+        <div class="eem-event-list-row__date-col">
+          <span class="eem-event-list-row__dow">SUN</span>
+          <span class="eem-event-list-row__day">2</span>
+          <span class="eem-event-list-row__month">AUG</span>
+        </div>
         <div class="eem-event-list-row__content">
-          <div class="eem-event-list-row__date">Aug 2 – Aug 4, 2026</div>
           <h3 class="eem-event-list-row__title"><a href="#event-4">Autumn Cutting Futurity</a></h3>
           <!-- No producer line: $producer_name is empty for this event -->
           <div class="eem-event-list-row__venue">
             <span class="eem-event-list-row__pin" aria-hidden="true"></span>
-            <span>Sweetwater Events Complex · Rock Springs, WY</span>
+            <span class="eem-event-list-row__venue-name">Sweetwater Events Complex</span><span class="eem-event-list-row__venue-city"> · Rock Springs, WY</span>
           </div>
         </div>
       </article>

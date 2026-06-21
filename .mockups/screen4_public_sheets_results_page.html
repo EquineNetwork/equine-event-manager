@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Public Sheets &amp; Results — Equine Event Manager</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ─────────────────────────────────────────────────────────────
    Customer-facing page — public.css look, NO WP-admin shell.
@@ -12,40 +12,39 @@
    Brand tokens: electric #1668F2, navy #031B4E, light-blue #EEF4FF.
    ───────────────────────────────────────────────────────────── */
 * { box-sizing: border-box; }
-body { margin: 0; background: #f6f7f9; padding: 0; }
+body { margin: 0; background: transparent; padding: 0; }
 
-.eem-sr-public { font-family: "IBM Plex Sans", system-ui, sans-serif; color: #1d2327; background: #fff; min-height: 100vh; }
+.eem-sr-public { font-family: "IBM Plex Sans", system-ui, sans-serif; color: #0d1b3e; background: transparent; min-height: 100vh; }
 
 .eem-sr-public-head { max-width: 860px; margin: 0 auto; padding: 28px 24px 0; }
 .eem-sr-public-eyebrow {
 	font-size: 12.5px;
 	font-weight: 600;
-	color: #6B7A99;
+	color: #64748b;
 	letter-spacing: .02em;
 	margin-bottom: 8px;
 }
-.eem-sr-public-eyebrow a { color: #6B7A99; text-decoration: none; }
+.eem-sr-public-eyebrow a { color: #64748b; text-decoration: none; }
 .eem-sr-public-eyebrow a:hover { color: #1668F2; }
 .eem-sr-public-title {
-	font-family: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
+	font-family: "IBM Plex Sans", system-ui, sans-serif;
 	font-size: 1.7rem;
 	font-weight: 700;
-	color: #031B4E;
+	color: #0d1b3e;
 	margin: 0 0 8px;
-	text-transform: none;
 	line-height: 1.15;
 }
 .eem-sr-public-meta { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; }
-.eem-sr-public-meta span { font-size: 13.5px; color: #6B7A99; }
-.eem-sr-public-status { color: #031B4E; font-weight: 600; }
+.eem-sr-public-meta span { font-size: 13.5px; color: #64748b; }
+.eem-sr-public-status { color: #0d1b3e; font-weight: 600; }
 
-/* Tabs — gray inactive, navy active with electric-blue underline. */
-.eem-sr-public-tabs { display: flex; gap: 0; margin-top: 18px; border-bottom: 1px solid #dcdcde; }
+/* Tabs — sit on white below hero */
+.eem-sr-public-tabs { display: flex; gap: 0; margin-top: 18px; border-bottom: 1px solid #e2e8f4; }
 .eem-sr-public-tab {
-	padding: 11px 20px;
-	font-size: 14px;
+	padding: 12px 20px;
+	font-size: 13.5px;
 	font-weight: 600;
-	color: #50575e;
+	color: #64748b;
 	background: transparent;
 	border: 0;
 	border-bottom: 3px solid transparent;
@@ -60,37 +59,39 @@ body { margin: 0; background: #f6f7f9; padding: 0; }
 	gap: 8px;
 }
 .eem-sr-public-tab:hover,
-.eem-sr-public-tab:focus { color: #031B4E; }
-.eem-sr-public-tab.is-active { color: #031B4E; border-bottom-color: #1668F2; }
+.eem-sr-public-tab:focus { color: #0d1b3e; }
+.eem-sr-public-tab.is-active { color: #0d1b3e; border-bottom-color: #1668F2; }
 .eem-sr-public-tab-count {
 	font-size: 11px;
 	font-weight: 700;
-	background: #f0f0f1;
-	color: #6B7A99;
+	background: #f0f4fb;
+	color: #64748b;
 	padding: 2px 7px;
 	border-radius: 6px;
 }
-.eem-sr-public-tab.is-active .eem-sr-public-tab-count { background: #EEF4FF; color: #1668F2; }
+.eem-sr-public-tab.is-active .eem-sr-public-tab-count { background: #eff6ff; color: #1668F2; }
 
-.eem-sr-public-body { max-width: 860px; margin: 0 auto; padding: 22px 24px 40px; }
+.eem-sr-public-body { max-width: 860px; margin: 0 auto; padding: 22px 24px 40px; background: transparent; }
 .eem-sr-pub-disc { margin-bottom: 26px; }
 .eem-sr-pub-disc-title {
-	font-family: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
-	font-size: 13px;
+	font-family: "IBM Plex Sans", system-ui, sans-serif;
+	font-size: 11px;
 	font-weight: 700;
-	color: #6B7A99;
-	letter-spacing: .1em;
+	color: #1668F2;
+	letter-spacing: .08em;
 	text-transform: uppercase;
-	margin-bottom: 12px;
-	display: flex;
-	align-items: center;
-	gap: 10px;
+	margin-bottom: 10px;
+	margin-top: 8px;
+	padding: 8px 14px;
+	background: #eff6ff;
+	border: 1px solid #dbeafe;
+	border-radius: 8px;
+	display: block;
 }
-.eem-sr-pub-disc-title::after { content: ""; flex: 1; height: 1px; background: #e5e7eb; }
 .eem-sr-pub-day {
 	font-size: 12px;
 	font-weight: 700;
-	color: #8c8f94;
+	color: #94a3b8;
 	letter-spacing: .04em;
 	text-transform: uppercase;
 	padding: 8px 0 4px;
@@ -101,23 +102,23 @@ body { margin: 0; background: #f6f7f9; padding: 0; }
 	gap: 12px;
 	padding: 11px 14px;
 	background: #fff;
-	border: 1px solid #e5e7eb;
-	border-radius: 6px;
+	border: 1px solid #e2e8f4;
+	border-radius: 8px;
 	margin-bottom: 6px;
 	text-decoration: none;
 }
-.eem-sr-pub-item:hover { border-color: #1668F2; background: #fafcff; }
+.eem-sr-pub-item:hover { border-color: #1668F2; background: #f7fbff; box-shadow: 0 2px 8px rgba(22,104,242,.07); }
 .eem-sr-pub-item--pending { opacity: .85; }
 .eem-sr-pub-item-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.eem-sr-pub-item-name { font-size: 14px; font-weight: 600; color: #031B4E; }
-.eem-sr-pub-item-meta { font-size: 12px; color: #6B7A99; }
+.eem-sr-pub-item-name { font-size: 14px; font-weight: 600; color: #0d1b3e; }
+.eem-sr-pub-item-meta { font-size: 12px; color: #64748b; }
 .eem-sr-pub-item-arrow { color: #c3c4c7; font-size: 20px; line-height: 1; flex-shrink: 0; }
 .eem-sr-pub-item:hover .eem-sr-pub-item-arrow { color: #1668F2; }
 .eem-sr-pub-soon {
 	font-size: 11px;
 	font-weight: 700;
-	color: #8c8f94;
-	background: #f3f4f5;
+	color: #94a3b8;
+	background: #f0f4fb;
 	padding: 3px 9px;
 	border-radius: 6px;
 	white-space: nowrap;
@@ -126,7 +127,7 @@ body { margin: 0; background: #f6f7f9; padding: 0; }
 .eem-sr-pub-empty {
 	text-align: center;
 	padding: 24px 16px;
-	color: #8c8f94;
+	color: #94a3b8;
 	font-size: 13px;
 	background: #fff;
 	border: 1px dashed #e5e7eb;

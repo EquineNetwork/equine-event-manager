@@ -2,6 +2,38 @@
 
 ---
 
+## 🔖 SESSION HANDOFF — 2026-06-21 (night-end, v2.7.542 on `main`)
+
+Long mockup-porting session. Shipped page ports (each its own commit, all pushed): Reports,
+Create Order, Collect Payment, Customers (full port incl. Phone column + KPI + Export CSV),
+Settings token sweep, Venues list + detail, Venue editor white cards, Producers list + editor,
+Notifications, Entries list (Orders column + meatball + card-wrap), and the Division editor
+(electric View Event, search icon/placeholder, non-collapsible cards). Also corrected the
+mis-modeled entries-editor mockup → renamed `division_editor_page.html` (live page already right).
+
+### 🆕 NEW MOCKUPS DROPPED 2026-06-21 — TO-DO (not yet ported). Files in `.mockups/`:
+- [ ] **`add_event_page.html`** — branded Add/Edit Event editor (native `en_event` CPT). 2-col: section cards (Title / Details / Description / Connections & Media / Sheets & Results) + Publish + Link Reservation rail. Replaces default post editor.
+- [ ] **`screen2_event_edit_documents.html`** — same Event editor, EDIT state with the Sheets & Results section expanded (embedded draw-sheets/results tabs).
+- [ ] **`screen1_sheets_results_manager.html`** — standalone **Sheets & Results** admin manager page (event selector + Draw Sheets / Results tabs, discipline groups, add-file panel).
+- [ ] **`taxonomy_categories_admin_page.html`** — **Event Categories** taxonomy admin (split: Add form + table with slug/count/meatball).
+- [ ] **`daily_movement_print_view.html`** — Daily Movement **print view** (`&print=1`); per-day sections, arriving/departing groups. NEW print route.
+- [ ] **`reports_print_view.html`** — Reports **print view** (e.g. Revenue by Reservation); grouped table + category summary. NEW print route.
+- [ ] **`screen3_public_events_list.html`** — customer-facing `[en_events view="list"]` styling (public.css).
+- [ ] **`screen4_public_sheets_results_page.html`** — customer-facing per-event Sheets & Results page (public.css).
+
+### 🆕 QUICK FIXES dropped 2026-06-21 — TO-DO:
+- [ ] **Dashboard → Collect Payment** quick action should link to Orders filtered to **unpaid** (`admin.php?page=equine-event-manager-orders&billing=unpaid`) and **exclude partially-refunded** orders (the unpaid tab currently shows partially-refunded rows; they should be filtered out).
+- [ ] **Dashboard Quick Actions icons:** Collect Payment icon → **amber**; Export Report icon → **purple**.
+- [ ] **Dashboard → Today's Movement card:** make the event title a **link to that event on Daily Movement**.
+
+### ⏸ Deferred chips still open (from earlier in the session):
+- [ ] Global control/button radius sweep → 8px (base `.eem-btn` 4px, `input.eem-field-input` 3px/#8c8f94; mockups want 8px/#d0daea). Plus the locked primary/secondary/danger button system + dead control-CSS / legacy `!important` strip.
+- [ ] Space Grotesk → IBM Plex Sans plugin-wide.
+- [ ] Entries **division-entrant print view** (`preentries_print_view.html`) — new print route + Print button on the division detail page.
+- [ ] Mockup-cleanup audit: reference-check + delete `reservation_overview_page.html` + `events_admin_page.html` (zero-ref only). Stale `.mockups/event_entry_editor_page.html` is superseded by `division_editor_page.html` — remove when that audit runs.
+
+---
+
 ## 🔖 SESSION HANDOFF — 2026-06-20 (v2.7.527, on `main`)
 
 **v1 is complete and live.** The sessions since 2.7.466 have been a deep visual/UX polish pass

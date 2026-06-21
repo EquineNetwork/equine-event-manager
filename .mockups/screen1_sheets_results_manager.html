@@ -4,582 +4,373 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Equine Event Manager – Sheets &amp; Results</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* ─────────────────────────────────────────────────────────────────────────────
-   Sheets & Results manager – admin page
-   (admin.php?page=equine-event-manager-sheets-results)
-   Source-derived from EEM_Sheets_Results_Page::render (+ render_event_selector,
-   render_body_inner, render_drawsheets, render_results, render_add_panel).
-
-   Page architecture (per source):
-     • eem-breadcrumb ABOVE the bordered card (rendered via eem_render_breadcrumb).
-     • .eem-plugin-wrap = one bordered card: header → event selector band
-       (#f0f4fb) → .eem-sr-body div → tabs → tab panels.
-     • Each Draw Sheets panel body = add-discipline bar → per-discipline groups.
-     • A group head = discipline name + count + Rename/Delete + "Add File" button.
-     • Inline add-file panel rendered as `hidden` by default; toggled via JS.
-     • Results tab group head = discipline name + upload count (NO Rename/Delete).
-     • Lifecycle badges: Upcoming, Ongoing (eem-status-active), Past Event
-       (eem-status-archived).
-     • Empty-events state: "No events yet" with Add Event CTA.
-   ───────────────────────────────────────────────────────────────────────────── */
-:root{
-  --eem-navy:#031B4E;--eem-electric:#1668F2;--eem-electric-hover:#0d4fc4;
-  --eem-text:#1d2327;--eem-text-secondary:#50575e;--eem-text-muted:#646970;
-  --eem-border-card:#dcdcde;--eem-border-soft:#e8e8ea;--eem-gray-50:#f8fafc;
-  --eem-radius:3px;--eem-font-display:'Space Grotesk',sans-serif;--eem-font-ui:'IBM Plex Sans',sans-serif;
-}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Sans',sans-serif;background:#f0f0f1;color:#1d2327;font-size:14px;line-height:1.5;display:flex;flex-direction:column;min-height:100vh}
+html{overflow-x:hidden;width:100%}
+body{font-family:'IBM Plex Sans',sans-serif;background:#F7F9FC;color:#0d1b3e;font-size:14px;line-height:1.5;min-height:100vh;overflow-x:hidden;width:100%}
 svg{flex-shrink:0}
-a{text-decoration:none}
-a:hover{text-decoration:none}
+a{color:#1668F2;text-decoration:none}
+a:hover{color:#0d4fc2}
+button{font-family:inherit;cursor:pointer}
 
-/* ── WP SHELL STUB ── */
-.wp-admin-bar{height:32px;background:#1d2327;display:flex;align-items:center;padding:0 12px;gap:16px;flex-shrink:0;position:sticky;top:0;z-index:200}
-.wp-admin-bar span{font-size:13px;color:#c3c4c7;cursor:pointer}
-.wp-admin-bar span.site{color:#fff;font-weight:600}
-.wp-body{display:flex;flex:1}
-.wp-sidebar{width:160px;min-width:160px;background:#1d2327;min-height:calc(100vh - 32px)}
-.wp-sidebar-label{padding:8px 12px 4px;font-size:10px;color:#8c8f94;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
-.wp-sidebar-sub{padding:6px 12px 6px 28px;font-size:13px;color:#c3c4c7;cursor:pointer}
-.wp-sidebar-sub.active{color:#90c4ff;font-weight:600}
-.wp-content{flex:1;padding:12px 20px 40px;min-width:0}
+/* ── TOPBAR ── */
+.app-topbar{background:#fff;border-bottom:1px solid #e2e8f4;padding:0 24px;height:56px;display:flex;align-items:center;position:sticky;top:0;z-index:200;width:100%}
+.app-topbar-left{display:flex;align-items:center;gap:10px}
+.app-logo img{height:32px;width:auto;display:block}
+.app-sep{font-size:14px;color:#c8d4e8;margin:0 2px}
+.app-bc-cur{font-size:13px;font-weight:600;color:#0d1b3e}
 
-/* ── Breadcrumb + logo ── */
-.eem-breadcrumb{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
-.eem-breadcrumb-logo-box{width:160px;height:36px;background:#e0e0e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;color:#999;border:1px dashed #bbb}
-.eem-breadcrumb-sep{font-size:13px;color:#8c8f94}
-.eem-breadcrumb-segment{font-size:13px;color:#031B4E;font-weight:600}
+/* ── PAGE HEADER ── */
+.app-page-header{background:#fff;border-bottom:1px solid #e2e8f4;padding:18px 24px;width:100%}
+.app-page-title{font-size:20px;font-weight:700;color:#0d1b3e;letter-spacing:-.02em}
+.app-page-sub{font-size:13px;color:#64748b;margin-top:3px}
 
-/* ── PLUGIN WRAP (single bordered card) ── */
-.eem-plugin-wrap{background:#fff;border:1px solid #c3c4c7;border-radius:4px;overflow:hidden}
-.eem-plugin-header{padding:18px 22px;border-bottom:1px solid #dcdcde;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.eem-plugin-header-left{flex:1;min-width:0}
-.eem-plugin-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--eem-navy);line-height:1.2;margin-bottom:4px}
-.eem-plugin-subtitle{font-size:13px;color:var(--eem-text-muted);line-height:1.45;margin-bottom:0}
+/* ── CONTENT ── */
+.app-content{padding:20px 24px 48px;width:100%}
 
-/* ── FIELD / BUTTON PRIMITIVES ── */
-input.eem-field-input,select.eem-field-select{padding:7px 10px;border:1px solid #8c8f94;border-radius:3px;font-size:13px;font-family:inherit;color:#1d2327;background:#fff;outline:none;line-height:1.4;width:100%}
-input.eem-field-input:focus,select.eem-field-select:focus{border-color:#1668F2;box-shadow:0 0 0 2px rgba(22,104,242,.12)}
-input.eem-field-input::placeholder{color:#8c8f94}
-.eem-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:4px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;border:1px solid;text-decoration:none}
-.eem-btn-electric{background:#1668F2;color:#fff;border-color:#1668F2}
-.eem-btn-electric:hover{background:#0d4fc4}
-.eem-btn-secondary{background:#fff;color:#031B4E;border-color:#c3c4c7}
-.eem-btn-secondary:hover{background:#f6f7f7}
-.eem-btn-upload{padding:7px 14px;border:1px solid #8c8f94;border-radius:var(--eem-radius);font-size:13px;font-weight:500;font-family:inherit;color:var(--eem-text);background:#fff;cursor:pointer}
-.eem-btn-upload:hover{background:#f6f7f7}
+/* ── MAIN CARD ── */
+.sr-card{background:#fff;border:1px solid #e2e8f4;border-radius:10px;overflow:hidden}
 
-/* ── Status badges ── */
-.eem-status-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;line-height:1.4}
-.eem-status-active{background:#dcfce7;color:#15803d}
-.eem-status-upcoming{background:#dbeafe;color:#1d4ed8}
-.eem-status-archived{background:#f3f4f6;color:#6b7280}
+/* ── EVENT SELECTOR BAND ── */
+.sr-selector{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid #e2e8f4;background:#fff}
+.sr-selector-label{font-size:13px;font-weight:600;color:#0d1b3e;white-space:nowrap}
+.sr-event-select{flex:1;min-width:240px;max-width:400px;padding:7px 28px 7px 10px;border:1.5px solid #d0daea;border-radius:8px;font-size:13px;font-family:inherit;color:#0d1b3e;background:#fff;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2364748b' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;outline:none;cursor:pointer}
+.sr-event-select:focus{border-color:#1668F2;box-shadow:0 0 0 3px rgba(22,104,242,.1)}
+.sr-meta-pill{display:inline-flex;align-items:center;padding:3px 10px;background:#F7F9FC;border:1px solid #e2e8f4;border-radius:20px;font-size:12px;color:#64748b;font-weight:500;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-upcoming{background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe}
+.badge-active{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.badge-archived{background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb}
+.badge-live{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
 
-/* ── Event selector band ── */
-.eem-sr-selector{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 22px;border-bottom:1px solid var(--eem-border-card);background:#f0f4fb}
-.eem-sr-selector-label{font-size:13px;font-weight:600;color:var(--eem-text);white-space:nowrap}
-.eem-sr-event-select{flex:1;min-width:280px;max-width:420px}
-.eem-sr-meta-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:#EEF4FF;border:1px solid #c0d8ff;border-radius:12px;font-size:12px;color:var(--eem-electric);font-weight:600;white-space:nowrap}
-.eem-sr-status-pill{white-space:nowrap}
+/* ── TABS ── */
+.sr-tabs{display:flex;border-bottom:1px solid #e2e8f4}
+.sr-tab{padding:11px 20px;font-size:13px;font-weight:600;color:#64748b;cursor:pointer;border:none;background:transparent;border-bottom:3px solid transparent;display:flex;align-items:center;gap:7px;white-space:nowrap;font-family:inherit}
+.sr-tab:hover{color:#0d1b3e}
+.sr-tab.is-active{color:#0d1b3e;border-bottom-color:#1668F2}
+.sr-tab-count{font-size:11px;font-weight:700;background:#e2e8f4;color:#64748b;padding:2px 7px;border-radius:10px}
+.sr-tab.is-active .sr-tab-count{background:#eff6ff;color:#1668F2}
 
-/* ── Body wrapper (PHP wraps tabs + panels in .eem-sr-body) ── */
-.eem-sr-body{/* structural wrapper; no visual styles */}
+/* ── ADD DISCIPLINE BAR ── */
+.sr-add-discipline{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid #f0f4fb}
+.sr-discipline-input{flex:1;min-width:200px;max-width:360px;padding:8px 11px;border:1.5px solid #d0daea;border-radius:8px;font-size:13px;font-family:inherit;color:#0d1b3e;background:#fff;outline:none}
+.sr-discipline-input:focus{border-color:#1668F2;box-shadow:0 0 0 3px rgba(22,104,242,.1)}
+.sr-discipline-input::placeholder{color:#94a3b8}
+.btn-secondary{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;color:#0d1b3e;background:#F7F9FC;border:1.5px solid #d0daea;cursor:pointer}
+.btn-secondary:hover{background:#e8eef8;border-color:#1668F2}
+.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;color:#fff;background:#1668F2;border:1px solid #1668F2;cursor:pointer}
+.btn-primary:hover{background:#0d4fc2}
 
-/* ── Doc-type tabs ── */
-.eem-sr-tabs{display:flex;border-bottom:1px solid var(--eem-border-card)}
-.eem-sr-tab{padding:11px 22px;font-size:13.5px;font-weight:600;color:#50575e;cursor:pointer;border:none;background:transparent;border-bottom:3px solid transparent;display:flex;align-items:center;gap:8px;white-space:nowrap;font-family:var(--eem-font-ui)}
-.eem-sr-tab:hover{color:var(--eem-navy)}
-.eem-sr-tab.is-active{color:var(--eem-navy);border-bottom-color:var(--eem-electric)}
-.eem-sr-tab-count{font-size:11px;font-weight:700;background:var(--eem-border-soft);color:var(--eem-text-secondary);padding:2px 7px;border-radius:10px}
-.eem-sr-tab.is-active .eem-sr-tab-count{background:#EEF4FF;color:var(--eem-electric)}
+/* ── DISCIPLINE GROUP ── */
+.sr-group-head{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:#F7F9FC;border-bottom:1px solid #f0f4fb;border-top:1px solid #f0f4fb;gap:10px}
+.sr-group-name{font-size:13px;font-weight:700;color:#0d1b3e;display:flex;align-items:center;gap:8px}
+.sr-group-count{font-size:11px;font-weight:600;color:#64748b;background:#e2e8f4;padding:2px 8px;border-radius:10px}
+.sr-group-actions{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.sr-group-link{border:none;background:transparent;color:#1668F2;font-size:12px;font-weight:600;cursor:pointer;padding:4px 2px;font-family:inherit}
+.sr-group-link:hover{color:#0d4fc2}
+.sr-group-link.is-danger{color:#dc2626}
+.sr-group-link.is-danger:hover{color:#b91c1c}
+.sr-add-file-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border:1.5px solid #d0daea;border-radius:8px;font-size:12px;font-weight:600;color:#1668F2;background:#F7F9FC;cursor:pointer;font-family:inherit}
+.sr-add-file-btn:hover{border-color:#1668F2;background:#eff6ff}
 
-/* ── Add-discipline bar ── */
-.eem-sr-add-discipline{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--eem-border-soft)}
-.eem-sr-discipline-input{flex:1;min-width:220px;max-width:380px}
+/* ── DOCUMENT ROWS ── */
+.sr-row{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid #f0f4fb;flex-wrap:wrap;background:#fff}
+.sr-row:last-child{border-bottom:none}
+.sr-row--pending{background:#fffbeb}
+.sr-row-icon{width:32px;height:32px;background:#eff6ff;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#1668F2}
+.sr-row-icon svg{width:14px;height:14px}
+.sr-row-icon--pending{background:#fef3c7;color:#ca8a04}
+.sr-row-info{flex:1;min-width:0}
+.sr-row-name{font-size:13px;font-weight:600;color:#0d1b3e;display:block;margin-bottom:2px}
+.sr-row-meta{font-size:12px;color:#64748b}
+.sr-row-meta--pending{color:#ca8a04;font-weight:600}
+.sr-row-actions{display:flex;gap:6px;flex-shrink:0;align-items:center}
+.sr-action-btn{width:30px;height:30px;border-radius:7px;border:1.5px solid #e2e8f4;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#64748b;text-decoration:none}
+.sr-action-btn:hover{background:#f0f5ff;border-color:#1668F2;color:#1668F2}
+.sr-action-btn svg{width:13px;height:13px}
+.sr-action-btn.is-danger{border-color:#fecaca;color:#dc2626}
+.sr-action-btn.is-danger:hover{background:#fef2f2}
+.sr-upload-result-btn{padding:6px 12px;border:1.5px solid #fbbf24;color:#a16207;background:#fefce8;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;font-family:inherit}
+.sr-upload-result-btn:hover{background:#fef9c3}
 
-/* ── Discipline group ── */
-.eem-sr-group-head{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:var(--eem-gray-50);border-bottom:1px solid #e5e7eb;border-top:1px solid #e5e7eb;gap:10px}
-.eem-sr-group-name{font-family:var(--eem-font-display);font-size:13px;font-weight:700;color:var(--eem-navy);display:flex;align-items:center;gap:8px}
-.eem-sr-group-count{font-size:11px;font-weight:600;color:var(--eem-text-secondary);background:var(--eem-border-soft);padding:2px 8px;border-radius:10px}
-.eem-sr-add-file-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border:1px dashed var(--eem-border-card);border-radius:var(--eem-radius);font-size:12px;font-weight:600;color:var(--eem-electric);background:#fff;cursor:pointer;font-family:var(--eem-font-ui)}
-.eem-sr-add-file-btn:hover{border-color:var(--eem-electric);border-style:solid;background:#EEF4FF}
-.eem-sr-group-actions{display:flex;align-items:center;gap:12px;flex-shrink:0}
-.eem-sr-group-link{border:none;background:transparent;color:var(--eem-electric);font-size:12px;font-weight:600;cursor:pointer;padding:4px 2px;font-family:var(--eem-font-ui)}
-.eem-sr-group-link:hover{color:var(--eem-electric-hover)}
-.eem-sr-group-link.is-danger{color:#b91c1c}
-.eem-sr-group-link.is-danger:hover{color:#991b1b}
+/* ── ADD FILE PANEL ── */
+.sr-add-panel{background:#F7F9FC;border:1.5px dashed #d0daea;border-radius:10px;padding:16px 18px;margin:12px 18px}
+.sr-add-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.sr-add-field{display:flex;flex-direction:column;gap:4px}
+.sr-add-label{font-size:12px;font-weight:600;color:#0d1b3e}
+.sr-field-input,.sr-field-select{padding:7px 10px;border:1.5px solid #d0daea;border-radius:8px;font-size:13px;font-family:inherit;color:#0d1b3e;background:#fff;outline:none;width:100%}
+.sr-field-input:focus,.sr-field-select:focus{border-color:#1668F2;box-shadow:0 0 0 3px rgba(22,104,242,.1)}
+.sr-field-input::placeholder{color:#94a3b8}
+.sr-file-pick{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sr-f-pdf-name{flex:1;min-width:80px;font-size:13px;font-style:italic;color:#94a3b8}
+.btn-upload{padding:6px 12px;border:1.5px solid #d0daea;border-radius:7px;font-size:12px;font-weight:600;font-family:inherit;color:#0d1b3e;background:#F7F9FC;cursor:pointer}
+.btn-upload:hover{background:#e8eef8;border-color:#1668F2}
+.sr-add-actions{display:flex;gap:8px;justify-content:flex-end}
 
-/* ── Document rows ── */
-.eem-sr-row{display:flex;align-items:center;gap:12px;padding:10px 18px;border-bottom:1px solid var(--eem-border-soft);flex-wrap:wrap}
-.eem-sr-row--pending{background:#fffbeb}
-.eem-sr-row-icon{width:32px;height:32px;background:#fee2e2;border-radius:var(--eem-radius);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#b91c1c}
-.eem-sr-row-icon svg{width:15px;height:15px}
-.eem-sr-row-icon--pending{background:#fef3c7;color:#ca8a04}
-.eem-sr-row-info{flex:1;min-width:0}
-.eem-sr-row-name{font-size:13.5px;font-weight:600;color:var(--eem-navy);display:block;margin-bottom:1px}
-.eem-sr-row-meta{font-size:12px;color:var(--eem-text-secondary);display:flex;gap:10px;flex-wrap:wrap}
-.eem-sr-row-meta--pending{color:#ca8a04;font-weight:600}
-.eem-sr-live-badge{white-space:nowrap}
-.eem-sr-row-actions{display:flex;gap:6px;flex-shrink:0;align-items:center}
-.eem-sr-action-btn{width:30px;height:30px;border-radius:var(--eem-radius);border:1px solid var(--eem-border-card);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#50575e;text-decoration:none}
-.eem-sr-action-btn:hover{background:#f6f7f7}
-.eem-sr-action-btn svg{width:13px;height:13px}
-.eem-sr-action-btn.is-danger{border-color:#fecaca;color:#b91c1c}
-.eem-sr-action-btn.is-danger:hover{background:#fef2f2}
-.eem-sr-upload-result-btn{padding:7px 14px;border:1px solid #ca8a04;color:#a16207;background:#fefce8;font-size:13px;font-weight:600;border-radius:4px;font-family:inherit;cursor:pointer}
-.eem-sr-upload-result-btn:hover{background:#fef9c3;color:#a16207}
+/* ── EMPTY STATES ── */
+.sr-empty-mini{padding:16px 18px;text-align:center;color:#94a3b8;font-size:13px}
 
-/* ── Inline add-file panel (hidden by default; JS toggles) ── */
-.eem-sr-add-panel{background:var(--eem-gray-50);border:1px dashed var(--eem-border-card);border-radius:var(--eem-radius);padding:16px 18px;margin:12px 18px}
-.eem-sr-add-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
-.eem-sr-add-field{display:flex;flex-direction:column;gap:4px}
-.eem-sr-add-label{font-size:12px;font-weight:600;color:var(--eem-text)}
-.eem-sr-file-pick{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.eem-sr-f-pdf-name{flex:1;min-width:120px;font-size:13px;font-style:italic;color:var(--eem-text-muted)}
-.eem-sr-add-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
-
-/* ── Empty states ── */
-.eem-sr-empty-mini{padding:18px;text-align:center;color:var(--eem-text-muted);font-size:13px}
-.eem-sr-empty-mini p{margin:0}
-.eem-sr-empty{padding:40px 24px;text-align:center;color:var(--eem-text-muted);display:flex;flex-direction:column;align-items:center;gap:12px}
-.eem-sr-empty p{margin:0;font-size:14px}
-.eem-sr-empty strong{color:var(--eem-navy);font-size:16px}
-
-@media (max-width:767px){
-  .wp-sidebar{display:none}
-  .eem-sr-add-grid{grid-template-columns:1fr}
-  .eem-sr-selector{padding:14px 16px}
-  .eem-sr-event-select{max-width:none}
-  .eem-sr-group-head{flex-wrap:wrap}
-  .eem-sr-group-actions{flex-wrap:wrap}
-  .eem-sr-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .app-sep,.app-bc-cur{display:none}
+  .app-topbar{padding:0 14px}
+  .app-page-header{padding:14px}
+  .app-content{padding:14px 14px 40px}
+  .sr-add-grid{grid-template-columns:1fr}
+  .sr-tabs{overflow-x:auto}
+}
+@media(max-width:600px){
+  .app-topbar{height:48px;padding:0 12px}
+  .app-logo img{height:24px}
 }
 </style>
 </head>
 <body>
 
-<!-- ── WP admin bar stub ── -->
-<div class="wp-admin-bar">
-  <span class="site">⬛ En Event Manager</span>
-  <span>＋ New</span>
-  <span>👤 admin</span>
+<!-- Topbar -->
+<div class="app-topbar">
+  <div class="app-topbar-left">
+    <div class="app-logo"><img src="logo.png" alt="Equine Event Manager"></div>
+    <span class="app-sep">/</span>
+    <span class="app-bc-cur">Sheets &amp; Results</span>
+  </div>
 </div>
 
-<div class="wp-body">
-  <!-- ── WP sidebar stub ── -->
-  <nav class="wp-sidebar">
-    <div class="wp-sidebar-label">Event Manager</div>
-    <div class="wp-sidebar-sub">Dashboard</div>
-    <div class="wp-sidebar-sub">Reservations</div>
-    <div class="wp-sidebar-sub">Orders</div>
-    <div class="wp-sidebar-sub">Stall &amp; RV Charts</div>
-    <div class="wp-sidebar-sub active">Sheets &amp; Results</div>
-    <div class="wp-sidebar-sub">Reports</div>
-    <div class="wp-sidebar-sub">Settings</div>
-  </nav>
+<!-- Page header -->
+<div class="app-page-header">
+  <div class="app-page-title">Sheets &amp; Results</div>
+  <div class="app-page-sub">Upload and manage draw sheets and results for any event. Files go live immediately when saved.</div>
+</div>
 
-  <main class="wp-content">
+<div class="app-content">
+  <div class="sr-card" data-ajax-url="/wp-admin/admin-ajax.php" data-nonce="sample_nonce_abc123" data-event-id="42">
 
-    <!-- ── Breadcrumb (above the bordered card; rendered via eem_render_breadcrumb) ── -->
-    <div class="eem-breadcrumb">
-      <span class="eem-breadcrumb-logo"><span class="eem-breadcrumb-logo-box">EQUINE logo</span></span>
-      <span class="eem-breadcrumb-sep">/</span>
-      <span class="eem-breadcrumb-segment">Sheets &amp; Results</span>
+    <!-- Event selector -->
+    <div class="sr-selector">
+      <span class="sr-selector-label">Viewing event:</span>
+      <select class="sr-event-select" data-eem-action="sr-switch-event">
+        <option value="42" selected>Spring Barrel Bash 2026</option>
+        <option value="43">Summer Series Round 2</option>
+        <option value="44">Fall Classic Rodeo</option>
+      </select>
+      <span class="sr-meta-pill">Jun 12–15, 2026</span>
+      <span class="badge badge-upcoming">Upcoming</span>
     </div>
 
-    <!-- ── The single bordered plugin card ── -->
-    <div class="eem-page eem-sheets-results"
-         data-ajax-url="/wp-admin/admin-ajax.php"
-         data-nonce="sample_nonce_abc123"
-         data-event-id="42">
-      <div class="eem-plugin-wrap">
+    <!-- Tabs -->
+    <div class="sr-tabs">
+      <button type="button" class="sr-tab is-active" data-eem-action="sr-tab" data-sr-tab="drawsheets">
+        Draw Sheets <span class="sr-tab-count">3</span>
+      </button>
+      <button type="button" class="sr-tab" data-eem-action="sr-tab" data-sr-tab="results">
+        Results <span class="sr-tab-count">1</span>
+      </button>
+    </div>
 
-        <!-- Header -->
-        <header class="eem-plugin-header">
-          <div class="eem-plugin-header-left">
-            <h1 class="eem-plugin-title">Sheets &amp; Results</h1>
-            <div class="eem-plugin-subtitle">Upload and manage draw sheets and results for any event. Files go live immediately when saved.</div>
+    <!-- ── DRAW SHEETS PANEL ── -->
+    <div class="sr-panel" data-sr-panel="drawsheets">
+
+      <!-- Add discipline bar -->
+      <div class="sr-add-discipline">
+        <input type="text" class="sr-discipline-input" placeholder="New discipline (e.g. Barrel Racing)…">
+        <button type="button" class="btn-secondary" data-eem-action="sr-add-discipline">Add Discipline</button>
+      </div>
+
+      <!-- Group: Barrel Racing -->
+      <div class="sr-group">
+        <div class="sr-group-head">
+          <div class="sr-group-name">Barrel Racing <span class="sr-group-count">2 files</span></div>
+          <div class="sr-group-actions">
+            <button type="button" class="sr-group-link" data-eem-action="sr-rename-discipline" data-discipline-id="10">Rename</button>
+            <button type="button" class="sr-group-link is-danger" data-eem-action="sr-delete-discipline" data-discipline-id="10" data-file-count="2">Delete</button>
+            <button type="button" class="sr-add-file-btn" data-eem-action="sr-toggle-add" data-discipline-id="10">+ Add File</button>
           </div>
-        </header>
-
-        <!-- Event selector band
-             PHP: render_event_selector() — dropdown of en_event posts + date pill + lifecycle badge.
-             Lifecycle: Upcoming (blue), Ongoing (green/eem-status-active), Past Event (gray/eem-status-archived). -->
-        <div class="eem-sr-selector">
-          <span class="eem-sr-selector-label">Viewing event:</span>
-          <select class="eem-field-select eem-sr-event-select" data-eem-action="sr-switch-event">
-            <option value="42" selected>Spring Barrel Bash 2026</option>
-            <option value="43">Summer Series Round 2</option>
-            <option value="44">Fall Classic Rodeo</option>
-          </select>
-          <span class="eem-sr-meta-pill">Jun 12–15, 2026</span>
-          <span class="eem-status-badge eem-status-upcoming eem-sr-status-pill">Upcoming</span>
         </div>
 
-        <!-- .eem-sr-body wrapper — PHP wraps tabs + panels in this div -->
-        <div class="eem-sr-body">
-
-          <!-- Tabs
-               PHP: render_body_inner() emits tabs then two .eem-sr-panel divs.
-               data-eem-action="sr-tab" + data-sr-tab="drawsheets|results" -->
-          <div class="eem-sr-tabs">
-            <button type="button" class="eem-sr-tab is-active" data-eem-action="sr-tab" data-sr-tab="drawsheets">
-              Draw Sheets <span class="eem-sr-tab-count">3</span>
-            </button>
-            <button type="button" class="eem-sr-tab" data-eem-action="sr-tab" data-sr-tab="results">
-              Results <span class="eem-sr-tab-count">1</span>
-            </button>
+        <!-- Add file panel (open for demo) -->
+        <div class="sr-add-panel" data-discipline-panel="10">
+          <div class="sr-add-grid">
+            <div class="sr-add-field">
+              <label class="sr-add-label">Label</label>
+              <input type="text" class="sr-field-input" placeholder="e.g. Open 5D Long Go">
+            </div>
+            <div class="sr-add-field">
+              <label class="sr-add-label">Round</label>
+              <select class="sr-field-select">
+                <option value="">No round</option>
+                <option value="1st-go">1st Go</option>
+                <option value="2nd-go">2nd Go</option>
+                <option value="short-go">Short Go</option>
+                <option value="finals">Finals</option>
+              </select>
+            </div>
+            <div class="sr-add-field">
+              <label class="sr-add-label">Date</label>
+              <input type="date" class="sr-field-input" value="2026-06-13">
+            </div>
+            <div class="sr-add-field">
+              <label class="sr-add-label">PDF File</label>
+              <div class="sr-file-pick">
+                <span class="sr-f-pdf-name">No file selected</span>
+                <button type="button" class="btn-upload" data-eem-action="sr-pick-file">Upload PDF</button>
+              </div>
+            </div>
           </div>
-
-          <!-- ════════ DRAW SHEETS PANEL (active) ════════
-               PHP: render_drawsheets() — add-discipline bar first, then groups. -->
-          <div class="eem-sr-panel" data-sr-panel="drawsheets">
-
-            <!-- Add-discipline bar (render_add_discipline_bar) -->
-            <div class="eem-sr-add-discipline">
-              <input type="text" class="eem-field-input eem-sr-discipline-input" placeholder="New discipline (e.g. Barrel Racing)…">
-              <button type="button" class="eem-btn eem-btn-secondary" data-eem-action="sr-add-discipline" data-event-id="42">Add Discipline</button>
-            </div>
-
-            <!-- ── Group: Barrel Racing ──
-                 Group head: discipline name + file count + Rename + Delete + "+ Add File".
-                 Add-file panel rendered hidden (default); one shown open here for reference.
-                 PHP: render_add_panel() outputs with `hidden` attribute. -->
-            <div class="eem-sr-group">
-              <div class="eem-sr-group-head">
-                <div class="eem-sr-group-name">Barrel Racing <span class="eem-sr-group-count">2 files</span></div>
-                <div class="eem-sr-group-actions">
-                  <button type="button" class="eem-sr-group-link" data-eem-action="sr-rename-discipline" data-discipline-id="10" data-name="Barrel Racing">Rename</button>
-                  <button type="button" class="eem-sr-group-link is-danger" data-eem-action="sr-delete-discipline" data-discipline-id="10" data-name="Barrel Racing" data-file-count="2">Delete</button>
-                  <button type="button" class="eem-sr-add-file-btn" data-eem-action="sr-toggle-add" data-discipline-id="10">+ Add File</button>
-                </div>
-              </div>
-
-              <!-- Inline Add-File panel — PHP outputs as `hidden`; shown open here for reference.
-                   Fields: Label (text), Round (select), Date (date), PDF File (WP media picker).
-                   Buttons: Cancel (sr-cancel-add), Save & Publish (sr-save-entry). -->
-              <div class="eem-sr-add-panel" data-discipline-panel="10">
-                <div class="eem-sr-add-grid">
-                  <div class="eem-sr-add-field">
-                    <label class="eem-sr-add-label">Label</label>
-                    <input type="text" class="eem-field-input eem-sr-f-label" placeholder="e.g. Open 5D Long Go">
-                  </div>
-                  <div class="eem-sr-add-field">
-                    <label class="eem-sr-add-label">Round</label>
-                    <select class="eem-field-select eem-sr-f-round">
-                      <option value="">No round</option>
-                      <option value="1st-go">1st Go</option>
-                      <option value="2nd-go">2nd Go</option>
-                      <option value="short-go">Short Go</option>
-                      <option value="finals">Finals</option>
-                    </select>
-                  </div>
-                  <div class="eem-sr-add-field">
-                    <label class="eem-sr-add-label">Date</label>
-                    <input type="date" class="eem-field-input eem-sr-f-date" value="2026-06-13">
-                  </div>
-                  <div class="eem-sr-add-field">
-                    <label class="eem-sr-add-label">PDF File</label>
-                    <div class="eem-sr-file-pick">
-                      <input type="hidden" class="eem-sr-f-pdf" value="0">
-                      <span class="eem-sr-f-pdf-name">No file selected</span>
-                      <button type="button" class="eem-btn-upload" data-eem-action="sr-pick-file">Upload PDF</button>
-                    </div>
-                  </div>
-                </div>
-                <div class="eem-sr-add-actions">
-                  <button type="button" class="eem-btn eem-btn-secondary" data-eem-action="sr-cancel-add">Cancel</button>
-                  <button type="button" class="eem-btn eem-btn-electric" data-eem-action="sr-save-entry" data-event-id="42" data-discipline-id="10">Save &amp; Publish</button>
-                </div>
-              </div>
-
-              <!-- draw-sheet rows: render_drawsheet_row()
-                   Actions: Download (link), Replace PDF (sr-replace-pdf / drawsheet), Delete (sr-delete-entry). -->
-              <div class="eem-sr-row">
-                <div class="eem-sr-row-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                </div>
-                <div class="eem-sr-row-info">
-                  <span class="eem-sr-row-name">Open 5D Long Go</span>
-                  <div class="eem-sr-row-meta">1st Go · Jun 13</div>
-                </div>
-                <span class="eem-status-badge eem-status-active eem-sr-live-badge">Live</span>
-                <div class="eem-sr-row-actions">
-                  <a class="eem-sr-action-btn" href="#" target="_blank" rel="noopener" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
-                  <button type="button" class="eem-sr-action-btn" data-eem-action="sr-replace-pdf" data-entry-id="101" data-which="drawsheet" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/></svg></button>
-                  <button type="button" class="eem-sr-action-btn is-danger" data-eem-action="sr-delete-entry" data-entry-id="101" data-label="Open 5D Long Go" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
-                </div>
-              </div>
-
-              <div class="eem-sr-row">
-                <div class="eem-sr-row-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                </div>
-                <div class="eem-sr-row-info">
-                  <span class="eem-sr-row-name">Open 5D Short Go</span>
-                  <div class="eem-sr-row-meta">Short Go · Jun 15</div>
-                </div>
-                <span class="eem-status-badge eem-status-active eem-sr-live-badge">Live</span>
-                <div class="eem-sr-row-actions">
-                  <a class="eem-sr-action-btn" href="#" target="_blank" rel="noopener" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
-                  <button type="button" class="eem-sr-action-btn" data-eem-action="sr-replace-pdf" data-entry-id="102" data-which="drawsheet" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/></svg></button>
-                  <button type="button" class="eem-sr-action-btn is-danger" data-eem-action="sr-delete-entry" data-entry-id="102" data-label="Open 5D Short Go" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
-                </div>
-              </div>
-            </div>
-
-            <!-- ── Group: Pole Bending ── -->
-            <div class="eem-sr-group">
-              <div class="eem-sr-group-head">
-                <div class="eem-sr-group-name">Pole Bending <span class="eem-sr-group-count">1 file</span></div>
-                <div class="eem-sr-group-actions">
-                  <button type="button" class="eem-sr-group-link" data-eem-action="sr-rename-discipline" data-discipline-id="11" data-name="Pole Bending">Rename</button>
-                  <button type="button" class="eem-sr-group-link is-danger" data-eem-action="sr-delete-discipline" data-discipline-id="11" data-name="Pole Bending" data-file-count="1">Delete</button>
-                  <button type="button" class="eem-sr-add-file-btn" data-eem-action="sr-toggle-add" data-discipline-id="11">+ Add File</button>
-                </div>
-              </div>
-              <!-- Add-file panel for Pole Bending — hidden by default -->
-              <div class="eem-sr-add-panel" data-discipline-panel="11" hidden>
-                <div class="eem-sr-add-grid">
-                  <div class="eem-sr-add-field">
-                    <label class="eem-sr-add-label">Label</label>
-                    <input type="text" class="eem-field-input eem-sr-f-label" placeholder="e.g. Open 5D Long Go">
-                  </div>
-                  <div class="eem-sr-add-field">
-                    <label class="eem-sr-add-label">Round</label>
-                    <select class="eem-field-select eem-sr-f-round">
-                      <option value="">No round</option>
-                      <option value="1st-go">1st Go</option>
-                      <option value="2nd-go">2nd Go</option>
-                      <option value="short-go">Short Go</option>
-                      <option value="finals">Finals</option>
-                    </select>
-                  </div>
-                  <div class="eem-sr-add-field">
-                    <label class="eem-sr-add-label">Date</label>
-                    <input type="date" class="eem-field-input eem-sr-f-date">
-                  </div>
-                  <div class="eem-sr-add-field">
-                    <label class="eem-sr-add-label">PDF File</label>
-                    <div class="eem-sr-file-pick">
-                      <input type="hidden" class="eem-sr-f-pdf" value="0">
-                      <span class="eem-sr-f-pdf-name">No file selected</span>
-                      <button type="button" class="eem-btn-upload" data-eem-action="sr-pick-file">Upload PDF</button>
-                    </div>
-                  </div>
-                </div>
-                <div class="eem-sr-add-actions">
-                  <button type="button" class="eem-btn eem-btn-secondary" data-eem-action="sr-cancel-add">Cancel</button>
-                  <button type="button" class="eem-btn eem-btn-electric" data-eem-action="sr-save-entry" data-event-id="42" data-discipline-id="11">Save &amp; Publish</button>
-                </div>
-              </div>
-              <div class="eem-sr-row">
-                <div class="eem-sr-row-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                </div>
-                <div class="eem-sr-row-info">
-                  <span class="eem-sr-row-name">Pole Bending Draw</span>
-                  <div class="eem-sr-row-meta">1st Go · Jun 14</div>
-                </div>
-                <span class="eem-status-badge eem-status-active eem-sr-live-badge">Live</span>
-                <div class="eem-sr-row-actions">
-                  <a class="eem-sr-action-btn" href="#" target="_blank" rel="noopener" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
-                  <button type="button" class="eem-sr-action-btn" data-eem-action="sr-replace-pdf" data-entry-id="103" data-which="drawsheet" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/></svg></button>
-                  <button type="button" class="eem-sr-action-btn is-danger" data-eem-action="sr-delete-entry" data-entry-id="103" data-label="Pole Bending Draw" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
-                </div>
-              </div>
-            </div>
-
-            <!-- ── Group: Goat Tying (no draw sheets yet — empty state) ── -->
-            <div class="eem-sr-group">
-              <div class="eem-sr-group-head">
-                <div class="eem-sr-group-name">Goat Tying <span class="eem-sr-group-count">0 files</span></div>
-                <div class="eem-sr-group-actions">
-                  <button type="button" class="eem-sr-group-link" data-eem-action="sr-rename-discipline" data-discipline-id="12" data-name="Goat Tying">Rename</button>
-                  <button type="button" class="eem-sr-group-link is-danger" data-eem-action="sr-delete-discipline" data-discipline-id="12" data-name="Goat Tying" data-file-count="0">Delete</button>
-                  <button type="button" class="eem-sr-add-file-btn" data-eem-action="sr-toggle-add" data-discipline-id="12">+ Add File</button>
-                </div>
-              </div>
-              <!-- Add-file panel — hidden by default -->
-              <div class="eem-sr-add-panel" data-discipline-panel="12" hidden>
-                <div class="eem-sr-add-grid">
-                  <div class="eem-sr-add-field">
-                    <label class="eem-sr-add-label">Label</label>
-                    <input type="text" class="eem-field-input eem-sr-f-label" placeholder="e.g. Open 5D Long Go">
-                  </div>
-                  <div class="eem-sr-add-field">
-                    <label class="eem-sr-add-label">Round</label>
-                    <select class="eem-field-select eem-sr-f-round">
-                      <option value="">No round</option>
-                      <option value="1st-go">1st Go</option>
-                      <option value="2nd-go">2nd Go</option>
-                      <option value="short-go">Short Go</option>
-                      <option value="finals">Finals</option>
-                    </select>
-                  </div>
-                  <div class="eem-sr-add-field">
-                    <label class="eem-sr-add-label">Date</label>
-                    <input type="date" class="eem-field-input eem-sr-f-date">
-                  </div>
-                  <div class="eem-sr-add-field">
-                    <label class="eem-sr-add-label">PDF File</label>
-                    <div class="eem-sr-file-pick">
-                      <input type="hidden" class="eem-sr-f-pdf" value="0">
-                      <span class="eem-sr-f-pdf-name">No file selected</span>
-                      <button type="button" class="eem-btn-upload" data-eem-action="sr-pick-file">Upload PDF</button>
-                    </div>
-                  </div>
-                </div>
-                <div class="eem-sr-add-actions">
-                  <button type="button" class="eem-btn eem-btn-secondary" data-eem-action="sr-cancel-add">Cancel</button>
-                  <button type="button" class="eem-btn eem-btn-electric" data-eem-action="sr-save-entry" data-event-id="42" data-discipline-id="12">Save &amp; Publish</button>
-                </div>
-              </div>
-              <div class="eem-sr-empty-mini"><p>No draw sheets uploaded yet for this discipline.</p></div>
-            </div>
-
-          </div><!-- /drawsheets panel -->
-
-          <!-- ════════ RESULTS PANEL ════════
-               PHP: render_results() — mirrors draw-sheet rows; no Rename/Delete in group head.
-               Group head: discipline name + "X of Y uploaded" count (no action buttons).
-               Live row: green Live badge + Download + Replace + Remove result (sr-clear-result).
-               Pending row: amber background + "No result uploaded yet" + "Upload Result PDF" CTA.
-               Result rows only appear for draw sheets that exist (drawsheet_pdf > 0). -->
-          <div class="eem-sr-panel" data-sr-panel="results" hidden>
-
-            <!-- Results group: Barrel Racing — 1 of 2 uploaded -->
-            <div class="eem-sr-group">
-              <div class="eem-sr-group-head">
-                <div class="eem-sr-group-name">Barrel Racing
-                  <span class="eem-sr-group-count">1 of 2 uploaded</span>
-                </div>
-                <!-- NOTE: Results tab group head has NO Rename/Delete/Add File buttons (per PHP source) -->
-              </div>
-
-              <!-- result live row -->
-              <div class="eem-sr-row">
-                <div class="eem-sr-row-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                </div>
-                <div class="eem-sr-row-info">
-                  <span class="eem-sr-row-name">Open 5D Long Go</span>
-                  <div class="eem-sr-row-meta">1st Go · Jun 13</div>
-                </div>
-                <span class="eem-status-badge eem-status-active eem-sr-live-badge">Live</span>
-                <div class="eem-sr-row-actions">
-                  <a class="eem-sr-action-btn" href="#" target="_blank" rel="noopener" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
-                  <button type="button" class="eem-sr-action-btn" data-eem-action="sr-replace-pdf" data-entry-id="101" data-which="result" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/></svg></button>
-                  <button type="button" class="eem-sr-action-btn is-danger" data-eem-action="sr-clear-result" data-entry-id="101" title="Remove result PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
-                </div>
-              </div>
-
-              <!-- result pending (amber) row -->
-              <div class="eem-sr-row eem-sr-row--pending">
-                <div class="eem-sr-row-icon eem-sr-row-icon--pending">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                </div>
-                <div class="eem-sr-row-info">
-                  <span class="eem-sr-row-name">Open 5D Short Go</span>
-                  <div class="eem-sr-row-meta eem-sr-row-meta--pending">No result uploaded yet</div>
-                </div>
-                <div class="eem-sr-row-actions">
-                  <button type="button" class="eem-btn eem-sr-upload-result-btn" data-eem-action="sr-replace-pdf" data-entry-id="102" data-which="result">Upload Result PDF</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Results group: Pole Bending — 0 of 1 uploaded -->
-            <div class="eem-sr-group">
-              <div class="eem-sr-group-head">
-                <div class="eem-sr-group-name">Pole Bending
-                  <span class="eem-sr-group-count">0 of 1 uploaded</span>
-                </div>
-              </div>
-              <div class="eem-sr-row eem-sr-row--pending">
-                <div class="eem-sr-row-icon eem-sr-row-icon--pending">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                </div>
-                <div class="eem-sr-row-info">
-                  <span class="eem-sr-row-name">Pole Bending Draw</span>
-                  <div class="eem-sr-row-meta eem-sr-row-meta--pending">No result uploaded yet</div>
-                </div>
-                <div class="eem-sr-row-actions">
-                  <button type="button" class="eem-btn eem-sr-upload-result-btn" data-eem-action="sr-replace-pdf" data-entry-id="103" data-which="result">Upload Result PDF</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Results group: Goat Tying — no draw sheets, so no result rows -->
-            <div class="eem-sr-group">
-              <div class="eem-sr-group-head">
-                <div class="eem-sr-group-name">Goat Tying
-                  <span class="eem-sr-group-count">—</span>
-                </div>
-              </div>
-              <div class="eem-sr-empty-mini"><p>No draw sheets added yet. Results rows appear automatically once draw sheets are uploaded.</p></div>
-            </div>
-
-          </div><!-- /results panel -->
-
-        </div><!-- /eem-sr-body -->
-
-      </div><!-- /eem-plugin-wrap -->
-    </div><!-- /eem-page -->
-
-    <!-- ════════ EMPTY STATE (shown when no en_event posts exist) ════════
-         PHP: render() shows this when $events is empty.
-         CTA links to /wp-admin/post-new.php?post_type=en_event. -->
-    <!--
-    <div class="eem-page eem-sheets-results">
-      <div class="eem-plugin-wrap">
-        <header class="eem-plugin-header">
-          <div class="eem-plugin-header-left">
-            <h1 class="eem-plugin-title">Sheets & Results</h1>
-            <div class="eem-plugin-subtitle">Upload and manage draw sheets and results for any event.</div>
+          <div class="sr-add-actions">
+            <button type="button" class="btn-secondary" data-eem-action="sr-cancel-add">Cancel</button>
+            <button type="button" class="btn-primary" data-eem-action="sr-save-entry">Save &amp; Publish</button>
           </div>
-        </header>
-        <div class="eem-sr-empty">
-          <p><strong>No events yet</strong></p>
-          <p>Create an event first — draw sheets and results attach to an event.</p>
-          <a class="eem-btn eem-btn-electric" href="/wp-admin/post-new.php?post_type=en_event">Add Event</a>
+        </div>
+
+        <div class="sr-row">
+          <div class="sr-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="sr-row-info"><span class="sr-row-name">Open 5D Long Go</span><div class="sr-row-meta">1st Go · Jun 13</div></div>
+          <span class="badge badge-live">Live</span>
+          <div class="sr-row-actions">
+            <a class="sr-action-btn" href="#" target="_blank" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+            <button type="button" class="sr-action-btn" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/></svg></button>
+            <button type="button" class="sr-action-btn is-danger" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+          </div>
+        </div>
+
+        <div class="sr-row">
+          <div class="sr-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="sr-row-info"><span class="sr-row-name">Open 5D Short Go</span><div class="sr-row-meta">Short Go · Jun 15</div></div>
+          <span class="badge badge-live">Live</span>
+          <div class="sr-row-actions">
+            <a class="sr-action-btn" href="#" target="_blank" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+            <button type="button" class="sr-action-btn" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/></svg></button>
+            <button type="button" class="sr-action-btn is-danger" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+          </div>
         </div>
       </div>
-    </div>
-    -->
 
-  </main>
+      <!-- Group: Pole Bending -->
+      <div class="sr-group">
+        <div class="sr-group-head">
+          <div class="sr-group-name">Pole Bending <span class="sr-group-count">1 file</span></div>
+          <div class="sr-group-actions">
+            <button type="button" class="sr-group-link">Rename</button>
+            <button type="button" class="sr-group-link is-danger">Delete</button>
+            <button type="button" class="sr-add-file-btn" data-eem-action="sr-toggle-add" data-discipline-id="11">+ Add File</button>
+          </div>
+        </div>
+        <div class="sr-add-panel" data-discipline-panel="11" hidden>
+          <div class="sr-add-grid">
+            <div class="sr-add-field"><label class="sr-add-label">Label</label><input type="text" class="sr-field-input" placeholder="e.g. Open 5D Long Go"></div>
+            <div class="sr-add-field"><label class="sr-add-label">Round</label><select class="sr-field-select"><option>No round</option><option>1st Go</option><option>Short Go</option></select></div>
+            <div class="sr-add-field"><label class="sr-add-label">Date</label><input type="date" class="sr-field-input"></div>
+            <div class="sr-add-field"><label class="sr-add-label">PDF File</label><div class="sr-file-pick"><span class="sr-f-pdf-name">No file selected</span><button type="button" class="btn-upload">Upload PDF</button></div></div>
+          </div>
+          <div class="sr-add-actions"><button type="button" class="btn-secondary" data-eem-action="sr-cancel-add">Cancel</button><button type="button" class="btn-primary">Save &amp; Publish</button></div>
+        </div>
+        <div class="sr-row">
+          <div class="sr-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="sr-row-info"><span class="sr-row-name">Pole Bending Draw</span><div class="sr-row-meta">1st Go · Jun 14</div></div>
+          <span class="badge badge-live">Live</span>
+          <div class="sr-row-actions">
+            <a class="sr-action-btn" href="#" target="_blank" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+            <button type="button" class="sr-action-btn" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/></svg></button>
+            <button type="button" class="sr-action-btn is-danger" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Group: Goat Tying (empty) -->
+      <div class="sr-group">
+        <div class="sr-group-head">
+          <div class="sr-group-name">Goat Tying <span class="sr-group-count">0 files</span></div>
+          <div class="sr-group-actions">
+            <button type="button" class="sr-group-link">Rename</button>
+            <button type="button" class="sr-group-link is-danger">Delete</button>
+            <button type="button" class="sr-add-file-btn" data-eem-action="sr-toggle-add" data-discipline-id="12">+ Add File</button>
+          </div>
+        </div>
+        <div class="sr-add-panel" data-discipline-panel="12" hidden>
+          <div class="sr-add-grid">
+            <div class="sr-add-field"><label class="sr-add-label">Label</label><input type="text" class="sr-field-input" placeholder="e.g. Open 5D Long Go"></div>
+            <div class="sr-add-field"><label class="sr-add-label">Round</label><select class="sr-field-select"><option>No round</option><option>1st Go</option></select></div>
+            <div class="sr-add-field"><label class="sr-add-label">Date</label><input type="date" class="sr-field-input"></div>
+            <div class="sr-add-field"><label class="sr-add-label">PDF File</label><div class="sr-file-pick"><span class="sr-f-pdf-name">No file selected</span><button type="button" class="btn-upload">Upload PDF</button></div></div>
+          </div>
+          <div class="sr-add-actions"><button type="button" class="btn-secondary" data-eem-action="sr-cancel-add">Cancel</button><button type="button" class="btn-primary">Save &amp; Publish</button></div>
+        </div>
+        <div class="sr-empty-mini">No draw sheets uploaded yet for this discipline.</div>
+      </div>
+
+    </div><!-- /drawsheets panel -->
+
+    <!-- ── RESULTS PANEL ── -->
+    <div class="sr-panel" data-sr-panel="results" hidden>
+
+      <!-- Barrel Racing: 1 of 2 -->
+      <div class="sr-group">
+        <div class="sr-group-head">
+          <div class="sr-group-name">Barrel Racing <span class="sr-group-count">1 of 2 uploaded</span></div>
+        </div>
+        <div class="sr-row">
+          <div class="sr-row-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="sr-row-info"><span class="sr-row-name">Open 5D Long Go</span><div class="sr-row-meta">1st Go · Jun 13</div></div>
+          <span class="badge badge-live">Live</span>
+          <div class="sr-row-actions">
+            <a class="sr-action-btn" href="#" target="_blank" title="Download"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></a>
+            <button type="button" class="sr-action-btn" title="Replace PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0115-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 01-15 6.7L3 16"/></svg></button>
+            <button type="button" class="sr-action-btn is-danger" title="Remove result"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+          </div>
+        </div>
+        <div class="sr-row sr-row--pending">
+          <div class="sr-row-icon sr-row-icon--pending"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="sr-row-info"><span class="sr-row-name">Open 5D Short Go</span><div class="sr-row-meta sr-row-meta--pending">No result uploaded yet</div></div>
+          <div class="sr-row-actions"><button type="button" class="sr-upload-result-btn">Upload Result PDF</button></div>
+        </div>
+      </div>
+
+      <!-- Pole Bending: 0 of 1 -->
+      <div class="sr-group">
+        <div class="sr-group-head">
+          <div class="sr-group-name">Pole Bending <span class="sr-group-count">0 of 1 uploaded</span></div>
+        </div>
+        <div class="sr-row sr-row--pending">
+          <div class="sr-row-icon sr-row-icon--pending"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="sr-row-info"><span class="sr-row-name">Pole Bending Draw</span><div class="sr-row-meta sr-row-meta--pending">No result uploaded yet</div></div>
+          <div class="sr-row-actions"><button type="button" class="sr-upload-result-btn">Upload Result PDF</button></div>
+        </div>
+      </div>
+
+      <!-- Goat Tying: no draw sheets -->
+      <div class="sr-group">
+        <div class="sr-group-head">
+          <div class="sr-group-name">Goat Tying <span class="sr-group-count">—</span></div>
+        </div>
+        <div class="sr-empty-mini">No draw sheets added yet. Results appear automatically once draw sheets are uploaded.</div>
+      </div>
+
+    </div><!-- /results panel -->
+
+  </div>
 </div>
 
 <script>
-// Preview-only tab toggle (live page uses data-eem-action="sr-tab" + admin.js).
-document.querySelectorAll('.eem-sr-tab').forEach(function (tab, i) {
-  tab.addEventListener('click', function () {
-    document.querySelectorAll('.eem-sr-tab').forEach(function (t) { t.classList.remove('is-active'); });
+document.querySelectorAll('.sr-tab').forEach(function(tab, i){
+  tab.addEventListener('click', function(){
+    document.querySelectorAll('.sr-tab').forEach(function(t){t.classList.remove('is-active');});
     tab.classList.add('is-active');
-    var panels = document.querySelectorAll('.eem-sr-panel');
-    panels.forEach(function (p) { p.hidden = true; });
-    panels[i].hidden = false;
+    document.querySelectorAll('.sr-panel').forEach(function(p){p.hidden=true;});
+    document.querySelectorAll('.sr-panel')[i].hidden=false;
   });
 });
-
-// Preview-only Add File toggle (live page uses data-eem-action="sr-toggle-add").
-document.querySelectorAll('[data-eem-action="sr-toggle-add"]').forEach(function (btn) {
-  btn.addEventListener('click', function () {
-    var did = btn.getAttribute('data-discipline-id');
-    var panel = document.querySelector('[data-discipline-panel="' + did + '"]');
-    if (panel) { panel.hidden = !panel.hidden; }
+document.querySelectorAll('[data-eem-action="sr-toggle-add"]').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var did=btn.getAttribute('data-discipline-id');
+    var panel=document.querySelector('[data-discipline-panel="'+did+'"]');
+    if(panel){panel.hidden=!panel.hidden;}
   });
 });
-
-// Preview-only Cancel (live page uses data-eem-action="sr-cancel-add").
-document.querySelectorAll('[data-eem-action="sr-cancel-add"]').forEach(function (btn) {
-  btn.addEventListener('click', function () {
-    var panel = btn.closest('.eem-sr-add-panel');
-    if (panel) { panel.hidden = true; }
+document.querySelectorAll('[data-eem-action="sr-cancel-add"]').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var panel=btn.closest('.sr-add-panel');
+    if(panel){panel.hidden=true;}
   });
 });
 </script>

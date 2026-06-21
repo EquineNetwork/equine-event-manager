@@ -1,225 +1,198 @@
 <!DOCTYPE html>
-<html lang="en-US">
+<html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Revenue by Reservation — NTR 6519</title>
-	<!--
-		MOCKUP: Reports print view (standalone print/PDF output).
-		Source of truth: EEM_Reports_Page::render_print_view()
-		(admin/class-eem-reports-page.php). Triggered live by
-		?page=equine-event-manager-reports&eem_report_print=<slug> in a new tab.
-		No WP-admin chrome. Locked rpt-pv-* styling. Sticky Print/Save-PDF toolbar.
-		Styles copied verbatim from the render method in render_print_view().
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revenue by Reservation — NTR 6519</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;color:#0d1b3e;background:#fff;font-size:14px;line-height:1.5}
+a{text-decoration:none;color:inherit}
+svg{flex-shrink:0}
 
-		Key behaviors from PHP:
-		- print_columns: some reports supply a subset of column indices for the
-		  print view (trimming verbose/PII columns). CSV still uses the full dataset.
-		- groups: if the report has a `groups` array, rows render with amber band
-		  per group + per-group count. Otherwise rows are flat; summary rows get the
-		  navy band (rpt-pv-summary) based on summary_row_count.
-		- note_sections: optional supplementary sub-tables below the main table
-		  (e.g. per-type breakdown for the Shavings report).
-		- meta subtitle = reservation title (or "All reservations") from pdf_meta().
-		- document title = report title + " — " + reservation title.
-		- @page size:landscape.
+/* ── TOOLBAR (screen only) ── */
+.pv-topbar{background:#fff;border-bottom:1px solid #e2e8f4;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:10}
+.pv-topbar-left{display:flex;align-items:center;gap:12px;min-width:0}
+.pv-logo img{height:28px;width:auto;display:block}
+.pv-title{font-size:14px;font-weight:700;color:#0d1b3e}
+.pv-sub{font-size:12px;color:#64748b;margin-top:1px}
+.pv-topbar-btns{display:flex;gap:8px;flex-shrink:0}
+.btn-print{background:#1668F2;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn-print:hover{background:#0d4fc2}
+.btn-exit{background:#F7F9FC;color:#0d1b3e;border:1.5px solid #d0daea;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;text-decoration:none}
+.btn-exit:hover{background:#e8eef8}
 
-		Sample data below = Revenue by Reservation report for NTR 6519,
-		grouped by payment status (groups path), with a note section.
-	-->
-	<style>
-		*{box-sizing:border-box}
-		body{font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1d2327;background:#f0f0f1;margin:0;padding:0;font-size:12px}
-		.rpt-pv-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 24px;background:#f1f5f9;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:10}
-		.rpt-pv-toolbar-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E}
-		.rpt-pv-toolbar-actions{display:flex;gap:8px}
-		.rpt-pv-btn{font:inherit;font-weight:600;font-size:13px;padding:8px 16px;border-radius:3px;border:1px solid #c3c4c7;background:#fff;color:#1d2327;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
-		.rpt-pv-btn--primary{background:#1668F2;border-color:#1668F2;color:#fff}
-		.rpt-pv-body{padding:24px}
-		.rpt-pv-doc{max-width:1000px;margin:0 auto;background:#fff;border:1px solid #e2e4e7;border-radius:3px;overflow:hidden}
-		.rpt-pv-head{padding:20px 22px;border-bottom:2px solid #031B4E}
-		.rpt-pv-report-type{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#1668F2;margin-bottom:4px}
-		.rpt-pv-title{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#031B4E;margin:0}
-		.rpt-pv-event{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;color:#031B4E;margin-top:6px}
-		.rpt-pv-meta{font-size:12px;color:#50575e;margin-top:4px}
-		.rpt-pv-table{width:100%;border-collapse:collapse}
-		.rpt-pv-table th{text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#031B4E;padding:6px 12px;background:#f8fafc;border-top:1px solid #d9e2f2;border-bottom:1px solid #d9e2f2}
-		.rpt-pv-table td{padding:7px 12px;font-size:11px;color:#1d2327;border-bottom:1px solid #f0f0f1}
-		.rpt-pv-table tbody tr:nth-child(even) td{background:#f8fafc}
-		.rpt-pv-summary td{background:#031B4E!important;color:#fff!important;font-weight:700;font-size:11px}
-		.rpt-pv-group td{background:#fdf4e7;color:#b45309;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:11px;border-top:1px solid #f3e2c4;border-bottom:1px solid #f3e2c4}
-		.rpt-pv-group td .rpt-pv-group-count{font-weight:600;color:#92400e}
-		.rpt-pv-total{padding:12px 22px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E;border-top:1px solid #d9e2f2;background:#f8fafc}
-		.rpt-pv-empty{padding:28px 22px;text-align:center;color:#646970}
-		.rpt-pv-note-section{margin-top:24px;padding-top:16px;border-top:1px solid #d9e2f2}
-		.rpt-pv-note-section__label{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;margin-bottom:8px;padding:0 0 0 2px}
-		.rpt-pv-table--note{margin-top:4px}
-		@page{size:landscape}
-		@media print{
-			.rpt-pv-toolbar{display:none}
-			body{background:#fff;padding:0}
-			.rpt-pv-doc{border:0;border-radius:0;max-width:none}
-			*{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
-		}
-	</style>
+/* ── BODY ── */
+.pv-body{padding:24px 28px;max-width:1000px;margin:0 auto}
+
+/* ── HEADER ── */
+.pv-header{margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #1668F2}
+.pv-eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:4px}
+.pv-header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.pv-header-title{font-size:22px;font-weight:700;color:#0d1b3e;margin-bottom:4px;letter-spacing:-.02em}
+.pv-header-event{font-size:15px;font-weight:600;color:#0d1b3e;margin-bottom:4px}
+.pv-meta{font-size:12.5px;color:#64748b}
+.pv-header-right{text-align:right;font-size:12px;color:#64748b;white-space:nowrap}
+.pv-header-right strong{display:block;color:#0d1b3e;font-size:13px;font-weight:600;margin-bottom:2px}
+
+/* ── TABLE ── */
+.pv-table-wrap{border:1px solid #e2e8f4;border-radius:10px;overflow:hidden;margin-bottom:0}
+.pv-table{width:100%;border-collapse:collapse;background:#fff}
+.pv-table thead tr{background:#F7F9FC;border-bottom:1px solid #e2e8f4}
+.pv-table thead th{padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;text-align:left;white-space:nowrap}
+.pv-table tbody tr{border-bottom:1px solid #f0f4fb}
+.pv-table tbody tr:last-child{border-bottom:none}
+.pv-table td{padding:8px 12px;font-size:12.5px;vertical-align:middle;color:#0d1b3e}
+
+/* group band */
+.pv-group td{background:#fffbeb;color:#b45309;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.04em;border-top:1px solid #fde68a;border-bottom:1px solid #fde68a}
+.pv-group-count{font-weight:600;color:#92400e;margin-left:8px}
+
+/* summary row */
+.pv-summary td{background:#0d1b3e!important;color:#fff!important;font-weight:700;font-size:12px}
+
+/* total footer */
+.pv-total{padding:11px 16px;font-size:13px;font-weight:700;color:#0d1b3e;border-top:2px solid #1668F2;background:#F7F9FC}
+
+/* note sections */
+.pv-note-section{margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f4}
+.pv-note-label{font-size:13px;font-weight:700;color:#0d1b3e;margin-bottom:10px}
+
+/* footer */
+.pv-footer{margin-top:18px;padding-top:12px;border-top:1px solid #e2e8f4;display:flex;justify-content:space-between;font-size:12px;color:#64748b;flex-wrap:wrap;gap:8px}
+
+/* ── RESPONSIVE TOPBAR BTNS ── */
+@media(max-width:900px){
+  .pv-topbar{padding:0 14px;height:56px}
+  .btn-exit .btn-label,.btn-print .btn-label{display:none}
+  .btn-exit{width:36px;height:36px;padding:0;justify-content:center;border-radius:8px}
+  .btn-print{width:36px;height:36px;padding:0;justify-content:center;border-radius:8px}
+  .btn-print svg,.btn-exit svg{width:16px;height:16px}
+}
+
+/* ── PRINT ── */
+@media print{
+  .pv-topbar{display:none}
+  .pv-body{padding:0;max-width:none}
+  body{background:#fff;font-size:11px}
+  .pv-header-title{font-size:18px}
+  .pv-table-wrap{border-radius:0;border:none}
+  .pv-table thead tr{background:#F7F9FC!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pv-table tbody tr{page-break-inside:avoid;break-inside:avoid}
+  .pv-table td,.pv-table th{padding:5px 8px;font-size:10px}
+  .pv-group td,.pv-summary td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  @page{size:landscape;margin:0.6in 0.5in 0.7in 0.5in}
+}
+
+/* ── MOBILE ── */
+@media(max-width:767px){
+  .pv-topbar{flex-direction:column;align-items:flex-start;gap:8px;padding:10px 14px;height:auto}
+  .pv-topbar-btns{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btn-print,.btn-exit{width:100%;justify-content:center}
+  .pv-topbar-btns{width:100%}
+  .pv-body{padding:14px}
+  .pv-header-top{flex-direction:column;gap:6px}
+  .pv-header-right{text-align:left}
+}
+</style>
 </head>
 <body>
-	<!-- Sticky toolbar — hidden on print via @media print -->
-	<div class="rpt-pv-toolbar">
-		<div class="rpt-pv-toolbar-title">Revenue by Reservation</div>
-		<div class="rpt-pv-toolbar-actions">
-			<button type="button" class="rpt-pv-btn rpt-pv-btn--primary" onclick="window.print()">Print / Save PDF</button>
-			<button type="button" class="rpt-pv-btn" onclick="window.close()">Close</button>
-		</div>
-	</div>
 
-	<div class="rpt-pv-body">
-		<div class="rpt-pv-doc">
+<!-- Toolbar -->
+<div class="pv-topbar">
+  <div class="pv-topbar-left">
+    <div class="pv-logo"><img src="logo.png" alt="Equine Event Manager"></div>
+    <div>
+      <div class="pv-title">Revenue by Reservation</div>
+      <div class="pv-sub">NTR 6519 — Spring Barrel Classic 2026</div>
+    </div>
+  </div>
+  <div class="pv-topbar-btns">
+    <a href="javascript:history.back()" class="btn-exit">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      <span class="btn-label">Back to Reports</span>
+    </a>
+    <button class="btn-print" onclick="window.print()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      <span class="btn-label">Print / Save PDF</span>
+    </button>
+  </div>
+</div>
 
-			<!-- Header: report type label, title, optional event_header, meta subtitle + generated stamp -->
-			<div class="rpt-pv-head">
-				<div class="rpt-pv-report-type">Report</div>
-				<h1 class="rpt-pv-title">Revenue by Reservation</h1>
-				<!-- event_header rendered only when non-empty; sourced from the reservation/event title -->
-				<div class="rpt-pv-event">Spring Barrel Classic 2026</div>
-				<!--
-					meta subtitle = pdf_meta()['subtitle']
-					= reservation post title when reservation_id filter is set,
-					  or "All reservations" when no filter.
-					Shown before the · separator, then the generated timestamp.
-				-->
-				<div class="rpt-pv-meta">NTR 6519 &nbsp;·&nbsp; Generated June 20, 2026 2:14 pm</div>
-			</div>
+<!-- Printable body -->
+<div class="pv-body">
 
-			<!--
-				Main table — groups path (report has `groups` array):
-				amber band per group with group label + unit count,
-				then flat rows inside each group.
-				When no groups, rows are flat with summary_row_count navy rows at top.
-			-->
-			<table class="rpt-pv-table">
-				<thead>
-					<tr>
-						<!-- print_columns subset: verbose/PII columns like full address are excluded -->
-						<th>Date</th>
-						<th>Order #</th>
-						<th>Customer</th>
-						<th>Stalls</th>
-						<th>RV Lots</th>
-						<th>Add-Ons</th>
-						<th>Conv. Fee</th>
-						<th>Tax</th>
-						<th>Total</th>
-					</tr>
-				</thead>
-				<tbody>
-					<!-- Group: Paid — amber band -->
-					<tr class="rpt-pv-group">
-						<td colspan="9">
-							Paid
-							<span class="rpt-pv-group-count">3 units</span>
-						</td>
-					</tr>
-					<tr>
-						<td>Apr 18, 2026</td>
-						<td>#00128</td>
-						<td>Dana Whitfield</td>
-						<td>$160.00</td>
-						<td>$90.00</td>
-						<td>$24.00</td>
-						<td>$8.32</td>
-						<td>$22.34</td>
-						<td>$304.66</td>
-					</tr>
-					<tr>
-						<td>Apr 19, 2026</td>
-						<td>#00131</td>
-						<td>Marcus Hale</td>
-						<td>$240.00</td>
-						<td>$0.00</td>
-						<td>$45.00</td>
-						<td>$9.99</td>
-						<td>$23.43</td>
-						<td>$318.42</td>
-					</tr>
-					<tr>
-						<td>Apr 20, 2026</td>
-						<td>#00137</td>
-						<td>Priya Raman</td>
-						<td>$80.00</td>
-						<td>$135.00</td>
-						<td>$0.00</td>
-						<td>$7.31</td>
-						<td>$18.62</td>
-						<td>$240.93</td>
-					</tr>
+  <!-- Header -->
+  <div class="pv-header">
+    <div class="pv-header-top">
+      <div>
+        <div class="pv-eyebrow">Report</div>
+        <div class="pv-header-title">Revenue by Reservation</div>
+        <div class="pv-header-event">Spring Barrel Classic 2026</div>
+        <div class="pv-meta">NTR 6519 &nbsp;·&nbsp; Generated June 20, 2026 2:14 pm</div>
+      </div>
 
-					<!-- Group: Unpaid — amber band -->
-					<tr class="rpt-pv-group">
-						<td colspan="9">
-							Unpaid
-							<span class="rpt-pv-group-count">2 units</span>
-						</td>
-					</tr>
-					<tr>
-						<td>Apr 21, 2026</td>
-						<td>#00140</td>
-						<td>Cole Jensen</td>
-						<td>$160.00</td>
-						<td>$0.00</td>
-						<td>$12.00</td>
-						<td>$5.61</td>
-						<td>$14.28</td>
-						<td>$191.89</td>
-					</tr>
-					<tr>
-						<td>Apr 22, 2026</td>
-						<td>#00142</td>
-						<td>Erin Voss</td>
-						<td>$320.00</td>
-						<td>$180.00</td>
-						<td>$36.00</td>
-						<td>$15.81</td>
-						<td>$40.27</td>
-						<td>$592.08</td>
-					</tr>
-				</tbody>
-			</table>
+    </div>
+  </div>
 
-			<!--
-				rpt-pv-total: shows total_label if report provides one,
-				otherwise "%d row(s)" from count($rows).
-				When groups are used, count($rows) is still all data rows (not group bands).
-			-->
-			<div class="rpt-pv-total">5 rows</div>
+  <!-- Main table -->
+  <div class="pv-table-wrap">
+    <table class="pv-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Order #</th>
+          <th>Customer</th>
+          <th>Stalls</th>
+          <th>RV Lots</th>
+          <th>Add-Ons</th>
+          <th>Conv. Fee</th>
+          <th>Tax</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Group: Paid -->
+        <tr class="pv-group"><td colspan="9">Paid <span class="pv-group-count">3 orders</span></td></tr>
+        <tr><td>Apr 18, 2026</td><td>#00128</td><td>Dana Whitfield</td><td>$160.00</td><td>$90.00</td><td>$24.00</td><td>$8.32</td><td>$22.34</td><td>$304.66</td></tr>
+        <tr><td>Apr 19, 2026</td><td>#00131</td><td>Marcus Hale</td><td>$240.00</td><td>$0.00</td><td>$45.00</td><td>$9.99</td><td>$23.43</td><td>$318.42</td></tr>
+        <tr><td>Apr 20, 2026</td><td>#00137</td><td>Priya Raman</td><td>$80.00</td><td>$135.00</td><td>$0.00</td><td>$7.31</td><td>$18.62</td><td>$240.93</td></tr>
 
-			<!--
-				note_sections: optional supplementary sub-tables below the main table.
-				Each entry: { label, headers[], rows[][] }.
-				Skipped when the section's rows array is empty.
-			-->
-			<div class="rpt-pv-note-section">
-				<div class="rpt-pv-note-section__label">Revenue by Category</div>
-				<table class="rpt-pv-table rpt-pv-table--note">
-					<thead>
-						<tr>
-							<th>Category</th>
-							<th>Units</th>
-							<th>Gross</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr><td>Stall Reservations</td><td>24</td><td>$960.00</td></tr>
-						<tr><td>RV Lots</td><td>9</td><td>$405.00</td></tr>
-						<tr><td>Add-Ons</td><td>11</td><td>$117.00</td></tr>
-					</tbody>
-				</table>
-			</div>
+        <!-- Group: Unpaid -->
+        <tr class="pv-group"><td colspan="9">Unpaid <span class="pv-group-count">2 orders</span></td></tr>
+        <tr><td>Apr 21, 2026</td><td>#00140</td><td>Cole Jensen</td><td>$160.00</td><td>$0.00</td><td>$12.00</td><td>$5.61</td><td>$14.28</td><td>$191.89</td></tr>
+        <tr><td>Apr 22, 2026</td><td>#00142</td><td>Erin Voss</td><td>$320.00</td><td>$180.00</td><td>$36.00</td><td>$15.81</td><td>$40.27</td><td>$592.08</td></tr>
+      </tbody>
+    </table>
+    <div class="pv-total">5 rows &nbsp;·&nbsp; Total: $1,648.00</div>
+  </div>
 
-		</div><!-- /.rpt-pv-doc -->
-	</div><!-- /.rpt-pv-body -->
+  <!-- Note section -->
+  <div class="pv-note-section">
+    <div class="pv-note-label">Revenue by Category</div>
+    <div class="pv-table-wrap">
+      <table class="pv-table">
+        <thead>
+          <tr><th>Category</th><th>Units</th><th>Gross</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Stall Reservations</td><td>24</td><td>$960.00</td></tr>
+          <tr><td>RV Lots</td><td>9</td><td>$405.00</td></tr>
+          <tr><td>Add-Ons</td><td>11</td><td>$117.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-	<!-- document.title set by JS to match server-generated $doc_title -->
-	<script>document.title = 'Revenue by Reservation — NTR 6519';</script>
+  <!-- Footer -->
+  <div class="pv-footer">
+    <span>Revenue by Reservation &nbsp;·&nbsp; Spring Barrel Classic 2026 (NTR 6519)</span>
+    <span>My Equestrian Site &nbsp;·&nbsp; Generated June 20, 2026 2:14 pm</span>
+  </div>
+
+</div>
+
+<script>document.title = 'Revenue by Reservation — NTR 6519';</script>
 </body>
 </html>
