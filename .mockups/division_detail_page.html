@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equine Event Manager – Division Detail</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{overflow-x:hidden;width:100%}
+body{font-family:'IBM Plex Sans',sans-serif;background:#F7F9FC;color:#0d1b3e;font-size:14px;line-height:1.5;min-height:100vh;overflow-x:hidden;width:100%}
+svg{flex-shrink:0}
+a{color:#1668F2;text-decoration:none}
+a:hover{color:#0d4fc2}
+button{font-family:inherit;cursor:pointer}
+
+/* ── TOPBAR ── */
+.app-topbar{background:#fff;border-bottom:1px solid #e2e8f4;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;width:100%;box-sizing:border-box}
+.app-topbar-left{display:flex;align-items:center;gap:10px}
+.app-logo img{height:32px;width:auto;display:block}
+.app-sep{font-size:14px;color:#c8d4e8;margin:0 2px}
+.topbar-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;color:#0d1b3e;background:#F7F9FC;border:1.5px solid #d0daea;cursor:pointer;font-family:inherit;text-decoration:none;white-space:nowrap}
+.topbar-btn:hover{background:#e8eef8;border-color:#1668F2;color:#1668F2}
+.topbar-btn-electric{background:#1668F2;color:#fff;border-color:#1668F2}
+.topbar-btn-electric:hover{background:#0d4fc2;color:#fff;border-color:#0d4fc2}
+@media(max-width:900px){
+  .topbar-btn{width:36px;height:36px;padding:0;justify-content:center}
+  .topbar-btn-label{display:none}
+}
+
+/* ── PAGE HEADER ── */
+.app-page-header{background:#fff;border-bottom:1px solid #e2e8f4;padding:18px 24px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;width:100%}
+.app-page-title{font-size:20px;font-weight:700;color:#0d1b3e;letter-spacing:-.02em}
+.app-page-sub{font-size:13px;color:#64748b;margin-top:3px}
+.app-page-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+
+/* ── CONTENT ── */
+.app-content{padding:20px 24px 48px;width:100%}
+
+/* ── MAIN CARD ── */
+.page-card{background:#fff;border:1px solid #e2e8f4;border-radius:10px;overflow:hidden}
+
+/* ── KPI STAT GRID ── */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid #e2e8f4}
+.stat-card{padding:18px 22px;display:flex;align-items:center;gap:14px;border-right:1px solid #e2e8f4}
+.stat-card:last-child{border-right:none}
+.stat-icon{width:32px;height:32px;border-radius:7px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stat-icon svg{width:15px;height:15px;color:#1668F2}
+.stat-card--green .stat-icon{background:#f0fdf4}
+.stat-card--green .stat-icon svg{color:#15803d}
+.stat-card--green .stat-num{color:#15803d}
+.stat-card--orange .stat-icon{background:#fffbeb}
+.stat-card--orange .stat-icon svg{color:#b45309}
+.stat-card--orange .stat-num{color:#b45309}
+.stat-card--red .stat-icon{background:#fef2f2}
+.stat-card--red .stat-icon svg{color:#b91c1c}
+.stat-card--red .stat-num{color:#b91c1c}
+.stat-text{display:flex;flex-direction:column;gap:1px}
+.stat-num{font-size:26px;font-weight:700;color:#0d1b3e;line-height:1.1}
+.stat-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8}
+.stat-oversold{font-size:11px;font-weight:600;color:#b91c1c;margin-top:2px}
+
+/* ── EVENT BAND ── */
+.event-band{padding:10px 22px;background:#f8faff;border-bottom:1px solid #e2e8f4;display:flex;gap:20px;flex-wrap:wrap;font-size:12.5px;color:#64748b}
+.event-band strong{color:#0d1b3e;font-weight:600}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid #e2e8f4;flex-wrap:wrap;background:#fff}
+.toolbar-select{height:34px;padding:0 28px 0 10px;border:1.5px solid #d0daea;border-radius:7px;font-size:13px;font-family:inherit;color:#0d1b3e;background:#fff;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%2364748b' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;outline:none;cursor:pointer}
+.toolbar-select:focus{border-color:#1668F2;box-shadow:0 0 0 3px rgba(22,104,242,.1)}
+.search-wrap{position:relative;display:flex;align-items:center}
+.search-wrap svg{position:absolute;left:9px;width:13px;height:13px;color:#94a3b8;pointer-events:none}
+.search-input{padding:7px 10px 7px 28px;border:1.5px solid #d0daea;border-radius:7px;font-size:13px;font-family:inherit;color:#0d1b3e;background:#fff;outline:none;height:34px;width:200px}
+.search-input:focus{border-color:#1668F2;box-shadow:0 0 0 3px rgba(22,104,242,.1)}
+.toolbar-count{font-size:13px;color:#64748b;margin-left:auto}
+
+/* ── MEATBALL ── */
+.row-menu-wrap{position:relative;display:inline-block}
+.more-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:1.5px solid #e2e8f4;border-radius:6px;background:#fff;color:#94a3b8;cursor:pointer;font-size:15px;letter-spacing:1px;line-height:1}
+.more-btn:hover{border-color:#1668F2;color:#1668F2}
+.row-dropdown{position:fixed;min-width:160px;background:#fff;border:1px solid #e2e8f4;border-radius:10px;box-shadow:0 8px 24px rgba(13,27,62,.12);padding:4px;z-index:500;display:none}
+.row-menu-wrap.open .row-dropdown{display:block}
+.dd-item{display:flex;align-items:center;gap:8px;padding:8px 10px;font-size:13px;color:#0d1b3e;cursor:pointer;border-radius:6px;text-decoration:none;background:none;border:none;width:100%;text-align:left;font-family:inherit}
+.dd-item svg{width:13px;height:13px;color:#94a3b8;flex-shrink:0}
+.dd-item:hover{background:#f0f5ff;color:#1668F2}
+.dd-item:hover svg{color:#1668F2}
+.dd-danger{color:#dc2626}.dd-danger svg{color:#fca5a5}
+.dd-danger:hover{background:#fef2f2;color:#dc2626}
+
+/* ── NOTICE ── */
+.notice-bar{padding:10px 16px;background:#fffbeb;border-bottom:1px solid #fde68a;display:flex;align-items:center;gap:8px;font-size:13px;color:#92400e}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl thead tr{border-bottom:1px solid #e2e8f4;background:#F7F9FC}
+.tbl thead th{padding:10px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;text-align:left;white-space:nowrap}
+.tbl thead th.c{text-align:center}
+.tbl tbody tr{border-bottom:1px solid #f0f4fb}
+.tbl tbody tr:last-child{border-bottom:none}
+.tbl tbody tr:hover{background:#fafbfe}
+.tbl td{padding:12px 16px;color:#0d1b3e;vertical-align:middle}
+.tbl td.c{text-align:center}
+.tbl tfoot tr{border-top:2px solid #e2e8f4;background:#F7F9FC}
+.tbl tfoot td{padding:10px 16px;font-size:13px;font-weight:700;color:#0d1b3e}
+.tbl tfoot td.c{text-align:center}
+.tbl-empty{color:#94a3b8;font-style:italic;padding:28px 16px;text-align:center}
+
+/* cell styles */
+.cell-name{font-weight:700;color:#0d1b3e}
+.cell-qty{font-variant-numeric:tabular-nums;font-weight:600;text-align:center}
+.cell-order{color:#1668F2;font-variant-numeric:tabular-nums;font-weight:700}
+.cell-order:hover{color:#0d4fc2}
+.cell-date{color:#64748b}
+.cell-muted{color:#94a3b8}
+
+/* badges */
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap;border:1px solid}
+.badge-paid{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
+.badge-unpaid{background:#fffbeb;color:#a16207;border-color:#fde68a}
+.badge-refunded{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+.badge-cancelled{background:#f3f4f6;color:#6b7280;border-color:#d1d5db}
+
+/* ── MOBILE CARDS ── */
+.mob-cards{display:none;flex-direction:column;gap:10px;padding:14px}
+.mob-card{background:#fff;border:1px solid #e2e8f4;border-radius:8px;padding:12px 14px}
+.mob-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:3px}
+.mob-card-name{font-weight:700;color:#0d1b3e;font-size:14px}
+.mob-card-date{font-size:12.5px;color:#64748b}
+.mob-card-sub{font-size:12.5px;color:#64748b;margin-bottom:8px}
+.mob-card-bottom{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .toolbar{flex-wrap:wrap;gap:8px}
+  .search-input{width:100%}
+  .search-wrap{flex:1;min-width:0}
+  .toolbar-select{flex:1}
+  .toolbar-count{margin-left:0;width:100%}
+  .tbl-wrap{display:none}
+  .mob-cards{display:flex}
+  .stat-grid{grid-template-columns:1fr}
+  .stat-card{border-right:none;border-bottom:1px solid #e2e8f4;padding:14px 16px}
+  .stat-card:last-child{border-bottom:none}
+  .app-page-header{flex-direction:column;gap:12px}
+  .app-page-actions{width:100%;display:grid;grid-template-columns:repeat(3,1fr)}
+  .app-page-actions .topbar-btn{justify-content:center;width:100%}
+  .event-band{padding:10px 14px;gap:12px}
+}
+@media(max-width:600px){
+  .app-topbar{height:48px;padding:0 12px}
+  .app-logo img{height:24px}
+  .app-content{padding:14px 14px 40px}
+}
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="app-topbar">
+  <div class="app-topbar-left">
+    <div class="app-logo"><img src="logo.png" alt="Equine Event Manager"></div>
+    <span class="app-sep">/</span>
+    <a href="#" style="font-size:13px;color:#1668F2;text-decoration:none">Event Entries</a>
+    <span class="app-sep">/</span>
+    <span style="font-size:13px;font-weight:600;color:#0d1b3e">#9.5 Division</span>
+  </div>
+  <div class="app-page-actions">
+    <a href="#" target="_blank" class="topbar-btn" title="View Event">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      <span class="topbar-btn-label">View Event</span>
+    </a>
+    <a href="#" target="_blank" class="topbar-btn" title="Print">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      <span class="topbar-btn-label">Print</span>
+    </a>
+    <a href="#" class="topbar-btn topbar-btn-electric" title="Edit Division">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <span class="topbar-btn-label">Edit Division</span>
+    </a>
+  </div>
+</div>
+
+<!-- Page header -->
+<div class="app-page-header">
+  <div>
+    <div class="app-page-title">NTR- Rapid City, SD — #9.5 Division</div>
+    <div class="app-page-sub">Entry fee: $45.00 per spot</div>
+  </div>
+</div>
+
+<div class="app-content">
+  <div class="page-card">
+
+    <!-- KPI stat cards -->
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="stat-text">
+          <span class="stat-num">4</span>
+          <span class="stat-label">Entered</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
+        <div class="stat-text">
+          <span class="stat-num">20</span>
+          <span class="stat-label">Spots</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--green">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="stat-text">
+          <span class="stat-num">16</span>
+          <span class="stat-label">Spots Left</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Event band -->
+    <div class="event-band">
+      <span><strong>Dates:</strong> Jun 26 – Jun 29, 2026</span>
+      <span><strong>Reservation:</strong> <a href="#">NTR 2026</a></span>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <select class="toolbar-select">
+        <option value="">All Statuses</option>
+        <option value="paid">Paid</option>
+        <option value="unpaid">Unpaid</option>
+        <option value="refunded">Refunded</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" type="search" placeholder="Search">
+      </div>
+      <span class="toolbar-count">4 entries</span>
+    </div>
+
+    <!-- Desktop table -->
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th class="c">Qty</th>
+            <th>Order</th>
+            <th>Date</th>
+            <th class="c">Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a href="#" class="cell-name" style="color:#0d1b3e;font-weight:700">Jane Smith</a></td>
+            <td class="cell-qty c">1</td>
+            <td><a class="cell-order" href="#">#00042</a></td>
+            <td class="cell-date">Jun 14, 2026</td>
+            <td class="c"><span class="badge badge-paid">Paid</span></td>
+            <td style="text-align:right"><div class="row-menu-wrap"><button class="more-btn" onclick="toggleMenu(this)">···</button><div class="row-dropdown">
+                <a class="dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Entry</a>
+                <button class="dd-item dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 7 16 12 23 17"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>Refund</button>
+                <button class="dd-item dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>Cancel</button>
+              </div></div></td>
+          </tr>
+          <tr>
+            <td><a href="#" class="cell-name" style="color:#0d1b3e;font-weight:700">Carlos Reyes</a></td>
+            <td class="cell-qty c">2</td>
+            <td><a class="cell-order" href="#">#00038</a></td>
+            <td class="cell-date">Jun 12, 2026</td>
+            <td class="c"><span class="badge badge-paid">Paid</span></td>
+            <td style="text-align:right"><div class="row-menu-wrap"><button class="more-btn" onclick="toggleMenu(this)">···</button><div class="row-dropdown">
+                <a class="dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Entry</a>
+                <button class="dd-item dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 7 16 12 23 17"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>Refund</button>
+                <button class="dd-item dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>Cancel</button>
+              </div></div></td>
+          </tr>
+          <tr>
+            <td><a href="#" class="cell-name" style="color:#0d1b3e;font-weight:700">Morgan Lee</a></td>
+            <td class="cell-qty c">1</td>
+            <td><a class="cell-order" href="#">#00051</a></td>
+            <td class="cell-date">Jun 17, 2026</td>
+            <td class="c"><span class="badge badge-unpaid">Unpaid</span></td>
+            <td style="text-align:right"><div class="row-menu-wrap"><button class="more-btn" onclick="toggleMenu(this)">···</button><div class="row-dropdown">
+                <a class="dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Entry</a>
+                <button class="dd-item dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 7 16 12 23 17"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>Refund</button>
+                <button class="dd-item dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>Cancel</button>
+              </div></div></td>
+          </tr>
+          <tr>
+            <td><a href="#" class="cell-name" style="color:#0d1b3e;font-weight:700">Alex Turner</a></td>
+            <td class="cell-qty c">1</td>
+            <td class="cell-muted">—</td>
+            <td class="cell-date">Jun 10, 2026</td>
+            <td class="c"><span class="badge badge-refunded">Refunded</span></td>
+            <td style="text-align:right"><div class="row-menu-wrap"><button class="more-btn" onclick="toggleMenu(this)">···</button><div class="row-dropdown">
+                <a class="dd-item" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit Entry</a>
+                <button class="dd-item dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 7 16 12 23 17"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>Refund</button>
+                <button class="dd-item dd-danger"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>Cancel</button>
+              </div></div></td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td>Total</td>
+            <td class="c">5</td>
+            <td colspan="3"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Mobile cards -->
+    <div class="mob-cards">
+      <div class="mob-card">
+        <div class="mob-card-top"><span class="mob-card-name">Jane Smith</span><span class="mob-card-date">Jun 14, 2026</span></div>
+        <div class="mob-card-sub">1 entry · <a class="cell-order" href="#">#00042</a></div>
+        <div class="mob-card-bottom"><span class="badge badge-paid">Paid</span></div>
+      </div>
+      <div class="mob-card">
+        <div class="mob-card-top"><span class="mob-card-name">Carlos Reyes</span><span class="mob-card-date">Jun 12, 2026</span></div>
+        <div class="mob-card-sub">2 entries · <a class="cell-order" href="#">#00038</a></div>
+        <div class="mob-card-bottom"><span class="badge badge-paid">Paid</span></div>
+      </div>
+      <div class="mob-card">
+        <div class="mob-card-top"><span class="mob-card-name">Morgan Lee</span><span class="mob-card-date">Jun 17, 2026</span></div>
+        <div class="mob-card-sub">1 entry · <a class="cell-order" href="#">#00051</a></div>
+        <div class="mob-card-bottom"><span class="badge badge-unpaid">Unpaid</span></div>
+      </div>
+      <div class="mob-card">
+        <div class="mob-card-top"><span class="mob-card-name">Alex Turner</span><span class="mob-card-date">Jun 10, 2026</span></div>
+        <div class="mob-card-sub">1 entry · —</div>
+        <div class="mob-card-bottom"><span class="badge badge-refunded">Refunded</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function toggleMenu(btn){
+  var wrap=btn.closest('.row-menu-wrap');
+  var wasOpen=wrap.classList.contains('open');
+  document.querySelectorAll('.row-menu-wrap.open').forEach(function(w){w.classList.remove('open');});
+  if(!wasOpen){
+    wrap.classList.add('open');
+    var rect=btn.getBoundingClientRect();
+    var dd=wrap.querySelector('.row-dropdown');
+    dd.style.top=(rect.bottom+4)+'px';
+    dd.style.left='auto';
+    dd.style.right=(window.innerWidth-rect.right)+'px';
+  }
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.row-menu-wrap')) document.querySelectorAll('.row-menu-wrap.open').forEach(function(w){w.classList.remove('open');});
+});
+</script>
+</body>
+</html>
