@@ -150,22 +150,59 @@ class EEM_Event_Editor_Page {
 
 		require_once EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservation-editor/_section-skeleton.php';
 
-		$is_new   = '' === trim( (string) $post->post_title ) && 'draft' === $post->post_status;
-		$data     = self::read_event( $event_id, $post );
-		$nonce    = wp_create_nonce( self::NONCE );
+		$is_new      = '' === trim( (string) $post->post_title ) && 'draft' === $post->post_status;
+		$data        = self::read_event( $event_id, $post );
+		$nonce       = wp_create_nonce( self::NONCE );
+		$preview_url = get_permalink( $event_id );
+
+		$topbar_actions = '';
+		if ( ! $is_new ) {
+			if ( $preview_url ) {
+				$topbar_actions .= '<a href="' . esc_url( $preview_url ) . '" target="_blank" rel="noopener" class="eem-btn eem-btn-secondary eem-btn-topbar">'
+					. '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'
+					. '<span class="eem-btn-topbar-label">' . esc_html__( 'View Event', 'equine-event-manager' ) . '</span></a>';
+			}
+			$topbar_actions .= '<button type="button" class="eem-btn eem-btn-danger eem-btn-topbar" data-eem-action="event-editor-delete" data-event-id="' . esc_attr( (string) $event_id ) . '" data-event-title="' . esc_attr( (string) $post->post_title ) . '">'
+				. '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>'
+				. '<span class="eem-btn-topbar-label">' . esc_html__( 'Delete Event', 'equine-event-manager' ) . '</span></button>';
+		}
+
+		// Meta line for edit mode: "Event #N · dates · venue".
+		$meta_parts = array();
+		if ( ! $is_new ) {
+			$meta_parts[] = sprintf( esc_html__( 'Event #%d', 'equine-event-manager' ), $event_id );
+			if ( '' !== $data['start'] ) {
+				$meta_parts[] = date_i18n( 'M j', strtotime( $data['start'] ) )
+					. ( '' !== $data['end'] && $data['end'] !== $data['start'] ? '–' . date_i18n( 'j, Y', strtotime( $data['end'] ) ) : ', ' . date_i18n( 'Y', strtotime( $data['start'] ) ) );
+			}
+			if ( $data['venue_id'] > 0 ) {
+				$meta_parts[] = get_the_title( $data['venue_id'] );
+			}
+		}
 		?>
 		<div class="eem-page eem-event-editor">
 			<?php
-			eem_render_breadcrumb( array(
-				array( 'label' => __( 'Events', 'equine-event-manager' ), 'url' => EEM_Events_List_Page::url() ),
-				array( 'label' => $is_new ? __( 'Add Event', 'equine-event-manager' ) : __( 'Edit Event', 'equine-event-manager' ) ),
-			) );
+			eem_render_breadcrumb(
+				array(
+					array( 'label' => __( 'Events', 'equine-event-manager' ), 'url' => EEM_Events_List_Page::url() ),
+					array( 'label' => $is_new ? __( 'Add Event', 'equine-event-manager' ) : __( 'Edit Event', 'equine-event-manager' ) ),
+				),
+				$topbar_actions
+			);
 			?>
 			<div class="eem-plugin-wrap">
 				<header class="eem-plugin-header">
 					<div class="eem-plugin-header-left">
-						<h1 class="eem-plugin-title"><?php echo $is_new ? esc_html__( 'Add Event', 'equine-event-manager' ) : esc_html__( 'Edit Event', 'equine-event-manager' ); ?></h1>
-						<div class="eem-plugin-subtitle"><?php esc_html_e( 'Create or edit an event. Set the dates, venue, producer, and content, then optionally link a reservation setup to enable stall and RV bookings.', 'equine-event-manager' ); ?></div>
+						<?php if ( ! $is_new ) : ?>
+							<div class="eem-plugin-eyebrow"><?php esc_html_e( 'Edit Event', 'equine-event-manager' ); ?></div>
+							<h1 class="eem-plugin-title"><?php echo esc_html( $post->post_title ); ?></h1>
+							<?php if ( ! empty( $meta_parts ) ) : ?>
+								<div class="eem-plugin-subtitle"><?php echo esc_html( implode( ' · ', $meta_parts ) ); ?></div>
+							<?php endif; ?>
+						<?php else : ?>
+							<h1 class="eem-plugin-title"><?php esc_html_e( 'Add Event', 'equine-event-manager' ); ?></h1>
+							<div class="eem-plugin-subtitle"><?php esc_html_e( 'Fill in the details below to create a new event.', 'equine-event-manager' ); ?></div>
+						<?php endif; ?>
 					</div>
 				</header>
 
@@ -235,40 +272,40 @@ class EEM_Event_Editor_Page {
 	 * @return void
 	 */
 	private static function render_main_cards( array $d ): void {
+		echo '<div class="eem-event-cards-wrap">';
 		eem_render_reservation_editor_section( array(
 			'key' => 'title', 'title' => __( 'Event Title', 'equine-event-manager' ),
 			'icon_tone' => 'navy', 'icon_key' => 'file-text', 'enable_toggle' => false,
+			'collapsible' => false,
 			'body_html' => self::body_title( $d ),
 		) );
 		eem_render_reservation_editor_section( array(
 			'key' => 'details', 'title' => __( 'Event Details', 'equine-event-manager' ),
 			'icon_tone' => 'blue', 'icon_key' => 'calendar', 'enable_toggle' => false,
+			'collapsible' => false,
 			'body_html' => self::body_details( $d ),
 		) );
 		eem_render_reservation_editor_section( array(
 			'key' => 'desc', 'title' => __( 'Description', 'equine-event-manager' ),
 			'icon_tone' => 'blue', 'icon_key' => 'file', 'enable_toggle' => false,
+			'collapsible' => false,
 			'body_html' => self::body_description( $d ),
 		) );
 		eem_render_reservation_editor_section( array(
 			'key' => 'media', 'title' => __( 'Connections & Media', 'equine-event-manager' ),
 			'icon_tone' => 'purple', 'icon_key' => 'package', 'enable_toggle' => false,
+			'collapsible' => false,
 			'body_html' => self::body_media( $d ),
 		) );
 		if ( EEM_Events::is_sheets_results_enabled() ) {
 			eem_render_reservation_editor_section( array(
 				'key' => 'sheets', 'title' => __( 'Sheets & Results', 'equine-event-manager' ),
 				'icon_tone' => 'orange', 'icon_key' => 'file-text', 'enable_toggle' => false,
+				'collapsible' => false,
 				'body_html' => EEM_Sheets_Results_Page::render_embedded_section( (int) $d['id'] ),
 			) );
 		}
-		eem_render_reservation_editor_section( array(
-			'key' => 'reservation', 'title' => __( 'Link Reservation', 'equine-event-manager' ),
-			'icon_tone' => 'teal', 'icon_key' => 'lightning', 'enable_toggle' => true,
-			'is_enabled' => $d['linked_res_id'] > 0, 'collapsed' => $d['linked_res_id'] <= 0,
-			'disabled_note' => __( 'Enable this to connect a reservation setup. The event page will render the reservation booking flow once linked.', 'equine-event-manager' ),
-			'body_html' => self::body_reservation( $d ),
-		) );
+		echo '</div>';
 	}
 
 	/**
@@ -298,7 +335,7 @@ class EEM_Event_Editor_Page {
 		ob_start();
 		?>
 		<div class="eem-field-row">
-			<div class="eem-field-label"><?php esc_html_e( 'Event Dates', 'equine-event-manager' ); ?><div class="eem-field-label-sub"><?php esc_html_e( 'Start and end date', 'equine-event-manager' ); ?></div></div>
+			<div class="eem-field-label"><?php esc_html_e( 'Event Dates', 'equine-event-manager' ); ?><div class="eem-field-label-sub"><?php esc_html_e( 'Start and end', 'equine-event-manager' ); ?></div></div>
 			<div class="eem-field-control">
 				<div class="eem-date-range">
 					<input class="eem-field-input eem-date-input" type="date" name="en_event[start_date]" value="<?php echo esc_attr( $d['start'] ); ?>" />
@@ -473,21 +510,45 @@ class EEM_Event_Editor_Page {
 	 * @return void
 	 */
 	private static function render_rail( array $d ): void {
-		$thumb = $d['thumbnail_id'] > 0 ? wp_get_attachment_image_url( $d['thumbnail_id'], 'medium' ) : '';
-		$terms = get_terms( array( 'taxonomy' => 'en_event_category', 'hide_empty' => false ) );
-		$preview_url = get_permalink( $d['id'] );
+		$thumb        = $d['thumbnail_id'] > 0 ? wp_get_attachment_image_url( $d['thumbnail_id'], 'medium' ) : '';
+		$terms        = get_terms( array( 'taxonomy' => 'en_event_category', 'hide_empty' => false ) );
+		$is_published = 'publish' === $d['status'];
+		$status_dot   = $is_published ? '#22c55e' : '#94a3b8';
+		$status_label = $is_published ? __( 'Published', 'equine-event-manager' ) : __( 'Draft', 'equine-event-manager' );
 		?>
 		<div class="eem-rail-card">
 			<div class="eem-rail-header"><span class="eem-rail-title"><?php esc_html_e( 'Publish', 'equine-event-manager' ); ?></span></div>
 			<div class="eem-rail-body">
 				<button type="button" class="eem-btn eem-btn-secondary eem-rail-btn" data-eem-action="event-editor-save" data-save-kind="save_draft"><?php esc_html_e( 'Save Draft', 'equine-event-manager' ); ?></button>
-				<?php if ( $preview_url ) : ?>
-					<a class="eem-btn eem-btn-secondary eem-rail-btn" href="<?php echo esc_url( $preview_url ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Preview', 'equine-event-manager' ); ?></a>
-				<?php endif; ?>
 				<div class="eem-rail-divider"></div>
-				<div class="eem-publish-row"><?php esc_html_e( 'Status:', 'equine-event-manager' ); ?> <strong id="eem-event-status-label"><?php echo 'publish' === $d['status'] ? esc_html__( 'Published', 'equine-event-manager' ) : esc_html__( 'Draft', 'equine-event-manager' ); ?></strong></div>
+				<div class="eem-publish-row">
+					<span class="eem-status-dot" id="eem-event-status-dot" style="background:<?php echo esc_attr( $status_dot ); ?>"></span>
+					<span id="eem-event-status-label"><?php echo esc_html( $status_label ); ?></span>
+				</div>
 				<div class="eem-rail-divider"></div>
-				<button type="button" class="eem-btn eem-btn-electric eem-rail-btn" data-eem-action="event-editor-save" data-save-kind="publish"><?php echo 'publish' === $d['status'] ? esc_html__( 'Update Event', 'equine-event-manager' ) : esc_html__( 'Publish Event', 'equine-event-manager' ); ?></button>
+				<button type="button" class="eem-btn eem-btn-electric eem-rail-btn" data-eem-action="event-editor-save" data-save-kind="publish"><?php echo $is_published ? esc_html__( 'Update Event', 'equine-event-manager' ) : esc_html__( 'Publish Event', 'equine-event-manager' ); ?></button>
+			</div>
+		</div>
+
+		<div class="eem-rail-card">
+			<div class="eem-rail-header"><span class="eem-rail-title"><?php esc_html_e( 'Link Reservation', 'equine-event-manager' ); ?></span></div>
+			<div class="eem-rail-body">
+				<?php
+				$reservations = get_posts( array(
+					'post_type'   => EEM_Reservations_CPT::POST_TYPE,
+					'post_status' => array( 'publish', 'draft' ),
+					'numberposts' => 200,
+					'orderby'     => 'title',
+					'order'       => 'ASC',
+				) );
+				?>
+				<select class="eem-field-select" name="en_event[reservation_id]" style="width:100%">
+					<option value="0"><?php esc_html_e( 'No linked reservation', 'equine-event-manager' ); ?></option>
+					<?php foreach ( $reservations as $r ) : ?>
+						<option value="<?php echo esc_attr( (string) $r->ID ); ?>" <?php selected( $d['linked_res_id'], $r->ID ); ?>><?php echo esc_html( get_the_title( $r->ID ) ); ?></option>
+					<?php endforeach; ?>
+				</select>
+				<span class="eem-field-hint"><?php esc_html_e( 'Choose an existing reservation to render its booking flow on this event page.', 'equine-event-manager' ); ?></span>
 			</div>
 		</div>
 

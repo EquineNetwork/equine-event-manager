@@ -305,10 +305,11 @@ class EEM_Admin {
 			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--venues' );
 		}
 
-		// Native Events Admin E — branded Event editor (reuse the reservation-
-		// editor shell variant: full-width 2-col editor chrome).
+		// Native Events Admin E — branded Event editor. Uses its own
+		// eem-shell-page--event-editor body class (not reservation-editor)
+		// so the single-cards-wrap pattern can be scoped distinctly.
 		if ( EEM_Event_Editor_Page::MENU_SLUG === $page ) {
-			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--reservation-editor' );
+			return trim( $classes . ' eem-shell-page eem-shell-page--header eem-shell-page--event-editor' );
 		}
 
 		// Branded Venue + Producer editors — same shell variant as the Event editor.
