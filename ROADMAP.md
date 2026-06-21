@@ -35,7 +35,7 @@ Files in `.mockups/`:
 - [x] **`screen4_public_sheets_results_page.html`** — customer-facing per-event Sheets & Results page (public.css)
 - [x] **`preentries_print_view.html`** — division-entrant print view; new print route + Print button on division detail page
 
-- [ ] **`division_detail_page.html`** — division entrant roster (detail view): topbar shell, 3 KPI stat cards, event band, status-filter toolbar, entrants table with meatball actions (Edit Entry / Refund / Cancel), mobile cards
+- [x] **`division_detail_page.html`** — division entrant roster (detail view): topbar shell, 3 KPI stat cards, event band, status-filter toolbar, entrants table with meatball actions (Edit Entry / Refund / Cancel), mobile cards
 
 **Mockup cleanup:** reference-check then delete `reservation_overview_page.html` + `events_admin_page.html` (suspected zero-ref). `event_entry_editor_page.html` superseded by `division_editor_page.html` — remove in the same pass.
 
