@@ -892,8 +892,20 @@ class EEM_Events {
 	// includes/eem-cancellation-policy.php can dispatch event-default
 	// lookups by source. Pure read function; no side effects.
 	public static function get_effective_reservation_event_source( $reservation_id ) {
-		$use_global_event_source = ! empty( get_post_meta( $reservation_id, '_en_use_global_event_source', true ) );
-		$event_source            = sanitize_key( (string) get_post_meta( $reservation_id, '_en_event_source', true ) );
+		$reservation_id = absint( $reservation_id );
+
+		// Source of truth is the relational config table (post-meta decouple).
+		// Reading raw post-meta here returns empty for config-table reservations,
+		// which made the page fall back to the GLOBAL active source — so flipping
+		// the Settings event source 404'd reservations linked under another source.
+		if ( class_exists( 'EEM_Reservation_Config' ) ) {
+			$cfg                     = EEM_Reservation_Config::for( $reservation_id );
+			$use_global_event_source = (bool) $cfg->get( 'use_global_event_source' );
+			$event_source            = sanitize_key( (string) $cfg->get( 'event_source' ) );
+		} else {
+			$use_global_event_source = ! empty( get_post_meta( $reservation_id, '_en_use_global_event_source', true ) );
+			$event_source            = sanitize_key( (string) get_post_meta( $reservation_id, '_en_event_source', true ) );
+		}
 		$allowed_sources         = array( 'native', 'tec', 'feed', 'external' );
 
 		if ( $use_global_event_source || ! in_array( $event_source, $allowed_sources, true ) ) {
@@ -3118,27 +3130,48 @@ class EEM_Events {
 
 		$event_source = self::get_effective_reservation_event_source( $reservation_id );
 
+		// Read the event linkage from the canonical config table, falling back to
+		// post-meta. Post-meta is empty for config-table reservations, so reading
+		// it directly here dropped the title/dates/external-id and 404'd the page.
+		$cfg = class_exists( 'EEM_Reservation_Config' ) ? EEM_Reservation_Config::for( $reservation_id ) : null;
+		$cfg_str = static function ( $key ) use ( $cfg, $reservation_id ) {
+			if ( $cfg ) {
+				$val = (string) $cfg->get( $key );
+				if ( '' !== $val ) {
+					return $val;
+				}
+			}
+			return (string) get_post_meta( $reservation_id, '_en_' . $key, true );
+		};
+
 		if ( in_array( $event_source, array( 'native', 'tec' ), true ) ) {
-			$event_id = absint( get_post_meta( $reservation_id, '_en_event_id', true ) );
+			$event_id = absint( $cfg ? $cfg->get( 'event_id' ) : 0 );
+			if ( ! $event_id ) {
+				$event_id = absint( get_post_meta( $reservation_id, '_en_event_id', true ) );
+			}
 
 			return $event_id ? self::get_normalized_event_data( $event_id ) : array();
 		}
 
-		$feed_url    = (string) get_post_meta( $reservation_id, '_en_event_feed_url', true );
-		$external_id = (string) get_post_meta( $reservation_id, '_en_external_event_id', true );
+		$feed_url    = $cfg_str( 'event_feed_url' );
+		$external_id = $cfg_str( 'external_event_id' );
 		$feed_event  = 'feed' === $event_source ? self::get_feed_event_by_external_id( $external_id, $feed_url ) : array();
-		$start_date  = self::normalize_date_for_input( (string) get_post_meta( $reservation_id, '_en_available_start_date', true ) );
-		$end_date    = self::normalize_date_for_input( (string) get_post_meta( $reservation_id, '_en_available_end_date', true ) );
-		$title       = (string) get_post_meta( $reservation_id, '_en_external_event_name', true );
-		$location    = (string) get_post_meta( $reservation_id, '_en_event_location', true );
-		$venue_name  = (string) get_post_meta( $reservation_id, '_en_venue_name', true );
-		$address    = trim( (string) get_post_meta( $reservation_id, '_en_venue_address', true ) );
-		$summary    = trim( (string) get_post_meta( $reservation_id, '_en_event_details_summary', true ) );
+		$start_date  = self::normalize_date_for_input( $cfg_str( 'available_start_date' ) );
+		$end_date    = self::normalize_date_for_input( $cfg_str( 'available_end_date' ) );
+		$title       = $cfg_str( 'external_event_name' );
+		$location    = $cfg_str( 'event_location' );
+		$venue_name  = $cfg_str( 'venue_name' );
+		$address    = trim( $cfg_str( 'venue_address' ) );
+		$summary    = trim( $cfg_str( 'event_details_summary' ) );
 		$map_url    = '';
-		$map_image  = absint( get_post_meta( $reservation_id, '_en_venue_map_image_id', true ) );
+		$map_image  = absint( $cfg ? $cfg->get( 'venue_map_image_id' ) : 0 );
+		if ( ! $map_image ) {
+			$map_image = absint( get_post_meta( $reservation_id, '_en_venue_map_image_id', true ) );
+		}
 
-		if ( ! empty( get_post_meta( $reservation_id, '_en_venue_map_enabled', true ) ) ) {
-			$map_url = (string) get_post_meta( $reservation_id, '_en_venue_map_download_url', true );
+		$map_enabled = $cfg ? (bool) $cfg->get( 'venue_map_enabled' ) : ! empty( get_post_meta( $reservation_id, '_en_venue_map_enabled', true ) );
+		if ( $map_enabled ) {
+			$map_url = $cfg_str( 'venue_map_download_url' );
 
 			if ( '' === $map_url && $map_image ) {
 				$map_url = (string) wp_get_attachment_image_url( $map_image, 'large' );
