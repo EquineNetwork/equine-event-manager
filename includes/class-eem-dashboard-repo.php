@@ -615,7 +615,10 @@ class EEM_Dashboard_Repo {
 		// ── Stripe webhook secret missing (config check, not a data count) ──
 		if ( '' === $this->stripe_webhook_secret() ) {
 			$items[] = array(
-				'icon'     => 'blue',
+				// Attention icons are always red or amber — never blue/info, which
+				// reads as "neutral" and contradicts the "needs attention" framing
+				// (Whitney 2026-06-21). A missing webhook is a config warning → amber.
+				'icon'     => 'orange',
 				'icon_key' => 'alert-circle',
 				'title'    => __( 'Stripe webhook not configured', 'equine-event-manager' ),
 				'desc'     => __( 'Payment confirmations may be delayed without a webhook secret', 'equine-event-manager' ),
