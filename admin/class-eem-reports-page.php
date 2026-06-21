@@ -510,17 +510,23 @@ class EEM_Reports_Page {
 			);
 		}
 
-		$colspan          = max( 1, count( $headers ) );
+		$colspan           = max( 1, count( $headers ) );
 		$summary_row_count = isset( $report['summary_row_count'] ) ? absint( $report['summary_row_count'] ) : 0;
+		$logo_url          = esc_url( EQUINE_EVENT_MANAGER_URL . 'assets/images/logo.png' );
+		$back_url          = esc_url( add_query_arg( 'page', self::MENU_SLUG, admin_url( 'admin.php' ) ) );
 
 		// Renders one <tr>; $is_summary adds the totals highlight class.
 		$render_row = static function ( array $row, bool $is_summary = false ) use ( $headers ): void {
-			echo $is_summary ? '<tr class="rpt-pv-summary">' : '<tr>';
+			echo $is_summary ? '<tr class="pv-summary">' : '<tr>';
 			foreach ( $headers as $i => $_ ) {
 				echo '<td>' . esc_html( (string) ( $row[ $i ] ?? '' ) ) . '</td>';
 			}
 			echo '</tr>';
 		};
+
+		$total_row_count = ! empty( $groups )
+			? array_sum( array_map( static fn( $g ) => count( $g['rows'] ?? array() ), $groups ) )
+			: count( $rows );
 		?>
 		<!DOCTYPE html>
 		<html <?php language_attributes(); ?>>
@@ -528,124 +534,170 @@ class EEM_Reports_Page {
 			<meta charset="<?php bloginfo( 'charset' ); ?>">
 			<meta name="viewport" content="width=device-width, initial-scale=1">
 			<title><?php echo esc_html( $doc_title ); ?></title>
+			<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 			<style>
-				*{box-sizing:border-box}
-				body{font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1d2327;background:#f0f0f1;margin:0;padding:0;font-size:12px}
-				.rpt-pv-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 24px;background:#f1f5f9;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:10}
-				.rpt-pv-toolbar-title{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E}
-				.rpt-pv-toolbar-actions{display:flex;gap:8px}
-				.rpt-pv-btn{font:inherit;font-weight:600;font-size:13px;padding:8px 16px;border-radius:3px;border:1px solid #c3c4c7;background:#fff;color:#1d2327;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
-				.rpt-pv-btn--primary{background:#1668F2;border-color:#1668F2;color:#fff}
-				.rpt-pv-body{padding:24px}
-				.rpt-pv-doc{max-width:1000px;margin:0 auto;background:#fff;border:1px solid #e2e4e7;border-radius:3px;overflow:hidden}
-				.rpt-pv-head{padding:20px 22px;border-bottom:2px solid #031B4E}
-				.rpt-pv-report-type{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#1668F2;margin-bottom:4px}
-				.rpt-pv-title{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#031B4E;margin:0}
-				.rpt-pv-event{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;color:#031B4E;margin-top:6px}
-				.rpt-pv-meta{font-size:12px;color:#50575e;margin-top:4px}
-				.rpt-pv-table{width:100%;border-collapse:collapse}
-				.rpt-pv-table th{text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#031B4E;padding:6px 12px;background:#f8fafc;border-top:1px solid #d9e2f2;border-bottom:1px solid #d9e2f2}
-				.rpt-pv-table td{padding:7px 12px;font-size:11px;color:#1d2327;border-bottom:1px solid #f0f0f1}
-				.rpt-pv-table tbody tr:nth-child(even) td{background:#f8fafc}
-				.rpt-pv-summary td{background:#031B4E!important;color:#fff!important;font-weight:700;font-size:11px}
-				.rpt-pv-group td{background:#fdf4e7;color:#b45309;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;font-size:11px;border-top:1px solid #f3e2c4;border-bottom:1px solid #f3e2c4}
-				.rpt-pv-group td .rpt-pv-group-count{font-weight:600;color:#92400e}
-				.rpt-pv-total{padding:12px 22px;font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E;border-top:1px solid #d9e2f2;background:#f8fafc}
-				.rpt-pv-empty{padding:28px 22px;text-align:center;color:#646970}
-				.rpt-pv-note-section{margin-top:24px;padding-top:16px;border-top:1px solid #d9e2f2}
-				.rpt-pv-note-section__label{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;color:#031B4E;margin-bottom:8px;padding:0 0 0 2px}
-				.rpt-pv-table--note{margin-top:4px}
-				@page{size:landscape}
+				*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+				body{font-family:'IBM Plex Sans',sans-serif;color:#0d1b3e;background:#fff;font-size:14px;line-height:1.5}
+				a{text-decoration:none;color:inherit}
+				svg{flex-shrink:0}
+				.pv-topbar{background:#fff;border-bottom:1px solid #e2e8f4;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:10}
+				.pv-topbar-left{display:flex;align-items:center;gap:12px;min-width:0}
+				.pv-logo img{height:28px;width:auto;display:block}
+				.pv-title{font-size:14px;font-weight:700;color:#0d1b3e}
+				.pv-sub{font-size:12px;color:#64748b;margin-top:1px}
+				.pv-topbar-btns{display:flex;gap:8px;flex-shrink:0}
+				.btn-print{background:#1668F2;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+				.btn-print:hover{background:#0d4fc2}
+				.btn-exit{background:#F7F9FC;color:#0d1b3e;border:1.5px solid #d0daea;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+				.btn-exit:hover{background:#e8eef8}
+				a.btn-exit,a.btn-exit:link,a.btn-exit:visited{color:#0d1b3e;text-decoration:none}
+				.pv-body{padding:24px 28px;max-width:1000px;margin:0 auto}
+				.pv-header{margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #1668F2}
+				.pv-eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:4px}
+				.pv-header-title{font-size:22px;font-weight:700;color:#0d1b3e;margin-bottom:4px;letter-spacing:-.02em}
+				.pv-header-event{font-size:15px;font-weight:600;color:#0d1b3e;margin-bottom:4px}
+				.pv-meta{font-size:12.5px;color:#64748b}
+				.pv-table-wrap{border:1px solid #e2e8f4;border-radius:10px;overflow:hidden;margin-bottom:0}
+				.pv-table{width:100%;border-collapse:collapse;background:#fff}
+				.pv-table thead tr{background:#F7F9FC;border-bottom:1px solid #e2e8f4}
+				.pv-table thead th{padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;text-align:left;white-space:nowrap}
+				.pv-table tbody tr{border-bottom:1px solid #f0f4fb}
+				.pv-table tbody tr:last-child{border-bottom:none}
+				.pv-table td{padding:8px 12px;font-size:12.5px;vertical-align:middle;color:#0d1b3e}
+				.pv-group td{background:#fffbeb;color:#b45309;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.04em;border-top:1px solid #fde68a;border-bottom:1px solid #fde68a}
+				.pv-group-count{font-weight:600;color:#92400e;margin-left:8px}
+				.pv-summary td{background:#0d1b3e!important;color:#fff!important;font-weight:700;font-size:12px}
+				.pv-total{padding:11px 16px;font-size:13px;font-weight:700;color:#0d1b3e;border-top:2px solid #1668F2;background:#F7F9FC}
+				.pv-empty{padding:28px 22px;text-align:center;color:#64748b}
+				.pv-note-section{margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f4}
+				.pv-note-label{font-size:13px;font-weight:700;color:#0d1b3e;margin-bottom:10px}
+				.pv-footer{margin-top:18px;padding-top:12px;border-top:1px solid #e2e8f4;display:flex;justify-content:space-between;font-size:12px;color:#64748b;flex-wrap:wrap;gap:8px}
+				@media(max-width:900px){
+					.btn-exit .btn-label,.btn-print .btn-label{display:none}
+					.btn-exit,.btn-print{width:36px;height:36px;padding:0;justify-content:center}
+				}
+				@media(max-width:767px){
+					.pv-topbar{flex-direction:column;align-items:flex-start;gap:8px;padding:10px 14px;height:auto}
+					.pv-topbar-btns{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+					.btn-print,.btn-exit{width:100%;justify-content:center}
+					.pv-body{padding:14px}
+				}
 				@media print{
-					.rpt-pv-toolbar{display:none}
-					body{background:#fff;padding:0}
-					.rpt-pv-doc{border:0;border-radius:0;max-width:none}
+					.pv-topbar{display:none}
+					.pv-body{padding:0;max-width:none}
+					body{background:#fff;font-size:11px}
+					.pv-header-title{font-size:18px}
+					.pv-table-wrap{border-radius:0;border:none}
+					.pv-table thead tr,.pv-group td,.pv-summary td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+					.pv-table tbody tr{page-break-inside:avoid;break-inside:avoid}
+					.pv-table td,.pv-table th{padding:5px 8px;font-size:10px}
+					@page{size:landscape;margin:0.6in 0.5in 0.7in 0.5in}
 					*{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
 				}
 			</style>
 		</head>
 		<body>
-			<div class="rpt-pv-toolbar">
-				<div class="rpt-pv-toolbar-title"><?php echo esc_html( $title ); ?></div>
-				<div class="rpt-pv-toolbar-actions">
-					<button type="button" class="rpt-pv-btn rpt-pv-btn--primary" onclick="window.print()"><?php esc_html_e( 'Print / Save PDF', 'equine-event-manager' ); ?></button>
-					<button type="button" class="rpt-pv-btn" onclick="window.close()"><?php esc_html_e( 'Close', 'equine-event-manager' ); ?></button>
+			<div class="pv-topbar">
+				<div class="pv-topbar-left">
+					<div class="pv-logo"><img src="<?php echo esc_url( $logo_url ); ?>" alt="<?php esc_attr_e( 'Equine Event Manager', 'equine-event-manager' ); ?>"></div>
+					<div>
+						<div class="pv-title"><?php echo esc_html( $title ); ?></div>
+						<?php if ( '' !== $meta['subtitle'] ) : ?>
+							<div class="pv-sub"><?php echo esc_html( $meta['subtitle'] ); ?></div>
+						<?php endif; ?>
+					</div>
+				</div>
+				<div class="pv-topbar-btns">
+					<a href="<?php echo esc_url( $back_url ); ?>" class="btn-exit">
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+						<span class="btn-label"><?php esc_html_e( 'Back to Reports', 'equine-event-manager' ); ?></span>
+					</a>
+					<button class="btn-print" onclick="window.print()">
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+						<span class="btn-label"><?php esc_html_e( 'Print / Save PDF', 'equine-event-manager' ); ?></span>
+					</button>
 				</div>
 			</div>
-			<div class="rpt-pv-body">
-			<div class="rpt-pv-doc">
-				<div class="rpt-pv-head">
-					<div class="rpt-pv-report-type"><?php esc_html_e( 'Report', 'equine-event-manager' ); ?></div>
-					<h1 class="rpt-pv-title"><?php echo esc_html( $title ); ?></h1>
+			<div class="pv-body">
+				<div class="pv-header">
+					<div class="pv-eyebrow"><?php esc_html_e( 'Report', 'equine-event-manager' ); ?></div>
+					<div class="pv-header-title"><?php echo esc_html( $title ); ?></div>
 					<?php if ( '' !== $event_header ) : ?>
-						<div class="rpt-pv-event"><?php echo esc_html( $event_header ); ?></div>
+						<div class="pv-header-event"><?php echo esc_html( $event_header ); ?></div>
 					<?php endif; ?>
-					<div class="rpt-pv-meta"><?php echo esc_html( $meta['subtitle'] ); ?> &nbsp;·&nbsp; <?php echo esc_html( $meta['generated'] ); ?></div>
+					<div class="pv-meta"><?php echo esc_html( $meta['subtitle'] ); ?> &nbsp;·&nbsp; <?php echo esc_html( $meta['generated'] ); ?></div>
 				</div>
+
 				<?php if ( empty( $rows ) && empty( $groups ) ) : ?>
-					<div class="rpt-pv-empty"><?php esc_html_e( 'No data matches the current filters.', 'equine-event-manager' ); ?></div>
+					<div class="pv-table-wrap"><div class="pv-empty"><?php esc_html_e( 'No data matches the current filters.', 'equine-event-manager' ); ?></div></div>
 				<?php else : ?>
-					<table class="rpt-pv-table">
-						<thead>
-							<tr><?php foreach ( $headers as $h ) : ?><th><?php echo esc_html( (string) $h ); ?></th><?php endforeach; ?></tr>
-						</thead>
-						<tbody>
-							<?php if ( ! empty( $groups ) ) : ?>
-								<?php foreach ( $groups as $group ) : ?>
-									<tr class="rpt-pv-group">
-										<td colspan="<?php echo esc_attr( $colspan ); ?>">
-											<?php echo esc_html( (string) ( $group['label'] ?? '' ) ); ?>
-											<span class="rpt-pv-group-count"><?php echo esc_html( sprintf( /* translators: %d: unit count */ _n( '%d unit', '%d units', (int) ( $group['count'] ?? 0 ), 'equine-event-manager' ), (int) ( $group['count'] ?? 0 ) ) ); ?></span>
-										</td>
-									</tr>
-									<?php foreach ( (array) ( $group['rows'] ?? array() ) as $row ) : ?>
-										<?php $render_row( (array) $row ); ?>
+					<div class="pv-table-wrap">
+						<table class="pv-table">
+							<thead>
+								<tr><?php foreach ( $headers as $h ) : ?><th><?php echo esc_html( (string) $h ); ?></th><?php endforeach; ?></tr>
+							</thead>
+							<tbody>
+								<?php if ( ! empty( $groups ) ) : ?>
+									<?php foreach ( $groups as $group ) : ?>
+										<tr class="pv-group">
+											<td colspan="<?php echo esc_attr( $colspan ); ?>">
+												<?php echo esc_html( (string) ( $group['label'] ?? '' ) ); ?>
+												<span class="pv-group-count"><?php echo esc_html( sprintf( /* translators: %d: order count */ _n( '%d order', '%d orders', (int) ( $group['count'] ?? 0 ), 'equine-event-manager' ), (int) ( $group['count'] ?? 0 ) ) ); ?></span>
+											</td>
+										</tr>
+										<?php foreach ( (array) ( $group['rows'] ?? array() ) as $row ) : ?>
+											<?php $render_row( (array) $row ); ?>
+										<?php endforeach; ?>
 									<?php endforeach; ?>
-								<?php endforeach; ?>
-							<?php else : ?>
-								<?php foreach ( $rows as $idx => $row ) : ?>
-									<?php $render_row( (array) $row, $idx < $summary_row_count ); ?>
-								<?php endforeach; ?>
-							<?php endif; ?>
-						</tbody>
-					</table>
-					<div class="rpt-pv-total">
-						<?php
-						if ( '' !== $total_lbl ) {
-							echo esc_html( $total_lbl );
-						} else {
-							echo esc_html( sprintf( /* translators: %s: row count */ _n( '%s row', '%s rows', count( $rows ), 'equine-event-manager' ), number_format_i18n( count( $rows ) ) ) );
-						}
-						?>
+								<?php else : ?>
+									<?php foreach ( $rows as $idx => $row ) : ?>
+										<?php $render_row( (array) $row, $idx < $summary_row_count ); ?>
+									<?php endforeach; ?>
+								<?php endif; ?>
+							</tbody>
+						</table>
+						<div class="pv-total">
+							<?php
+							if ( '' !== $total_lbl ) {
+								echo esc_html( $total_lbl );
+							} else {
+								echo esc_html( sprintf( /* translators: %s: row count */ _n( '%s row', '%s rows', $total_row_count, 'equine-event-manager' ), number_format_i18n( $total_row_count ) ) );
+							}
+							?>
+						</div>
 					</div>
 				<?php endif; ?>
+
 				<?php
-				// note_sections: optional array of supplementary sub-tables rendered below
-				// the main table (e.g. a per-type breakdown for the Shavings report).
-				// Each entry: [ 'label' => string, 'headers' => string[], 'rows' => array[] ].
 				$note_sections = isset( $report['note_sections'] ) && is_array( $report['note_sections'] ) ? $report['note_sections'] : array();
 				foreach ( $note_sections as $ns ) :
 					if ( empty( $ns['rows'] ) ) { continue; }
 					$ns_headers = isset( $ns['headers'] ) && is_array( $ns['headers'] ) ? $ns['headers'] : array();
 					$ns_label   = isset( $ns['label'] ) ? (string) $ns['label'] : '';
 				?>
-				<div class="rpt-pv-note-section">
+				<div class="pv-note-section">
 					<?php if ( '' !== $ns_label ) : ?>
-						<div class="rpt-pv-note-section__label"><?php echo esc_html( $ns_label ); ?></div>
+						<div class="pv-note-label"><?php echo esc_html( $ns_label ); ?></div>
 					<?php endif; ?>
-					<table class="rpt-pv-table rpt-pv-table--note">
-						<?php if ( ! empty( $ns_headers ) ) : ?>
-						<thead><tr><?php foreach ( $ns_headers as $h ) : ?><th><?php echo esc_html( (string) $h ); ?></th><?php endforeach; ?></tr></thead>
-						<?php endif; ?>
-						<tbody>
-							<?php foreach ( $ns['rows'] as $ns_row ) : ?>
-								<tr><?php foreach ( (array) $ns_row as $cell ) : ?><td><?php echo esc_html( (string) $cell ); ?></td><?php endforeach; ?></tr>
-							<?php endforeach; ?>
-						</tbody>
-					</table>
+					<div class="pv-table-wrap">
+						<table class="pv-table">
+							<?php if ( ! empty( $ns_headers ) ) : ?>
+							<thead><tr><?php foreach ( $ns_headers as $h ) : ?><th><?php echo esc_html( (string) $h ); ?></th><?php endforeach; ?></tr></thead>
+							<?php endif; ?>
+							<tbody>
+								<?php foreach ( $ns['rows'] as $ns_row ) : ?>
+									<tr><?php foreach ( (array) $ns_row as $cell ) : ?><td><?php echo esc_html( (string) $cell ); ?></td><?php endforeach; ?></tr>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
+					</div>
 				</div>
 				<?php endforeach; ?>
-			</div>
+
+				<div class="pv-footer">
+					<span><?php echo esc_html( $title . ' · ' . $meta['subtitle'] ); ?></span>
+					<span><?php echo esc_html( get_bloginfo( 'name' ) . ' · ' . $meta['generated'] ); ?></span>
+				</div>
 			</div>
 			<script>document.title = <?php echo wp_json_encode( $doc_title ); ?>;</script>
 		</body>
