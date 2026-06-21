@@ -17,13 +17,14 @@
 }
 
 .eem-choices .choices__inner {
-	min-height: 38px;
-	padding: 4px 28px 4px 10px;
-	background: #fff;
-	/* Normalized 2026-06-19 — canonical control border (was the washed-out
-	   --eem-border #d9e2f2) so Choices selects match native selects/inputs. */
-	border: 1px solid var( --eem-control-border, #8c8f94 );
-	border-radius: var( --eem-radius, 3px );
+	min-height: var( --eem-select-height, 36px );
+	padding: 4px 30px 4px 11px;
+	/* Same thin-line SVG chevron as every native select (not the vendor triangle). */
+	background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+	/* Canonical filter-control border (2026-06-20) — matches native selects /
+	   search inputs exactly: 1.5px #d0daea, 7px radius. */
+	border: 1.5px solid #d0daea;
+	border-radius: 7px;
 	font-size: 13px;
 	color: var( --eem-text, #1d2327 );
 	line-height: 1.4;
@@ -47,7 +48,7 @@
 .eem-choices.is-focused .choices__inner,
 .eem-choices.is-open .choices__inner {
 	border-color: var( --eem-electric, #1668f2 );
-	box-shadow: 0 0 0 1px var( --eem-electric, #1668f2 );
+	box-shadow: 0 0 0 3px rgba(22,104,242,.1);
 	outline: none;
 }
 
@@ -110,11 +111,10 @@
 	text-decoration: none;
 }
 
-/* Dropdown caret matches the toolbar-select chevron tone. */
-.eem-choices.choices[data-type*="select-one"]::after {
-	border-color: var( --eem-text-muted, #5b6b7f ) transparent transparent;
-}
-
+/* Hide the vendor triangle caret — the SVG chevron on .choices__inner (matching
+   every native select) is the single canonical dropdown arrow. */
+.eem-choices.choices[data-type*="select-one"]::after,
 .eem-choices.choices[data-type*="select-one"].is-open::after {
-	border-color: transparent transparent var( --eem-text-muted, #5b6b7f );
+	content: none;
+	display: none;
 }
