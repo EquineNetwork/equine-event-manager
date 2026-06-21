@@ -11907,7 +11907,11 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 	.eem-div-stat-card { border-right: none; border-bottom: 1px solid #e2e8f4; padding: 14px 16px; }
 	.eem-div-stat-card:last-child { border-bottom: none; }
 	.eem-div-event-band { padding: 10px 14px; gap: 12px; }
-	.eem-div-toolbar { flex-wrap: wrap; }
+	.eem-div-toolbar { flex-wrap: wrap; gap: 8px; }
+	.eem-div-toolbar select.eem-toolbar-select { flex: 1; }
+	.eem-div-toolbar .eem-search-wrap { flex: 1; min-width: 0; }
+	.eem-div-toolbar .eem-search-wrap input.eem-search-input { width: 100%; }
+	.eem-div-toolbar-count { margin-left: 0; width: 100%; }
 }
 
 /* ── Notifications page (v2) ──
