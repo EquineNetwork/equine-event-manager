@@ -254,6 +254,7 @@ class EEM_Entries {
 			'wrap'       => true,
 		) );
 		?>
+		<div class="eem-div-detail-card">
 		<?php if ( $is_past ) : ?>
 		<div class="eem-notice-inline" role="alert">
 			<span class="eem-res-status eem-res-status--past"><?php esc_html_e( 'Past', 'equine-event-manager' ); ?></span>
@@ -476,6 +477,7 @@ class EEM_Entries {
 				<?php endforeach; ?>
 			<?php endif; ?>
 		</div>
+		</div><!-- .eem-div-detail-card -->
 		<?php
 		eem_render_page_close( array( 'wrap' => true ) );
 	}
