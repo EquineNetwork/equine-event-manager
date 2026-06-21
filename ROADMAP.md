@@ -56,22 +56,18 @@ All `.mockups/` files fully implemented and verified. Mockup cleanup pending (se
 3. ~~**Weekly Rate pricing** — third pricing option alongside Nightly and Weekend Rate, for stalls + RVs. Mirror Weekend Rate implementation.~~ ✅ Done
 4. ~~**Paddock Assignments** — merge adjacent stall chips into a bookable paddock unit with its own rate.~~ ✅ Done
 5. **Upload .xlsx → Stall Grid** — parse `.xlsx` into stall rows via `ZipArchive` + `SimpleXML`; no new Composer deps. Include "Download Example Template" link.
-6. **Entry-aware Dashboard metrics** — Entries Sold count + entry revenue KPI card; Upcoming Events card (when Native Events is ON); gate on feature flags.
-7. **Mobile + PWA** — responsive/touch audit on all admin + customer pages (tablet ~768px, phone ~390px); PWA wrapper (`manifest.json` + service worker + install prompt).
+6. **Repo / distribution cleanup** — delete dead dev docs; `.gitattributes export-ignore` so shipped plugin ZIP carries only runtime code.
 
 ### v3 — Architecture + Deferred Features
 
-1. **Global Handicaps data ownership / API integration** — GH as system of record; atomic inventory-reserve API. Full spec: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`.
-2. **Event Entries — competition management** — horse/rider details, results/placings, payouts, go-rounds, draw order. Extends the Divisions entrants ledger.
-3. **PDF Venue Map → overlay** — upload a PDF venue map; render to image + drop/snap stall hotspots. Pairs with Facility Layout Templates.
-4. **Sheets & Results — more source types** — CSV upload, Google Sheets link, external URL. Source-type column on `wp_eem_sheet_entries` + per-type render.
-5. **Financial-security audit** — full money path (Stripe + Auth.net charge/refund, amount integrity, idempotency, webhook auth, capability + nonce). Deliverable: `docs/SECURITY-AUDIT-REPORT.md`.
-6. **Strict concurrency audit** — every reserve/assign write path under high-demand sellout conditions; document guarantees.
-7. **Repo / distribution cleanup** — delete dead dev docs; `.gitattributes export-ignore` so shipped plugin ZIP carries only runtime code.
+1. **PDF Venue Map → overlay** — upload a PDF venue map; render to image + drop/snap stall hotspots. Pairs with Facility Layout Templates.
+2. **Sheets & Results — more source types** — CSV upload, Google Sheets link, external URL. Source-type column on `wp_eem_sheet_entries` + per-type render.
+3. **Financial-security audit** — full money path (Stripe + Auth.net charge/refund, amount integrity, idempotency, webhook auth, capability + nonce). Deliverable: `docs/SECURITY-AUDIT-REPORT.md`.
+4. **Strict concurrency audit** — every reserve/assign write path under high-demand sellout conditions; document guarantees.
 
 ### v4 — Headless Clients *(gated on v2 decouple + v3 API)*
 
-1. **PWA** — offline-capable, installable web app over the v3 API.
+1. **PWA + responsive/touch** — responsive/touch audit on all admin + customer pages (tablet ~768px, phone ~390px); offline-capable, installable web app (`manifest.json` + service worker + install prompt) over the v3 API.
 2. **Native mobile app** — iOS/Android over the same API contract.
 
 ---
