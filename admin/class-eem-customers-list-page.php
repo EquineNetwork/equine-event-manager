@@ -86,21 +86,29 @@ class EEM_Customers_List_Page {
 
 		eem_render_page_open(
 			array(
-				'title'      => __( 'Customers', 'equine-event-manager' ),
-				'subtitle'   => sprintf(
+				'title'          => __( 'Customers', 'equine-event-manager' ),
+				'subtitle'       => sprintf(
 					/* translators: %s: total customer count */
-					_n( '%s customer', '%s customers', $data['total'], 'equine-event-manager' ),
-					number_format_i18n( $data['total'] )
+					__( '%s · aggregated by email across all reservations', 'equine-event-manager' ),
+					sprintf(
+						/* translators: %s: total customer count */
+						_n( '%s customer', '%s customers', $data['total'], 'equine-event-manager' ),
+						number_format_i18n( $data['total'] )
+					)
 				),
-				'breadcrumb' => array(
+				'breadcrumb'     => array(
 					array( 'label' => __( 'Customers', 'equine-event-manager' ) ),
 				),
+				'topbar_actions' => self::export_button( $orderby, $order, $search ),
 			)
 		);
 
-		self::render_toolbar( $search );
+		self::render_toolbar( $search, (int) $data['total'] );
+		self::render_kpi( $data );
+		echo '<div class="eem-card eem-customers-card">';
 		self::render_table( $data, $orderby, $order, $search );
 		self::render_pagination( $data, $orderby, $order, $search );
+		echo '</div>';
 
 		eem_render_page_close();
 	}
@@ -111,7 +119,7 @@ class EEM_Customers_List_Page {
 	 * @param string $search
 	 * @return void
 	 */
-	private static function render_toolbar( string $search ): void {
+	private static function render_toolbar( string $search, int $total ): void {
 		?>
 		<div class="eem-customers-toolbar">
 			<form class="eem-search-wrap" method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
@@ -119,8 +127,148 @@ class EEM_Customers_List_Page {
 				<svg class="eem-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 				<input type="search" name="s" class="eem-search-input" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" />
 			</form>
+			<span class="eem-customers-count"><?php
+				echo esc_html( sprintf(
+					/* translators: %s: total customer count */
+					_n( '%s customer', '%s customers', $total, 'equine-event-manager' ),
+					number_format_i18n( $total )
+				) );
+			?></span>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Lifetime-revenue KPI card (aggregates across the full filtered set).
+	 *
+	 * @param array<string,mixed> $data Repo payload with total_revenue/total_orders/total.
+	 * @return void
+	 */
+	private static function render_kpi( array $data ): void {
+		$revenue = isset( $data['total_revenue'] ) ? (string) $data['total_revenue'] : '';
+		if ( '' === $revenue ) {
+			return;
+		}
+		?>
+		<div class="eem-customers-kpi">
+			<div class="eem-customers-kpi__label"><?php esc_html_e( 'Total Lifetime Revenue', 'equine-event-manager' ); ?></div>
+			<div class="eem-customers-kpi__value"><?php echo esc_html( $revenue ); ?></div>
+			<div class="eem-customers-kpi__meta"><?php
+				echo esc_html( sprintf(
+					/* translators: 1: customer count, 2: order count */
+					__( 'across %1$s · %2$s', 'equine-event-manager' ),
+					sprintf(
+						/* translators: %s: customer count */
+						_n( '%s customer', '%s customers', (int) $data['total'], 'equine-event-manager' ),
+						number_format_i18n( (int) $data['total'] )
+					),
+					sprintf(
+						/* translators: %s: order count */
+						_n( '%s order', '%s orders', (int) ( $data['total_orders'] ?? 0 ), 'equine-event-manager' ),
+						number_format_i18n( (int) ( $data['total_orders'] ?? 0 ) )
+					)
+				) );
+			?></div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Export-CSV topbar button HTML (preserves the active search + sort).
+	 *
+	 * @param string $orderby Active sort column.
+	 * @param string $order   asc|desc.
+	 * @param string $search  Active search term.
+	 * @return string
+	 */
+	private static function export_button( string $orderby, string $order, string $search ): string {
+		$url = self::export_csv_url( $orderby, $order, $search );
+		ob_start();
+		?>
+		<a class="eem-btn eem-btn-secondary" href="<?php echo esc_url( $url ); ?>" title="<?php esc_attr_e( 'Export CSV', 'equine-event-manager' ); ?>">
+			<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+			<span><?php esc_html_e( 'Export CSV', 'equine-event-manager' ); ?></span>
+		</a>
+		<?php
+		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Nonced admin-post URL that streams the customer list as CSV.
+	 *
+	 * @param string $orderby Active sort column.
+	 * @param string $order   asc|desc.
+	 * @param string $search  Active search term.
+	 * @return string
+	 */
+	public static function export_csv_url( string $orderby = 'last_name', string $order = 'asc', string $search = '' ): string {
+		return wp_nonce_url(
+			add_query_arg(
+				array(
+					'action'  => 'eem_customers_export_csv',
+					'orderby' => $orderby,
+					'order'   => $order,
+					's'       => $search,
+				),
+				admin_url( 'admin-post.php' )
+			),
+			'eem_customers_export_csv',
+			'_eem_nonce'
+		);
+	}
+
+	/**
+	 * admin-post handler: stream the full (unpaginated) customer list as CSV.
+	 *
+	 * @return void
+	 */
+	public static function handle_export_csv(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to export customers.', 'equine-event-manager' ) );
+		}
+		check_admin_referer( 'eem_customers_export_csv', '_eem_nonce' );
+
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- nonce checked above.
+		$search  = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+		$orderby = isset( $_GET['orderby'] ) ? sanitize_key( wp_unslash( $_GET['orderby'] ) ) : 'last_name';
+		$order   = isset( $_GET['order'] ) && 'desc' === strtolower( (string) wp_unslash( $_GET['order'] ) ) ? 'desc' : 'asc';
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		$repo = new EEM_Customer_Profile_Repo();
+		$data = $repo->get_customer_list(
+			array(
+				'search'   => $search,
+				'orderby'  => $orderby,
+				'order'    => $order,
+				'paged'    => 1,
+				'per_page' => PHP_INT_MAX,
+			)
+		);
+
+		nocache_headers();
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="eem-customers-' . gmdate( 'Ymd' ) . '.csv"' );
+		$out = fopen( 'php://output', 'w' );
+		fputcsv( $out, array(
+			__( 'Customer',      'equine-event-manager' ),
+			__( 'Email',         'equine-event-manager' ),
+			__( 'Phone',         'equine-event-manager' ),
+			__( 'Total Orders',  'equine-event-manager' ),
+			__( 'Total Spent',   'equine-event-manager' ),
+			__( 'Last Activity', 'equine-event-manager' ),
+		) );
+		foreach ( $data['rows'] as $row ) {
+			fputcsv( $out, array(
+				EEM_Admin::format_customer_last_first( (string) $row['name'] ),
+				(string) $row['email'],
+				(string) ( $row['phone'] ?? '' ),
+				(string) $row['orders'],
+				(string) $row['spent'],
+				(string) $row['last_activity'],
+			) );
+		}
+		fclose( $out );
+		exit;
 	}
 
 	/**
@@ -141,6 +289,7 @@ class EEM_Customers_List_Page {
 					<tr>
 						<?php self::sortable_th( 'last_name', __( 'Customer', 'equine-event-manager' ), $orderby, $order, $search ); ?>
 						<th><?php esc_html_e( 'Email', 'equine-event-manager' ); ?></th>
+						<th><?php esc_html_e( 'Phone', 'equine-event-manager' ); ?></th>
 						<?php self::sortable_th( 'orders', __( 'Total Orders', 'equine-event-manager' ), $orderby, $order, $search, 'eem-table-c' ); ?>
 						<?php self::sortable_th( 'spent', __( 'Total Spent', 'equine-event-manager' ), $orderby, $order, $search, 'eem-table-r' ); ?>
 						<?php self::sortable_th( 'activity', __( 'Last Activity', 'equine-event-manager' ), $orderby, $order, $search ); ?>
@@ -148,16 +297,24 @@ class EEM_Customers_List_Page {
 				</thead>
 				<tbody>
 					<?php if ( empty( $rows ) ) : ?>
-						<tr><td colspan="5" class="eem-customers-empty"><?php esc_html_e( 'No customers found.', 'equine-event-manager' ); ?></td></tr>
+						<tr><td colspan="6" class="eem-customers-empty"><?php esc_html_e( 'No customers found.', 'equine-event-manager' ); ?></td></tr>
 					<?php else : ?>
 						<?php foreach ( $rows as $row ) : ?>
 							<?php $profile_url = self::profile_url( $row['email'] ); ?>
 							<tr>
 								<td><a class="eem-customers-name" href="<?php echo esc_url( $profile_url ); ?>"><?php echo esc_html( EEM_Admin::format_customer_last_first( (string) $row['name'] ) ); ?></a></td>
 								<td><a class="eem-customers-email" href="<?php echo esc_attr( 'mailto:' . $row['email'] ); ?>"><?php echo esc_html( $row['email'] ); ?></a></td>
-								<td class="eem-table-c"><?php echo esc_html( number_format_i18n( (int) $row['orders'] ) ); ?></td>
-								<td class="eem-table-r"><?php echo esc_html( $row['spent'] ); ?></td>
-								<td><?php echo esc_html( $row['last_activity'] ); ?></td>
+								<td class="eem-customers-phone"><?php
+									$phone = (string) ( $row['phone'] ?? '' );
+									if ( '' !== $phone ) {
+										echo '<a href="' . esc_attr( 'tel:' . preg_replace( '/[^0-9+]/', '', $phone ) ) . '">' . esc_html( $phone ) . '</a>';
+									} else {
+										echo '<span class="eem-customers-phone--empty">&mdash;</span>';
+									}
+								?></td>
+								<td class="eem-table-c"><a class="eem-customers-orders-pill" href="<?php echo esc_url( $profile_url ); ?>"><?php echo esc_html( number_format_i18n( (int) $row['orders'] ) ); ?></a></td>
+								<td class="eem-table-r eem-customers-spent"><?php echo esc_html( $row['spent'] ); ?></td>
+								<td class="eem-customers-activity"><?php echo esc_html( $row['last_activity'] ); ?></td>
 							</tr>
 						<?php endforeach; ?>
 					<?php endif; ?>

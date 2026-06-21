@@ -399,6 +399,7 @@ class EEM_Customer_Profile_Repo {
 				$by_email[ $email ] = array(
 					'email'     => trim( (string) ( $o['email'] ?? '' ) ),
 					'name'      => trim( (string) ( $o['customer_name'] ?? '' ) ),
+					'phone'     => trim( (string) ( $o['phone'] ?? '' ) ),
 					'orders'    => 0,
 					'spent_raw' => 0.0,
 					'last_ts'   => 0,
@@ -421,6 +422,7 @@ class EEM_Customer_Profile_Repo {
 				'email'         => $c['email'],
 				'name'          => $name,
 				'name_sort'     => self::last_first_key( $name ),
+				'phone'         => (string) $c['phone'],
 				'orders'        => (int) $c['orders'],
 				'spent_raw'     => (float) $c['spent_raw'],
 				'spent'         => $this->money( (float) $c['spent_raw'] ),
@@ -475,17 +477,29 @@ class EEM_Customer_Profile_Repo {
 		);
 
 		$total    = count( $rows );
+
+		// KPI aggregates across the full filtered set (before pagination slice):
+		// lifetime paid revenue + total order count across every matching customer.
+		$revenue_raw  = 0.0;
+		$orders_total = 0;
+		foreach ( $rows as $r ) {
+			$revenue_raw  += (float) $r['spent_raw'];
+			$orders_total += (int) $r['orders'];
+		}
+
 		$per_page = max( 1, (int) $args['per_page'] );
 		$pages    = max( 1, (int) ceil( $total / $per_page ) );
 		$paged    = min( $pages, max( 1, (int) $args['paged'] ) );
 		$rows     = array_slice( $rows, ( $paged - 1 ) * $per_page, $per_page );
 
 		return array(
-			'rows'     => $rows,
-			'total'    => $total,
-			'paged'    => $paged,
-			'per_page' => $per_page,
-			'pages'    => $pages,
+			'rows'            => $rows,
+			'total'           => $total,
+			'paged'           => $paged,
+			'per_page'        => $per_page,
+			'pages'           => $pages,
+			'total_revenue'   => $this->money( $revenue_raw ),
+			'total_orders'    => $orders_total,
 		);
 	}
 

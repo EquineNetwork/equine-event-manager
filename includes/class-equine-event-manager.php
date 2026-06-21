@@ -303,6 +303,7 @@ class EEM_Plugin {
 		// C5.C — Orders list row-action handlers.
 		add_action( 'admin_post_eem_order_resend_notification',   array( 'EEM_Orders_List_Page', 'handle_resend_notification' ) );
 		add_action( 'admin_post_eem_order_export_csv',            array( 'EEM_Orders_List_Page', 'handle_export_csv' ) );
+		add_action( 'admin_post_eem_customers_export_csv',        array( 'EEM_Customers_List_Page', 'handle_export_csv' ) );
 
 		// C15 — Reports export + cached-file download endpoints.
 		EEM_Reports_Page::register();

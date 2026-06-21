@@ -11094,13 +11094,30 @@ table.eem-export-history td { padding:11px 22px; font-size:13px; color:#0d1b3e; 
    .eem-pagination, .eem-mobile-card*; net-new is the toolbar + cell links +
    the disabled page button + ellipsis.
    ============================================================================ */
-.eem-customers-toolbar { padding: 14px 18px; border-bottom: 1px solid var(--eem-border-card); background: #f0f4fb; }
-.eem-customers-toolbar .eem-search-wrap { max-width: 360px; }
+/* Toolbar: search (left) + live count (right), sitting above the KPI + table
+   card (mockup .toolbar-row). No longer an in-card gray bar. */
+.eem-customers-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.eem-customers-toolbar .eem-search-wrap { max-width: 360px; flex: 0 1 auto; }
+.eem-customers-count { font-size: 13px; color: var(--eem-text-secondary); white-space: nowrap; }
+/* Total Lifetime Revenue KPI (mockup inline KPI card). */
+.eem-customers-kpi { background: #fff; border: 1px solid var(--eem-border-card); border-radius: var(--eem-radius-lg); padding: 16px 20px; margin-bottom: 16px; }
+.eem-customers-kpi__label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px; }
+.eem-customers-kpi__value { font-size: 26px; font-weight: 700; color: var(--eem-electric); line-height: 1; }
+.eem-customers-kpi__meta { font-size: 12px; color: var(--eem-text-secondary); margin-top: 3px; }
+.eem-customers-card { overflow: hidden; }
 .eem-customers-table-wrap { overflow-x: auto; }
-.eem-customers-name { color: var(--eem-navy); font-weight: 700; text-decoration: none; }
+.eem-customers-name { color: #0d1b3e; font-weight: 700; font-size: 14px; text-decoration: none; }
 .eem-customers-name:hover { color: var(--eem-electric); }
 .eem-customers-email { color: var(--eem-text-secondary); text-decoration: none; }
 .eem-customers-email:hover { color: var(--eem-electric); }
+.eem-customers-phone { font-size: 13px; color: var(--eem-text-secondary); white-space: nowrap; }
+.eem-customers-phone a { color: var(--eem-text-secondary); text-decoration: none; }
+.eem-customers-phone a:hover { color: var(--eem-electric); }
+.eem-customers-phone--empty { color: #cbd5e1; }
+.eem-customers-orders-pill { display: inline-block; font-weight: 600; color: var(--eem-electric); background: var(--eem-info-bg); padding: 2px 10px; border-radius: 12px; font-size: 12px; text-decoration: none; }
+.eem-customers-orders-pill:hover { background: #dbe9ff; color: var(--eem-electric); }
+.eem-customers-spent { font-weight: 700; color: var(--eem-electric); }
+.eem-customers-activity { color: var(--eem-text-secondary); white-space: nowrap; }
 .eem-customers-empty { padding: 32px 14px; text-align: center; color: var(--eem-text-muted); }
 .eem-page-btn--disabled { opacity: .45; cursor: not-allowed; pointer-events: none; }
 .eem-page-ellipsis { padding: 0 4px; color: var(--eem-text-muted); font-size: 13px; align-self: center; }
