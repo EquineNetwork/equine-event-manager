@@ -179,29 +179,27 @@ class EEM_Sheets_Results_Page {
 				array( 'label' => __( 'Sheets & Results', 'equine-event-manager' ) ),
 			) );
 			?>
-			<div class="eem-plugin-wrap">
-				<header class="eem-plugin-header">
-					<div class="eem-plugin-header-left">
-						<h1 class="eem-plugin-title"><?php esc_html_e( 'Sheets & Results', 'equine-event-manager' ); ?></h1>
-						<div class="eem-plugin-subtitle"><?php esc_html_e( 'Upload and manage draw sheets and results for any event. Files go live immediately when saved.', 'equine-event-manager' ); ?></div>
-					</div>
-				</header>
+			<div class="eem-page-title-block">
+				<h1 class="eem-page-title"><?php esc_html_e( 'Sheets & Results', 'equine-event-manager' ); ?></h1>
+				<p class="eem-page-subtitle"><?php esc_html_e( 'Upload and manage draw sheets and results for any event. Files go live immediately when saved.', 'equine-event-manager' ); ?></p>
+			</div>
 
-				<?php if ( empty( $events ) ) : ?>
-					<div class="eem-sr-empty">
-						<p><strong><?php esc_html_e( 'No events yet', 'equine-event-manager' ); ?></strong></p>
-						<p><?php esc_html_e( 'Create an event first — draw sheets and results attach to an event.', 'equine-event-manager' ); ?></p>
-						<a class="eem-btn eem-btn-electric" href="<?php echo esc_url( admin_url( 'post-new.php?post_type=en_event' ) ); ?>"><?php esc_html_e( 'Add Event', 'equine-event-manager' ); ?></a>
-					</div>
-				<?php else : ?>
+			<?php if ( empty( $events ) ) : ?>
+				<div class="eem-sr-card eem-sr-empty">
+					<p><strong><?php esc_html_e( 'No events yet', 'equine-event-manager' ); ?></strong></p>
+					<p><?php esc_html_e( 'Create an event first — draw sheets and results attach to an event.', 'equine-event-manager' ); ?></p>
+					<a class="eem-btn eem-btn-electric" href="<?php echo esc_url( admin_url( 'post-new.php?post_type=en_event' ) ); ?>"><?php esc_html_e( 'Add Event', 'equine-event-manager' ); ?></a>
+				</div>
+			<?php else : ?>
+				<div class="eem-sr-card">
 					<?php self::render_event_selector( $events, $event_id, $event ); ?>
 					<?php if ( $event ) : ?>
 						<div class="eem-sr-body">
 							<?php self::render_body_inner( $event_id, $tab ); ?>
 						</div>
 					<?php endif; ?>
-				<?php endif; ?>
-			</div>
+				</div>
+			<?php endif; ?>
 		</div>
 		<?php
 	}
