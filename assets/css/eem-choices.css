@@ -41,8 +41,18 @@
    specificity (0,4,0 here) so our symmetric padding wins and the flex centering
    reads true. */
 .eem-choices.choices[ data-type="select-one" ] .choices__inner {
-	padding-top: 4px;
-	padding-bottom: 4px;
+	/* Pin to the canonical control height + zero vertical padding so the inner
+	   can't grow past the native selects beside it (the single-item child renders
+	   ~36px tall and was inflating min-height + padding to ~47px). flex/align-items
+	   already centers the value. Verified in-browser 2026-06-21. */
+	height: var( --eem-select-height, 36px );
+	min-height: var( --eem-select-height, 36px );
+	padding-top: 0;
+	padding-bottom: 0;
+}
+.eem-choices.choices[ data-type="select-one" ] .choices__list--single,
+.eem-choices.choices[ data-type="select-one" ] .choices__list--single .choices__item {
+	line-height: normal;
 }
 
 .eem-choices.is-focused .choices__inner,

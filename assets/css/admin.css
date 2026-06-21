@@ -13353,26 +13353,11 @@ select.eem-dm-select:focus {
 	border-color: #1668F2;
 	box-shadow: 0 0 0 3px rgba(22, 104, 242, 0.1);
 }
-/* The Daily Movement toolbar selects are bespoke (44px tall, 14px text, 8px
-   radius, #F7F9FC fill). The searchable RESERVATION picker is a Choices
-   container, so mirror ALL of those values — not just height — so it's visually
-   identical to the native DATE select beside it. */
-body.eem-shell-page--daily-movement .eem-choices.choices,
-body.eem-shell-page--daily-movement .eem-choices .choices__inner {
-	min-height: 44px;
-}
-body.eem-shell-page--daily-movement .eem-choices .choices__inner {
-	background-color: #F7F9FC;
-	border-radius: 8px;
-	font-size: 14px;
-	color: #0d1b3e;
-	padding-left: 12px;
-}
-body.eem-shell-page--daily-movement .eem-choices .choices__list--single .choices__item,
-body.eem-shell-page--daily-movement .eem-choices .choices__list--single .choices__placeholder {
-	font-size: 14px;
-	color: #0d1b3e;
-}
+/* NOTE: the Daily Movement toolbar selects render at the global 36px/13px/7px
+   spec (the body.eem-shell-page rule wins over the bespoke select.eem-dm-select
+   44px rule below, which is dead). The searchable RESERVATION picker therefore
+   needs NO per-page override — the base eem-choices.css (36px, 13px, 7px, white)
+   already matches the native DATE select. (Verified in-browser 2026-06-21.) */
 .eem-dm-cell-order a {
 	color: var(--eem-electric, #1668F2);
 	text-decoration: none;
