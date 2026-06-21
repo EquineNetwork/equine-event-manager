@@ -50,9 +50,13 @@
 	padding-top: 0;
 	padding-bottom: 0;
 }
+/* Center the single selected value vertically: the list/item are block-level and
+   would otherwise sit at the top of the flex-centered inner. A line-height equal
+   to the control height centers the single text line within the control. */
 .eem-choices.choices[ data-type="select-one" ] .choices__list--single,
 .eem-choices.choices[ data-type="select-one" ] .choices__list--single .choices__item {
-	line-height: normal;
+	line-height: var( --eem-select-height, 36px );
+	display: block;
 }
 
 .eem-choices.is-focused .choices__inner,

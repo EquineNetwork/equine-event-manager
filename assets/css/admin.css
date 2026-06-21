@@ -3889,6 +3889,11 @@ body.eem-shell-page select.eem-loc-barn-select {
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
 	background-repeat: no-repeat;
 	background-position: right 10px center;
+	/* WP core forms.css sets `select { background-size: 16px 16px }`, which
+	   stretches this 10×6 chevron. Pin the natural size so every plugin select's
+	   chevron matches the Choices picker (which renders it at auto). GLOBAL — do
+	   not re-define the chevron per page. */
+	background-size: 10px 6px;
 	appearance: none;
 	-webkit-appearance: none;
 	cursor: pointer;
