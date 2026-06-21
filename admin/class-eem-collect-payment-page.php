@@ -204,7 +204,7 @@ class EEM_Collect_Payment_Page {
 		?>
 		<section class="eem-card">
 			<header class="eem-card-header">
-				<h2 class="eem-card-title"><?php
+				<h2 class="eem-card-title"><svg class="eem-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> <?php
 					/* translators: %s: order number */
 					echo esc_html( sprintf( __( 'Customer — Order %s', 'equine-event-manager' ), $order_no ) );
 				?></h2>
@@ -238,7 +238,7 @@ class EEM_Collect_Payment_Page {
 		?>
 		<section class="eem-card">
 			<header class="eem-card-header">
-				<h2 class="eem-card-title"><?php esc_html_e( 'Order Items', 'equine-event-manager' ); ?></h2>
+				<h2 class="eem-card-title"><svg class="eem-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/></svg> <?php esc_html_e( 'Order Items', 'equine-event-manager' ); ?></h2>
 			</header>
 			<div class="eem-card-body">
 				<?php if ( $stall > 0 ) : ?>
@@ -280,7 +280,7 @@ class EEM_Collect_Payment_Page {
 		?>
 		<section class="eem-card eem-co-summary-card">
 			<header class="eem-card-header eem-co-summary-head">
-				<h2 class="eem-card-title"><?php esc_html_e( 'Amount Due', 'equine-event-manager' ); ?></h2>
+				<h2 class="eem-card-title"><svg class="eem-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> <?php esc_html_e( 'Amount Due', 'equine-event-manager' ); ?></h2>
 			</header>
 			<div class="eem-card-body">
 				<div class="eem-co-summary-lines">
