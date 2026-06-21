@@ -222,12 +222,18 @@ class EEM_Entries {
 
 		$title = '' !== $event && '' !== $div_name ? $event . ' - ' . $div_name : get_the_title( $post );
 
-		// "Edit Division" + (when connected) "View Event" actions.
+		// "Edit Division" + (when connected) "View Event" + "Print" actions.
+		$print_url = esc_url( add_query_arg( array( 'page' => self::LIST_SLUG, 'division_id' => $division_id, 'print' => '1' ), admin_url( 'admin.php' ) ) );
 		$actions  = sprintf(
 			'<a class="eem-btn eem-btn-electric" href="%s">%s</a>',
 			esc_url( self::editor_url( $division_id ) ),
 			esc_html__( 'Edit Division', 'equine-event-manager' )
 		);
+		$actions = sprintf(
+			'<a class="eem-btn" href="%s" target="_blank" rel="noopener">%s</a> ',
+			$print_url,
+			esc_html__( 'Print', 'equine-event-manager' )
+		) . $actions;
 		$event_url = ( $rid > 0 && class_exists( 'EEM_Events' ) ) ? EEM_Events::get_reservation_public_url( $rid ) : '';
 		if ( $event_url ) {
 			$actions = sprintf(
@@ -402,9 +408,14 @@ class EEM_Entries {
 
 		// A `division_id` param routes to the single-Division detail view
 		// (entrants + spots stats) rather than the catalog list.
+		// `print=1` on top of division_id routes to the standalone print view.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view dispatch.
 		$detail_id = isset( $_GET['division_id'] ) ? absint( wp_unslash( $_GET['division_id'] ) ) : 0;
 		if ( $detail_id > 0 ) {
+			if ( isset( $_GET['print'] ) && '1' === $_GET['print'] ) {
+				self::render_print_view( $detail_id );
+				return;
+			}
 			self::render_detail( $detail_id );
 			return;
 		}
@@ -1285,4 +1296,295 @@ class EEM_Entries {
 
 		return $options;
 	}
+
+	/**
+	 * Standalone print view for a single Division's entrant roster.
+	 *
+	 * Outputs a complete HTML document (no WP admin chrome) matching
+	 * .mockups/preentries_print_view.html. Triggered by ?print=1 on the
+	 * detail URL; called from render_list() before normal detail dispatch.
+	 *
+	 * @param int $division_id en_entry post ID.
+	 * @return void
+	 */
+	public static function render_print_view( int $division_id ): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'equine-event-manager' ) );
+		}
+
+		$post = $division_id > 0 ? get_post( $division_id ) : null;
+		if ( ! $post || self::POST_TYPE !== $post->post_type ) {
+			wp_die( esc_html__( 'Division not found.', 'equine-event-manager' ) );
+		}
+
+		$cfg       = EEM_Division_Config_Repo::get( $division_id );
+		$rid       = $cfg['reservation_id'];
+		$res_label = $rid > 0 ? self::reservation_label( $rid ) : array( 'title' => '', 'end_date' => '', 'start_date' => '' );
+		$event     = (string) $res_label['title'];
+		$div_name  = $cfg['division_name'];
+		$price     = $cfg['price'];
+		$spots_int = $cfg['spots'];
+
+		$entered  = class_exists( 'EEM_Division_Entries' ) ? EEM_Division_Entries::entered_count( $division_id ) : 0;
+		$left     = ( $spots_int > 0 ) ? max( 0, $spots_int - $entered ) : null;
+		$oversold = ( $spots_int > 0 && $entered > $spots_int ) ? ( $entered - $spots_int ) : 0;
+		$entrants = class_exists( 'EEM_Division_Entries' ) ? EEM_Division_Entries::get_entrants( $division_id ) : array();
+
+		$left_tone = 'green';
+		if ( $oversold > 0 ) {
+			$left_tone = 'red';
+		} elseif ( null !== $left && 0 === $left ) {
+			$left_tone = 'orange';
+		}
+
+		$logo_url    = esc_url( EQUINE_EVENT_MANAGER_URL . 'assets/images/logo.png' );
+		$back_url    = esc_url( self::detail_url( $division_id ) );
+		$detail_sub  = $div_name;
+		if ( '' !== $event ) {
+			$detail_sub .= ' &middot; ' . esc_html( $event );
+		}
+		if ( $entered > 0 ) {
+			$detail_sub .= ' &middot; ' . esc_html( (string) $entered ) . ' entered';
+		}
+
+		// Dates from reservation label.
+		$dates_str   = '';
+		if ( ! empty( $res_label['start_date'] ) ) {
+			$fmt = get_option( 'date_format' );
+			$dates_str = mysql2date( 'M j', (string) $res_label['start_date'] );
+			if ( ! empty( $res_label['end_date'] ) && $res_label['end_date'] !== $res_label['start_date'] ) {
+				$dates_str .= ' – ' . mysql2date( 'M j, Y', (string) $res_label['end_date'] );
+			} else {
+				$dates_str .= ', ' . mysql2date( 'Y', (string) $res_label['start_date'] );
+			}
+		}
+
+		$total_qty = 0;
+		foreach ( $entrants as $row ) {
+			$total_qty += (int) $row['qty'];
+		}
+
+		$status_labels = array(
+			'paid'      => __( 'Paid', 'equine-event-manager' ),
+			'unpaid'    => __( 'Unpaid', 'equine-event-manager' ),
+			'refunded'  => __( 'Refunded', 'equine-event-manager' ),
+			'cancelled' => __( 'Cancelled', 'equine-event-manager' ),
+		);
+
+		// Site name for footer.
+		$site_name = get_bloginfo( 'name' );
+		$printed   = wp_date( 'M j, Y g:i A' );
+
+		header( 'Content-Type: text/html; charset=UTF-8' );
+		?><!DOCTYPE html>
+<html lang="<?php echo esc_attr( get_locale() ); ?>">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><?php echo esc_html( $div_name . ' — ' . __( 'Division Entrants', 'equine-event-manager' ) ); ?></title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;color:#0d1b3e;background:#fff;font-size:14px;line-height:1.5}
+a{text-decoration:none;color:inherit}
+.pv-topbar{background:#fff;border-bottom:1px solid #e2e8f4;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:10}
+.pv-topbar-left{display:flex;align-items:center;gap:10px;min-width:0}
+.pv-topbar-title{font-size:14px;font-weight:700;color:#0d1b3e}
+.pv-topbar-sub{font-size:12px;color:#64748b;margin-top:1px}
+.pv-topbar-btns{display:flex;gap:8px;flex-shrink:0}
+.btn-pv-print{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn-pv-print:hover{background:#1257d1;border-color:#1257d1}
+.btn-pv-print svg{width:13px;height:13px}
+.btn-pv-exit{background:#fff;color:#0d1b3e;border:1px solid #c3c4c7;padding:8px 14px;border-radius:3px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;text-decoration:none}
+.btn-pv-exit:hover{background:#e8eef8}
+.pv-body{padding:22px 28px;max-width:1000px;margin:0 auto}
+.pv-header{margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #1668F2}
+.pv-header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.pv-eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:4px}
+.pv-header-title{font-family:'IBM Plex Sans',sans-serif;font-size:22px;font-weight:700;color:#0d1b3e;margin-bottom:6px}
+.pv-meta{font-size:13px;color:#475569;display:flex;gap:24px;flex-wrap:wrap}
+.pv-meta strong{color:#0d1b3e;font-weight:600}
+.pv-stats{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.pv-stat{flex:1;min-width:130px;border:1px solid #e2e8f4;border-radius:10px;padding:12px 16px;background:#f8faff;display:flex;flex-direction:row;align-items:center;gap:12px}
+.pv-stat-text{display:flex;flex-direction:column;gap:2px}
+.pv-stat-num{font-size:22px;font-weight:700;color:#0d1b3e;line-height:1.1}
+.pv-stat-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#94a3b8}
+.pv-stat--green .pv-stat-num{color:#15803d}
+.pv-stat--orange .pv-stat-num{color:#b45309}
+.pv-stat--red .pv-stat-num{color:#b91c1c}
+.pv-stat-oversold{display:block;font-size:10px;font-weight:600;color:#b91c1c;margin-top:2px}
+.pv-event-band{background:#f0f5ff;border:1px solid #dbe9ff;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:#475569;display:flex;gap:18px;flex-wrap:wrap}
+.pv-event-band strong{color:#0d1b3e;font-weight:600}
+.pv-table-wrap{border:1px solid #e2e8f4;border-radius:10px;overflow:hidden;margin-bottom:18px}
+.pv-table{width:100%;border-collapse:collapse;background:#fff}
+.pv-table thead tr{background:#F7F9FC;border-bottom:1px solid #e2e8f4}
+.pv-table thead th{padding:10px 12px;font-size:11px;font-weight:700;color:#94a3b8;text-align:left;text-transform:uppercase;letter-spacing:.05em}
+.pv-table thead th.c{text-align:center}
+.pv-table tbody tr{border-bottom:1px solid #f0f4fb}
+.pv-table tbody tr:last-child{border-bottom:none}
+.pv-table td{padding:9px 12px;font-size:13px;vertical-align:middle;color:#0d1b3e}
+.pv-table td.c{text-align:center}
+.pv-customer{font-weight:600;color:#0d1b3e}
+.pv-order{color:#1668F2;font-size:12.5px;font-variant-numeric:tabular-nums}
+.pv-date{color:#475569;font-size:12.5px}
+.pv-qty{font-variant-numeric:tabular-nums;font-weight:600;text-align:center}
+.pv-status{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;border:1px solid}
+.pv-status-paid{background:#F0FDF4;color:#15803d;border-color:#bbf7d0}
+.pv-status-unpaid{background:#FFFBEB;color:#a16207;border-color:#fde68a}
+.pv-status-refunded{background:#FEF2F2;color:#b91c1c;border-color:#fecaca}
+.pv-status-cancelled{background:#F3F4F6;color:#6b7280;border-color:#d1d5db}
+.pv-table-empty{color:#64748b;font-style:italic;text-align:center;padding:24px 12px}
+.pv-footer{margin-top:18px;padding-top:12px;border-top:1px solid #e8eaf0;display:flex;justify-content:space-between;font-size:12px;color:#64748b;flex-wrap:wrap;gap:8px}
+@media(max-width:767px){
+  .pv-topbar{flex-direction:column;align-items:flex-start;gap:10px;padding:12px 14px;height:auto}
+  .pv-topbar-btns{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btn-pv-print,.btn-pv-exit{width:100%;justify-content:center;font-size:12.5px;padding:9px 10px}
+  .pv-body{padding:14px}
+  .pv-stats{gap:8px}
+  .pv-stat{min-width:0;flex:1 1 30%}
+}
+@media print{
+  .pv-topbar{display:none}
+  .pv-body{padding:0;max-width:none}
+  body{background:#fff;font-size:11px}
+  .pv-header-title{font-size:18px}
+  .pv-event-band{font-size:10.5px;padding:8px 10px;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pv-stats{break-after:avoid}
+  .pv-stat{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pv-table thead{display:table-header-group}
+  .pv-table thead tr{background:#F7F9FC!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pv-table tbody tr{page-break-inside:avoid;break-inside:avoid}
+  .pv-table td{padding:6px 8px;font-size:11px}
+  .pv-status{font-size:9.5px;padding:1px 6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pv-footer{font-size:9.5px}
+  @page{margin:0.6in 0.5in 0.7in 0.5in}
+}
+</style>
+</head>
+<body>
+<div class="pv-topbar">
+  <div class="pv-topbar-left">
+    <img src="<?php echo $logo_url; ?>" alt="<?php esc_attr_e( 'Equine Event Manager', 'equine-event-manager' ); ?>" style="height:28px;width:auto;display:block;margin-right:12px">
+    <div>
+      <div class="pv-topbar-title"><?php esc_html_e( 'Print View — Division Entrants', 'equine-event-manager' ); ?></div>
+      <div class="pv-topbar-sub"><?php echo wp_kses_post( $detail_sub ); ?></div>
+    </div>
+  </div>
+  <div class="pv-topbar-btns">
+    <a href="<?php echo $back_url; ?>" class="btn-pv-exit">← <?php esc_html_e( 'Back to Entries', 'equine-event-manager' ); ?></a>
+    <button class="btn-pv-print" onclick="window.print()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      <?php esc_html_e( 'Print / Save PDF', 'equine-event-manager' ); ?>
+    </button>
+  </div>
+</div>
+<div class="pv-body">
+  <div class="pv-header">
+    <div class="pv-header-top">
+      <div>
+        <div class="pv-eyebrow"><?php esc_html_e( 'Entries · Division Entrants', 'equine-event-manager' ); ?></div>
+        <div class="pv-header-title"><?php echo esc_html( $div_name ); ?></div>
+        <div class="pv-meta">
+          <?php if ( '' !== $price ) : ?>
+            <span><strong><?php esc_html_e( 'Entry fee:', 'equine-event-manager' ); ?></strong> $<?php echo esc_html( number_format( (float) $price, 2 ) ); ?> <?php esc_html_e( 'per spot', 'equine-event-manager' ); ?></span>
+          <?php endif; ?>
+          <?php if ( $spots_int > 0 ) : ?>
+            <span><strong><?php esc_html_e( 'Spots:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( (string) $spots_int ); ?> <?php esc_html_e( 'total', 'equine-event-manager' ); ?></span>
+          <?php endif; ?>
+          <span><strong><?php esc_html_e( 'Entered:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( (string) $entered ); ?></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <?php if ( '' !== $event ) : ?>
+  <div class="pv-event-band">
+    <span><strong><?php esc_html_e( 'Event:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $event ); ?></span>
+    <?php if ( '' !== $dates_str ) : ?>
+      <span><strong><?php esc_html_e( 'Dates:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $dates_str ); ?></span>
+    <?php endif; ?>
+    <?php if ( $rid > 0 ) : ?>
+      <span><strong><?php esc_html_e( 'Reservation:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( get_the_title( $rid ) ?: (string) $rid ); ?></span>
+    <?php endif; ?>
+  </div>
+  <?php endif; ?>
+  <div class="pv-stats">
+    <div class="pv-stat">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#eff6ff;border-radius:7px;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1668F2" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
+      <div class="pv-stat-text">
+        <span class="pv-stat-num"><?php echo esc_html( (string) $entered ); ?></span>
+        <span class="pv-stat-label"><?php esc_html_e( 'Entered', 'equine-event-manager' ); ?></span>
+      </div>
+    </div>
+    <div class="pv-stat">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:#eff6ff;border-radius:8px;flex-shrink:0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1668F2" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
+      <div class="pv-stat-text">
+        <span class="pv-stat-label"><?php esc_html_e( 'Spots', 'equine-event-manager' ); ?></span>
+        <span class="pv-stat-num"><?php echo esc_html( $spots_int > 0 ? (string) $spots_int : __( 'Unlimited', 'equine-event-manager' ) ); ?></span>
+      </div>
+    </div>
+    <div class="pv-stat pv-stat--<?php echo esc_attr( $left_tone ); ?>">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:#f0fdf4;border-radius:8px;flex-shrink:0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+      <div class="pv-stat-text">
+        <span class="pv-stat-label"><?php esc_html_e( 'Spots Left', 'equine-event-manager' ); ?></span>
+        <span class="pv-stat-num"><?php echo esc_html( null === $left ? '—' : (string) $left ); ?></span>
+        <?php if ( $oversold > 0 ) : ?>
+          <span class="pv-stat-oversold"><?php echo esc_html( sprintf( /* translators: %d: count */ __( 'Oversold by %d', 'equine-event-manager' ), $oversold ) ); ?></span>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+  <div class="pv-table-wrap">
+    <table class="pv-table">
+      <thead>
+        <tr>
+          <th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
+          <th class="c"><?php esc_html_e( 'Qty', 'equine-event-manager' ); ?></th>
+          <th><?php esc_html_e( 'Order', 'equine-event-manager' ); ?></th>
+          <th><?php esc_html_e( 'Date', 'equine-event-manager' ); ?></th>
+          <th class="c"><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php if ( empty( $entrants ) ) : ?>
+          <tr><td colspan="5" class="pv-table-empty"><?php esc_html_e( 'No entries yet.', 'equine-event-manager' ); ?></td></tr>
+        <?php else : ?>
+          <?php foreach ( $entrants as $row ) :
+            $ekey   = (string) $row['order_key'];
+            $order  = ( '' !== $ekey && class_exists( 'EEM_Orders_Repository' ) ) ? ( new EEM_Orders_Repository() )->get_order( $ekey ) : null;
+            $ord_no = ( is_array( $order ) && ! empty( $order['order_number'] ) ) ? sprintf( '#%05d', (int) $order['order_number'] ) : '—';
+            $st     = (string) $row['status'];
+            $st_lbl = isset( $status_labels[ $st ] ) ? $status_labels[ $st ] : ucfirst( $st );
+          ?>
+          <tr>
+            <td class="pv-customer"><?php echo esc_html( '' !== (string) $row['customer_name'] ? (string) $row['customer_name'] : (string) $row['email'] ); ?></td>
+            <td class="pv-qty c"><?php echo esc_html( (string) (int) $row['qty'] ); ?></td>
+            <td class="pv-order"><?php echo esc_html( $ord_no ); ?></td>
+            <td class="pv-date"><?php echo esc_html( mysql2date( 'M j, Y', (string) $row['created_at'] ) ); ?></td>
+            <td class="c"><span class="pv-status pv-status-<?php echo esc_attr( $st ); ?>"><?php echo esc_html( $st_lbl ); ?></span></td>
+          </tr>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </tbody>
+      <?php if ( ! empty( $entrants ) ) : ?>
+      <tfoot>
+        <tr style="border-top:2px solid #e2e8f4;background:#F7F9FC">
+          <td style="padding:9px 12px;font-size:13px;font-weight:700;color:#0d1b3e"><?php esc_html_e( 'Total', 'equine-event-manager' ); ?></td>
+          <td style="padding:9px 12px;text-align:center;font-size:13px;font-weight:700;color:#0d1b3e"><?php echo esc_html( (string) $total_qty ); ?></td>
+          <td colspan="3"></td>
+        </tr>
+      </tfoot>
+      <?php endif; ?>
+    </table>
+  </div>
+  <div class="pv-footer">
+    <span><?php echo esc_html( $div_name ); ?><?php if ( '' !== $event ) : ?> &middot; <?php echo esc_html( $event ); ?><?php endif; ?></span>
+    <span><?php echo esc_html( $site_name ); ?> &middot; <?php echo esc_html( $printed ); ?></span>
+  </div>
+</div>
+</body>
+</html>
+		<?php
+		exit;
+	}
+
 }

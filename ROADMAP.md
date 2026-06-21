@@ -33,7 +33,7 @@ Files in `.mockups/`:
 - [x] **`reports_print_view.html`** — Reports print view (grouped table + category summary)
 - [x] **`screen3_public_events_list.html`** — customer-facing `[en_events view="list"]` styling (public.css)
 - [x] **`screen4_public_sheets_results_page.html`** — customer-facing per-event Sheets & Results page (public.css)
-- [ ] **`preentries_print_view.html`** — division-entrant print view; new print route + Print button on division detail page
+- [x] **`preentries_print_view.html`** — division-entrant print view; new print route + Print button on division detail page
 
 **Mockup cleanup:** reference-check then delete `reservation_overview_page.html` + `events_admin_page.html` (suspected zero-ref). `event_entry_editor_page.html` superseded by `division_editor_page.html` — remove in the same pass.
 

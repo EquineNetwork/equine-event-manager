@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Division Entrants — Print View</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /*
   PRINT VIEW — Division Entrants (single division entrant roster).
@@ -12,48 +12,49 @@
   KPI cards: Entered / Spots / Spots Left (oversold note when over cap).
   Roster columns: Customer, Qty, Order, Date, Status.
   Print views = page-own <style> block. No WP admin sidebar.
-  Tokens: electric #1668F2, navy #031B4E, control border #8c8f94,
-          light-blue band #f0f4fb / borders #d9e2f2, radius 3px.
+  Tokens: electric #1668F2, navy #0d1b3e, control border #8c8f94,
+          light-blue band #f0f4fb / borders #e2e8f4, radius 3px.
 */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Sans',sans-serif;color:#1d2327;background:#fff;font-size:14px;line-height:1.5}
+body{font-family:'IBM Plex Sans',sans-serif;color:#0d1b3e;background:#fff;font-size:14px;line-height:1.5}
 a{text-decoration:none;color:inherit}
 
 /* ── ON-SCREEN TOOLBAR (screen only) ── */
-.pv-topbar{background:#f3f4f5;border-bottom:1px solid #dcdcde;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:10}
+.pv-topbar{background:#fff;border-bottom:1px solid #e2e8f4;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:10}
 .pv-topbar-left{display:flex;align-items:center;gap:10px;min-width:0}
-.pv-topbar-title{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E}
-.pv-topbar-sub{font-size:12px;color:#6B7A99;margin-top:1px}
+.pv-topbar-title{font-size:14px;font-weight:700;color:#0d1b3e}
+.pv-topbar-sub{font-size:12px;color:#64748b;margin-top:1px}
 .pv-topbar-btns{display:flex;gap:8px;flex-shrink:0}
-.btn-pv-print{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:8px 16px;border-radius:3px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn-pv-print{background:#1668F2;color:#fff;border:1px solid #1668F2;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .btn-pv-print:hover{background:#1257d1;border-color:#1257d1}
 .btn-pv-print svg{width:13px;height:13px}
-.btn-pv-exit{background:#fff;color:#1d2327;border:1px solid #c3c4c7;padding:8px 14px;border-radius:3px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
-.btn-pv-exit:hover{background:#f6f7f7}
+.btn-pv-exit{background:#fff;color:#0d1b3e;border:1px solid #c3c4c7;padding:8px 14px;border-radius:3px;font-size:13px;font-weight:600;font-family:'IBM Plex Sans',sans-serif;cursor:pointer}
+.btn-pv-exit:hover{background:#e8eef8}
 
 /* ── BODY ── */
 .pv-body{padding:22px 28px;max-width:1000px;margin:0 auto}
 
 /* Compact header */
-.pv-header{margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #031B4E}
+.pv-header{margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #1668F2}
 .pv-header-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
-.pv-eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#1668F2;margin-bottom:4px}
-.pv-header-title{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;margin-bottom:6px}
-.pv-meta{font-size:13px;color:#4a5a7a;display:flex;gap:24px;flex-wrap:wrap}
-.pv-meta strong{color:#031B4E;font-weight:600}
-.pv-header-right{text-align:right;font-size:12px;color:#6B7A99;white-space:nowrap}
-.pv-header-right strong{display:block;color:#031B4E;font-size:13px;font-weight:600;margin-bottom:2px}
+.pv-eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:4px}
+.pv-header-title{font-family:'IBM Plex Sans',sans-serif;font-size:22px;font-weight:700;color:#0d1b3e;margin-bottom:6px}
+.pv-meta{font-size:13px;color:#475569;display:flex;gap:24px;flex-wrap:wrap}
+.pv-meta strong{color:#0d1b3e;font-weight:600}
+.pv-header-right{text-align:right;font-size:12px;color:#64748b;white-space:nowrap}
+.pv-header-right strong{display:block;color:#0d1b3e;font-size:13px;font-weight:600;margin-bottom:2px}
 
 /* Event context band — mirrors the eem-res-linked-event style */
-.pv-event-band{background:#F0F4FB;border:1px solid #D9E2F2;border-radius:3px;padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:#4a5a7a;display:flex;gap:18px;flex-wrap:wrap}
-.pv-event-band strong{color:#031B4E;font-weight:600}
+.pv-event-band{background:#f0f5ff;border:1px solid #dbe9ff;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:#475569;display:flex;gap:18px;flex-wrap:wrap}
+.pv-event-band strong{color:#0d1b3e;font-weight:600}
 
 /* KPI stat cards — mirror EEM_Entries::render_detail() .eem-scs-card output */
 .pv-stats{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
-.pv-stat{flex:1;min-width:130px;border:1px solid #D9E2F2;border-radius:3px;padding:12px 14px;background:#FAFBFE;display:flex;flex-direction:column;gap:2px}
-.pv-stat-icon{font-size:14px;color:#1668F2;line-height:1}
-.pv-stat-num{font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#031B4E;line-height:1.1}
-.pv-stat-label{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#8a9ab8}
+.pv-stat{flex:1;min-width:130px;border:1px solid #e2e8f4;border-radius:10px;padding:12px 16px;background:#f8faff;display:flex;flex-direction:row;align-items:center;gap:12px}
+.pv-stat-icon{display:none}
+.pv-stat-text{display:flex;flex-direction:column;gap:2px}
+.pv-stat-num{font-size:22px;font-weight:700;color:#0d1b3e;line-height:1.1}
+.pv-stat-label{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#94a3b8}
 /* Spots-left tone: green=available, orange=sold out, red=oversold */
 .pv-stat--green .pv-stat-num{color:#15803d}
 .pv-stat--green .pv-stat-icon{color:#15803d}
@@ -64,20 +65,20 @@ a{text-decoration:none;color:inherit}
 .pv-stat-oversold{display:block;font-size:10px;font-weight:600;color:#b91c1c;margin-top:2px}
 
 /* Table */
-.pv-table-wrap{border:1px solid #e5e7eb;border-radius:3px;overflow:hidden;margin-bottom:18px}
+.pv-table-wrap{border:1px solid #e2e8f4;border-radius:10px;overflow:hidden;margin-bottom:18px}
 .pv-table{width:100%;border-collapse:collapse;background:#fff}
-.pv-table thead tr{background:#f3f4f5;border-bottom:1px solid #dcdcde}
-.pv-table thead th{padding:10px 12px;font-size:13px;font-weight:600;color:#1d2327;text-align:left}
+.pv-table thead tr{background:#F7F9FC;border-bottom:1px solid #e2e8f4}
+.pv-table thead th{padding:10px 12px;font-size:11px;font-weight:700;color:#94a3b8;text-align:left;text-transform:uppercase;letter-spacing:.05em}
 .pv-table thead th.c{text-align:center}
-.pv-table tbody tr{border-bottom:1px solid #f0f0f1}
+.pv-table tbody tr{border-bottom:1px solid #f0f4fb}
 .pv-table tbody tr:last-child{border-bottom:none}
-.pv-table tbody tr:nth-child(even){background:#f9fafb}
-.pv-table td{padding:9px 12px;font-size:13px;vertical-align:middle;color:#1d2327}
+.pv-table tbody tr:nth-child(even){background:transparent}
+.pv-table td{padding:9px 12px;font-size:13px;vertical-align:middle;color:#0d1b3e}
 .pv-table td.c{text-align:center}
 
-.pv-customer{font-weight:600;color:#031B4E}
+.pv-customer{font-weight:600;color:#0d1b3e}
 .pv-order{color:#1668F2;font-size:12.5px;font-variant-numeric:tabular-nums}
-.pv-date{color:#4a5a7a;font-size:12.5px}
+.pv-date{color:#475569;font-size:12.5px}
 .pv-qty{font-variant-numeric:tabular-nums;font-weight:600;text-align:center}
 
 /* Status badges — mirror admin.css .eem-status-{X} */
@@ -88,10 +89,10 @@ a{text-decoration:none;color:inherit}
 .pv-status-cancelled{background:#F3F4F6;color:#6b7280;border-color:#d1d5db}
 
 /* Empty table row */
-.pv-table-empty{color:#6B7A99;font-style:italic;text-align:center;padding:24px 12px}
+.pv-table-empty{color:#64748b;font-style:italic;text-align:center;padding:24px 12px}
 
 /* Footer */
-.pv-footer{margin-top:18px;padding-top:12px;border-top:1px solid #e8eaf0;display:flex;justify-content:space-between;font-size:12px;color:#6B7A99;flex-wrap:wrap;gap:8px}
+.pv-footer{margin-top:18px;padding-top:12px;border-top:1px solid #e8eaf0;display:flex;justify-content:space-between;font-size:12px;color:#64748b;flex-wrap:wrap;gap:8px}
 
 /* ── MOBILE ── */
 @media(max-width:767px){
@@ -120,7 +121,7 @@ a{text-decoration:none;color:inherit}
   .pv-stat{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .pv-stat-num{font-size:18px}
   .pv-table thead{display:table-header-group}
-  .pv-table thead tr{background:#f3f4f5!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pv-table thead tr{background:#F7F9FC!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#64748b}
   .pv-table tbody tr{page-break-inside:avoid;break-inside:avoid}
   .pv-table td{padding:6px 8px;font-size:11px}
   .pv-status{font-size:9.5px;padding:1px 6px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -130,7 +131,7 @@ a{text-decoration:none;color:inherit}
     @bottom-center{content:element(footer);}
     @bottom-right{
       content:"Page " counter(page) " of " counter(pages);
-      font-family:'IBM Plex Sans',sans-serif;font-size:9.5px;color:#6B7A99;
+      font-family:'IBM Plex Sans',sans-serif;font-size:9.5px;color:#64748b;
     }
   }
 }
@@ -141,17 +142,18 @@ a{text-decoration:none;color:inherit}
 <!-- TOOLBAR (screen only) -->
 <div class="pv-topbar">
   <div class="pv-topbar-left">
+    <img src="logo.png" alt="Equine Event Manager" style="height:28px;width:auto;display:block;margin-right:12px">
     <div>
       <div class="pv-topbar-title">Print View — Division Entrants</div>
       <div class="pv-topbar-sub">#9.5 Division &middot; 14 entered &middot; NTR 6519 — 2026 North Texas Rodeo</div>
     </div>
   </div>
   <div class="pv-topbar-btns">
+    <a href="javascript:history.back()" class="btn-pv-exit">← Back to Entries</a>
     <button class="btn-pv-print" onclick="window.print()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
       Print / Save PDF
     </button>
-    <button class="btn-pv-exit" onclick="window.close()">&#x2715; Close</button>
   </div>
 </div>
 
@@ -171,9 +173,7 @@ a{text-decoration:none;color:inherit}
         </div>
       </div>
       <div class="pv-header-right">
-        <strong>Equine Event Manager</strong>
-        Printed June 20, 2026 9:41 AM
-      </div>
+</div>
     </div>
   </div>
 
@@ -188,19 +188,17 @@ a{text-decoration:none;color:inherit}
   <!-- KPI STAT CARDS — mirrors EEM_Entries::render_detail() .eem-scs-card output -->
   <div class="pv-stats">
     <div class="pv-stat">
-      <span class="pv-stat-icon" aria-hidden="true">&#10003;</span>
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#eff6ff;border-radius:7px;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1668F2" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>
       <span class="pv-stat-num">14</span>
       <span class="pv-stat-label">Entered</span>
     </div>
     <div class="pv-stat">
-      <span class="pv-stat-icon" aria-hidden="true">&#9638;</span>
-      <span class="pv-stat-num">20</span>
-      <span class="pv-stat-label">Spots</span>
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:#eff6ff;border-radius:8px;flex-shrink:0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1668F2" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
+      <div class="pv-stat-text"><span class="pv-stat-label">Spots</span><span class="pv-stat-num">20</span></div>
     </div>
     <div class="pv-stat pv-stat--green">
-      <span class="pv-stat-icon" aria-hidden="true">&#9711;</span>
-      <span class="pv-stat-num">6</span>
-      <span class="pv-stat-label">Spots Left</span>
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:#f0fdf4;border-radius:8px;flex-shrink:0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#15803d" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+      <div class="pv-stat-text"><span class="pv-stat-label">Spots Left</span><span class="pv-stat-num pv-stat--green" style="color:#15803d">6</span></div>
     </div>
   </div>
 
@@ -302,13 +300,20 @@ a{text-decoration:none;color:inherit}
           <td class="c"><span class="pv-status pv-status-paid">Paid</span></td>
         </tr>
       </tbody>
+      <tfoot>
+        <tr style="border-top:2px solid #e2e8f4;background:#F7F9FC">
+          <td style="padding:9px 12px;font-size:13px;font-weight:700;color:#0d1b3e">Total</td>
+          <td style="padding:9px 12px;text-align:center;font-size:13px;font-weight:700;color:#0d1b3e">14</td>
+          <td colspan="3"></td>
+        </tr>
+      </tfoot>
     </table>
   </div>
 
   <!-- FOOTER -->
   <div class="pv-footer">
     <span>#9.5 Division &middot; 2026 North Texas Rodeo (NTR 6519)</span>
-    <span>Equine Event Manager &middot; Printed June 20, 2026 9:41 AM</span>
+    <span>My Equestrian Site &middot; June 20, 2026 9:41 AM</span>
   </div>
 
 </div>
