@@ -41,9 +41,9 @@ class EEM_Orders_List_Repo {
 	 * Billing-status tab keys → label. Drives the .eem-orders-billing-tabs
 	 * segmented control. Maps onto the legacy `status_slug` produced by
 	 * EEM_Orders_Repository::get_order_status_display(): paid → paid,
-	 * pending|invoice_sent → unpaid, partially_refunded → unpaid (it
-	 * still has refundable balance per ORD-3), refunded → refunded,
-	 * cancelled → cancelled.
+	 * pending|invoice_sent → unpaid, partially_refunded → refunded (was
+	 * paid then partially refunded — doesn't owe; Whitney 2026-06-21),
+	 * refunded → refunded, cancelled → cancelled.
 	 *
 	 * @return array<string, string>
 	 */
@@ -99,12 +99,17 @@ class EEM_Orders_List_Repo {
 			case 'paid':
 				return 'paid';
 			case 'refunded':
+			// Partially-refunded orders were PAID then partially refunded — they
+			// don't owe money, so they belong in Refunded, not Unpaid. (Was mapped
+			// to 'unpaid' under ORD-3 "still has refundable balance", but that
+			// conflated refundable balance with owed balance — Whitney 2026-06-21,
+			// so Collect Payment / Unpaid only shows orders that actually owe.)
+			case 'partially-refunded':
 				return 'refunded';
 			case 'cancelled':
 				return 'cancelled';
 			case 'unpaid':
 			case 'invoice-sent':
-			case 'partially-refunded':
 			default:
 				return 'unpaid';
 		}

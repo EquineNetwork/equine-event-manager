@@ -6536,9 +6536,9 @@ a.eem-dashboard-qa-btn:focus {
 	font-weight: 700;
 	padding: 3px 10px;
 	border-radius: 20px;
-	background: #FEF2F2;
-	color: #b91c1c;
-	border: 1px solid #fecaca;
+	background: #FFF7ED;
+	color: #c2410c;
+	border: 1px solid #fed7aa;
 }
 .eem-dashboard-attention-row {
 	display: flex;
@@ -6715,6 +6715,8 @@ a.eem-dashboard-qa-btn:focus {
 .eem-dashboard-card-body { padding: 14px 18px; }
 .eem-dashboard-card-empty { font-size: 13px; color: var(--eem-text-secondary); margin: 0; }
 .eem-today-move-event { font-size: 13px; font-weight: 600; color: var(--eem-navy, #031B4E); margin-bottom: 10px; }
+.eem-today-move-event-link { color: inherit; text-decoration: none; }
+.eem-today-move-event-link:hover { color: var(--eem-electric); }
 .eem-today-move-stats { display: flex; gap: 10px; }
 .eem-today-move-stat { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: var(--eem-radius); background: #f8fafc; border: 1px solid #eef2f7; }
 .eem-today-move-num { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; line-height: 1; }

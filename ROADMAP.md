@@ -21,10 +21,10 @@ mis-modeled entries-editor mockup → renamed `division_editor_page.html` (live 
 - [ ] **`screen3_public_events_list.html`** — customer-facing `[en_events view="list"]` styling (public.css).
 - [ ] **`screen4_public_sheets_results_page.html`** — customer-facing per-event Sheets & Results page (public.css).
 
-### 🆕 QUICK FIXES dropped 2026-06-21 — TO-DO:
-- [ ] **Dashboard → Collect Payment** quick action should link to Orders filtered to **unpaid** (`admin.php?page=equine-event-manager-orders&billing=unpaid`) and **exclude partially-refunded** orders (the unpaid tab currently shows partially-refunded rows; they should be filtered out).
-- [ ] **Dashboard Quick Actions icons:** Collect Payment icon → **amber**; Export Report icon → **purple**.
-- [ ] **Dashboard → Today's Movement card:** make the event title a **link to that event on Daily Movement**.
+### ✅ QUICK FIXES dropped 2026-06-21 — DONE (2.7.544, verified live):
+- [x] **Dashboard → Collect Payment** links to Orders `billing=unpaid`; partially-refunded reclassified out of the Unpaid tab → now in **Refunded** (`map_status_slug_to_tab`), so Collect Payment / Unpaid only shows orders that actually owe.
+- [x] **Dashboard Quick Actions icons:** Collect Payment icon → **amber** (`qi-orange`); Export Report icon → **purple** (`qi-purple`).
+- [x] **Dashboard → Today's Movement card:** event title is now a link to that event on Daily Movement (`.eem-today-move-event-link`).
 
 ### ⏸ Deferred chips still open (from earlier in the session):
 - [ ] Global control/button radius sweep → 8px (base `.eem-btn` 4px, `input.eem-field-input` 3px/#8c8f94; mockups want 8px/#d0daea). Plus the locked primary/secondary/danger button system + dead control-CSS / legacy `!important` strip.

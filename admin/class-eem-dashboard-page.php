@@ -438,7 +438,7 @@ class EEM_Dashboard_Page {
 				'href'  => admin_url( 'admin.php?page=equine-event-manager-stall-charts' ),
 			),
 			array(
-				'icon'  => 'purple',
+				'icon'  => 'orange',
 				'icon_key' => 'card',
 				'label' => __( 'Collect Payment', 'equine-event-manager' ),
 				'sub'   => __( 'Unpaid orders', 'equine-event-manager' ),
@@ -449,7 +449,7 @@ class EEM_Dashboard_Page {
 				'href'  => EEM_Orders_List_Page::url( array( 'billing' => 'unpaid' ) ),
 			),
 			array(
-				'icon'  => 'orange',
+				'icon'  => 'purple',
 				'icon_key' => 'download',
 				'label' => __( 'Export Report', 'equine-event-manager' ),
 				'sub'   => __( 'Download CSV', 'equine-event-manager' ),
@@ -493,7 +493,7 @@ class EEM_Dashboard_Page {
 			<div class="eem-dashboard-card-body">
 				<?php if ( $move['active'] ) : ?>
 					<?php if ( '' !== $move['label'] ) : ?>
-						<div class="eem-today-move-event"><?php echo esc_html( $move['label'] ); ?></div>
+						<div class="eem-today-move-event"><a class="eem-today-move-event-link" href="<?php echo esc_url( $dm_url ); ?>"><?php echo esc_html( $move['label'] ); ?></a></div>
 					<?php endif; ?>
 					<div class="eem-today-move-stats">
 						<div class="eem-today-move-stat eem-today-move-stat--arriving">
