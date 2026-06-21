@@ -11867,6 +11867,40 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 /* Footer with multiple stats (division count · total entrants). */
 .eem-table-footer-sep { margin: 0 8px; color: var(--eem-text-muted, #94a3b8); }
 
+/* ── Division Detail — stat cards ── */
+.eem-div-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid #e2e8f4; }
+.eem-div-stat-card { padding: 18px 22px; display: flex; align-items: center; gap: 14px; border-right: 1px solid #e2e8f4; }
+.eem-div-stat-card:last-child { border-right: none; }
+.eem-div-stat-icon { width: 32px; height: 32px; border-radius: 7px; background: #eff6ff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.eem-div-stat-icon svg { width: 15px; height: 15px; color: #1668F2; }
+.eem-div-stat-card--green .eem-div-stat-icon { background: #f0fdf4; }
+.eem-div-stat-card--green .eem-div-stat-icon svg { color: #15803d; }
+.eem-div-stat-card--green .eem-div-stat-num { color: #15803d; }
+.eem-div-stat-card--orange .eem-div-stat-icon { background: #fffbeb; }
+.eem-div-stat-card--orange .eem-div-stat-icon svg { color: #b45309; }
+.eem-div-stat-card--orange .eem-div-stat-num { color: #b45309; }
+.eem-div-stat-card--red .eem-div-stat-icon { background: #fef2f2; }
+.eem-div-stat-card--red .eem-div-stat-icon svg { color: #b91c1c; }
+.eem-div-stat-card--red .eem-div-stat-num { color: #b91c1c; }
+.eem-div-stat-text { display: flex; flex-direction: column; gap: 1px; }
+.eem-div-stat-num { font-size: 26px; font-weight: 700; color: #0d1b3e; line-height: 1.1; }
+.eem-div-stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #94a3b8; }
+.eem-div-stat-oversold { display: block; font-size: 11px; font-weight: 600; color: #b91c1c; margin-top: 2px; }
+/* ── Division Detail — event band ── */
+.eem-div-event-band { padding: 10px 22px; background: #f8faff; border-bottom: 1px solid #e2e8f4; display: flex; gap: 20px; flex-wrap: wrap; font-size: 12.5px; color: #64748b; }
+.eem-div-event-band strong { color: #0d1b3e; font-weight: 600; }
+/* ── Division Detail — toolbar ── */
+.eem-div-toolbar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #e2e8f4; flex-wrap: wrap; background: #fff; }
+.eem-div-toolbar-count { font-size: 13px; color: #64748b; margin-left: auto; }
+/* Responsive */
+@media (max-width: 782px) {
+	.eem-div-stat-grid { grid-template-columns: 1fr; }
+	.eem-div-stat-card { border-right: none; border-bottom: 1px solid #e2e8f4; padding: 14px 16px; }
+	.eem-div-stat-card:last-child { border-bottom: none; }
+	.eem-div-event-band { padding: 10px 14px; gap: 12px; }
+	.eem-div-toolbar { flex-wrap: wrap; }
+}
+
 /* ── Notifications page (v2) ──
    The page body has padding:0 (list pages self-pad via their toolbar/table),
    so this custom page carries its own 18px gutter to align with the header

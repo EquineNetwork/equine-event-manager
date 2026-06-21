@@ -8882,6 +8882,53 @@ function duplicateReservationAjax(target) {
 	});
 })();
 
+/* ── Division Detail — client-side status filter + search ──
+   Filters .eem-div-entrants-table tbody rows and .eem-mobile-cards .eem-mobile-card
+   by their data-eem-status / data-eem-search attributes, then updates the entry
+   count chip ([data-eem-div-entry-count]). Wired to:
+     data-eem-input-action="div-filter-status"  (change)
+     data-eem-input-action="div-search-entrants" (input) */
+(function () {
+	'use strict';
+	function applyDivFilter() {
+		var sel = document.querySelector('[data-eem-input-action="div-filter-status"]');
+		var statusVal = sel ? sel.value : '';
+		var searchEl = document.querySelector('[data-eem-input-action="div-search-entrants"]');
+		var q = searchEl ? searchEl.value.trim().toLowerCase() : '';
+		var shown = 0;
+		// Desktop rows.
+		var table = document.querySelector('.eem-div-entrants-table');
+		if (table) {
+			Array.prototype.slice.call(table.querySelectorAll('tbody tr[data-eem-status]')).forEach(function (tr) {
+				var stMatch = (statusVal === '' || tr.getAttribute('data-eem-status') === statusVal);
+				var srMatch = (q === '' || (tr.getAttribute('data-eem-search') || '').indexOf(q) !== -1);
+				var vis = stMatch && srMatch;
+				tr.hidden = !vis;
+				if (vis) { shown++; }
+			});
+		}
+		// Mobile cards.
+		Array.prototype.slice.call(document.querySelectorAll('.eem-mobile-cards .eem-mobile-card[data-eem-status]')).forEach(function (card) {
+			var stMatch = (statusVal === '' || card.getAttribute('data-eem-status') === statusVal);
+			var srMatch = (q === '' || (card.getAttribute('data-eem-search') || '').indexOf(q) !== -1);
+			card.hidden = !(stMatch && srMatch);
+		});
+		// Update count chip.
+		var countEl = document.querySelector('[data-eem-div-entry-count]');
+		if (countEl) { countEl.textContent = shown + (shown === 1 ? ' entry' : ' entries'); }
+	}
+	document.addEventListener('change', function (e) {
+		if (e.target && e.target.matches && e.target.matches('[data-eem-input-action="div-filter-status"]')) {
+			applyDivFilter();
+		}
+	});
+	document.addEventListener('input', function (e) {
+		if (e.target && e.target.matches && e.target.matches('[data-eem-input-action="div-search-entrants"]')) {
+			applyDivFilter();
+		}
+	});
+})();
+
 /* ── Per-order check-in status dropdown (Stall & RV Charts By-Customer) ──
    Mirrors the Daily Movement page chip, posting to eem_order_checkin_set so the
    one per-order status stays in sync across both screens. Gated to the stall

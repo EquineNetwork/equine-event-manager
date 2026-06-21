@@ -255,8 +255,12 @@ class EEM_Entries {
 		) );
 		?>
 		<?php if ( $is_past ) : ?>
-			<p class="eem-notice-inline"><span class="eem-res-status eem-res-status--past"><?php esc_html_e( 'Past', 'equine-event-manager' ); ?></span> <span class="eem-orders-count"><?php esc_html_e( 'This event has already ended.', 'equine-event-manager' ); ?></span></p>
+		<div class="eem-notice-inline" role="alert">
+			<span class="eem-res-status eem-res-status--past"><?php esc_html_e( 'Past', 'equine-event-manager' ); ?></span>
+			<?php esc_html_e( 'This event has already ended.', 'equine-event-manager' ); ?>
+		</div>
 		<?php endif; ?>
+
 		<?php
 		// "Spots Left" tone follows availability: green when spots remain,
 		// orange when sold out, red when oversold (mirrors the dashboard KPI
@@ -268,71 +272,164 @@ class EEM_Entries {
 			$left_tone = 'orange';
 		}
 		?>
-		<div class="eem-stall-chart-dm-stats eem-division-stat-grid">
-			<div class="eem-scs-card">
-				<span class="eem-scs-icon" aria-hidden="true">&#10003;</span>
-				<span class="eem-scs-num"><?php echo esc_html( (string) $entered ); ?></span>
-				<span class="eem-scs-label"><?php esc_html_e( 'Entered', 'equine-event-manager' ); ?></span>
+
+		<div class="eem-div-stat-grid">
+			<div class="eem-div-stat-card">
+				<div class="eem-div-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></div>
+				<div class="eem-div-stat-text">
+					<span class="eem-div-stat-num"><?php echo esc_html( (string) $entered ); ?></span>
+					<span class="eem-div-stat-label"><?php esc_html_e( 'Entered', 'equine-event-manager' ); ?></span>
+				</div>
 			</div>
-			<div class="eem-scs-card">
-				<span class="eem-scs-icon" aria-hidden="true">&#9638;</span>
-				<span class="eem-scs-num"><?php echo esc_html( $spots_int > 0 ? (string) $spots_int : __( 'Unlimited', 'equine-event-manager' ) ); ?></span>
-				<span class="eem-scs-label"><?php esc_html_e( 'Spots', 'equine-event-manager' ); ?></span>
+			<div class="eem-div-stat-card">
+				<div class="eem-div-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
+				<div class="eem-div-stat-text">
+					<span class="eem-div-stat-num"><?php echo esc_html( $spots_int > 0 ? (string) $spots_int : __( 'Unlimited', 'equine-event-manager' ) ); ?></span>
+					<span class="eem-div-stat-label"><?php esc_html_e( 'Spots', 'equine-event-manager' ); ?></span>
+				</div>
 			</div>
-			<div class="eem-scs-card">
-				<span class="eem-scs-icon" aria-hidden="true">&#9711;</span>
-				<span class="eem-scs-num"><?php echo esc_html( null === $left ? '—' : (string) $left ); ?></span>
-				<span class="eem-scs-label"><?php esc_html_e( 'Spots Left', 'equine-event-manager' ); ?><?php if ( $oversold > 0 ) : ?><br><span class="eem-scs-oversold"><?php echo esc_html( sprintf( /* translators: %d: count oversold by. */ __( 'Oversold by %d', 'equine-event-manager' ), $oversold ) ); ?></span><?php endif; ?></span>
+			<div class="eem-div-stat-card eem-div-stat-card--<?php echo esc_attr( $left_tone ); ?>">
+				<div class="eem-div-stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+				<div class="eem-div-stat-text">
+					<span class="eem-div-stat-num"><?php echo esc_html( null === $left ? '—' : (string) $left ); ?></span>
+					<span class="eem-div-stat-label"><?php esc_html_e( 'Spots Left', 'equine-event-manager' ); ?></span>
+					<?php if ( $oversold > 0 ) : ?>
+					<span class="eem-div-stat-oversold"><?php echo esc_html( sprintf( /* translators: %d: count oversold by. */ __( 'Oversold by %d', 'equine-event-manager' ), $oversold ) ); ?></span>
+					<?php endif; ?>
+				</div>
 			</div>
 		</div>
 
+		<?php if ( $rid > 0 ) : ?>
+		<div class="eem-div-event-band">
+			<?php
+			$dates_str = '';
+			if ( ! empty( $res_label['start_date'] ) ) {
+				$dates_str = mysql2date( 'M j', (string) $res_label['start_date'] );
+				if ( ! empty( $res_label['end_date'] ) && $res_label['end_date'] !== $res_label['start_date'] ) {
+					$dates_str .= ' – ' . mysql2date( 'M j, Y', (string) $res_label['end_date'] );
+				} else {
+					$dates_str .= ', ' . mysql2date( 'Y', (string) $res_label['start_date'] );
+				}
+			}
+			?>
+			<?php if ( '' !== $dates_str ) : ?>
+			<span><strong><?php esc_html_e( 'Dates:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $dates_str ); ?></span>
+			<?php endif; ?>
+			<span><strong><?php esc_html_e( 'Reservation:', 'equine-event-manager' ); ?></strong>
+				<a href="<?php echo esc_url( get_edit_post_link( $rid ) ?: '#' ); ?>"><?php echo esc_html( get_the_title( $rid ) ?: (string) $rid ); ?></a>
+			</span>
+		</div>
+		<?php endif; ?>
+
+		<?php
+		$status_labels = array(
+			'paid'      => __( 'Paid', 'equine-event-manager' ),
+			'unpaid'    => __( 'Unpaid', 'equine-event-manager' ),
+			'refunded'  => __( 'Refunded', 'equine-event-manager' ),
+			'cancelled' => __( 'Cancelled', 'equine-event-manager' ),
+		);
+		$total_qty = 0;
+		foreach ( $entrants as $r ) { $total_qty += (int) $r['qty']; }
+		?>
+
+		<?php if ( ! empty( $entrants ) ) : ?>
+		<div class="eem-div-toolbar">
+			<select class="eem-toolbar-select" data-eem-input-action="div-filter-status" aria-label="<?php esc_attr_e( 'Filter by status', 'equine-event-manager' ); ?>">
+				<option value=""><?php esc_html_e( 'All Statuses', 'equine-event-manager' ); ?></option>
+				<?php foreach ( $status_labels as $val => $lbl ) : ?>
+				<option value="<?php echo esc_attr( $val ); ?>"><?php echo esc_html( $lbl ); ?></option>
+				<?php endforeach; ?>
+			</select>
+			<div class="eem-search-wrap">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+				<input class="eem-search-input" type="search" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" data-eem-input-action="div-search-entrants" aria-label="<?php esc_attr_e( 'Search entrants', 'equine-event-manager' ); ?>">
+			</div>
+			<span class="eem-div-toolbar-count" data-eem-div-entry-count>
+				<?php echo esc_html( sprintf( /* translators: %d: number of entries. */ _n( '%d entry', '%d entries', count( $entrants ), 'equine-event-manager' ), count( $entrants ) ) ); ?>
+			</span>
+		</div>
+		<?php endif; ?>
+
 		<div class="eem-desktop-table">
-			<table class="eem-table">
-				<thead>
-					<tr>
-						<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
-						<th><?php esc_html_e( 'Qty', 'equine-event-manager' ); ?></th>
-						<th><?php esc_html_e( 'Order', 'equine-event-manager' ); ?></th>
-						<th><?php esc_html_e( 'Date', 'equine-event-manager' ); ?></th>
-						<th><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
+		<table class="eem-table eem-div-entrants-table">
+			<thead>
+				<tr>
+					<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
+					<th class="eem-table-c"><?php esc_html_e( 'Qty', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'Order', 'equine-event-manager' ); ?></th>
+					<th><?php esc_html_e( 'Date', 'equine-event-manager' ); ?></th>
+					<th class="eem-table-c"><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php if ( empty( $entrants ) ) : ?>
+					<tr><td colspan="6" class="eem-table-empty"><?php esc_html_e( 'No entries yet.', 'equine-event-manager' ); ?></td></tr>
+				<?php else : ?>
+					<?php foreach ( $entrants as $row ) :
+						$ekey        = (string) $row['order_key'];
+						$order       = ( '' !== $ekey && class_exists( 'EEM_Orders_Repository' ) ) ? ( new EEM_Orders_Repository() )->get_order( $ekey ) : null;
+						$ord_no      = ( is_array( $order ) && ! empty( $order['order_number'] ) ) ? sprintf( '#%05d', (int) $order['order_number'] ) : '—';
+						$ord_url     = ( '' !== $ekey && class_exists( 'EEM_Orders_List_Page' ) ) ? EEM_Orders_List_Page::order_detail_url( $ekey ) : '';
+						$profile_url = class_exists( 'EEM_Orders_List_Page' ) ? EEM_Orders_List_Page::customer_profile_url( (string) $row['email'] ) : '';
+						$customer    = '' !== (string) $row['customer_name'] ? (string) $row['customer_name'] : (string) $row['email'];
+						$st          = (string) $row['status'];
+						$st_lbl      = isset( $status_labels[ $st ] ) ? $status_labels[ $st ] : ucfirst( $st );
+					?>
+					<tr data-eem-status="<?php echo esc_attr( $st ); ?>" data-eem-search="<?php echo esc_attr( strtolower( $customer ) ); ?>">
+						<td>
+							<?php if ( '' !== $profile_url ) : ?>
+							<a class="eem-res-name" href="<?php echo esc_url( $profile_url ); ?>"><?php echo esc_html( $customer ); ?></a>
+							<?php else : ?>
+							<span class="eem-res-name"><?php echo esc_html( $customer ); ?></span>
+							<?php endif; ?>
+						</td>
+						<td class="eem-table-c"><?php echo esc_html( (string) (int) $row['qty'] ); ?></td>
+						<td>
+							<?php if ( '' !== $ord_url && '—' !== $ord_no ) : ?>
+							<a class="eem-order-num" href="<?php echo esc_url( $ord_url ); ?>"><?php echo esc_html( $ord_no ); ?></a>
+							<?php else : ?>
+							<span style="color:#94a3b8"><?php echo esc_html( $ord_no ); ?></span>
+							<?php endif; ?>
+						</td>
+						<td style="color:#64748b"><?php echo esc_html( mysql2date( get_option( 'date_format' ), (string) $row['created_at'] ) ); ?></td>
+						<td class="eem-table-c"><span class="eem-status-badge eem-status-<?php echo esc_attr( $st ); ?>"><?php echo esc_html( $st_lbl ); ?></span></td>
+						<td style="text-align:right">
+							<div class="eem-row-menu-wrap">
+								<button class="eem-row-more-btn" data-eem-action="open-row-menu" aria-label="<?php esc_attr_e( 'Row actions', 'equine-event-manager' ); ?>">···</button>
+								<div class="eem-row-dropdown" role="menu">
+									<a class="eem-row-dd-item" href="<?php echo esc_url( self::editor_url( $division_id ) ); ?>" role="menuitem">
+										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+										<?php esc_html_e( 'Edit Entry', 'equine-event-manager' ); ?>
+									</a>
+									<?php if ( '' !== $ord_url ) : ?>
+									<a class="eem-row-dd-item eem-row-dd-item--danger" href="<?php echo esc_url( $ord_url ); ?>" role="menuitem">
+										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="23 7 16 12 23 17"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+										<?php esc_html_e( 'Refund', 'equine-event-manager' ); ?>
+									</a>
+									<a class="eem-row-dd-item eem-row-dd-item--danger" href="<?php echo esc_url( $ord_url ); ?>" role="menuitem">
+										<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+										<?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?>
+									</a>
+									<?php endif; ?>
+								</div>
+							</div>
+						</td>
 					</tr>
-				</thead>
-				<tbody>
-					<?php if ( empty( $entrants ) ) : ?>
-						<tr><td colspan="5" class="eem-table-empty"><?php esc_html_e( 'No entries yet.', 'equine-event-manager' ); ?></td></tr>
-					<?php else : ?>
-						<?php
-						$status_labels = array(
-							'paid'      => __( 'Paid', 'equine-event-manager' ),
-							'unpaid'    => __( 'Unpaid', 'equine-event-manager' ),
-							'refunded'  => __( 'Refunded', 'equine-event-manager' ),
-							'cancelled' => __( 'Cancelled', 'equine-event-manager' ),
-						);
-						foreach ( $entrants as $row ) :
-							$ekey   = (string) $row['order_key'];
-							$order  = ( '' !== $ekey && class_exists( 'EEM_Orders_Repository' ) ) ? ( new EEM_Orders_Repository() )->get_order( $ekey ) : null;
-							$ord_no = ( is_array( $order ) && ! empty( $order['order_number'] ) ) ? sprintf( '#%05d', (int) $order['order_number'] ) : '—';
-							$ord_url = ( '' !== $ekey && class_exists( 'EEM_Orders_List_Page' ) ) ? EEM_Orders_List_Page::order_detail_url( $ekey ) : '';
-							$st     = (string) $row['status'];
-							$st_lbl = isset( $status_labels[ $st ] ) ? $status_labels[ $st ] : ucfirst( $st );
-							?>
-							<tr>
-								<td><?php echo esc_html( '' !== (string) $row['customer_name'] ? (string) $row['customer_name'] : (string) $row['email'] ); ?></td>
-								<td><?php echo esc_html( (string) (int) $row['qty'] ); ?></td>
-								<td><?php
-									if ( '' !== $ord_url && '—' !== $ord_no ) {
-										echo '<a class="eem-res-name" href="' . esc_url( $ord_url ) . '">' . esc_html( $ord_no ) . '</a>';
-									} else {
-										echo esc_html( $ord_no );
-									}
-								?></td>
-								<td><?php echo esc_html( mysql2date( get_option( 'date_format' ), (string) $row['created_at'] ) ); ?></td>
-								<td><span class="eem-status-badge eem-status-<?php echo esc_attr( $st ); ?>"><?php echo esc_html( $st_lbl ); ?></span></td>
-							</tr>
-						<?php endforeach; ?>
-					<?php endif; ?>
-				</tbody>
-			</table>
+					<?php endforeach; ?>
+				<?php endif; ?>
+			</tbody>
+			<?php if ( ! empty( $entrants ) ) : ?>
+			<tfoot>
+				<tr>
+					<td><?php esc_html_e( 'Total', 'equine-event-manager' ); ?></td>
+					<td class="eem-table-c"><?php echo esc_html( (string) $total_qty ); ?></td>
+					<td colspan="4"></td>
+				</tr>
+			</tfoot>
+			<?php endif; ?>
+		</table>
 		</div>
 
 		<?php // Mobile cards — replace the (hidden ≤767) table so entrants stay readable on phones. ?>
@@ -341,38 +438,41 @@ class EEM_Entries {
 				<div class="eem-mobile-card eem-mobile-card--empty"><?php esc_html_e( 'No entries yet.', 'equine-event-manager' ); ?></div>
 			<?php else : ?>
 				<?php foreach ( $entrants as $row ) :
-					$ekey    = (string) $row['order_key'];
-					$order   = ( '' !== $ekey && class_exists( 'EEM_Orders_Repository' ) ) ? ( new EEM_Orders_Repository() )->get_order( $ekey ) : null;
-					$ord_no  = ( is_array( $order ) && ! empty( $order['order_number'] ) ) ? sprintf( '#%05d', (int) $order['order_number'] ) : '';
-					$ord_url = ( '' !== $ekey && class_exists( 'EEM_Orders_List_Page' ) ) ? EEM_Orders_List_Page::order_detail_url( $ekey ) : '';
-					$st      = (string) $row['status'];
-					$st_lbl  = isset( $status_labels[ $st ] ) ? $status_labels[ $st ] : ucfirst( $st );
-					?>
-					<div class="eem-mobile-card">
-						<div class="eem-mobile-card-top">
-							<span class="eem-mobile-card-id"><?php echo esc_html( '' !== (string) $row['customer_name'] ? (string) $row['customer_name'] : (string) $row['email'] ); ?></span>
-							<span class="eem-mobile-card-meta"><?php echo esc_html( mysql2date( get_option( 'date_format' ), (string) $row['created_at'] ) ); ?></span>
-						</div>
-						<div class="eem-mobile-card-sub">
-							<?php
-							/* translators: %d: quantity entered. */
-							echo esc_html( sprintf( _n( '%d entry', '%d entries', (int) $row['qty'], 'equine-event-manager' ), (int) $row['qty'] ) );
-							if ( '' !== $ord_no ) {
-								echo ' · ';
-								if ( '' !== $ord_url ) {
-									echo '<a class="eem-res-name" href="' . esc_url( $ord_url ) . '">' . esc_html( $ord_no ) . '</a>';
-								} else {
-									echo esc_html( $ord_no );
-								}
-							}
-							?>
-						</div>
-						<div class="eem-mobile-card-bottom">
-							<div class="eem-mobile-card-badges">
-								<span class="eem-status-badge eem-status-<?php echo esc_attr( $st ); ?>"><?php echo esc_html( $st_lbl ); ?></span>
-							</div>
+					$ekey        = (string) $row['order_key'];
+					$order       = ( '' !== $ekey && class_exists( 'EEM_Orders_Repository' ) ) ? ( new EEM_Orders_Repository() )->get_order( $ekey ) : null;
+					$ord_no      = ( is_array( $order ) && ! empty( $order['order_number'] ) ) ? sprintf( '#%05d', (int) $order['order_number'] ) : '';
+					$ord_url     = ( '' !== $ekey && class_exists( 'EEM_Orders_List_Page' ) ) ? EEM_Orders_List_Page::order_detail_url( $ekey ) : '';
+					$profile_url = class_exists( 'EEM_Orders_List_Page' ) ? EEM_Orders_List_Page::customer_profile_url( (string) $row['email'] ) : '';
+					$customer    = '' !== (string) $row['customer_name'] ? (string) $row['customer_name'] : (string) $row['email'];
+					$st          = (string) $row['status'];
+					$st_lbl      = isset( $status_labels[ $st ] ) ? $status_labels[ $st ] : ucfirst( $st );
+				?>
+				<div class="eem-mobile-card" data-eem-status="<?php echo esc_attr( $st ); ?>" data-eem-search="<?php echo esc_attr( strtolower( $customer ) ); ?>">
+					<div class="eem-mobile-card-top">
+						<?php if ( '' !== $profile_url ) : ?>
+						<a class="eem-mobile-card-id" href="<?php echo esc_url( $profile_url ); ?>"><?php echo esc_html( $customer ); ?></a>
+						<?php else : ?>
+						<span class="eem-mobile-card-id"><?php echo esc_html( $customer ); ?></span>
+						<?php endif; ?>
+						<span class="eem-mobile-card-meta"><?php echo esc_html( mysql2date( get_option( 'date_format' ), (string) $row['created_at'] ) ); ?></span>
+					</div>
+					<div class="eem-mobile-card-sub">
+						<?php
+						/* translators: %d: quantity entered. */
+						echo esc_html( sprintf( _n( '%d entry', '%d entries', (int) $row['qty'], 'equine-event-manager' ), (int) $row['qty'] ) );
+						?>
+						<?php if ( '' !== $ord_no && '' !== $ord_url ) : ?>
+						&middot; <a class="eem-order-num" href="<?php echo esc_url( $ord_url ); ?>"><?php echo esc_html( $ord_no ); ?></a>
+						<?php elseif ( '' !== $ord_no ) : ?>
+						&middot; <?php echo esc_html( $ord_no ); ?>
+						<?php endif; ?>
+					</div>
+					<div class="eem-mobile-card-bottom">
+						<div class="eem-mobile-card-badges">
+							<span class="eem-status-badge eem-status-<?php echo esc_attr( $st ); ?>"><?php echo esc_html( $st_lbl ); ?></span>
 						</div>
 					</div>
+				</div>
 				<?php endforeach; ?>
 			<?php endif; ?>
 		</div>
