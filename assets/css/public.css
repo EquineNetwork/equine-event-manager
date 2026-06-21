@@ -1898,25 +1898,29 @@
 	align-items: center;
 	gap: 10px;
 }
-/* Bare bright-blue icon in each section header (no chip background). */
+/* Section-header icon sits in the canonical blue chip (matches the admin card
+   icons) — light-blue background, electric glyph, 7px rounded square. */
 .eem-reservation-section__icon {
 	flex: 0 0 auto;
+	width: 30px;
+	height: 30px;
 	color: #1668F2;
-	background: none;
+	background: #EEF4FF;
+	border-radius: 7px;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
 }
-.eem-reservation-section__icon svg { width: 20px; height: 20px; }
-/* Theme-hardening: force the bright-blue icon (no chip) regardless of any host
-   theme svg/color rule. Some sections (collapsible headings) otherwise render a
+.eem-reservation-section__icon svg { width: 18px; height: 18px; }
+/* Theme-hardening: force the chip + electric glyph regardless of any host theme
+   svg/color rule. Some sections (collapsible headings) otherwise render a
    muted/gray icon under Elementor-based themes. */
 .eem-event-page .eem-reservation-section__icon {
 	color: #1668F2 !important;
-	background: none !important;
-	width: auto !important;
-	height: auto !important;
-	border-radius: 0 !important;
+	background: #EEF4FF !important;
+	width: 30px !important;
+	height: 30px !important;
+	border-radius: 7px !important;
 }
 .eem-event-page .eem-reservation-section__icon svg {
 	color: #1668F2 !important;
@@ -2656,7 +2660,7 @@
 	min-height: 44px;
 	padding: 11px 22px;
 	border: 1px solid #1668F2;
-	border-radius: 3px;
+	border-radius: 8px;
 	background: #1668F2;
 	color: #fff;
 	font-size: 15px;
@@ -4056,7 +4060,7 @@
 	background: #1668F2;
 	color: #fff;
 	padding: 12px 26px;
-	border-radius: 6px;
+	border-radius: 8px;
 	font-size: 14px;
 	font-weight: 700;
 	cursor: pointer;
@@ -4068,9 +4072,9 @@
 .eem-event-page .btn-directions {
 	background: #fff;
 	color: #031B4E;
-	border: 1.5px solid #D9E2F2;
+	border: 1.5px solid #e2e8f4;
 	padding: 11px 20px;
-	border-radius: 6px;
+	border-radius: 8px;
 	font-size: 14px;
 	font-weight: 500;
 	cursor: pointer;
@@ -4207,7 +4211,7 @@
 	color: #fff;
 	border: none;
 	padding: 13px 24px;
-	border-radius: 6px;
+	border-radius: 8px;
 	font-size: 14px;
 	font-weight: 700;
 	cursor: pointer;
@@ -4347,8 +4351,10 @@
 .eem-event-page .eem-reservation-section {
 	display: block;
 	background: #fff;
-	border: 1px solid #D9E2F2;
-	border-radius: 6px;
+	border: 1px solid #e2e8f4;
+	/* !important matches this file's theme-hardening pattern — Elementor/
+	   hello-elementor injects a border-radius on cards that otherwise wins. */
+	border-radius: 10px !important;
 	margin-bottom: 16px;
 	padding: 0;
 	overflow: hidden;
@@ -4595,7 +4601,7 @@
 	color: #fff;
 	border: 0;
 	padding: 14px;
-	border-radius: 6px;
+	border-radius: 8px;
 	font-size: 15px;
 	font-weight: 700;
 	cursor: pointer;
@@ -4686,7 +4692,7 @@
 	width: 100%;
 	padding: 15px;
 	border: 0;
-	border-radius: 6px;
+	border-radius: 8px;
 	background: #1668F2;
 	color: #fff;
 	font-size: 15px;
