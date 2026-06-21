@@ -121,15 +121,21 @@ class EEM_Daily_Movement_Page {
 		$print_url = add_query_arg( array(
 			'page'           => self::MENU_SLUG,
 			'reservation_id' => $reservation_id,
-			'view'           => $view,
-			'date'           => $date,
+			'view'           => 'all',
 			'print'          => '1',
 		), admin_url( 'admin.php' ) );
 
-		$print_today_btn = '<button type="button" class="eem-dm-print-today" onclick="window.print()">'
+		$print_today_url = esc_url( add_query_arg( array(
+			'page'           => self::MENU_SLUG,
+			'reservation_id' => $reservation_id,
+			'date'           => $today_str,
+			'print'          => '1',
+		), admin_url( 'admin.php' ) ) );
+
+		$print_today_btn = '<a href="' . $print_today_url . '" target="_blank" class="eem-dm-print-today">'
 			. '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>'
 			. esc_html__( 'Print Today', 'equine-event-manager' )
-			. '</button>';
+			. '</a>';
 
 		$refresh_url    = esc_url( add_query_arg( array(
 			'page'           => self::MENU_SLUG,
@@ -144,10 +150,10 @@ class EEM_Daily_Movement_Page {
 			. '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>'
 			. '<span class="eem-dm-topbar-btn-label">' . esc_html__( 'Refresh', 'equine-event-manager' ) . '</span>'
 			. '</a>'
-			. '<button type="button" class="eem-dm-topbar-btn eem-dm-topbar-btn--print" onclick="window.print()" aria-label="' . esc_attr__( 'Print All', 'equine-event-manager' ) . '">'
+			. '<a href="' . esc_url( $print_url ) . '" target="_blank" class="eem-dm-topbar-btn eem-dm-topbar-btn--print" aria-label="' . esc_attr__( 'Print All', 'equine-event-manager' ) . '">'
 			. '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>'
 			. '<span class="eem-dm-topbar-btn-label">' . esc_html__( 'Print All', 'equine-event-manager' ) . '</span>'
-			. '</button>';
+			. '</a>';
 
 		eem_render_page_open( array(
 			'title'          => __( 'Daily Movement', 'equine-event-manager' ),
@@ -251,6 +257,7 @@ class EEM_Daily_Movement_Page {
 			'checked_out'    => __( 'Checked Out', 'equine-event-manager' ),
 		);
 
+		$logo_url = esc_url( EQUINE_EVENT_MANAGER_URL . 'assets/images/logo.png' );
 		?>
 		<!DOCTYPE html>
 		<html <?php language_attributes(); ?>>
@@ -258,56 +265,47 @@ class EEM_Daily_Movement_Page {
 			<meta charset="<?php bloginfo( 'charset' ); ?>">
 			<meta name="viewport" content="width=device-width, initial-scale=1">
 			<?php
-			// Default PDF/print filename comes from the document title. Format
-			// "Daily Movement - {Event}" per Whitney; falls back to just the label
-			// when the reservation has no title.
 			$dm_print_title = '' !== $reservation_title
 				? __( 'Daily Movement', 'equine-event-manager' ) . ' - ' . $reservation_title
 				: __( 'Daily Movement', 'equine-event-manager' );
 			?>
 			<title><?php echo esc_html( $dm_print_title ); ?></title>
-			<link rel="preconnect" href="https://fonts.googleapis.com">
-			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-			<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+			<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 			<style>
 				*{box-sizing:border-box;margin:0;padding:0}
-				body{font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;color:#1e293b;background:#f0f0f1}
-				.dm-pv-toolbar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:#f1f5f9;border-bottom:1px solid #e5e7eb}
-				.dm-pv-toolbar h1{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:#031B4E}
-				.dm-pv-toolbar-actions{display:flex;gap:8px}
-				.dm-pv-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;font-size:13px;font-weight:600;border-radius:6px;border:none;cursor:pointer;text-decoration:none}
+				body{font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#0d1b3e;background:#F7F9FC}
+				.dm-pv-toolbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:56px;background:#fff;border-bottom:1px solid #e2e8f4;position:sticky;top:0;z-index:10}
+				.dm-pv-toolbar-left{display:flex;align-items:center;gap:12px}
+				.dm-pv-logo img{height:28px;width:auto;display:block}
+				.dm-pv-title{font-size:14px;font-weight:700;color:#0d1b3e}
+				.dm-pv-sub{font-size:12px;color:#64748b;margin-top:1px}
+				.dm-pv-toolbar-btns{display:flex;gap:8px;flex-shrink:0}
+				.dm-pv-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;font-size:13px;font-weight:600;border-radius:8px;border:none;cursor:pointer;text-decoration:none;font-family:inherit}
 				.dm-pv-btn--primary{background:#1668F2;color:#fff}
-				.dm-pv-btn--primary:hover{background:#1257d1}
-				.dm-pv-btn--outline{background:#fff;color:#1e293b;border:1px solid #d1d5db}
-				.dm-pv-btn--outline:hover{background:#f9fafb}
-				a.dm-pv-btn--outline{color:#1e293b}
-				a.dm-pv-btn--outline:hover{color:#1e293b;text-decoration:none}
-				.dm-pv-header{padding:22px 28px 0;max-width:1000px;margin:0 auto}
-				.dm-pv-header-inner{margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #031B4E}
-				.dm-pv-report-type{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#1668F2;margin-bottom:4px}
-				.dm-pv-header h2{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:#031B4E;margin-bottom:6px}
-				.dm-pv-meta{font-size:13px;color:#4a5a7a;display:flex;gap:24px;flex-wrap:wrap}
-				.dm-pv-meta strong{color:#031B4E;font-weight:600}
+				.dm-pv-btn--primary:hover{background:#0d4fc2;color:#fff;text-decoration:none}
+				.dm-pv-btn--outline{background:#F7F9FC;color:#0d1b3e;border:1.5px solid #d0daea}
+				.dm-pv-btn--outline:hover{background:#e8eef8;border-color:#1668F2;color:#0d1b3e;text-decoration:none}
+				a.dm-pv-btn--outline,a.dm-pv-btn--outline:link,a.dm-pv-btn--outline:visited{color:#0d1b3e;text-decoration:none}
+				.dm-pv-header{padding:22px 28px 0;max-width:1000px;margin:0 auto;background:#fff}
+				.dm-pv-header-inner{margin-bottom:18px;padding-bottom:14px;border-bottom:2px solid #1668F2}
+				.dm-pv-report-type{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin-bottom:4px}
+				.dm-pv-header h2{font-size:22px;font-weight:700;color:#0d1b3e;margin-bottom:6px;letter-spacing:-.02em}
+				.dm-pv-meta{font-size:13px;color:#64748b;display:flex;gap:24px;flex-wrap:wrap}
+				.dm-pv-meta strong{color:#0d1b3e;font-weight:600}
 				.dm-pv-body{padding:0 28px 24px;max-width:1000px;margin:0 auto}
-				.dm-pv-date-section{background:#fff;border:1px solid #e2e4e7;border-radius:3px;overflow:hidden;margin-bottom:14px}
-				.dm-pv-date-heading{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700;color:#031B4E;background:#fff;padding:12px 16px 6px;margin:0}
-				.dm-pv-summary{display:flex;gap:24px;flex-wrap:wrap;align-items:center;background:#fff;padding:2px 16px 12px;margin:0}
-				.dm-pv-stat{font-size:12px;font-weight:600;color:#031b4e;white-space:nowrap}
-				.dm-pv-stat-icon{font-weight:700;color:#1d4ed8;margin-right:5px}
-				.dm-pv-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
-				.dm-pv-chip::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%}
-				.dm-pv-chip--arriving{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
-				.dm-pv-chip--arriving::before{background:#22c55e}
-				.dm-pv-chip--departing{background:#fefce8;color:#a16207;border:1px solid #fde68a}
-				.dm-pv-chip--departing::before{background:#eab308}
-				.dm-pv-chip--pending{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
-				.dm-pv-chip--pending::before{background:#ef4444}
-				.dm-pv-chip--shavings{background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe}
-				.dm-pv-chip--shavings::before{background:#8b5cf6}
+				.dm-pv-date-section{background:#fff;border:1px solid #e2e8f4;border-radius:10px;overflow:hidden;margin-bottom:14px}
+				.dm-pv-day-strip{display:flex;align-items:center;gap:16px;padding:10px 16px 12px;background:#fff;flex-wrap:wrap;border-bottom:1px solid #f0f4fb}
+				.dm-pv-day-date{font-size:14px;font-weight:700;color:#0d1b3e;white-space:nowrap}
+				.dm-pv-day-counts{display:flex;align-items:center;gap:10px}
+				.dm-pv-day-count{font-size:13px;font-weight:600;display:flex;align-items:center;gap:3px;white-space:nowrap}
+				.dm-pv-day-count--arriving{color:#1668F2}
+				.dm-pv-day-count--departing{color:#b45309}
+				.dm-pv-day-count--zero{color:#94a3b8}
+				.dm-pv-day-shavings{font-size:12px;color:#6d28d9;font-weight:600;white-space:nowrap}
+				.dm-pv-day-divider{width:1px;height:16px;background:#e2e8f4;flex-shrink:0}
 				.dm-pv-group-heading{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:7px 16px;margin:0}
-				.dm-pv-group-icon{font-weight:700}
-				.dm-pv-group-heading--arriving{color:#1668F2;background:#f0f4fb;border-top:1px solid #d9e2f2;border-bottom:1px solid #d9e2f2}
-				.dm-pv-group-heading--departing{color:#b45309;background:#fdf4e7;border-top:1px solid #f3e2c4;border-bottom:1px solid #f3e2c4}
+				.dm-pv-group-heading--arriving{color:#1668F2;background:#eff6ff;border-top:1px solid #dbe9ff;border-bottom:1px solid #dbe9ff}
+				.dm-pv-group-heading--departing{color:#b45309;background:#fffbeb;border-top:1px solid #fde68a;border-bottom:1px solid #fde68a}
 				table.dm-pv-table{width:100%;border-collapse:collapse;table-layout:fixed}
 				.dm-pv-table th:nth-child(1),.dm-pv-table td:nth-child(1){width:14%}
 				.dm-pv-table th:nth-child(2),.dm-pv-table td:nth-child(2){width:20%}
@@ -316,42 +314,41 @@ class EEM_Daily_Movement_Page {
 				.dm-pv-table th:nth-child(5),.dm-pv-table td:nth-child(5){width:15%}
 				.dm-pv-table th:nth-child(6),.dm-pv-table td:nth-child(6){width:10%}
 				.dm-pv-table th:nth-child(7),.dm-pv-table td:nth-child(7){width:15%}
-				.dm-pv-table th{text-align:left;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:#031B4E;padding:6px 10px;background:#f8fafc;border-top:1px solid #d9e2f2;border-bottom:1px solid #d9e2f2}
-				.dm-pv-table td{padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:12.5px;vertical-align:top}
+				.dm-pv-table th{text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;padding:7px 10px;background:#F7F9FC;border-top:1px solid #e2e8f4;border-bottom:1px solid #e2e8f4}
+				.dm-pv-table td{padding:8px 10px;border-bottom:1px solid #f0f4fb;font-size:12.5px;vertical-align:top;background:#fff}
 				.dm-pv-table tbody tr:last-child td{border-bottom:none}
-				.dm-pv-table tbody tr:nth-child(even) td{background:#f8fafc}
+				.dm-pv-table tbody tr:nth-child(even) td{background:#fafbfe}
 				.dm-pv-cell-stall{font-weight:700;white-space:nowrap}
-				.dm-pv-cell-dates{white-space:nowrap;color:#475569;font-size:12px}
+				.dm-pv-cell-dates{white-space:nowrap;color:#64748b;font-size:12px}
 				.dm-pv-cell-shavings{text-align:center}
-				.dm-pv-cell-notes{color:#475569;font-size:12px;max-width:200px}
+				.dm-pv-cell-notes{color:#64748b;font-size:12px;max-width:200px}
 				.dm-pv-status{display:inline-flex;align-items:center;gap:5px;padding:2px 7px;border-radius:20px;font-size:10.5px;font-weight:600;white-space:nowrap}
 				.dm-pv-status::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%}
-				.dm-pv-status--not_checked_in,.dm-pv-status--occupied{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
-				.dm-pv-status--not_checked_in::before,.dm-pv-status--occupied::before{background:#ef4444}
+				.dm-pv-status--not_checked_in,.dm-pv-status--occupied{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+				.dm-pv-status--not_checked_in::before,.dm-pv-status--occupied::before{background:#f97316}
 				.dm-pv-status--checked_in{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
 				.dm-pv-status--checked_in::before{background:#22c55e}
-				.dm-pv-status--checked_out{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
-				.dm-pv-status--checked_out::before{background:#3b82f6}
+				.dm-pv-status--checked_out{background:#eff6ff;color:#1668F2;border:1px solid #bfdbfe}
+				.dm-pv-status--checked_out::before{background:#1668F2}
 				.dm-pv-status--departing{background:#fffbeb;color:#b45309;border:1px solid #fde68a}
 				.dm-pv-status--departing::before{background:#f59e0b}
+				.dm-pv-footer{max-width:1000px;margin:0 auto;padding:0 28px 24px}
+				.dm-pv-footer-inner{margin-top:16px;padding-top:12px;border-top:1px solid #e2e8f4;display:flex;justify-content:space-between;font-size:12px;color:#64748b;flex-wrap:wrap;gap:8px}
+				@media(max-width:900px){
+					.dm-pv-btn-label{display:none}
+					.dm-pv-btn{width:36px;height:36px;padding:0;justify-content:center}
+				}
 				@media print{
 					.dm-pv-toolbar{display:none}
 					body{font-size:11px;background:#fff}
-					.dm-pv-date-heading{font-size:12px;margin:2px 0 5px}
-					.dm-pv-header h2{font-size:18px}
+					.dm-pv-header h2{font-size:18px;letter-spacing:-.01em}
 					.dm-pv-table td{padding:5px 8px;font-size:11px}
 					.dm-pv-table th{font-size:9.5px;padding:4px 8px}
-					.dm-pv-chip{font-size:10px;padding:1px 6px}
 					.dm-pv-status{font-size:9.5px;padding:1px 5px}
-					/* Clean breakpoints: keep each row whole, never orphan a date /
-					   group heading, and repeat the column header on every page. */
 					.dm-pv-table tbody tr{break-inside:avoid;page-break-inside:avoid}
 					.dm-pv-table thead{display:table-header-group}
-					.dm-pv-date-heading,.dm-pv-group-heading{break-inside:avoid;page-break-inside:avoid;break-after:avoid;page-break-after:avoid}
-					/* Flat status/summary pills in print — colored dot + text only, no
-					   filled background or soft border (those warm fills read as an
-					   orange "halo" on the printout). */
-					.dm-pv-chip,.dm-pv-status{background:transparent !important;border-color:transparent !important}
+					.dm-pv-day-strip,.dm-pv-group-heading{break-inside:avoid;page-break-inside:avoid;break-after:avoid;page-break-after:avoid}
+					.dm-pv-status{background:transparent !important;border-color:transparent !important}
 					@page{margin:10mm 8mm;size:letter portrait}
 					*{-webkit-print-color-adjust:exact;print-color-adjust:exact;color-adjust:exact}
 				}
@@ -359,14 +356,24 @@ class EEM_Daily_Movement_Page {
 		</head>
 		<body>
 			<div class="dm-pv-toolbar">
-				<h1><?php esc_html_e( 'Print View — Daily Movement', 'equine-event-manager' ); ?></h1>
-				<div class="dm-pv-toolbar-actions">
-					<button type="button" class="dm-pv-btn dm-pv-btn--primary" onclick="window.print()">
-						<?php esc_html_e( 'Print / Save PDF', 'equine-event-manager' ); ?>
-					</button>
+				<div class="dm-pv-toolbar-left">
+					<div class="dm-pv-logo"><img src="<?php echo esc_url( $logo_url ); ?>" alt="<?php esc_attr_e( 'Equine Event Manager', 'equine-event-manager' ); ?>"></div>
+					<div>
+						<div class="dm-pv-title"><?php esc_html_e( 'Daily Movement', 'equine-event-manager' ); ?></div>
+						<?php if ( '' !== $reservation_title || '' !== $date_label ) : ?>
+							<div class="dm-pv-sub"><?php echo esc_html( implode( ' · ', array_filter( array( $reservation_title, $date_label ) ) ) ); ?></div>
+						<?php endif; ?>
+					</div>
+				</div>
+				<div class="dm-pv-toolbar-btns">
 					<a href="<?php echo esc_url( $back_url ); ?>" class="dm-pv-btn dm-pv-btn--outline">
-						<?php esc_html_e( 'Close', 'equine-event-manager' ); ?>
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+						<span class="dm-pv-btn-label"><?php esc_html_e( 'Back to Daily Movement', 'equine-event-manager' ); ?></span>
 					</a>
+					<button type="button" class="dm-pv-btn dm-pv-btn--primary" onclick="window.print()">
+						<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+						<span class="dm-pv-btn-label"><?php esc_html_e( 'Print / Save PDF', 'equine-event-manager' ); ?></span>
+					</button>
 				</div>
 			</div>
 			<div class="dm-pv-header">
@@ -377,21 +384,33 @@ class EEM_Daily_Movement_Page {
 						<?php if ( '' !== $date_label ) : ?>
 							<span><strong><?php esc_html_e( 'View:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( $date_label ); ?></span>
 						<?php endif; ?>
-						<span><strong><?php esc_html_e( 'Printed:', 'equine-event-manager' ); ?></strong> <?php echo esc_html( wp_date( 'F j, Y g:i A' ) ); ?></span>
+						<span><?php echo esc_html( wp_date( 'F j, Y g:i A' ) ); ?></span>
 					</div>
 				</div>
 			</div>
 			<div class="dm-pv-body">
-				<?php foreach ( $reports as $report ) : ?>
+				<?php foreach ( $reports as $report ) :
+					$psum     = $report['summary'];
+					$arriving = (int) ( $psum['arriving'] ?? 0 );
+					$departing = (int) ( $psum['departing'] ?? 0 );
+					$shavings = (int) ( $psum['shavings_total'] ?? 0 );
+				?>
 					<div class="dm-pv-date-section">
-						<div class="dm-pv-date-heading"><?php echo esc_html( $report['date_display'] ); ?></div>
-						<?php $psum = $report['summary']; ?>
-						<div class="dm-pv-summary">
-							<span class="dm-pv-stat"><span class="dm-pv-stat-icon">↓</span><?php printf( esc_html__( '%d Arriving', 'equine-event-manager' ), (int) ( $psum['arriving'] ?? 0 ) ); ?></span>
-							<span class="dm-pv-stat"><span class="dm-pv-stat-icon">✓</span><?php printf( esc_html__( '%d Checked In', 'equine-event-manager' ), (int) ( $psum['checked_in'] ?? 0 ) ); ?></span>
-							<span class="dm-pv-stat"><span class="dm-pv-stat-icon">↑</span><?php printf( esc_html__( '%d Departing', 'equine-event-manager' ), (int) ( $psum['departing'] ?? 0 ) ); ?></span>
-							<span class="dm-pv-stat"><span class="dm-pv-stat-icon">✓</span><?php printf( esc_html__( '%d Checked Out', 'equine-event-manager' ), (int) ( $psum['departed'] ?? 0 ) ); ?></span>
-							<span class="dm-pv-stat"><span class="dm-pv-stat-icon">◆</span><?php printf( esc_html__( '%d Bags Shavings', 'equine-event-manager' ), (int) ( $psum['shavings_total'] ?? 0 ) ); ?></span>
+						<div class="dm-pv-day-strip">
+							<span class="dm-pv-day-date"><?php echo esc_html( $report['date_display'] ); ?></span>
+							<div class="dm-pv-day-divider"></div>
+							<div class="dm-pv-day-counts">
+								<span class="dm-pv-day-count <?php echo $arriving > 0 ? 'dm-pv-day-count--arriving' : 'dm-pv-day-count--zero'; ?>">
+									<?php printf( esc_html__( '↓ %d arriving', 'equine-event-manager' ), $arriving ); ?>
+								</span>
+								<span class="dm-pv-day-count <?php echo $departing > 0 ? 'dm-pv-day-count--departing' : 'dm-pv-day-count--zero'; ?>">
+									<?php printf( esc_html__( '↑ %d departing', 'equine-event-manager' ), $departing ); ?>
+								</span>
+								<?php if ( $shavings > 0 ) : ?>
+									<div class="dm-pv-day-divider"></div>
+									<span class="dm-pv-day-shavings"><?php printf( esc_html__( '◆ %d bags shavings', 'equine-event-manager' ), $shavings ); ?></span>
+								<?php endif; ?>
+							</div>
 						</div>
 						<?php
 						foreach ( array( 'arriving', 'departing' ) as $group ) :
@@ -451,9 +470,13 @@ class EEM_Daily_Movement_Page {
 					</div>
 				<?php endforeach; ?>
 			</div>
+			<div class="dm-pv-footer">
+				<div class="dm-pv-footer-inner">
+					<span><?php echo esc_html( implode( ' · ', array_filter( array( __( 'Daily Movement', 'equine-event-manager' ), $reservation_title, $date_label ) ) ) ); ?></span>
+					<span><?php echo esc_html( get_bloginfo( 'name' ) . ' · ' . wp_date( 'F j, Y g:i A' ) ); ?></span>
+				</div>
+			</div>
 			<script>
-				// Force the document title so the print / Save-as-PDF default filename is
-				// "Daily Movement - {Event}" even if the admin chrome set its own title.
 				document.title = <?php echo wp_json_encode( $dm_print_title ); ?>;
 			</script>
 		</body>

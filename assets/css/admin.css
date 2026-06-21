@@ -12901,6 +12901,9 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 	background: #F7F9FC;
 	border: 1px solid #d0daea;
 }
+a.eem-dm-topbar-btn--print,
+a.eem-dm-topbar-btn--print:link,
+a.eem-dm-topbar-btn--print:visited { color: #0d1b3e; text-decoration: none; }
 .eem-dm-topbar-btn--print:hover {
 	background: #e8eef8;
 	color: #0d1b3e;
@@ -13196,7 +13199,7 @@ textarea.eem-dm-note-textarea:focus {
 	margin-top: 14px;
 }
 
-/* Print Today button — page header action, triggers window.print(). */
+/* Print Today button — page header action, opens standalone print view in new tab. */
 .eem-dm-print-today {
 	display: inline-flex;
 	align-items: center;
@@ -13211,7 +13214,10 @@ textarea.eem-dm-note-textarea:focus {
 	white-space: nowrap;
 	cursor: pointer;
 }
-.eem-dm-print-today:hover { background: #e0ecff; }
+a.eem-dm-print-today,
+a.eem-dm-print-today:link,
+a.eem-dm-print-today:visited { color: #1668F2; text-decoration: none; }
+.eem-dm-print-today:hover { background: #e0ecff; color: #1668F2; text-decoration: none; }
 
 /* ── Toolbar / filter bar ──────────────────────────────────────────── */
 .eem-dm-toolbar {

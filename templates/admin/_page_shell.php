@@ -51,6 +51,8 @@ if ( ! function_exists( 'eem_action_allowed_html' ) ) {
 			'id'                    => true,
 			'type'                  => true,
 			'href'                  => true,
+			'target'                => true,
+			'rel'                   => true,
 			'title'                 => true,
 			'role'                  => true,
 			'tabindex'              => true,
