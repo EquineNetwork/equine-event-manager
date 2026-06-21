@@ -1526,7 +1526,11 @@ class EEM_Shortcodes {
 		</div>
 		<?php
 
-		return ob_get_clean();
+		// Wrap the form in `.eem-event-page` so public.css rules scoped under that
+		// class (fonts, card chrome, order rail, headings) apply on bare-shortcode
+		// pages too — not just the event-permalink template (which adds its own
+		// .eem-event-page). Nested same-class wrappers are harmless to the cascade.
+		return '<div class="eem-event-page">' . ob_get_clean() . '</div>';
 	}
 
 	/**
