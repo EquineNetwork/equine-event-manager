@@ -3618,6 +3618,17 @@
 				el.disabled = !isActive;
 			});
 		});
+		// Flip each processor row's Active/Inactive badge live so it matches the
+		// selected radio (was only updating on save+reload — the "Stripe selected
+		// but still says Inactive" bug).
+		Array.prototype.forEach.call(radios, function (r) {
+			var badge = r.closest('.eem-source-row') && r.closest('.eem-source-row').querySelector('[data-eem-processor-badge]');
+			if (!badge) { return; }
+			badge.classList.toggle('is-active', r.checked);
+			badge.classList.toggle('is-info', !r.checked);
+			var label = r.checked ? badge.getAttribute('data-active-label') : badge.getAttribute('data-inactive-label');
+			if (label) { badge.textContent = label; }
+		});
 	}
 	document.addEventListener('change', function (ev) {
 		if (ev.target && 'payload[selected_gateway]' === ev.target.name) { eemApplyProcessorState(); }

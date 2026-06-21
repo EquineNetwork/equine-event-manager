@@ -3271,6 +3271,10 @@ a.eem-settings-nav-item:focus {
 .eem-source-status.is-active  { background: #F0FDF4;               color: var(--eem-success-text); border: 1px solid #bbf7d0; }
 .eem-source-status.is-info    { background: var(--eem-info-bg);    color: var(--eem-electric);    border: 1px solid var(--eem-info-border); }
 .eem-source-status.is-warning { background: var(--eem-warn-bg);    color: var(--eem-warn-text);   border: 1px solid var(--eem-warn-border); }
+/* The "Active" badge shows only on the currently-selected source row; it follows
+   the radio live via the .is-selected class the source-picker JS toggles. */
+.eem-source-active-badge { display: none; }
+.eem-source-row.is-selected .eem-source-active-badge { display: inline-flex; }
 
 /* 2.3.53 (C10.C) — "Coming Soon" muted pill for V2-deferred event sources
    (Native Events, External Feed). Letter-spaced caps to read as a status

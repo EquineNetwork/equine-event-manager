@@ -535,7 +535,7 @@ class EEM_Settings_Page {
 								<span class="eem-source-row-body">
 									<span class="eem-source-row-head">
 										<span class="eem-source-row-title"><?php echo esc_html( $row['title'] ); ?></span>
-										<span class="eem-source-status <?php echo $checked ? 'is-active' : 'is-info'; ?>"><?php echo esc_html( $checked ? __( 'Active', 'equine-event-manager' ) : __( 'Inactive', 'equine-event-manager' ) ); ?></span>
+										<span class="eem-source-status <?php echo $checked ? 'is-active' : 'is-info'; ?>" data-eem-processor-badge data-active-label="<?php esc_attr_e( 'Active', 'equine-event-manager' ); ?>" data-inactive-label="<?php esc_attr_e( 'Inactive', 'equine-event-manager' ); ?>"><?php echo esc_html( $checked ? __( 'Active', 'equine-event-manager' ) : __( 'Inactive', 'equine-event-manager' ) ); ?></span>
 									</span>
 									<span class="eem-source-row-desc"><?php echo esc_html( $row['desc'] ); ?></span>
 								</span>
@@ -922,7 +922,10 @@ class EEM_Settings_Page {
 										<?php if ( $is_soon ) : ?>
 											<span class="eem-source-status is-soon"><?php esc_html_e( 'Coming Soon', 'equine-event-manager' ); ?></span>
 										<?php else : ?>
-											<span class="eem-source-status <?php echo esc_attr( $row['status']['class'] ); ?>"><?php echo esc_html( $row['status']['label'] ); ?></span>
+											<?php // Only the ACTIVE (selected) source shows an "Active" badge; the
+											// rest show none. Rendered on every row but CSS-hidden unless the
+											// row is .is-selected, so it follows the radio live. ?>
+											<span class="eem-source-status is-active eem-source-active-badge"><?php esc_html_e( 'Active', 'equine-event-manager' ); ?></span>
 										<?php endif; ?>
 									</span>
 									<span class="eem-source-row-desc"><?php echo esc_html( $row['desc'] ); ?></span>
