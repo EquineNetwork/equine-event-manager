@@ -147,6 +147,24 @@ class EEM_Division_Entries {
 	}
 
 	/**
+	 * Number of distinct orders that contain at least one entry for a Division.
+	 *
+	 * @param int $division_id en_entry post id.
+	 * @return int
+	 */
+	public static function order_count( int $division_id ): int {
+		global $wpdb;
+		if ( $division_id <= 0 ) {
+			return 0;
+		}
+		$count = $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			'SELECT COUNT(DISTINCT order_key) FROM ' . self::table_name() . " WHERE division_id = %d AND order_key <> ''",
+			$division_id
+		) );
+		return (int) $count;
+	}
+
+	/**
 	 * Spots remaining for a Division. Returns null when the Division is
 	 * unlimited (spots blank/0).
 	 *

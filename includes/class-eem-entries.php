@@ -432,6 +432,7 @@ class EEM_Entries {
 			$price     = $cfg['price'];
 			$spots_int = $cfg['spots'];
 			$entered   = class_exists( 'EEM_Division_Entries' ) ? EEM_Division_Entries::entered_count( (int) $e->ID ) : 0;
+			$orders    = class_exists( 'EEM_Division_Entries' ) ? EEM_Division_Entries::order_count( (int) $e->ID ) : 0;
 			$is_pub    = ( 'publish' === get_post_status( $e ) );
 			if ( $rid > 0 && '' !== $event ) {
 				$events[ $rid ] = $event;
@@ -444,6 +445,7 @@ class EEM_Entries {
 				'price'     => $price,
 				'spots_int' => $spots_int,
 				'entered'   => $entered,
+				'orders'    => $orders,
 				'oversold'  => ( $spots_int > 0 && $entered > $spots_int ) ? ( $entered - $spots_int ) : 0,
 				'is_pub'    => $is_pub,
 				'ev_status' => $ev_status,
@@ -465,9 +467,11 @@ class EEM_Entries {
 			'wrap'       => true,
 		) );
 
+		echo '<div class="eem-list-card">';
+
 		if ( ! empty( $rows ) ) :
 			?>
-			<div class="eem-list-toolbar">
+			<div class="eem-list-toolbar eem-list-toolbar--in-card">
 				<div class="eem-list-toolbar-left">
 					<select class="eem-toolbar-select" data-eem-input-action="entries-filter-event" data-eem-choices data-eem-choices-search="<?php esc_attr_e( 'Search events…', 'equine-event-manager' ); ?>">
 						<option value=""><?php esc_html_e( 'All events', 'equine-event-manager' ); ?></option>
@@ -494,11 +498,13 @@ class EEM_Entries {
 						<th class="eem-sortable" data-eem-sort="event" data-eem-sort-type="text"><?php esc_html_e( 'Event', 'equine-event-manager' ); ?><span class="eem-sort-ind" aria-hidden="true"></span></th>
 						<th class="eem-sortable" data-eem-sort="price" data-eem-sort-type="num"><?php esc_html_e( 'Price', 'equine-event-manager' ); ?><span class="eem-sort-ind" aria-hidden="true"></span></th>
 						<th class="eem-sortable" data-eem-sort="entered" data-eem-sort-type="num"><?php esc_html_e( 'Entered / Spots', 'equine-event-manager' ); ?><span class="eem-sort-ind" aria-hidden="true"></span></th>
+						<th class="eem-sortable" data-eem-sort="orders" data-eem-sort-type="num"><?php esc_html_e( 'Orders', 'equine-event-manager' ); ?><span class="eem-sort-ind" aria-hidden="true"></span></th>
+						<th class="eem-table-r"></th>
 					</tr>
 				</thead>
 				<tbody>
 					<?php if ( empty( $rows ) ) : ?>
-						<tr><td colspan="4" class="eem-table-empty">
+						<tr><td colspan="6" class="eem-table-empty">
 							<?php
 							printf(
 								/* translators: %s: New Division link */
@@ -518,6 +524,7 @@ class EEM_Entries {
 								data-sort-event="<?php echo esc_attr( strtolower( $r['event'] ) ); ?>"
 								data-sort-price="<?php echo esc_attr( '' !== $r['price'] ? (string) (float) $r['price'] : '-1' ); ?>"
 								data-sort-entered="<?php echo esc_attr( (string) $r['entered'] ); ?>"
+								data-sort-orders="<?php echo esc_attr( (string) $r['orders'] ); ?>"
 								data-sort-status="<?php echo esc_attr( empty( $r['is_pub'] ) ? '0' : ( 'past' === $r['ev_status'] ? '1' : ( 'ongoing' === $r['ev_status'] ? '2' : '3' ) ) ); ?>">
 								<td>
 									<a class="eem-res-name" href="<?php echo esc_url( $detail_url ); ?>"><?php echo esc_html( $r['name'] ); ?></a>
@@ -536,9 +543,22 @@ class EEM_Entries {
 										); ?></span>
 									<?php endif; ?>
 								</td>
+								<td><?php echo $r['orders'] > 0 ? esc_html( number_format_i18n( (int) $r['orders'] ) ) : '<span class="eem-orders-count is-zero">—</span>'; ?></td>
+								<td class="eem-table-r">
+									<div class="eem-actions-cell">
+										<div class="eem-row-menu-wrap">
+											<button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="eem-entry-menu-<?php echo esc_attr( (string) (int) $r['id'] ); ?>" title="<?php esc_attr_e( 'More actions', 'equine-event-manager' ); ?>">···</button>
+											<div class="eem-row-dropdown" id="eem-entry-menu-<?php echo esc_attr( (string) (int) $r['id'] ); ?>" role="menu">
+												<a class="eem-row-dd-item" role="menuitem" href="<?php echo esc_url( $edit_url ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><?php esc_html_e( 'Edit', 'equine-event-manager' ); ?></a>
+												<a class="eem-row-dd-item" role="menuitem" href="<?php echo esc_url( $detail_url ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg><?php esc_html_e( 'View Entrants', 'equine-event-manager' ); ?></a>
+												<a class="eem-row-dd-item eem-row-dd-danger" role="menuitem" href="<?php echo esc_url( (string) get_delete_post_link( (int) $r['id'] ) ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg><?php esc_html_e( 'Delete', 'equine-event-manager' ); ?></a>
+											</div>
+										</div>
+									</div>
+								</td>
 							</tr>
 						<?php endforeach; ?>
-						<tr class="eem-entries-empty-filtered" hidden><td colspan="4" class="eem-table-empty"><?php esc_html_e( 'No divisions for this event.', 'equine-event-manager' ); ?></td></tr>
+						<tr class="eem-entries-empty-filtered" hidden><td colspan="6" class="eem-table-empty"><?php esc_html_e( 'No divisions for this event.', 'equine-event-manager' ); ?></td></tr>
 					<?php endif; ?>
 				</tbody>
 			</table>
@@ -604,6 +624,7 @@ class EEM_Entries {
 			</div>
 		<?php endif; ?>
 		<?php
+		echo '</div>';
 		eem_render_page_close( array( 'wrap' => true ) );
 	}
 
