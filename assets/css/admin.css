@@ -13353,6 +13353,14 @@ select.eem-dm-select:focus {
 	border-color: #1668F2;
 	box-shadow: 0 0 0 3px rgba(22, 104, 242, 0.1);
 }
+/* The Daily Movement toolbar selects are 44px (bespoke, taller than the default
+   36px). The searchable RESERVATION picker is a Choices container, so match its
+   inner height to 44px so it lines up with the native DATE select beside it. */
+body.eem-shell-page--daily-movement .eem-choices .choices__inner {
+	min-height: 44px;
+	background-color: #F7F9FC;
+	border-radius: 8px;
+}
 .eem-dm-cell-order a {
 	color: var(--eem-electric, #1668F2);
 	text-decoration: none;

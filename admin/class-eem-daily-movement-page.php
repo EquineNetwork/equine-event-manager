@@ -62,9 +62,10 @@ class EEM_Daily_Movement_Page {
 		// Only show reservations whose booking window is active today (±1 day) so
 		// long-past and far-future events don't clog the dropdown. The currently
 		// selected reservation is always kept so a deep-linked URL still works.
-		$today    = wp_date( 'Y-m-d' );
-		$windows  = EEM_Daily_Movement_Service::get_reservation_windows();
-		$selected = $reservation_id;
+		$today        = wp_date( 'Y-m-d' );
+		$windows      = EEM_Daily_Movement_Service::get_reservation_windows();
+		$selected     = $reservation_id;
+		$all_published = $reservations;
 		$reservations = array_values( array_filter(
 			$reservations,
 			static function ( $res ) use ( $windows, $today, $selected ) {
@@ -74,6 +75,13 @@ class EEM_Daily_Movement_Page {
 				return EEM_Daily_Movement_Service::is_reservation_active( $windows[ (int) $res->ID ] ?? null, $today, 1 );
 			}
 		) );
+
+		// If nothing is active around today (e.g. all events are upcoming),
+		// fall back to the full published list so the dropdown still defaults to
+		// a real event instead of falsely reporting "no reservations".
+		if ( empty( $reservations ) ) {
+			$reservations = $all_published;
+		}
 
 		if ( 0 === $reservation_id && ! empty( $reservations ) ) {
 			$reservation_id = (int) $reservations[0]->ID;
