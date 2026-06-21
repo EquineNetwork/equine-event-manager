@@ -334,7 +334,6 @@ class EEM_Entries {
 		foreach ( $entrants as $r ) { $total_qty += (int) $r['qty']; }
 		?>
 
-		<?php if ( ! empty( $entrants ) ) : ?>
 		<div class="eem-div-toolbar">
 			<select class="eem-toolbar-select" data-eem-input-action="div-filter-status" aria-label="<?php esc_attr_e( 'Filter by status', 'equine-event-manager' ); ?>">
 				<option value=""><?php esc_html_e( 'All Statuses', 'equine-event-manager' ); ?></option>
@@ -350,7 +349,6 @@ class EEM_Entries {
 				<?php echo esc_html( sprintf( /* translators: %d: number of entries. */ _n( '%d entry', '%d entries', count( $entrants ), 'equine-event-manager' ), count( $entrants ) ) ); ?>
 			</span>
 		</div>
-		<?php endif; ?>
 
 		<div class="eem-desktop-table">
 		<table class="eem-table eem-div-entrants-table">
