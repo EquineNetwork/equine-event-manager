@@ -11867,12 +11867,16 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 /* Footer with multiple stats (division count · total entrants). */
 .eem-table-footer-sep { margin: 0 8px; color: var(--eem-text-muted, #94a3b8); }
 
-/* ── Division Detail — page body override ──
-   The global .eem-page-body rule applies background:#F7F9FC + padding:20px 24px.
-   The division detail renders full-bleed sections (stat grid, event band, toolbar,
-   table) that each carry their own padding — override to white + zero padding so
-   those sections sit flush edge-to-edge inside the bordered card. */
-.eem-page-body:has(.eem-div-stat-grid) { background: #fff; padding: 0; }
+/* ── Division Detail — page body + card override ──
+   The mockup floats a single rounded card on a gray-padded background.
+   We restore the gray padding on .eem-page-body and let the card itself
+   (eem-page-wrap) adopt the mockup's rounded/subtle border. The card
+   contents (stat grid, event band, toolbar, table) each carry their own
+   internal padding, so .eem-page-body sets padding:0 on the card child. */
+.eem-page-body:has(.eem-div-stat-grid) { background: #F7F9FC; padding: 16px 20px 40px; }
+.eem-page-wrap:has(.eem-div-stat-grid) { border: 1px solid #e2e8f4; border-radius: 10px; overflow: hidden; }
+/* The .eem-page-body is the gray wrapper; inside the card we need white + zero padding. */
+.eem-page-wrap:has(.eem-div-stat-grid) .eem-page-body { background: #fff; padding: 0; }
 
 /* ── Division Detail — stat cards ── */
 .eem-div-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid #e2e8f4; background: #fff; }
