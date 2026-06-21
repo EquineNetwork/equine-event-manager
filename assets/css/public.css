@@ -5186,3 +5186,14 @@ a.eem-event-list-row__btn--results:focus {
 .eem-required-doc-row.is-error .eem-required-doc-row__status {
 	color: #b91c1c;
 }
+
+/* Hide the WordPress theme's page/post title on reservation-form pages.
+   The hero section inside the shortcode is the canonical title; the theme
+   title floating above the form is redundant and visually misplaced.
+   Body class `eem-has-reservation-form` is added by the shortcode renderer. */
+body.eem-has-reservation-form .entry-title,
+body.eem-has-reservation-form .page-title,
+body.eem-has-reservation-form .wp-block-post-title,
+body.eem-has-reservation-form h1.tribe-events-single-event-title {
+	display: none !important;
+}

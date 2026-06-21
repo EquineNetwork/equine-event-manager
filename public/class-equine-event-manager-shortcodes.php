@@ -64,6 +64,36 @@ class EEM_Shortcodes {
 		// New pages should use [en_reservation id="N"] (or the event-id variants above).
 		add_shortcode( 'equine_event_manager_event_reservation', array( $this, 'render_event_reservation_shortcode' ) );
 		add_action( 'wp_footer', array( $this, 'render_frontend_form_assets_in_footer' ), 5 );
+
+		// Suppress the WordPress theme's page title on reservation-form pages so it
+		// doesn't float awkwardly above the hero. Checked via has_shortcode() at
+		// wp_head time (after WP_Query has resolved the current post).
+		add_action( 'wp_head', array( $this, 'maybe_suppress_page_title' ) );
+	}
+
+	/**
+	 * Output a <style> block that hides the theme's page/post title on any page
+	 * containing [en_reservation]. The hero section inside the shortcode is the
+	 * canonical title; the bare theme title above it reads as a duplicate.
+	 * Called on wp_head (after WP_Query resolves the current post).
+	 */
+	public function maybe_suppress_page_title(): void {
+		global $post;
+		if ( ! $post instanceof WP_Post ) {
+			return;
+		}
+		$shortcodes = array( 'en_reservation', 'en_stall_reservation_form', 'en_rv_reservation_form', 'equine_event_manager_event_reservation' );
+		$has_any    = false;
+		foreach ( $shortcodes as $tag ) {
+			if ( has_shortcode( $post->post_content, $tag ) ) {
+				$has_any = true;
+				break;
+			}
+		}
+		if ( ! $has_any ) {
+			return;
+		}
+		echo '<style>.entry-title,.page-title,.wp-block-post-title,.tribe-events-single-event-title{display:none!important}</style>' . "\n";
 	}
 
 	/**
@@ -128,10 +158,9 @@ class EEM_Shortcodes {
 			array(
 				'id'            => 0,
 				'admin_invoice' => 0,
-				// FIX 2 (2.3.46) — V1 Rendering Decision: plugin renders FORM ONLY.
-				// Hero / event info / page wrapper comes from host theme or page builder.
-				// Admins who want the EEM hero can explicitly pass show_event_header="1".
-				'show_event_header' => 0,
+				// Hero shown by default; pass show_event_header="0" to suppress it (e.g.
+				// when a page builder already renders its own event header).
+				'show_event_header' => 1,
 			),
 			$atts,
 			'en_reservation'
@@ -9287,14 +9316,54 @@ RV Lot: " . $rv_lot['name'] );
 			$data['stall_selection_mode']     = $stall_pair['selection_mode'];
 		}
 
-		// Required Documents — these live in the relational config table
-		// (dedicated columns + JSON), which is authoritative once migration 016
-		// has run. The postmeta defaults loop above reads the legacy _en_ keys,
-		// which are empty for table-backed reservations, so source them from the
-		// config so the customer form + the publish/checkout gate see the real
-		// list (matches EEM_Order_Documents authorization + the order surfaces).
+		// Config-table overlay — the relational config table is authoritative for
+		// rate/pricing fields and required documents once migration 016 has run.
+		// The postmeta defaults loop above reads legacy _en_ keys that are empty
+		// for table-backed reservations (e.g. NTR 6519), producing $0.00 rates.
+		// Read every pricing + document key from EEM_Reservation_Config so the
+		// customer form sees the real values regardless of postmeta state.
 		if ( class_exists( 'EEM_Reservation_Config' ) ) {
 			$eem_cfg = EEM_Reservation_Config::for( (int) $reservation_id );
+
+			// Pricing / rate fields.
+			$rate_keys = array(
+				'stall_nightly_rate',
+				'stall_weekend_rate',
+				'stall_weekly_rate',
+				'stall_early_bird_nightly_rate',
+				'stall_early_bird_weekend_rate',
+				'stall_early_bird_weekly_rate',
+				'stall_early_bird_cutoff_date',
+				'rv_nightly_rate',
+				'rv_weekend_rate',
+				'rv_weekly_rate',
+				'rv_early_bird_nightly_rate',
+				'rv_early_bird_weekend_rate',
+				'rv_early_bird_weekly_rate',
+				'rv_early_bird_cutoff_date',
+				'stall_pricing_mode',
+				'rv_pricing_mode',
+				'stall_weekend_package_start_date',
+				'stall_weekend_package_end_date',
+				'rv_weekend_package_start_date',
+				'rv_weekend_package_end_date',
+				'stall_weekly_package_start_date',
+				'stall_weekly_package_end_date',
+				'rv_weekly_package_start_date',
+				'rv_weekly_package_end_date',
+				'convenience_fee_type',
+				'convenience_fee_amount',
+				'stall_count',
+				'rv_count',
+			);
+			foreach ( $rate_keys as $rk ) {
+				$cfg_val = $eem_cfg->get( $rk, null );
+				if ( null !== $cfg_val && '' !== $cfg_val ) {
+					$data[ $rk ] = $cfg_val;
+				}
+			}
+
+			// Required Documents.
 			$data['required_documents_enabled']     = ! empty( $eem_cfg->get( 'required_documents_enabled', $data['required_documents_enabled'] ) ) ? 1 : 0;
 			$data['required_documents_description'] = (string) $eem_cfg->get( 'required_documents_description', $data['required_documents_description'] );
 			$eem_rd_list = $eem_cfg->get( 'required_documents', null );
