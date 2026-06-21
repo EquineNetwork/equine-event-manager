@@ -229,7 +229,7 @@ class EEM_Create_Order_Page {
 					</div>
 				<?php else : ?>
 					<label class="eem-field-label" for="eem-co-reservation-select"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?> <span class="eem-req">*</span></label>
-					<select class="eem-field-select" id="eem-co-reservation-select" name="reservation_id" data-eem-input-action="create-order-reservation">
+					<select class="eem-field-select" id="eem-co-reservation-select" name="reservation_id" data-eem-input-action="create-order-reservation" data-eem-choices data-eem-choices-search="<?php esc_attr_e( 'Search reservations…', 'equine-event-manager' ); ?>">
 						<option value=""><?php esc_html_e( 'Select a reservation…', 'equine-event-manager' ); ?></option>
 						<?php foreach ( $reservations as $r ) : ?>
 							<option value="<?php echo esc_attr( (string) $r['id'] ); ?>" data-dates="<?php echo esc_attr( $r['dates'] ); ?>"><?php echo esc_html( $r['label'] ); ?></option>

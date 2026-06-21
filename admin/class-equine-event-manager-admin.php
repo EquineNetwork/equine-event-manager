@@ -472,15 +472,16 @@ class EEM_Admin {
 		}
 
 
-			// CLEANUP #21 (Choices.js, MIT) -- searchable filter dropdowns on the Orders
-			// event filter + Reservations date filter, where a native select becomes an
-			// unusable long scroll past ~50 events. Loaded only on those two list screens.
-			if ( in_array( $page, array( 'equine-event-manager-orders', EEM_Reservations_List_Page::MENU_SLUG, EEM_Entries::LIST_SLUG, EEM_Notifications_Page::MENU_SLUG ), true ) ) {
-				wp_enqueue_style( 'eem-choices-vendor', EQUINE_EVENT_MANAGER_URL . 'assets/vendor/choices/choices.min.css', array(), '10.2.0' );
-				wp_enqueue_style( 'eem-choices', EQUINE_EVENT_MANAGER_URL . 'assets/css/eem-choices.css', array( 'eem-choices-vendor', 'eem-admin' ), $ver );
-				wp_enqueue_script( 'eem-choices-vendor', EQUINE_EVENT_MANAGER_URL . 'assets/vendor/choices/choices.min.js', array(), '10.2.0', true );
-				wp_enqueue_script( 'eem-choices', EQUINE_EVENT_MANAGER_URL . 'assets/js/eem-choices.js', array( 'eem-choices-vendor' ), $ver, true );
-			}
+			// CLEANUP #21 (Choices.js, MIT) -- searchable reservation/event picker
+			// dropdowns. Loaded on EVERY EEM admin screen ($should_load already
+			// scopes this to plugin pages) so any `select[data-eem-choices]` — Daily
+			// Movement, Reports, Create Order, the event-editor Link Reservation, the
+			// Orders/Reservations/Notifications filters — becomes a search-and-select
+			// like Edit Reservation. eem-choices.js no-ops where no such select exists.
+			wp_enqueue_style( 'eem-choices-vendor', EQUINE_EVENT_MANAGER_URL . 'assets/vendor/choices/choices.min.css', array(), '10.2.0' );
+			wp_enqueue_style( 'eem-choices', EQUINE_EVENT_MANAGER_URL . 'assets/css/eem-choices.css', array( 'eem-choices-vendor', 'eem-admin' ), $ver );
+			wp_enqueue_script( 'eem-choices-vendor', EQUINE_EVENT_MANAGER_URL . 'assets/vendor/choices/choices.min.js', array(), '10.2.0', true );
+			wp_enqueue_script( 'eem-choices', EQUINE_EVENT_MANAGER_URL . 'assets/js/eem-choices.js', array( 'eem-choices-vendor' ), $ver, true );
 
 			// v2 Notifications page JS (audience builder + live count + send).
 			if ( EEM_Notifications_Page::MENU_SLUG === $page ) {

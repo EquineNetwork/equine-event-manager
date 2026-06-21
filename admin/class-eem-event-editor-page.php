@@ -490,7 +490,7 @@ class EEM_Event_Editor_Page {
 		<div class="eem-field-row">
 			<div class="eem-field-label"><?php esc_html_e( 'Reservation Setup', 'equine-event-manager' ); ?><div class="eem-field-label-sub"><?php esc_html_e( 'Choose or create', 'equine-event-manager' ); ?></div></div>
 			<div class="eem-field-control">
-				<select class="eem-field-select" name="en_event[reservation_id]">
+				<select class="eem-field-select" name="en_event[reservation_id]" data-eem-choices data-eem-choices-search="<?php esc_attr_e( 'Search reservations…', 'equine-event-manager' ); ?>">
 					<option value="0"><?php esc_html_e( 'No linked reservation', 'equine-event-manager' ); ?></option>
 					<?php foreach ( $reservations as $r ) : ?>
 						<option value="<?php echo esc_attr( (string) $r->ID ); ?>" <?php selected( $d['linked_res_id'], $r->ID ); ?>><?php echo esc_html( get_the_title( $r->ID ) ); ?></option>
@@ -542,7 +542,7 @@ class EEM_Event_Editor_Page {
 					'order'       => 'ASC',
 				) );
 				?>
-				<select class="eem-field-select" name="en_event[reservation_id]" style="width:100%">
+				<select class="eem-field-select" name="en_event[reservation_id]" style="width:100%" data-eem-choices data-eem-choices-search="<?php esc_attr_e( 'Search reservations…', 'equine-event-manager' ); ?>">
 					<option value="0"><?php esc_html_e( 'No linked reservation', 'equine-event-manager' ); ?></option>
 					<?php foreach ( $reservations as $r ) : ?>
 						<option value="<?php echo esc_attr( (string) $r->ID ); ?>" <?php selected( $d['linked_res_id'], $r->ID ); ?>><?php echo esc_html( get_the_title( $r->ID ) ); ?></option>

@@ -240,7 +240,7 @@ class EEM_Reports_Page {
 				<div class="eem-reports-filter-row">
 					<div class="eem-filter-group">
 						<label class="eem-filter-label" for="eem-filter-reservation"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?></label>
-						<select class="eem-filter-select" id="eem-filter-reservation" name="reservation_id" data-eem-export-filter="reservation_id">
+						<select class="eem-filter-select" id="eem-filter-reservation" name="reservation_id" data-eem-export-filter="reservation_id" data-eem-choices data-eem-choices-search="<?php esc_attr_e( 'Search reservations…', 'equine-event-manager' ); ?>">
 							<option value="0"><?php esc_html_e( 'All reservations', 'equine-event-manager' ); ?></option>
 							<?php foreach ( $reservations as $r ) : ?>
 								<option value="<?php echo esc_attr( $r->ID ); ?>" <?php selected( $filters['reservation_id'], $r->ID ); ?>><?php echo esc_html( get_the_title( $r ) ); ?></option>
