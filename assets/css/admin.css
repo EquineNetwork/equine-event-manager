@@ -11867,9 +11867,16 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 /* Footer with multiple stats (division count · total entrants). */
 .eem-table-footer-sep { margin: 0 8px; color: var(--eem-text-muted, #94a3b8); }
 
+/* ── Division Detail — page body override ──
+   The global .eem-page-body rule applies background:#F7F9FC + padding:20px 24px.
+   The division detail renders full-bleed sections (stat grid, event band, toolbar,
+   table) that each carry their own padding — override to white + zero padding so
+   those sections sit flush edge-to-edge inside the bordered card. */
+.eem-page-body:has(.eem-div-stat-grid) { background: #fff; padding: 0; }
+
 /* ── Division Detail — stat cards ── */
-.eem-div-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid #e2e8f4; }
-.eem-div-stat-card { padding: 18px 22px; display: flex; align-items: center; gap: 14px; border-right: 1px solid #e2e8f4; }
+.eem-div-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid #e2e8f4; background: #fff; }
+.eem-div-stat-card { padding: 18px 22px; display: flex; align-items: center; gap: 14px; border-right: 1px solid #e2e8f4; background: #fff; }
 .eem-div-stat-card:last-child { border-right: none; }
 .eem-div-stat-icon { width: 32px; height: 32px; border-radius: 7px; background: #eff6ff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .eem-div-stat-icon svg { width: 15px; height: 15px; color: #1668F2; }
