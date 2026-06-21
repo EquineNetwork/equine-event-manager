@@ -2858,7 +2858,7 @@ a.eem-settings-nav-item:focus {
 	padding: 16px 28px;
 	background: var(--eem-bg-alt);
 	border: none;
-	border-top: 1px solid #dcdcde;
+	border-top: 1px solid #e2e8f4;
 	border-radius: 0;
 	position: static;
 	box-shadow: none;
@@ -2880,7 +2880,7 @@ a.eem-settings-nav-item:focus {
 	background: transparent;
 	border: none;
 	border-radius: 0;
-	border-bottom: 1px solid #dcdcde;
+	border-bottom: 1px solid #e2e8f4;
 	overflow: visible;
 }
 
@@ -2999,7 +2999,7 @@ a.eem-settings-nav-item:focus {
 .eem-template-card {
 	background: var(--eem-surface);
 	border: 1px solid var(--eem-border-card);
-	border-radius: var(--eem-radius);
+	border-radius: 8px;
 	overflow: hidden;
 }
 
@@ -3162,7 +3162,7 @@ a.eem-settings-nav-item:focus {
 	gap: var(--eem-space-3);
 	padding: 14px 16px;
 	border: 1.5px solid var(--eem-border);
-	border-radius: var(--eem-radius);
+	border-radius: 8px;
 	background: var(--eem-surface);
 	cursor: pointer;
 	transition: border-color 0.12s, background 0.12s;
@@ -3242,7 +3242,7 @@ a.eem-settings-nav-item:focus {
 	padding: var(--eem-space-4);
 	background: #FAFBFE;
 	border: 1px solid #E5EAF2;
-	border-radius: var(--eem-radius);
+	border-radius: 8px;
 }
 
 .eem-source-detail[hidden] {
@@ -3315,7 +3315,7 @@ a.eem-settings-nav-item:focus {
 	width: 200px;
 	height: 80px;
 	border: 1px dashed var(--eem-border-card);
-	border-radius: var(--eem-radius);
+	border-radius: 8px;
 	/* Intentionally NOT --eem-bg-alt — this is an empty-state
 	   placeholder with a dashed border, not a "bar on white card".
 	   See :root note on --eem-bg-alt for the exclusion rationale. */
@@ -3375,9 +3375,9 @@ a.eem-settings-nav-item:focus {
 .eem-code-box {
 	display: block;
 	width: 100%;
-	background: #f6f7f7;
-	border: 1px solid #dcdcde;
-	border-radius: var(--eem-radius);
+	background: #f0f0f1;
+	border: 1px solid var(--eem-border-card);
+	border-radius: 8px;
 	padding: 9px 12px;
 	font-family: 'IBM Plex Mono', 'SFMono-Regular', Menlo, monospace;
 	font-size: 12.5px;
@@ -3403,8 +3403,8 @@ a.eem-settings-nav-item:focus {
    ───────────────────────────────────────────────────────────── */
 .eem-empty-state {
 	background: var(--eem-bg);
-	border: 1px solid #dcdcde;
-	border-radius: var(--eem-radius);
+	border: 1px solid #e2e8f4;
+	border-radius: 8px;
 	padding: 20px 16px;
 	text-align: center;
 }
@@ -7679,8 +7679,9 @@ a.eem-btn-preview:hover { background: #EEF4FF; border-color: var(--eem-electric)
 
 /* ── Event Link rail card classes retired C8 — replaced by event-anchor header ── */
 
-/* ── Shortcode rail card (mockup line 270) ── */
-.eem-code-box { background: #f3f4f5; border: 1px solid #dcdcde; border-radius: 4px; padding: 9px 12px; font-family: monospace; font-size: 13px; color: var(--eem-text); word-break: break-all; }
+/* ── Shortcode rail card duplicate removed 2026-06-20: the canonical
+   .eem-code-box (Settings → Shortcodes) lives in the settings region and
+   carries the new tokens (#f0f0f1 / #e2e8f4 / 8px). This stray shadowed it. ── */
 
 /* ── Sticky save bar (C8 port, mockup line 258).
    Always visible — replaces the old mobile-only strip.
