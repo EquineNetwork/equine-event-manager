@@ -10943,19 +10943,19 @@ select.eem-filter-select { padding-right:32px; appearance:none; cursor:pointer; 
 /* Edge-to-edge: drop top/side borders + rounded corners AND pull out past the
    .eem-reports-body padding (18px 22px) so the blue bleeds to the page-wrap
    edges and sits flush under the page header. Bottom border stays as a divider. */
-.eem-reports-filter-card { border-top:0; border-left:0; border-right:0; border-radius:0; margin:-18px -22px 18px; }
-.eem-reports-filter-row { display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; background:#f0f4fb; padding:14px 18px; }
-.eem-reports-filter-row + .eem-reports-filter-row { border-top:1px solid #d9e2f2; }
+.eem-reports-filter-card { border-top:0; border-left:0; border-right:0; border-radius:0; margin:-38px -46px 18px; }
+.eem-reports-filter-row { display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; background:#fff; padding:14px 18px; }
+.eem-reports-filter-row + .eem-reports-filter-row { border-top:1px solid #e2e8f4; }
 .eem-reports-filter-row .eem-filter-group { flex:1 1 200px; }
 .eem-reports-filter-actions { margin-left:auto; display:flex; align-items:center; gap:16px; flex-shrink:0; }
 .eem-daterange-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .eem-daterange-controls .eem-filter-select { width:auto; min-width:150px; }
-.eem-section-title { font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:700; color:#031B4E; margin:18px 0 10px; }
+.eem-section-title { font-family:'IBM Plex Sans',sans-serif; font-size:13px; font-weight:600; color:#64748b; margin:18px 0 10px; }
 .eem-report-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
-.eem-report-card { background:#fff; border:1px solid #e5e7eb; border-radius:var(--eem-radius); padding:16px; display:flex; flex-direction:column; justify-content:space-between; gap:14px; }
+.eem-report-card { background:#fff; border:1px solid #e2e8f4; border-radius:10px; padding:16px; display:flex; flex-direction:column; justify-content:space-between; gap:14px; }
 .eem-report-card-head { display:flex; align-items:flex-start; gap:12px; }
-.eem-report-icon { flex-shrink:0; width:28px; height:28px; border-radius:var(--eem-radius); display:flex; align-items:center; justify-content:center; }
-.eem-report-icon svg { width:14px; height:14px; }
+.eem-report-icon { flex-shrink:0; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; }
+.eem-report-icon svg { width:15px; height:15px; }
 .eem-report-icon-orders { background:#EEF4FF; color:#1668F2; }
 .eem-report-icon-reservations { background:#F5F3FF; color:#6d28d9; }
 .eem-report-icon-revenue { background:#F0FDF4; color:#15803d; }
@@ -10963,37 +10963,38 @@ select.eem-filter-select { padding-right:32px; appearance:none; cursor:pointer; 
 .eem-report-icon-shavings { background:#FEFCE8; color:#a16207; }
 .eem-report-icon-customers { background:#FFF7ED; color:#c2410c; }
 .eem-report-icon-refunds { background:#FEF2F2; color:#b91c1c; }
-.eem-report-card-title { font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:700; color:#031B4E; margin-bottom:3px; }
-.eem-report-card-desc { font-size:12.5px; color:#50575e; line-height:1.5; }
+.eem-report-card-title { font-family:'IBM Plex Sans',sans-serif; font-size:14px; font-weight:700; color:#0d1b3e; margin-bottom:3px; }
+.eem-report-card-desc { font-size:12.5px; color:#64748b; line-height:1.5; }
 .eem-report-card-actions { display:flex; gap:8px; }
 /* CSV (form-wrapped) and PDF (bare anchor) are equal-width flex items. */
 .eem-export-form,
 .eem-report-card-actions > .btn-export { flex:1 1 0; display:flex; }
-.eem-report-card-actions .btn-export { width:100%; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:8px 12px; background:#fff; border:1px solid #c3c4c7; color:#1d2327; border-radius:var(--eem-radius); font-size:13px; font-weight:600; cursor:pointer; text-decoration:none; }
-.eem-report-card-actions .btn-export:hover { background:#f6f7f7; border-color:#1668F2; color:#1668F2; }
+.eem-report-card-actions .btn-export { width:100%; display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:8px 12px; background:#F7F9FC; border:1.5px solid #d0daea; color:#0d1b3e; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; text-decoration:none; }
+.eem-report-card-actions .btn-export:hover { background:#f0f5ff; border-color:#1668F2; color:#1668F2; }
 /* PDF opens the print view — primary electric-blue treatment. */
 .eem-report-card-actions .btn-export--pdf { background:#1668F2; border-color:#1668F2; color:#fff; }
 .eem-report-card-actions a.btn-export--pdf:link,
 .eem-report-card-actions a.btn-export--pdf:visited { color:#fff; }
-.eem-report-card-actions .btn-export--pdf:hover { background:#1257d1; border-color:#1257d1; color:#fff; }
+.eem-report-card-actions .btn-export--pdf:hover { background:#0d4fc2; border-color:#0d4fc2; color:#fff; }
 .eem-report-card-actions .btn-export svg { width:12px; height:12px; }
 .format-label { font-weight:700; letter-spacing:.02em; }
 /* Section-title row carries the Clear-history action on the right. */
 .eem-export-history-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.eem-btn-clear-history { font-size:12px; font-weight:600; color:#b42318; text-decoration:none; }
-.eem-btn-clear-history:hover { color:#912018; }
+.eem-btn-clear-history { font-size:12px; font-weight:600; color:#dc2626; text-decoration:none; }
+.eem-btn-clear-history:hover { color:#b91c1c; }
 /* Full-bleed blue header bar: card-body padding:0 so the thead spans the card
    edges; th/td get their own inset padding. Headers = house uppercase navy. */
 .eem-export-history-card .eem-card-body { padding:0; }
 table.eem-export-history { width:100%; border-collapse:collapse; }
-table.eem-export-history thead tr { background:#f0f4fb; border-bottom:1px solid #d9e2f2; }
-table.eem-export-history thead th { padding:11px 22px; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--eem-navy,#031B4E); text-align:left; }
-table.eem-export-history tbody tr { border-bottom:1px solid #f0f0f1; }
+table.eem-export-history thead tr { background:#F7F9FC; border-bottom:1px solid #e2e8f4; }
+table.eem-export-history thead th { padding:11px 22px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#94a3b8; text-align:left; }
+table.eem-export-history tbody tr { border-bottom:1px solid #f0f4fb; }
+table.eem-export-history tbody tr:hover { background:#fafbfe; }
 table.eem-export-history tbody tr:last-child { border-bottom:none; }
-table.eem-export-history td { padding:11px 22px; font-size:13px; color:#1d2327; }
-.eem-btn-download { display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:var(--eem-radius); font-size:12px; font-weight:600; background:#fff; color:#1d2327; border:1px solid #c3c4c7; text-decoration:none; white-space:nowrap; }
-.eem-btn-download:hover { background:#f6f7f7; border-color:#1668F2; color:#1668F2; }
-.eem-expired-link { font-size:12px; color:#8c8f94; font-style:italic; }
+table.eem-export-history td { padding:11px 22px; font-size:13px; color:#0d1b3e; }
+.eem-btn-download { display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:7px; font-size:12px; font-weight:600; background:#F7F9FC; color:#0d1b3e; border:1.5px solid #d0daea; text-decoration:none; white-space:nowrap; }
+.eem-btn-download:hover { background:#f0f5ff; border-color:#1668F2; color:#1668F2; }
+.eem-expired-link { font-size:12px; color:#94a3b8; font-style:italic; }
 
 /* ============================================================================
    C9 — Customer Profile page (.mockups/customer_profile_page.html)
