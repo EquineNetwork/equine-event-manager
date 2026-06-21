@@ -147,13 +147,6 @@ class EEM_Producers_Page {
 		eem_render_page_open( array(
 			'title'      => __( 'Producers', 'equine-event-manager' ),
 			'subtitle'   => __( 'Manage the producers and organizers behind your events. Each producer can be linked to any number of events.', 'equine-event-manager' ),
-			'meta'       => sprintf(
-				'<div class="eem-page-meta-links"><a href="%s">%s</a><a href="%s">%s</a></div>',
-				esc_url( admin_url( 'edit.php?post_type=en_event' ) ),
-				esc_html__( 'View Events', 'equine-event-manager' ),
-				esc_url( EEM_Venues_Page::url() ),
-				esc_html__( 'View Venues', 'equine-event-manager' )
-			),
 			'actions'    => sprintf(
 				'<a class="eem-btn eem-btn-electric" href="%s">+ %s</a>',
 				esc_url( admin_url( 'post-new.php?post_type=en_producer' ) ),
@@ -162,11 +155,11 @@ class EEM_Producers_Page {
 			'breadcrumb' => array( array( 'label' => __( 'Producers', 'equine-event-manager' ) ) ),
 		) );
 
-		self::render_stats( $stat_total, $stat_published, $stat_in_use, $stat_site );
-		self::render_status_tabs( $status, $counts );
-		self::render_toolbar( $search, $total );
+		self::render_toolbar( $search, $total, $status, $counts );
+		echo '<div class="eem-list-card">';
 		self::render_table( $page_rows, $orderby, $order, $status, $search );
 		self::render_footer( $total, $paged, $pages, $status, $orderby, $order, $search );
+		echo '</div>';
 
 		eem_render_page_close();
 	}
@@ -230,18 +223,14 @@ class EEM_Producers_Page {
 			'draft'   => __( 'Draft', 'equine-event-manager' ),
 			'trash'   => __( 'Trash', 'equine-event-manager' ),
 		);
-		echo '<nav class="eem-status-tabs" aria-label="' . esc_attr__( 'Filter producers by status', 'equine-event-manager' ) . '">';
-		$first = true;
+		echo '<nav class="eem-filter-tabs" role="tablist" aria-label="' . esc_attr__( 'Filter producers by status', 'equine-event-manager' ) . '">';
 		foreach ( $tabs as $key => $label ) {
-			if ( ! $first ) {
-				echo '<span class="eem-status-tab-sep" aria-hidden="true">|</span>';
-			}
-			$first     = false;
 			$is_active = $key === $active;
 			printf(
-				'<a class="eem-status-tab%s" href="%s"%s>%s <span class="eem-status-tab-count">(%s)</span></a>',
-				$is_active ? ' is-active' : '',
+				'<a class="eem-filter-tab%s" href="%s" role="tab" aria-selected="%s"%s>%s <span class="eem-filter-tab-count">%s</span></a>',
+				$is_active ? ' active' : '',
 				esc_url( self::url( array( 'status' => $key ) ) ),
+				$is_active ? 'true' : 'false',
 				$is_active ? ' aria-current="page"' : '',
 				esc_html( $label ),
 				esc_html( number_format_i18n( (int) ( $counts[ $key ] ?? 0 ) ) )
@@ -255,18 +244,17 @@ class EEM_Producers_Page {
 	 *
 	 * @return void
 	 */
-	private static function render_toolbar( string $search, int $total ): void {
+	private static function render_toolbar( string $search, int $total, string $status, array $counts ): void {
 		?>
 		<div class="eem-list-toolbar eem-toolbar-controls">
-			<div class="eem-list-toolbar-left"></div>
+			<div class="eem-list-toolbar-left"><?php self::render_status_tabs( $status, $counts ); ?></div>
 			<div class="eem-list-toolbar-right">
 				<form class="eem-search-form" role="search" method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
 					<input type="hidden" name="page" value="<?php echo esc_attr( self::MENU_SLUG ); ?>" />
-					<span class="eem-search-wrap eem-search-wrap--attached">
+					<span class="eem-search-wrap">
 						<svg class="eem-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 						<input class="eem-search-input" type="search" name="s" value="<?php echo esc_attr( $search ); ?>" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" />
 					</span>
-					<button type="submit" class="eem-toolbar-btn eem-search-btn"><?php esc_html_e( 'Search Producers', 'equine-event-manager' ); ?></button>
 				</form>
 				<span class="eem-item-count"><?php
 					echo esc_html( sprintf(

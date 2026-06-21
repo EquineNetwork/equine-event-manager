@@ -7541,6 +7541,9 @@ input.eem-pct-input:focus {
 .eem-edit-body { padding: 18px 22px 90px; background: #fff; }
 /* gap:0 — flat sections are separated by their own hairline divider, not a gap. */
 .eem-edit-main { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+/* Venue + Producer editors use spaced white cards (their mockups stack separate
+   .eem-card sections), so restore the 14px gap the flat reservation editor drops. */
+.eem-event-editor .eem-edit-main { gap: 14px; }
 
 /* ── Reservation editor — field + bordered form card ─────────────────────────
    Brings the editor in line with the plugin's design language (mockup
@@ -7591,6 +7594,25 @@ body.eem-shell-page--reservation-editor .eem-reservation-editor-section .eem-sec
 }
 body.eem-shell-page--reservation-editor .eem-reservation-editor-section .eem-section-body {
 	padding: 16px 18px;
+}
+
+/* Venue + Producer editors render WHITE section cards (their mockups use
+   .eem-card with a white background + 10px radius), unlike the reservation
+   editor's intentionally-flat form sections. Scoped to .eem-event-editor (only
+   the venue/producer editor wrappers carry it) so the reservation CPT editor
+   keeps its flat treatment. Higher specificity (0,4,x) beats the flat block. */
+body.eem-shell-page--reservation-editor .eem-event-editor .eem-reservation-editor-section.eem-card {
+	background: #fff;
+	border: 1px solid #e2e8f4;
+	border-radius: 10px;
+	padding: 0;
+	overflow: hidden;
+}
+body.eem-shell-page--reservation-editor .eem-event-editor .eem-reservation-editor-section.eem-card:last-child {
+	border: 1px solid #e2e8f4;
+}
+body.eem-shell-page--reservation-editor .eem-event-editor .eem-reservation-editor-section .eem-section-header {
+	border-bottom: 1px solid #f0f4fb;
 }
 
 /* 2.3.56 — Hard-gate panel shown when a reservation has no linked event yet.
