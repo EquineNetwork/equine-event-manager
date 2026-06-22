@@ -411,95 +411,104 @@ class EEM_Shortcodes {
 				<script>try{sessionStorage.removeItem('eem_resform_v1_<?php echo esc_js( (string) $reservation_id ); ?>');}catch(e){}window.location.replace(<?php echo wp_json_encode( $this->pending_redirect_url ); ?>);</script>
 			<?php endif; ?>
 
-			<?php if ( $show_event_header && ! $is_admin_invoice ) : ?>
-				<div class="eem-reservation-event-hero">
-					<div class="eem-reservation-event-hero__media">
-						<div class="eem-reservation-event-media-card">
-							<div class="eem-reservation-event-media-card__visual<?php echo ! empty( $normalized_event_data['featured_image'] ) ? ' has-image' : ''; ?>">
-								<?php if ( ! empty( $normalized_event_data['featured_image'] ) ) : ?>
-									<img src="<?php echo esc_url( $normalized_event_data['featured_image'] ); ?>" alt="<?php echo esc_attr( $event_label ); ?>" />
-								<?php else : ?>
-									<div class="eem-reservation-event-media-card__placeholder">
-										<span class="eem-reservation-event-media-card__placeholder-icon" aria-hidden="true">EVENT</span>
-										<strong><?php esc_html_e( 'Event Image', 'equine-event-manager' ); ?></strong>
-									</div>
-								<?php endif; ?>
-							</div>
-							<?php if ( ! empty( $normalized_event_data['flyer_url'] ) ) : ?>
-								<div class="eem-reservation-event-media-card__actions">
-									<a class="eem-reservation-event-media-card__button" href="<?php echo esc_url( $normalized_event_data['flyer_url'] ); ?>" target="_blank" rel="noopener noreferrer" onclick="window.open(this.href,'_blank','noopener'); return false;"><?php esc_html_e( 'View Event Flyer PDF', 'equine-event-manager' ); ?></a>
+			<?php
+			if ( $show_event_header && ! $is_admin_invoice ) :
+				$hero_image     = ! empty( $normalized_event_data['featured_image'] ) ? $normalized_event_data['featured_image'] : '';
+				$hero_date      = $event_date_summary;
+				$hero_location  = $event_card_details['venue_name'];
+				$hero_loc_sub   = $event_card_details['location'];
+				if ( '' === $hero_location && ! empty( $normalized_event_data['venue_name'] ) ) {
+					$hero_location = (string) $normalized_event_data['venue_name'];
+				}
+				if ( '' === $hero_loc_sub && ! empty( $normalized_event_data['location'] ) ) {
+					$hero_loc_sub = (string) $normalized_event_data['location'];
+				}
+				$hero_producer     = ! empty( $normalized_event_data['producer']['name'] ) ? (string) $normalized_event_data['producer']['name'] : '';
+				$hero_prod_parts   = array();
+				if ( ! empty( $normalized_event_data['producer']['phone'] ) ) {
+					$ph_raw          = preg_replace( '/[^\d+]/', '', $normalized_event_data['producer']['phone'] );
+					$ph_display      = $normalized_event_data['producer']['phone'];
+					$hero_prod_parts[] = '<a href="tel:' . esc_attr( $ph_raw ) . '">' . esc_html( $ph_display ) . '</a>';
+				}
+				if ( ! empty( $normalized_event_data['producer']['email'] ) ) {
+					$em = (string) $normalized_event_data['producer']['email'];
+					$hero_prod_parts[] = '<a href="mailto:' . esc_attr( $em ) . '">' . esc_html( $em ) . '</a>';
+				}
+				$hero_prod_sub   = implode( ' &middot; ', $hero_prod_parts );
+				$hero_desc       = ! empty( $normalized_event_data['content_raw'] ) ? (string) $normalized_event_data['content_raw'] : '';
+				$hero_bullets    = array();
+				if ( '' !== $hero_desc ) {
+					$lines = preg_split( '/\r?\n/', trim( $hero_desc ) );
+					foreach ( $lines as $ln ) {
+						$ln = trim( $ln );
+						if ( '' !== $ln ) {
+							$hero_bullets[] = $ln;
+						}
+					}
+				}
+				$hero_directions = '';
+				if ( ! empty( $normalized_event_data['venue']['map_query'] ) ) {
+					$hero_directions = 'https://maps.google.com/?q=' . rawurlencode( $normalized_event_data['venue']['map_query'] );
+				}
+			?>
+				<div class="hero">
+					<div class="hero-inner">
+						<div class="hero-img-col">
+							<?php if ( $hero_image ) : ?>
+								<img src="<?php echo esc_url( $hero_image ); ?>" alt="<?php echo esc_attr( $event_label ); ?>" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+								<div class="hero-img-placeholder" aria-hidden="true" style="display:none;">
+									<span><?php esc_html_e( 'Event Featured Image', 'equine-event-manager' ); ?></span>
+								</div>
+							<?php else : ?>
+								<div class="hero-img-placeholder" aria-hidden="true">
+									<span><?php esc_html_e( 'Event Featured Image', 'equine-event-manager' ); ?></span>
 								</div>
 							<?php endif; ?>
 						</div>
-					</div>
+						<div class="hero-info-col">
+							<h1 class="hero-title"><?php echo esc_html( $event_label ); ?></h1>
+							<?php if ( $hero_date ) : ?>
+								<div class="hero-dates"><?php echo esc_html( $hero_date ); ?></div>
+							<?php endif; ?>
 
-					<div class="eem-event-details-card">
-						<div class="eem-event-details-card__eyebrow"><?php esc_html_e( 'Event Reservations', 'equine-event-manager' ); ?></div>
-						<h2 class="eem-event-details-card__title"><?php echo esc_html( $event_label ); ?></h2>
-						<?php if ( $event_card_details['venue_name'] || $event_card_details['location'] || $event_date_summary || $support_phone ) : ?>
-							<div class="eem-event-details-card__facts">
-								<?php if ( $event_card_details['venue_name'] || $event_card_details['location'] ) : ?>
-									<div class="eem-event-details-card__fact">
-										<span class="eem-event-details-card__fact-icon" aria-hidden="true">
-											<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-												<path d="M12 22s7-6.2 7-13a7 7 0 1 0-14 0c0 6.8 7 13 7 13Zm0-9.5A2.5 2.5 0 1 1 12 7a2.5 2.5 0 0 1 0 5.5Z" fill="currentColor"></path>
-											</svg>
-										</span>
-										<?php if ( $event_card_details['venue_name'] ) : ?>
-											<strong><?php echo esc_html( $event_card_details['venue_name'] ); ?></strong>
-										<?php endif; ?>
-										<?php if ( $event_card_details['venue_name'] && $event_card_details['location'] ) : ?>
-											<span class="eem-event-details-card__fact-separator" aria-hidden="true">&middot;</span>
-										<?php endif; ?>
-										<?php if ( $event_card_details['location'] ) : ?>
-											<span><?php echo esc_html( $event_card_details['location'] ); ?></span>
-										<?php endif; ?>
-									</div>
-								<?php endif; ?>
-								<?php if ( $event_date_summary ) : ?>
-									<div class="eem-event-details-card__fact">
-										<span class="eem-event-details-card__fact-icon" aria-hidden="true">
-											<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-												<path d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a3 3 0 0 1 3 3v11a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V7a3 3 0 0 1 3-3h1V3a1 1 0 0 1 1-1Zm13 8H4v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8ZM5 6a1 1 0 0 0-1 1v1h16V7a1 1 0 0 0-1-1H5Z" fill="currentColor"></path>
-											</svg>
-										</span>
-										<strong><?php echo esc_html( $event_date_summary ); ?></strong>
-									</div>
-								<?php endif; ?>
-								<?php if ( $support_phone ) : ?>
-									<div class="eem-event-details-card__fact">
-										<span class="eem-event-details-card__fact-icon" aria-hidden="true">
-											<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-												<path d="M6.6 3A2.6 2.6 0 0 0 4 5.6c0 7.95 6.45 14.4 14.4 14.4a2.6 2.6 0 0 0 2.6-2.6v-2.03c0-.63-.45-1.17-1.06-1.29l-4.05-.81a1.5 1.5 0 0 0-1.43.46l-.9.99a11.54 11.54 0 0 1-4.28-4.28l.99-.9a1.5 1.5 0 0 0 .46-1.43l-.81-4.05A1.31 1.31 0 0 0 8.63 3H6.6Z" fill="currentColor"></path>
-											</svg>
-										</span>
-										<a href="tel:<?php echo esc_attr( preg_replace( '/[^0-9+]/', '', $company_settings['support_phone'] ) ); ?>"><?php echo esc_html( $support_phone ); ?></a>
-									</div>
+							<?php if ( ! empty( $hero_bullets ) ) : ?>
+								<ul class="hero-bullets">
+									<?php foreach ( $hero_bullets as $bullet ) : ?>
+										<li><?php echo esc_html( $bullet ); ?></li>
+									<?php endforeach; ?>
+								</ul>
+							<?php endif; ?>
+
+							<?php if ( '' !== $hero_location || '' !== $hero_producer ) : ?>
+								<div class="hero-meta-grid">
+									<?php if ( '' !== $hero_location ) : ?>
+										<div class="hero-meta-item">
+											<div class="hero-meta-label"><?php esc_html_e( 'Location', 'equine-event-manager' ); ?></div>
+											<div class="hero-meta-val"><?php echo esc_html( $hero_location ); ?></div>
+											<?php if ( '' !== $hero_loc_sub ) : ?>
+												<div class="hero-meta-sub"><?php echo esc_html( $hero_loc_sub ); ?></div>
+											<?php endif; ?>
+										</div>
+									<?php endif; ?>
+									<?php if ( '' !== $hero_producer ) : ?>
+										<div class="hero-meta-item">
+											<div class="hero-meta-label"><?php esc_html_e( 'Producer', 'equine-event-manager' ); ?></div>
+											<div class="hero-meta-val"><?php echo esc_html( $hero_producer ); ?></div>
+											<?php if ( '' !== $hero_prod_sub ) : ?>
+												<div class="hero-meta-sub"><?php echo $hero_prod_sub; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from esc_html/esc_attr parts above. ?></div>
+											<?php endif; ?>
+										</div>
+									<?php endif; ?>
+								</div>
+							<?php endif; ?>
+
+							<div class="hero-ctas">
+								<a class="btn-reserve" href="#reservation-form"><?php esc_html_e( 'Reserve Now', 'equine-event-manager' ); ?></a>
+								<?php if ( $hero_directions ) : ?>
+									<a class="btn-directions" href="<?php echo esc_url( $hero_directions ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Directions', 'equine-event-manager' ); ?></a>
 								<?php endif; ?>
 							</div>
-						<?php endif; ?>
-						<?php // 2.3.70 — check-in/check-out pills moved to the Stay Details section. ?>
-						<?php if ( $show_venue_map ) : ?>
-							<div class="eem-event-details-card__map-link">
-								<a href="<?php echo esc_url( $venue_map_download_url ); ?>" target="_blank" rel="noopener noreferrer">
-									<span class="eem-event-details-card__map-link-icon" aria-hidden="true">
-										<svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-											<path d="M12 3a1 1 0 0 1 1 1v8.59l2.3-2.29a1 1 0 1 1 1.4 1.41l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.41L11 12.59V4a1 1 0 0 1 1-1Zm-7 14a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v1a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-1a1 1 0 0 1 1-1Z" fill="currentColor"></path>
-										</svg>
-									</span>
-									<span><?php esc_html_e( 'Download Venue Map', 'equine-event-manager' ); ?></span>
-								</a>
-							</div>
-						<?php elseif ( ! empty( $data['venue_name'] ) || ! empty( $data['venue_address'] ) ) : ?>
-							<div class="eem-event-details-card__venue">
-								<?php if ( ! empty( $data['venue_name'] ) ) : ?>
-									<strong><?php echo esc_html( $data['venue_name'] ); ?></strong>
-								<?php endif; ?>
-								<?php if ( ! empty( $data['venue_address'] ) ) : ?>
-									<span><?php echo wp_kses_post( nl2br( esc_html( $data['venue_address'] ) ) ); ?></span>
-								<?php endif; ?>
-							</div>
-						<?php endif; ?>
+						</div>
 					</div>
 				</div>
 			<?php endif; ?>
