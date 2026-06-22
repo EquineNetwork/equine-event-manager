@@ -304,6 +304,7 @@ class EEM_Reports_Page {
 		</div>
 		<div class="eem-card eem-export-history-card">
 			<div class="eem-card-body">
+				<div class="eem-desktop-table">
 				<table class="eem-export-history">
 					<thead><tr>
 						<th><?php esc_html_e( 'Report', 'equine-event-manager' ); ?></th>
@@ -333,6 +334,34 @@ class EEM_Reports_Page {
 						<?php endforeach; ?>
 					</tbody>
 				</table>
+				</div>
+				<div class="eem-mobile-cards">
+					<?php foreach ( $rows as $row ) :
+						$file      = (string) $row->file_name;
+						$available = '' !== $file && $exporter->cached_exists( $file );
+						$dl_url    = wp_nonce_url( admin_url( 'admin-post.php?action=eem_reports_download&file=' . rawurlencode( $file ) ), self::NONCE_ACTION );
+						$exported  = mysql2date( get_option( 'date_format' ) . ' g:i a', (string) $row->created_at );
+					?>
+					<div class="eem-mobile-card">
+						<div class="eem-mobile-card-top">
+							<span class="eem-mobile-card-title"><?php echo esc_html( $file ); ?></span>
+						</div>
+						<div class="eem-mobile-card-meta">
+							<span><?php echo esc_html( (string) $row->reservation_name ); ?></span>
+							<span><?php echo esc_html( $exported ); ?></span>
+						</div>
+						<div class="eem-mobile-card-bottom">
+							<div class="eem-mobile-card-actions">
+								<?php if ( $available ) : ?>
+									<a class="eem-btn-download" href="<?php echo esc_url( $dl_url ); ?>"><?php esc_html_e( 'Download', 'equine-event-manager' ); ?></a>
+								<?php else : ?>
+									<span class="eem-expired-link"><?php esc_html_e( 'Expired', 'equine-event-manager' ); ?></span>
+								<?php endif; ?>
+							</div>
+						</div>
+					</div>
+					<?php endforeach; ?>
+				</div>
 			</div>
 		</div>
 		<?php
