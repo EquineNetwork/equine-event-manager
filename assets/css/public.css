@@ -3743,13 +3743,15 @@
 }
 @media (max-width: 640px) {
 	.eem-reservation-section--payment {
-		padding: 18px;
+		padding: 18px 16px;
 		border-radius: var(--eem-app-card-radius);
 	}
 	.eem-reservation-section--payment .eem-payment-checkout-block,
 	.eem-reservation-section--payment .eem-payment-card-field-wrap {
-		padding: 14px 12px;
-		border-radius: var(--eem-app-card-radius);
+		padding: 0 !important;
+		border: none !important;
+		background: transparent !important;
+		border-radius: 0 !important;
 	}
 	.eem-reservation-summary-card__sticky {
 		padding: 16px 14px;
@@ -4231,14 +4233,18 @@
 	}
 }
 @media (max-width: 767px) {
+	.eem-event-page .hero {
+		border-radius: var(--eem-app-card-radius, 6px);
+		border: 1px solid var(--eem-app-border, #e5e7eb);
+	}
 	.eem-event-page .hero-inner {
 		grid-template-columns: 1fr;
 		min-height: auto;
-		padding-left: 16px;
-		padding-right: 16px;
+		padding-left: 0;
+		padding-right: 0;
 	}
 	.eem-event-page .hero-img-col {
-		padding: 16px 16px 0;
+		padding: 16px 16px 16px;
 	}
 	.eem-event-page .hero-info-col {
 		padding: 20px 16px 24px;
