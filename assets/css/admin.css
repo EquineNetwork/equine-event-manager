@@ -2268,6 +2268,10 @@ th.sorted-desc .eem-sort-icon span:first-child {
 		width: 44px;
 		height: 44px;
 	}
+
+	:where(.eem-page) :where(button, [type="button"], [type="submit"], [type="reset"], a.eem-btn, .eem-btn, select, input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), textarea, .eem-filter-tab, .eem-pagination-btn) {
+		min-height: 44px;
+	}
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
