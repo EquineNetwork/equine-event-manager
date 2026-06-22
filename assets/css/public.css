@@ -3735,14 +3735,10 @@
 	.eem-reservation-workspace__rail {
 		position: static;
 		top: auto;
+		order: -1;
 	}
 	.eem-reservation-summary-card__sticky {
 		position: static;
-	}
-}
-@media (max-width: 1039px) {
-	.eem-reservation-workspace__rail {
-		order: -1;
 	}
 }
 @media (max-width: 640px) {
@@ -4238,6 +4234,8 @@
 	.eem-event-page .hero-inner {
 		grid-template-columns: 1fr;
 		min-height: auto;
+		padding-left: 16px;
+		padding-right: 16px;
 	}
 	.eem-event-page .hero-img-col {
 		padding: 16px 16px 0;
