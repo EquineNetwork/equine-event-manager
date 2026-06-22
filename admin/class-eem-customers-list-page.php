@@ -283,7 +283,7 @@ class EEM_Customers_List_Page {
 	private static function render_table( array $data, string $orderby, string $order, string $search ): void {
 		$rows = $data['rows'];
 		?>
-		<div class="eem-customers-table-wrap">
+		<div class="eem-customers-table-wrap eem-desktop-table">
 			<table class="eem-table eem-customers-table">
 				<thead>
 					<tr>

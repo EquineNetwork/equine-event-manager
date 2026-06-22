@@ -2139,6 +2139,10 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	padding: 13px 14px;
 }
 
+.eem-mobile-card:first-child {
+	border-top: none;
+}
+
 /* Inline metric chip inside a mobile card's badge row (entered/spots, sent
    count, etc.) — used by the Entries, Notifications + Categories card
    fallbacks added in the mobile responsiveness pass. */
@@ -2258,6 +2262,11 @@ th.sorted-desc .eem-sort-icon span:first-child {
 
 	.eem-pagination {
 		padding: 10px 14px;
+	}
+
+	.eem-meatballs-btn {
+		width: 44px;
+		height: 44px;
 	}
 }
 
@@ -4250,10 +4259,12 @@ a.eem-orders-count:hover {
 .eem-mobile-res-card {
 	position: relative;
 	background: var(--eem-surface);
-	border: 1px solid #e2e8f4;
-	border-radius: 8px;
+	border-top: 1px solid #e2e8f4;
 	padding: 13px 14px;
-	margin-bottom: 8px;
+}
+
+.eem-mobile-res-card:first-child {
+	border-top: none;
 }
 
 /* Mirror of .eem-res-name for the mobile-card view. Same Navy default
@@ -11231,12 +11242,6 @@ table.eem-export-history td { padding:11px 22px; font-size:13px; color:#0d1b3e; 
 .eem-customers-empty { padding: 32px 14px; text-align: center; color: var(--eem-text-muted); }
 .eem-page-btn--disabled { opacity: .45; cursor: not-allowed; pointer-events: none; }
 .eem-page-ellipsis { padding: 0 4px; color: var(--eem-text-muted); font-size: 13px; align-self: center; }
-@media (max-width: 767px) {
-	.eem-customers-table-wrap { display: none; }
-	.eem-customers-mobile { display: block; }
-	.eem-customers-card { border: none; border-radius: 0; }
-}
-@media (min-width: 768px) { .eem-customers-mobile { display: none; } }
 
 /* ════════════════════════════════════════════════════════════════════
    C13 — Create Order page (.mockups/create_order_page.html)

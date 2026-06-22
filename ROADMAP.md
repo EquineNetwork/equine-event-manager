@@ -2,22 +2,28 @@
 
 ---
 
-## 🔖 SESSION HANDOFF — 2026-06-21 (end of session, v2.7.545 pending)
+## 🔖 SESSION HANDOFF — 2026-06-22 (design-system mobile-first pass)
 
-**Current state:** v2.7.544 on `main`. Event editor port (2.7.545) is implemented but not yet committed — pending Whitney version-bump approval.
+**Current state:** v2.7.577 on `main`. Phase 0 (390px audit) complete — all admin + customer pages screenshotted at desktop/tablet/mobile. One fix shipped: mobile customer cards border-top separators (2.7.577).
 
-**Session shipped (2.7.543–544):**
-- Dashboard quick fixes: Collect Payment → amber icon; Export Report → purple icon; Today's Movement event title links to Daily Movement; partially-refunded orders reclassified to Refunded tab (was incorrectly falling into Unpaid).
-- Event editor (`add_event_page.html` + `screen2_event_edit_documents.html`): full port — eyebrow/H1/meta header, View Event + Delete Event topbar buttons, all cards non-collapsible (one long form), single-bordered `.eem-event-cards-wrap` container, Link Reservation dropdown in the rail. Body class `eem-shell-page--event-editor` (separate from `reservation-editor`). *(Uncommitted — needs 2.7.545 approval.)*
+**Active work: Design-system + mobile-first pass (item #2 on the master to-do list).**
+Daily Movement is the UX reference for ALL viewports. This is the locked execution plan — DO NOT DRIFT:
 
-**Next up:**
-1. Whitney approves → commit 2.7.545 (event editor)
-2. Port remaining new mockups (see TO-DO below)
+### Phase 1 — Build shared `.eem-responsive-table` primitive ⟵ YOU ARE HERE
+One CSS + tiny render-helper pattern that auto-collapses any `.eem-*-table` into labeled stacked cards below ≤767px (the way Daily Movement does it). Canonical tokens (padding/radius/page-bg) fixed in the same edit. Written ONCE; every list page inherits it.
+
+### Phase 2 — Apply + browser-verify per page (priority order)
+Orders → Reservations → Stall & RV Charts → Order Detail → Reports → Settings → customer checkout. Each page gets the table primitive + a browser check at mobile width.
+
+### Phase 3 — Touch + PWA polish
+44px tap targets globally via a `:where()` rule, sticky toolbars on list pages, then PWA wrapper (manifest + service worker + install prompt).
 
 **Standing constraints:**
 - Never bump version without explicit Whitney approval each time.
 - Reservation 5990 RV map is corrupted — test stall/RV maps on **NTR 6519**.
 - One Bash command per call, no chaining, no heredocs (see CLAUDE.md command hygiene).
+- Desktop, tablet, AND mobile are all equally important — "facilities are going to be using this on tablets a lot."
+- Mobile customer cards use border-top separators between them, NOT individual card borders.
 
 ---
 
