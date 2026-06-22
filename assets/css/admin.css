@@ -2274,6 +2274,44 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	}
 }
 
+.eem-pwa-install {
+	position: fixed;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	background: var(--eem-navy, #0a1628);
+	color: #fff;
+	padding: 12px 16px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	z-index: 999999;
+	font-size: 14px;
+	box-shadow: 0 -2px 8px rgba(0,0,0,0.15);
+}
+
+.eem-pwa-install span {
+	flex: 1;
+}
+
+.eem-pwa-install-btn {
+	flex-shrink: 0;
+}
+
+.eem-pwa-install-dismiss {
+	background: none;
+	border: none;
+	color: #fff;
+	font-size: 20px;
+	cursor: pointer;
+	padding: 4px 8px;
+	opacity: 0.7;
+}
+
+.eem-pwa-install-dismiss:hover {
+	opacity: 1;
+}
+
 /* ═════════════════════════════════════════════════════════════════════════
    C1.4 — Modal, drawer, dropdown, toast
    ═════════════════════════════════════════════════════════════════════════ */

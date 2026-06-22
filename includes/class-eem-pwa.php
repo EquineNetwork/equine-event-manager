@@ -37,6 +37,26 @@ class EEM_PWA {
 		if ('serviceWorker' in navigator) {
 			navigator.serviceWorker.register(<?php echo wp_json_encode( $sw_url ); ?>, {scope: '/'}).catch(function(){});
 		}
+		(function(){
+			var deferredPrompt;
+			window.addEventListener('beforeinstallprompt', function(e){
+				e.preventDefault();
+				deferredPrompt = e;
+				var b = document.createElement('div');
+				b.className = 'eem-pwa-install';
+				b.innerHTML = '<span>Install Equine Event Manager</span><button class="eem-btn eem-btn--primary eem-pwa-install-btn">Install</button><button class="eem-pwa-install-dismiss">&times;</button>';
+				document.body.appendChild(b);
+				b.querySelector('.eem-pwa-install-btn').addEventListener('click', function(){
+					b.remove();
+					deferredPrompt.prompt();
+					deferredPrompt.userChoice.then(function(){ deferredPrompt = null; });
+				});
+				b.querySelector('.eem-pwa-install-dismiss').addEventListener('click', function(){
+					b.remove();
+					deferredPrompt = null;
+				});
+			});
+		})();
 		</script>
 		<?php
 	}
