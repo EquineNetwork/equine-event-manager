@@ -4237,8 +4237,16 @@
 	.eem-event-page .hero {
 		border: none;
 	}
+	.eem-event-page .hero-info-col {
+		border-left: none;
+	}
 	.eem-event-page .hero-title {
 		font-size: 24px;
+	}
+}
+@media (min-width: 768px) {
+	body.eem-has-reservation-form:not([class*=elementor-page-]) .site-main {
+		max-width: 700px;
 	}
 }
 @media (max-width: 767px) {
