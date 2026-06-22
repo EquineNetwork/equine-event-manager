@@ -3745,9 +3745,14 @@
 		padding: 18px 16px;
 		border-radius: var(--eem-app-card-radius);
 	}
-	.eem-reservation-section--payment .eem-payment-checkout-block,
+	.eem-reservation-section--payment .eem-payment-checkout-block {
+		padding: 16px !important;
+		border: none !important;
+		background: transparent !important;
+		border-radius: 0 !important;
+	}
 	.eem-reservation-section--payment .eem-payment-card-field-wrap {
-		padding: 0 !important;
+		padding: 16px !important;
 		border: none !important;
 		background: transparent !important;
 		border-radius: 0 !important;
@@ -4226,6 +4231,11 @@
 	}
 	.eem-event-page .hero-inner {
 		grid-template-columns: 300px 1fr;
+		padding-left: 0;
+		padding-right: 0;
+	}
+	.eem-event-page .hero {
+		border: none;
 	}
 	.eem-event-page .hero-title {
 		font-size: 24px;
@@ -4234,7 +4244,7 @@
 @media (max-width: 767px) {
 	.eem-event-page .hero {
 		border-radius: var(--eem-app-card-radius, 6px);
-		border: 1px solid var(--eem-app-border, #e5e7eb);
+		/* border: 1px solid var(--eem-app-border, #e5e7eb); */
 	}
 	.eem-event-page .hero-inner {
 		grid-template-columns: 1fr;
@@ -4244,11 +4254,15 @@
 	}
 	.eem-event-page .hero-img-col {
 		padding: 16px 16px 16px;
+		justify-content: center;
+	}
+	.eem-event-page .hero-img-col img {
+		max-width: 100%;
 	}
 	.eem-event-page .hero-info-col {
 		padding: 20px 16px 24px;
 		border-left: none;
-		border-top: 1px solid #D9E2F2;
+		/* border-top: 1px solid #D9E2F2; */
 	}
 	.eem-event-page .hero-title {
 		font-size: 22px;
