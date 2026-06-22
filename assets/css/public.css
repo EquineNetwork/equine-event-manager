@@ -1987,6 +1987,9 @@
 	max-width: none !important;
 	transform: none !important;
 }
+.eem-event-page .eem-product-list__head {
+	justify-content: space-between !important;
+}
 .eem-event-page .eem-reservation-section__title,
 .eem-event-page .eem-product-list__head {
 	word-break: normal !important;
