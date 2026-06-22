@@ -944,7 +944,7 @@
 	flex-wrap: wrap;
 	gap: 16px 28px;
 	margin: 0 0 14px;
-	color: #475569;
+	color: #4a5a7a;
 	font-size: 15px;
 	line-height: 1.5;
 }
@@ -959,7 +959,7 @@
 	justify-content: center;
 	width: 20px;
 	min-width: 20px;
-	color: #cf2e2e;
+	color: #1668F2;
 	line-height: 1;
 }
 .eem-event-details-card__fact-icon svg {
@@ -1564,7 +1564,7 @@
 	justify-content: center;
 	width: 16px;
 	min-width: 16px;
-	color: #cf2e2e;
+	color: #1668F2;
 }
 .eem-event-details-card__map-link-icon svg {
 	display: block;
@@ -1702,7 +1702,7 @@
 	justify-content: center;
 	width: 16px;
 	min-width: 16px;
-	color: #cf2e2e;
+	color: #1668F2;
 }
 .eem-stall-assignment-selector__map-link-icon svg {
 	display: block;
