@@ -574,10 +574,6 @@ class EEM_Daily_Movement_Page {
 				<div class="eem-dm-toolbar-group">
 					<label class="eem-dm-toolbar-label" for="eem-dm-reservation"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?></label>
 					<select name="reservation_id" id="eem-dm-reservation" class="eem-dm-select" data-eem-choices data-eem-choices-search="<?php esc_attr_e( 'Search reservations…', 'equine-event-manager' ); ?>" onchange="this.form.submit()">
-						<?php /* Choices.js select-one renders blank when the first option is also the
-						   pre-selected one (no placeholder anchor). A hidden value="" option first
-						   prevents that — identical to the Orders/Reservations event-filter pattern. */ ?>
-						<option value="" disabled hidden></option>
 						<?php foreach ( $reservations as $res ) : ?>
 							<option value="<?php echo esc_attr( (string) $res->ID ); ?>" <?php selected( $reservation_id, $res->ID ); ?>>
 								<?php echo esc_html( $res->post_title ); ?>
