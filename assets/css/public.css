@@ -4152,14 +4152,14 @@
 .equine-event-manager-calendar a {
 	text-decoration: none !important;
 }
-.eem-event-page a:not(.btn-reserve):not(.btn-directions):not(.order-reserve-btn),
+.eem-event-page a:not(.btn-reserve):not(.btn-directions):not(.order-reserve-btn):not(.eem-stay-venue-map-link):not(.eem-agreement-link),
 .eem-event-list a:not(.eem-event-list-row__view-link),
 .equine-event-manager-calendar a:not(.equine-event-manager-calendar__event) {
 	color: #091A35 !important;
 	font-weight: 700 !important;
 }
-.eem-event-page a:not(.btn-reserve):not(.btn-directions):not(.order-reserve-btn):hover,
-.eem-event-page a:not(.btn-reserve):not(.btn-directions):not(.order-reserve-btn):focus,
+.eem-event-page a:not(.btn-reserve):not(.btn-directions):not(.order-reserve-btn):not(.eem-stay-venue-map-link):not(.eem-agreement-link):hover,
+.eem-event-page a:not(.btn-reserve):not(.btn-directions):not(.order-reserve-btn):not(.eem-stay-venue-map-link):not(.eem-agreement-link):focus,
 .eem-event-list a:not(.eem-event-list-row__view-link):hover,
 .eem-event-list a:not(.eem-event-list-row__view-link):focus,
 .equine-event-manager-calendar a:not(.equine-event-manager-calendar__event):hover,

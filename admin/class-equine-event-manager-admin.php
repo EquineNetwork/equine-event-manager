@@ -2543,11 +2543,11 @@ class EEM_Admin {
 					</div>
 				</header>
 				<div class="eem-stall-chart-body">
-					<p><?php esc_html_e( 'Stall Assignments are currently disabled for this reservation.', 'equine-event-manager' ); ?></p>
-					<div class="eem-stall-chart-action-bar">
-						<div class="eem-stall-chart-action-bar-btns">
-							<a class="eem-btn eem-btn--ghost" href="<?php echo esc_url( get_edit_post_link( $reservation_id, '' ) ); ?>"><?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?></a>
-						</div>
+					<div class="eem-empty-state" style="padding:48px 24px">
+						<svg style="display:block;margin:0 auto 12px;color:var(--eem-text-secondary);opacity:.45" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+						<p class="eem-empty-state-title" style="font-size:15px"><?php esc_html_e( 'Stall Assignments Disabled', 'equine-event-manager' ); ?></p>
+						<p class="eem-empty-state-desc"><?php esc_html_e( 'Stall assignments are not enabled for this reservation. Enable them in the reservation editor to start assigning stalls.', 'equine-event-manager' ); ?></p>
+						<a class="eem-btn eem-btn--primary" style="margin-top:16px" href="<?php echo esc_url( get_edit_post_link( $reservation_id, '' ) ); ?>"><?php esc_html_e( 'Edit Reservation', 'equine-event-manager' ); ?></a>
 					</div>
 				</div>
 			</div>
@@ -5418,7 +5418,7 @@ class EEM_Admin {
 			// 2.3.52 — chart is active when Stall OR RV reservations are enabled.
 			// Replaces the removed _en_stall_chart_enabled gate (the field that
 			// left the Stall Chart Detail page showing "disabled" after 2.3.50).
-			'enabled'               => EEM_Reservations_CPT::section_enabled( $reservation_id, 'stalls_enabled' ) || EEM_Reservations_CPT::section_enabled( $reservation_id, 'rv_enabled' ),
+			'enabled'               => EEM_Reservations_CPT::section_enabled( $reservation_id, 'stalls_enabled' ) || EEM_Reservations_CPT::section_enabled( $reservation_id, 'rv_enabled' ) || ! empty( $stall_units ) || ! empty( $rv_lot_names ),
 			'stall_blocks'          => $stall_blocks,
 			'stall_units'           => $stall_units,
 			'rv_lot_names'          => $rv_lot_names,

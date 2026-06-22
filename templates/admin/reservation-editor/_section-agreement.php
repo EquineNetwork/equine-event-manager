@@ -31,7 +31,8 @@ $has_file  = $file_id > 0 && '' !== $file_name;
 // page yellow callout + order summary. Empty default; render path
 // falls back to literal "Venue Agreement" if blank. Meta key follows
 // existing `venue_agreement_*` family (paired with file_id + enabled).
-$agreement_label = isset( $data['venue_agreement_link_label'] ) ? (string) $data['venue_agreement_link_label'] : '';
+$agreement_label   = isset( $data['venue_agreement_link_label'] ) ? (string) $data['venue_agreement_link_label'] : '';
+$agreement_callout = isset( $data['venue_agreement_text'] ) ? (string) $data['venue_agreement_text'] : '';
 ?>
 <input type="hidden" name="en_reservation[venue_agreement_enabled]" data-eem-section-enabled="agreement" value="<?php echo ! empty( $data['venue_agreement_enabled'] ) ? '1' : '0'; ?>" />
 
@@ -48,6 +49,17 @@ eem_render_editor_field_row( array(
 		esc_attr__( 'Agreement name (ex: Venue Agreement)', 'equine-event-manager' )
 	),
 	'hint'         => __( 'Used as the link text in the customer checkout callout and order summary. Leave blank to use the default "Venue Agreement".', 'equine-event-manager' ),
+) );
+
+eem_render_editor_field_row( array(
+	'label'        => __( 'Callout Text', 'equine-event-manager' ),
+	'label_sub'    => __( 'Yellow notice on checkout', 'equine-event-manager' ),
+	'control_html' => sprintf(
+		'<textarea class="eem-field-input" name="en_reservation[venue_agreement_text]" id="en_venue_agreement_text" rows="3" style="max-width:480px" placeholder="%s">%s</textarea>',
+		esc_attr__( 'Optional intro text shown before the agreement line', 'equine-event-manager' ),
+		esc_textarea( $agreement_callout )
+	),
+	'hint'         => __( 'Optional text shown before "By clicking Confirm Reservation, you agree to the [Agreement Label]." Leave blank to show only the agreement line.', 'equine-event-manager' ),
 ) );
 
 ob_start();

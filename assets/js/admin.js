@@ -7267,6 +7267,9 @@ function updateStallInventoryDisplay() {
 	if (sumEl) {
 		var dupes = Object.keys(labelCounts).filter(function (l) { return labelCounts[l] > 1; });
 		var html = '<strong style="color:#031B4E">' + rows + ' ' + (rows === 1 ? 'row/barn' : 'rows/barns') + ' · ' + total + ' stalls total</strong> across this reservation';
+		if (rows === 0) {
+			html += '<span style="display:block;margin-top:6px;padding:8px 12px;background:#fef3cd;border:1px solid #ffc107;border-radius:6px;color:#664d03;font-weight:600;font-size:13px">You must add at least one stall number range before publishing. Click + Add Range above.</span>';
+		}
 		if (dupes.length) {
 			html += '<span style="display:block;margin-top:4px;color:#b32d2e;font-weight:600">⚠ Duplicate stall numbers: ' + escapeHtml(dupes.join(', ')) + '. Each stall number must be unique.</span>';
 		}

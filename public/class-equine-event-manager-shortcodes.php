@@ -593,26 +593,6 @@ class EEM_Shortcodes {
 								</div>
 							</label>
 						</div>
-						<?php // V1 D2 — optional Group Name tag (clustering hint for stabling a
-						// travelling group together). v2: gated behind the per-reservation
-						// Group Reservations toggle (Edit Reservation is the single source of
-						// truth) — when groups are off for this reservation, the field is
-						// hidden on the customer form. Lives in Contact Information, below
-						// email/phone. ?>
-						<?php if ( $group_reservations_enabled ) : ?>
-						<label class="eem-group-name-field">
-							<span><?php esc_html_e( 'Group Name', 'equine-event-manager' ); ?></span>
-							<input type="text" name="group_name" maxlength="100" autocomplete="off"<?php echo ! empty( $group_existing_names ) ? ' list="eem-group-names"' : ''; ?> />
-							<?php if ( ! empty( $group_existing_names ) ) : ?>
-							<datalist id="eem-group-names">
-								<?php foreach ( $group_existing_names as $eem_gname ) : ?>
-								<option value="<?php echo esc_attr( $eem_gname ); ?>"></option>
-								<?php endforeach; ?>
-							</datalist>
-							<?php endif; ?>
-							<small class="eem-reservation-help"><?php esc_html_e( 'Optional — if you\'re travelling with a group, enter the group name so we can try to place you together. Pick an existing name from the list to join that group.', 'equine-event-manager' ); ?></small>
-						</label>
-						<?php endif; ?>
 					</div>
 
 					<?php if ( $data['stalls_enabled'] || $data['rv_enabled'] ) : ?>
@@ -1691,29 +1671,30 @@ class EEM_Shortcodes {
 				</div><!-- /.__sticky -->
 			</div><!-- /.order-card -->
 			<?php if ( ! $is_admin_invoice && ! empty( $data['venue_agreement_enabled'] ) && $venue_agreement_url ) : ?>
+						<?php
+						$eem_link_label = isset( $data['venue_agreement_link_label'] ) ? trim( (string) $data['venue_agreement_link_label'] ) : '';
+						if ( '' === $eem_link_label && ! empty( $data['venue_agreement_file_label'] ) ) {
+							$eem_link_label = (string) $data['venue_agreement_file_label'];
+						}
+						if ( '' === $eem_link_label ) {
+							$eem_link_label = __( 'Venue Agreement', 'equine-event-manager' );
+						}
+						$eem_agreement_link = '<a class="eem-agreement-link" href="' . esc_url( $venue_agreement_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $eem_link_label ) . '</a>';
+
+						$eem_callout_text = isset( $data['venue_agreement_text'] ) ? trim( (string) $data['venue_agreement_text'] ) : '';
+						$eem_agree_line = str_replace(
+							'{agreement}',
+							$eem_agreement_link,
+							esc_html__( 'By clicking Confirm Reservation, you agree to the {agreement}.', 'equine-event-manager' )
+						);
+						if ( '' !== $eem_callout_text ) {
+							$eem_callout_html = esc_html( $eem_callout_text ) . ' ' . $eem_agree_line;
+						} else {
+							$eem_callout_html = $eem_agree_line;
+						}
+						?>
 						<div class="eem-venue-agreement-card agreement-notice">
-							<p>
-								<?php esc_html_e( 'All transaction fees are non-refundable. Please be sure you have read the', 'equine-event-manager' ); ?>
-								<a href="<?php echo esc_url( $venue_agreement_url ); ?>" target="_blank" rel="noopener noreferrer"><?php
-									// C7.X.12 VV-4 — customer-facing link text. Prefers the
-									// admin-editable `venue_agreement_link_label`; falls
-									// back to the literal "Venue Agreement" when blank
-									// per the canonical spec. The pre-C7.X.12 read
-									// (`venue_agreement_file_label` → "Agreement"
-									// fallback) is preserved as a third-tier fallback so
-									// pre-existing reservations that set the older key
-									// still surface meaningful link text.
-									$eem_link_label = isset( $data['venue_agreement_link_label'] ) ? trim( (string) $data['venue_agreement_link_label'] ) : '';
-									if ( '' === $eem_link_label && ! empty( $data['venue_agreement_file_label'] ) ) {
-										$eem_link_label = (string) $data['venue_agreement_file_label'];
-									}
-									if ( '' === $eem_link_label ) {
-										$eem_link_label = __( 'Venue Agreement', 'equine-event-manager' );
-									}
-									echo esc_html( $eem_link_label );
-								?></a>
-								<?php esc_html_e( 'before clicking SAVE.', 'equine-event-manager' ); ?>
-							</p>
+							<p><?php echo wp_kses( $eem_callout_html, array( 'a' => array( 'href' => array(), 'target' => array(), 'rel' => array(), 'class' => array() ) ) ); ?></p>
 						</div>
 					<?php endif; ?>
 					<?php
