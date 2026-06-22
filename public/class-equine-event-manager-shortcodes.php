@@ -292,6 +292,22 @@ class EEM_Shortcodes {
 		$support_phone                = ! empty( $company_settings['support_phone'] ) ? $this->format_phone_label( $company_settings['support_phone'] ) : '';
 		$event_card_details           = $this->get_reservation_event_card_details( $data );
 		$normalized_event_data        = class_exists( 'EEM_Events' ) ? EEM_Events::get_normalized_reservation_event_data( $reservation_id ) : array();
+
+		if ( ! empty( $normalized_event_data ) ) {
+			if ( '' === $event_card_details['venue_name'] && ! empty( $normalized_event_data['venue_name'] ) ) {
+				$event_card_details['venue_name'] = (string) $normalized_event_data['venue_name'];
+			}
+			if ( '' === $event_card_details['location'] && ! empty( $normalized_event_data['location'] ) ) {
+				$event_card_details['location'] = (string) $normalized_event_data['location'];
+			}
+			if ( '' === $event_date_summary && ! empty( $normalized_event_data['start_date'] ) ) {
+				$event_date_summary = $this->format_compact_date_range_label(
+					$normalized_event_data['start_date'],
+					! empty( $normalized_event_data['end_date'] ) ? $normalized_event_data['end_date'] : $normalized_event_data['start_date']
+				);
+			}
+		}
+
 		// 2.3.74 — use the raw attachment URL (works for PDF and image; the old
 		// image-only getter returned '' for PDF venue maps).
 		$venue_map_url                = ! empty( $data['venue_map_image_id'] ) ? wp_get_attachment_url( absint( $data['venue_map_image_id'] ) ) : '';
@@ -9360,6 +9376,28 @@ RV Lot: " . $rv_lot['name'] );
 				$cfg_val = $eem_cfg->get( $rk, null );
 				if ( null !== $cfg_val && '' !== $cfg_val ) {
 					$data[ $rk ] = $cfg_val;
+				}
+			}
+
+			// Event / venue fields — config-table is authoritative for feed/GEMS
+			// reservations where post-meta is empty.
+			$event_keys = array(
+				'venue_name',
+				'event_location',
+				'venue_address',
+				'available_start_date',
+				'available_end_date',
+				'external_event_name',
+				'external_event_id',
+				'event_details_summary',
+				'event_feed_url',
+				'event_source',
+				'event_id',
+			);
+			foreach ( $event_keys as $ek ) {
+				$cfg_val = $eem_cfg->get( $ek, null );
+				if ( null !== $cfg_val && '' !== (string) $cfg_val ) {
+					$data[ $ek ] = $cfg_val;
 				}
 			}
 
