@@ -7351,7 +7351,7 @@ function stallLabelsBetween(first, last) {
 		var out = [];
 		for (var n = a; step > 0 ? n <= b : n >= b; n += step) {
 			out.push(String(n));
-			if (out.length >= 50) break;
+			if (out.length >= 2000) break;
 		}
 		return out;
 	}
@@ -7374,7 +7374,7 @@ function stallLabelsBetween(first, last) {
 			var s = String(i);
 			if (padLen > 0) { while (s.length < padLen) s = '0' + s; }
 			outP.push(prefix + s);
-			if (outP.length >= 50) break;
+			if (outP.length >= 2000) break;
 		}
 		return outP;
 	}
