@@ -126,6 +126,8 @@ class EEM_Collect_Payment_Page {
 		$discount       = $adjustments['discount'];
 		$discount_amt   = is_array( $discount ) ? (float) $discount['amount'] : 0.0;
 		$total_due      = $base_total + $custom_total - $discount_amt;
+		$amount_paid    = isset( $order['amount_paid'] ) ? (float) $order['amount_paid'] : 0.0;
+		$outstanding    = max( 0.0, $total_due - $amount_paid );
 
 		$customer = isset( $order['customer_name'] ) ? (string) $order['customer_name'] : '';
 		$email    = isset( $order['email'] ) ? (string) $order['email'] : '';
@@ -134,7 +136,11 @@ class EEM_Collect_Payment_Page {
 			? EEM_Orders_List_Page::order_detail_url( $order_key )
 			: admin_url( 'admin.php?page=equine-event-manager-orders' );
 
-		$is_paid = 'paid' === $status;
+		// Treat the order as paid in full only when the actual outstanding balance
+		// (total including custom items/discounts minus what has been collected) is
+		// zero or negative — NOT just when payment_status === 'paid', which can be
+		// stale after a custom line item is added post-payment.
+		$is_paid = $outstanding <= 0.0;
 
 		// Status banner: green "Payment Collected" when paid, else amber outstanding.
 		if ( $is_paid ) :
@@ -181,8 +187,8 @@ class EEM_Collect_Payment_Page {
 			</div>
 			<aside class="eem-co-rail">
 				<?php
-				self::render_amount_due_card( $order_no, $status, $customer, $stall_subtotal, $rv_subtotal, $fees, $custom_items, $discount, $discount_amt, $total_due );
-				self::render_payment_card( $detail_url, $order_key, $status, $total_due, $email );
+				self::render_amount_due_card( $order_no, $status, $customer, $stall_subtotal, $rv_subtotal, $fees, $custom_items, $discount, $discount_amt, $total_due, $outstanding );
+				self::render_payment_card( $detail_url, $order_key, $outstanding, $email );
 				?>
 			</aside>
 		</div>
@@ -276,7 +282,7 @@ class EEM_Collect_Payment_Page {
 	 * @param float                                                     $total_due Recomputed total due.
 	 * @return void
 	 */
-	private static function render_amount_due_card( string $order_no, string $status, string $customer, float $stall, float $rv, float $fees, array $items, ?array $discount, float $disc_amt, float $total_due ): void {
+	private static function render_amount_due_card( string $order_no, string $status, string $customer, float $stall, float $rv, float $fees, array $items, ?array $discount, float $disc_amt, float $total_due, float $outstanding = 0.0 ): void {
 		?>
 		<section class="eem-card eem-co-summary-card">
 			<header class="eem-card-header eem-co-summary-head">
@@ -297,7 +303,7 @@ class EEM_Collect_Payment_Page {
 					<?php endif; ?>
 				</div>
 				<hr class="eem-co-summary-divider" />
-				<div class="eem-co-summary-total"><span><?php echo 'paid' === $status ? esc_html__( 'Total Paid', 'equine-event-manager' ) : esc_html__( 'Total Due', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $total_due, 2 ) ); ?></span></div>
+				<div class="eem-co-summary-total"><span><?php echo $outstanding <= 0.0 ? esc_html__( 'Total Paid', 'equine-event-manager' ) : esc_html__( 'Total Due', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $total_due, 2 ) ); ?></span></div>
 			</div>
 		</section>
 		<?php
@@ -366,9 +372,9 @@ class EEM_Collect_Payment_Page {
 	 * @param string $email      Customer email (for the Send Link copy).
 	 * @return void
 	 */
-	private static function render_payment_card( string $detail_url, string $order_key, string $status, float $total_due, string $email = '' ): void {
-		// Already-paid orders show a settled notice — no payment UI.
-		if ( 'paid' === $status ) {
+	private static function render_payment_card( string $detail_url, string $order_key, float $total_due, string $email = '' ): void {
+		// No outstanding balance — show a settled notice rather than a payment form.
+		if ( $total_due <= 0.0 ) {
 			?>
 			<section class="eem-card eem-co-payment-card">
 				<div class="eem-card-body">
