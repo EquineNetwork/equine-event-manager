@@ -47,6 +47,7 @@ class EEM_Venues_Page {
 		add_action( 'wp_ajax_eem_venue_save_layout', array( __CLASS__, 'ajax_save_layout' ) );
 		add_action( 'wp_ajax_eem_venue_list_layouts', array( __CLASS__, 'ajax_list_layouts' ) );
 		add_action( 'wp_ajax_eem_venue_load_layout', array( __CLASS__, 'ajax_load_layout' ) );
+		add_action( 'wp_ajax_eem_venue_delete', array( __CLASS__, 'ajax_delete_venue' ) );
 	}
 
 	/**
@@ -106,76 +107,61 @@ class EEM_Venues_Page {
 	const PER_PAGE = 20;
 
 	/**
-	 * Branded Venues list — the single Venues admin surface, backed by en_venue
-	 * posts (venue details) plus each venue's saved Facility Template count from
-	 * the relational EEM_Venue store. Matches .mockups/venues_admin_page.html.
+	 * Branded Venues list — backed by the relational wp_eem_venues table
+	 * (source-agnostic: TEC + GEMS + Native all resolve here). Each row shows
+	 * the venue name, source type, layout count, and actions.
 	 *
 	 * @return void
 	 */
 	private static function render_list(): void {
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- read-only list nav.
-		$status  = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : 'all';
 		$search  = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
 		$orderby = isset( $_GET['orderby'] ) && 'templates' === $_GET['orderby'] ? 'templates' : 'title';
 		$order   = isset( $_GET['order'] ) && 'desc' === strtolower( (string) wp_unslash( $_GET['order'] ) ) ? 'desc' : 'asc';
 		$paged   = isset( $_GET['paged'] ) ? max( 1, absint( wp_unslash( $_GET['paged'] ) ) ) : 1;
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
-		if ( ! in_array( $status, array( 'all', 'publish', 'draft', 'trash' ), true ) ) {
-			$status = 'all';
-		}
 
-		// One pass over every venue post → row data + status counts.
-		$posts  = get_posts( array(
-			'post_type'   => 'en_venue',
-			'post_status' => array( 'publish', 'draft', 'trash' ),
-			'numberposts' => -1,
-			'orderby'     => 'title',
-			'order'       => 'ASC',
-		) );
-		$counts = array( 'all' => 0, 'publish' => 0, 'draft' => 0, 'trash' => 0 );
-		$rows   = array();
-		foreach ( $posts as $p ) {
-			if ( isset( $counts[ $p->post_status ] ) ) {
-				$counts[ $p->post_status ]++;
+		$all_venues = EEM_Venue::all_with_counts();
+		$rows = array();
+		foreach ( $all_venues as $v ) {
+			$vid     = (int) $v['id'];
+			$sources = EEM_Venue::get_source_mappings( $vid );
+			$source_label = '';
+			$city_state   = '';
+			$edit_url     = '';
+			foreach ( $sources as $s ) {
+				$src = (string) $s['source'];
+				if ( '' === $source_label ) {
+					$source_label = self::source_label( $src );
+				}
+				if ( '' === $city_state ) {
+					$city_state = self::resolve_city_state( $src, (string) $s['source_venue_id'] );
+				}
+				if ( '' === $edit_url ) {
+					$edit_url = self::resolve_edit_url( $src, (string) $s['source_venue_id'] );
+				}
 			}
-			$city    = trim( (string) get_post_meta( $p->ID, '_equine_event_manager_venue_city', true ) );
-			$state   = trim( (string) get_post_meta( $p->ID, '_equine_event_manager_venue_state', true ) );
-			$website = trim( (string) get_post_meta( $p->ID, '_equine_event_manager_venue_website', true ) );
-			$tpl_vid = EEM_Venue::find( '', '', get_the_title( $p->ID ) );
-			$rows[]  = array(
-				'id'         => $p->ID,
-				'title'      => get_the_title( $p->ID ),
-				'status'     => $p->post_status,
-				'city_state' => trim( implode( ', ', array_filter( array( $city, $state ) ) ) ),
-				'has_site'   => '' !== $website,
-				'tpl_count'  => $tpl_vid > 0 ? count( EEM_Venue::get_layouts( $tpl_vid ) ) : 0,
-				'tpl_vid'    => $tpl_vid,
+			$rows[] = array(
+				'id'           => $vid,
+				'title'        => (string) $v['name'],
+				'tpl_count'    => (int) $v['layout_count'],
+				'source_count' => (int) $v['source_count'],
+				'source_label' => $source_label,
+				'city_state'   => $city_state,
+				'edit_url'     => $edit_url,
 			);
 		}
-		$counts['all'] = $counts['publish'] + $counts['draft'];
 
-		// Stats strip.
-		$stat_total     = $counts['all'];
-		$stat_published = $counts['publish'];
-		$stat_site      = count( array_filter( $rows, static function ( $r ) { return $r['has_site'] && 'trash' !== $r['status']; } ) );
-		$stat_templates = array_sum( array_map( static function ( $v ) { return (int) $v['layout_count']; }, EEM_Venue::all_with_counts() ) );
+		$stat_total     = count( $rows );
+		$stat_templates = array_sum( array_column( $rows, 'tpl_count' ) );
 		$stat_in_use    = self::count_venues_in_use();
 
-		// Filter by status tab.
-		$rows = array_values( array_filter( $rows, static function ( $r ) use ( $status ) {
-			if ( 'trash' === $status ) { return 'trash' === $r['status']; }
-			if ( 'publish' === $status ) { return 'publish' === $r['status']; }
-			if ( 'draft' === $status ) { return 'draft' === $r['status']; }
-			return 'trash' !== $r['status'];
-		} ) );
-		// Search.
 		if ( '' !== $search ) {
 			$needle = strtolower( $search );
 			$rows   = array_values( array_filter( $rows, static function ( $r ) use ( $needle ) {
 				return false !== strpos( strtolower( $r['title'] ), $needle ) || false !== strpos( strtolower( $r['city_state'] ), $needle );
 			} ) );
 		}
-		// Sort.
 		usort( $rows, static function ( $a, $b ) use ( $orderby, $order ) {
 			$cmp = 'templates' === $orderby ? ( $a['tpl_count'] <=> $b['tpl_count'] ) : strcasecmp( $a['title'], $b['title'] );
 			return 'desc' === $order ? -$cmp : $cmp;
@@ -196,10 +182,13 @@ class EEM_Venues_Page {
 			'breadcrumb' => array( array( 'label' => __( 'Venues', 'equine-event-manager' ) ) ),
 		) );
 
-		self::render_toolbar( $search, $total, $status, $counts );
+		$counts = array( 'all' => $stat_total );
+		echo '<div class="eem-venues-list" data-venue-nonce="' . esc_attr( wp_create_nonce( 'eem_venue_layout' ) ) . '">';
+		self::render_toolbar( $search, $total, 'all', $counts );
 		echo '<div class="eem-list-card">';
-		self::render_table( $page_rows, $orderby, $order, $status, $search );
-		self::render_footer( $total, $paged, $pages, $status, $orderby, $order, $search );
+		self::render_table( $page_rows, $orderby, $order, 'all', $search );
+		self::render_footer( $total, $paged, $pages, 'all', $orderby, $order, $search );
+		echo '</div>';
 		echo '</div>';
 
 		eem_render_page_close();
@@ -324,23 +313,22 @@ class EEM_Venues_Page {
 					<?php if ( empty( $rows ) ) : ?>
 						<tr><td colspan="4" class="eem-table-empty"><?php esc_html_e( 'No venues match your filters.', 'equine-event-manager' ); ?></td></tr>
 					<?php else : ?>
-						<?php foreach ( $rows as $r ) : ?>
-							<?php
-							$edit_url  = (string) get_edit_post_link( (int) $r['id'], 'raw' );
-							$trash_url = (string) get_delete_post_link( (int) $r['id'] );
-							$tpl_url   = $r['tpl_vid'] > 0 ? self::url( array( 'venue_id' => (int) $r['tpl_vid'] ) ) : '';
-							?>
+						<?php foreach ( $rows as $r ) :
+						$detail_url = self::url( array( 'venue_id' => (int) $r['id'] ) );
+						$edit_url   = (string) $r['edit_url'];
+					?>
 							<tr>
 								<td>
-									<a class="eem-venue-name" href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( $r['title'] ); ?></a>
+									<a class="eem-venue-name" href="<?php echo esc_url( $detail_url ); ?>"><?php echo esc_html( $r['title'] ); ?></a>
+									<?php if ( '' !== $r['source_label'] ) : ?>
+										<span class="eem-venue-source-badge"><?php echo esc_html( $r['source_label'] ); ?></span>
+									<?php endif; ?>
 								</td>
 								<td><?php echo '' !== $r['city_state'] ? esc_html( $r['city_state'] ) : '<span class="eem-venue-muted">—</span>'; ?></td>
 								<td>
 									<?php if ( (int) $r['tpl_count'] > 0 ) : ?>
 										<span class="eem-tpl-count"><?php echo esc_html( number_format_i18n( (int) $r['tpl_count'] ) ); ?></span>
-										<?php if ( '' !== $tpl_url ) : ?>
-											<a class="eem-tpl-link" href="<?php echo esc_url( $tpl_url ); ?>"><?php esc_html_e( 'View', 'equine-event-manager' ); ?></a>
-										<?php endif; ?>
+										<a class="eem-tpl-link" href="<?php echo esc_url( $detail_url ); ?>"><?php esc_html_e( 'View', 'equine-event-manager' ); ?></a>
 									<?php else : ?>
 										<span class="eem-venue-muted">—</span>
 									<?php endif; ?>
@@ -350,12 +338,11 @@ class EEM_Venues_Page {
 										<div class="eem-row-menu-wrap">
 											<button type="button" class="eem-more-btn" data-eem-action="dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="eem-venue-menu-<?php echo esc_attr( (string) (int) $r['id'] ); ?>" title="<?php esc_attr_e( 'More actions', 'equine-event-manager' ); ?>">···</button>
 											<div class="eem-row-dropdown" id="eem-venue-menu-<?php echo esc_attr( (string) (int) $r['id'] ); ?>" role="menu">
-												<a class="eem-row-dd-item" role="menuitem" href="<?php echo esc_url( $edit_url ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><?php esc_html_e( 'Edit Venue', 'equine-event-manager' ); ?></a>
-												<?php if ( '' !== $tpl_url ) : ?>
-													<a class="eem-row-dd-item" role="menuitem" href="<?php echo esc_url( $tpl_url ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg><?php esc_html_e( 'Facility Templates', 'equine-event-manager' ); ?></a>
+												<a class="eem-row-dd-item" role="menuitem" href="<?php echo esc_url( $detail_url ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg><?php esc_html_e( 'Facility Templates', 'equine-event-manager' ); ?></a>
+												<?php if ( '' !== $edit_url ) : ?>
+													<a class="eem-row-dd-item" role="menuitem" href="<?php echo esc_url( $edit_url ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><?php esc_html_e( 'Edit Venue', 'equine-event-manager' ); ?></a>
 												<?php endif; ?>
-												<a class="eem-row-dd-item" role="menuitem" href="<?php echo esc_url( admin_url( 'edit.php?post_type=en_event' ) ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg><?php esc_html_e( 'View Events', 'equine-event-manager' ); ?></a>
-												<a class="eem-row-dd-item eem-row-dd-danger" role="menuitem" href="<?php echo esc_url( $trash_url ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg><?php echo 'trash' === $r['status'] ? esc_html__( 'Delete Permanently', 'equine-event-manager' ) : esc_html__( 'Move to Trash', 'equine-event-manager' ); ?></a>
+												<button type="button" class="eem-row-dd-item eem-row-dd-danger" role="menuitem" data-eem-action="venue-delete" data-venue-id="<?php echo esc_attr( (string) (int) $r['id'] ); ?>" data-venue-name="<?php echo esc_attr( $r['title'] ); ?>"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg><?php esc_html_e( 'Delete', 'equine-event-manager' ); ?></button>
 											</div>
 										</div>
 									</div>
@@ -370,10 +357,11 @@ class EEM_Venues_Page {
 			<?php foreach ( $rows as $r ) : ?>
 				<div class="eem-mobile-card">
 					<div class="eem-mobile-card-top">
-						<a class="eem-mobile-card-id" href="<?php echo esc_url( (string) get_edit_post_link( (int) $r['id'], 'raw' ) ); ?>"><?php echo esc_html( $r['title'] ); ?></a>
+						<a class="eem-mobile-card-id" href="<?php echo esc_url( self::url( array( 'venue_id' => (int) $r['id'] ) ) ); ?>"><?php echo esc_html( $r['title'] ); ?></a>
 					</div>
 					<div class="eem-mobile-card-sub"><?php
 						$bits = array();
+						if ( '' !== $r['source_label'] ) { $bits[] = $r['source_label']; }
 						if ( '' !== $r['city_state'] ) { $bits[] = $r['city_state']; }
 						$bits[] = sprintf(
 							/* translators: %s: template count */
@@ -605,12 +593,16 @@ class EEM_Venues_Page {
 			wp_send_json_error( array( 'message' => __( 'Layout not found.', 'equine-event-manager' ) ), 404 );
 		}
 		$data = is_array( $layout['layout'] ?? null ) ? $layout['layout'] : array();
-		$stall_map = isset( $data['_en_stall_map'] ) && is_array( $data['_en_stall_map'] ) ? $data['_en_stall_map'] : array();
-		$rv_map    = isset( $data['_en_rv_map'] ) && is_array( $data['_en_rv_map'] ) ? $data['_en_rv_map'] : array();
+		$stall_map  = isset( $data['_en_stall_map'] ) && is_array( $data['_en_stall_map'] ) ? $data['_en_stall_map'] : array();
+		$rv_map     = isset( $data['_en_rv_map'] ) && is_array( $data['_en_rv_map'] ) ? $data['_en_rv_map'] : array();
+		$stall_rows = isset( $data['_en_stall_rows'] ) && is_array( $data['_en_stall_rows'] ) ? $data['_en_stall_rows'] : array();
+		$rv_rows    = isset( $data['_en_rv_rows'] ) && is_array( $data['_en_rv_rows'] ) ? $data['_en_rv_rows'] : array();
 		wp_send_json_success( array(
-			'name'      => (string) $layout['name'],
-			'stall_map' => $stall_map,
-			'rv_map'    => $rv_map,
+			'name'       => (string) $layout['name'],
+			'stall_map'  => $stall_map,
+			'rv_map'     => $rv_map,
+			'stall_rows' => $stall_rows,
+			'rv_rows'    => $rv_rows,
 		) );
 	}
 
@@ -739,5 +731,70 @@ class EEM_Venues_Page {
 			wp_send_json_error( array( 'message' => __( 'Could not load the layout.', 'equine-event-manager' ) ), 500 );
 		}
 		wp_send_json_success();
+	}
+
+	/**
+	 * AJAX: delete a venue and all its layouts + source mappings.
+	 *
+	 * @return void
+	 */
+	public static function ajax_delete_venue(): void {
+		self::guard();
+		$venue_id = isset( $_POST['venue_id'] ) ? absint( wp_unslash( $_POST['venue_id'] ) ) : 0;
+		if ( $venue_id <= 0 ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid venue.', 'equine-event-manager' ) ), 400 );
+		}
+		if ( ! EEM_Venue::delete_venue( $venue_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Could not delete the venue.', 'equine-event-manager' ) ), 500 );
+		}
+		wp_send_json_success();
+	}
+
+	/* ── List-page helpers ──────────────────────────────────────── */
+
+	/**
+	 * Resolve city/state for a venue source mapping.
+	 *
+	 * @param string $source Source key (tec|native|gems).
+	 * @param string $source_venue_id Source-side venue identifier.
+	 * @return string
+	 */
+	private static function resolve_city_state( string $source, string $source_venue_id ): string {
+		if ( '' === $source_venue_id ) {
+			return '';
+		}
+		$post_id = absint( $source_venue_id );
+		if ( $post_id <= 0 ) {
+			return '';
+		}
+		if ( 'tec' === $source ) {
+			$city  = trim( (string) get_post_meta( $post_id, '_VenueCity', true ) );
+			$state = trim( (string) get_post_meta( $post_id, '_VenueState', true ) );
+			return trim( implode( ', ', array_filter( array( $city, $state ) ) ) );
+		}
+		if ( 'native' === $source ) {
+			$city  = trim( (string) get_post_meta( $post_id, '_equine_event_manager_venue_city', true ) );
+			$state = trim( (string) get_post_meta( $post_id, '_equine_event_manager_venue_state', true ) );
+			return trim( implode( ', ', array_filter( array( $city, $state ) ) ) );
+		}
+		return '';
+	}
+
+	/**
+	 * Resolve an edit URL for a venue source mapping.
+	 *
+	 * @param string $source Source key.
+	 * @param string $source_venue_id Source-side venue identifier.
+	 * @return string
+	 */
+	private static function resolve_edit_url( string $source, string $source_venue_id ): string {
+		if ( '' === $source_venue_id ) {
+			return '';
+		}
+		$post_id = absint( $source_venue_id );
+		if ( $post_id <= 0 || null === get_post( $post_id ) ) {
+			return '';
+		}
+		return (string) get_edit_post_link( $post_id, 'raw' );
 	}
 }

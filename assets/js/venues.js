@@ -21,7 +21,7 @@
 	}
 
 	function nonce() {
-		var root = document.querySelector('.eem-venue-detail');
+		var root = document.querySelector('[data-venue-nonce]');
 		return root ? (root.getAttribute('data-venue-nonce') || '') : '';
 	}
 
@@ -113,25 +113,94 @@
 		overlay.querySelector('[data-role="confirm"]').addEventListener('click', function () { overlay._close(); });
 		var body = overlay.querySelector('.eem-modal-body');
 		postLayout('eem_venue_view_layout', { layout_id: layoutId }, function (data) {
-			body.innerHTML = buildGridPreview(data.stall_map, data.rv_map);
+			body.innerHTML = buildGridPreview(data);
 		}, function (msg) {
 			body.innerHTML = '<p style="color:var(--eem-error-text);">' + escapeHtml(msg || 'Could not load layout.') + '</p>';
 		});
 	}
 
-	function buildGridPreview(stallMap, rvMap) {
+	function buildGridPreview(data) {
 		var html = '';
-		var hasBoth = hasBarns(stallMap) && hasBarns(rvMap);
-		if (hasBarns(stallMap)) {
-			if (hasBoth) html += '<h3 style="margin:0 0 8px;font-size:14px;font-weight:600;">Stalls</h3>';
-			html += renderMapGrid(stallMap);
+		var stallRows = data.stall_rows || [];
+		var rvRows = data.rv_rows || [];
+		var stallMap = data.stall_map || {};
+		var rvMap = data.rv_map || {};
+		var hasStalls = stallRows.length > 0 || hasBarns(stallMap);
+		var hasRv = rvRows.length > 0 || hasBarns(rvMap);
+
+		if (hasStalls) {
+			if (hasStalls && hasRv) html += '<h3 style="margin:0 0 8px;font-size:14px;font-weight:600;">Stalls</h3>';
+			html += stallRows.length > 0 ? renderRowsPreview(stallRows) : renderMapGrid(stallMap);
 		}
-		if (hasBarns(rvMap)) {
-			if (hasBoth) html += '<h3 style="margin:16px 0 8px;font-size:14px;font-weight:600;">RV Lots</h3>';
-			html += renderMapGrid(rvMap);
+		if (hasRv) {
+			if (hasStalls && hasRv) html += '<h3 style="margin:16px 0 8px;font-size:14px;font-weight:600;">RV Lots</h3>';
+			html += rvRows.length > 0 ? renderRowsPreview(rvRows) : renderMapGrid(rvMap);
 		}
 		if (!html) html = '<p style="color:#666;">This layout has no map data.</p>';
 		return html;
+	}
+
+	function renderRowsPreview(rows) {
+		var html = '';
+		rows.forEach(function (row) {
+			var name = row.name || row.row_name || '';
+			if (name) {
+				html += '<div style="font-size:12px;font-weight:600;color:#031B4E;margin:8px 0 4px;">' + escapeHtml(name) + '</div>';
+			}
+			html += '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px;">';
+			var labels = expandRowLabels(row);
+			labels.forEach(function (lbl) {
+				html += '<span style="display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 4px;border-radius:4px;font-size:11px;font-weight:500;background:#f3f4f5;border:1px solid #dcdcde;color:#1d2327;">' + escapeHtml(lbl) + '</span>';
+			});
+			html += '</div>';
+		});
+		return html;
+	}
+
+	function expandRowLabels(row) {
+		var labels = [];
+		var sides = ['top_side', 'bottom_side'];
+		var hasSide = false;
+		sides.forEach(function (sideKey) {
+			var side = row[sideKey];
+			if (side && side.first_label !== undefined && side.last_label !== undefined) {
+				hasSide = true;
+				labels = labels.concat(expandRange(side.first_label, side.last_label));
+			}
+		});
+		if (!hasSide && row.first_label !== undefined && row.last_label !== undefined) {
+			labels = expandRange(row.first_label, row.last_label);
+		}
+		return labels;
+	}
+
+	function expandRange(first, last) {
+		var out = [];
+		var fNum = parseInt(first, 10);
+		var lNum = parseInt(last, 10);
+		if (!isNaN(fNum) && !isNaN(lNum) && String(fNum) === String(first) && String(lNum) === String(last)) {
+			var step = fNum <= lNum ? 1 : -1;
+			for (var i = fNum; step > 0 ? i <= lNum : i >= lNum; i += step) {
+				out.push(String(i));
+			}
+			return out;
+		}
+		var prefixMatch = String(first).match(/^([A-Za-z]+[-_]?)(\d+)$/);
+		var lastMatch = String(last).match(/^([A-Za-z]+[-_]?)(\d+)$/);
+		if (prefixMatch && lastMatch && prefixMatch[1] === lastMatch[1]) {
+			var prefix = prefixMatch[1];
+			var s = parseInt(prefixMatch[2], 10);
+			var e = parseInt(lastMatch[2], 10);
+			var pad = prefixMatch[2].length;
+			var dir = s <= e ? 1 : -1;
+			for (var j = s; dir > 0 ? j <= e : j >= e; j += dir) {
+				out.push(prefix + String(j).padStart(pad, '0'));
+			}
+			return out;
+		}
+		out.push(String(first));
+		if (String(first) !== String(last)) out.push(String(last));
+		return out;
 	}
 
 	function hasBarns(map) { return map && Array.isArray(map.barns) && map.barns.length > 0; }
@@ -198,6 +267,28 @@
 		});
 	}
 
+	function openDeleteVenue(venueId, venueName) {
+		var overlay = openModal({
+			title: 'Delete venue?',
+			danger: true,
+			body: '<p style="margin:0 0 6px;color:var(--eem-error-text);font-weight:600;">This permanently removes "' + escapeHtml(venueName) + '" and all its saved layouts.</p>' +
+				'<p style="margin:0;">Reservations already built from its layouts keep their copy.</p>',
+			confirmLabel: 'Delete Venue'
+		});
+		var confirmBtn = overlay.querySelector('[data-role="confirm"]');
+		confirmBtn.addEventListener('click', function () {
+			confirmBtn.disabled = true;
+			postLayout('eem_venue_delete', { venue_id: venueId }, function () {
+				overlay._close();
+				toast('Venue deleted');
+				window.location.reload();
+			}, function (msg) {
+				confirmBtn.disabled = false;
+				alert(msg || 'Could not delete the venue.');
+			});
+		});
+	}
+
 	document.addEventListener('click', function (e) {
 		var view = e.target.closest('[data-eem-action="venue-layout-view"]');
 		if (view) {
@@ -215,6 +306,12 @@
 		if (del) {
 			e.preventDefault();
 			openDelete(del.getAttribute('data-layout-id'), del.getAttribute('data-layout-name'));
+			return;
+		}
+		var venueDel = e.target.closest('[data-eem-action="venue-delete"]');
+		if (venueDel) {
+			e.preventDefault();
+			openDeleteVenue(venueDel.getAttribute('data-venue-id'), venueDel.getAttribute('data-venue-name'));
 		}
 	});
 })();

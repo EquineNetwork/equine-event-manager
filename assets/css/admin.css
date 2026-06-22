@@ -1343,7 +1343,7 @@ select.eem-field-select {
    .eem-pkg-price-wrap. Reuse this shape for all future prefix/suffix fields. */
 .eem-price-wrap {
 	display: flex;
-	align-items: stretch;
+	align-items: center;
 	max-width: 180px;
 	height: var(--eem-select-height);
 	box-sizing: border-box;
@@ -1359,6 +1359,7 @@ select.eem-field-select {
 
 .eem-price-symbol {
 	padding: 0 11px;
+	height: 100%;
 	background: #f0f4fb;
 	border: none;
 	border-right: 1px solid var(--eem-control-border);
@@ -7530,7 +7531,7 @@ a.eem-reservation-editor-meta-change-link:hover {
    on the right. */
 .eem-pct-wrap {
 	display: flex;
-	align-items: stretch;
+	align-items: center;
 	max-width: 160px;
 	height: var(--eem-select-height);
 	box-sizing: border-box;
@@ -7562,6 +7563,7 @@ input.eem-pct-input:focus {
 }
 .eem-pct-symbol {
 	padding: 0 11px;
+	height: 100%;
 	background: #f0f4fb;
 	border: none;
 	border-left: 1px solid var(--eem-control-border);
@@ -7957,7 +7959,7 @@ input.eem-zone-price-in:focus { border-color: var(--eem-electric); box-shadow: 0
 .eem-repeat-table td:last-child { padding-right: 0; }
 input.eem-repeat-input { margin: 0; padding: 0 10px; height: var(--eem-select-height); min-height: var(--eem-select-height); line-height: normal; box-sizing: border-box; border: 1px solid var(--eem-control-border); border-radius: var(--eem-radius-sm); font-size: 13px; font-family: inherit; color: var(--eem-text); background: #fff; width: 100%; outline: none; }
 input.eem-repeat-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
-.eem-repeat-price-wrap { display: flex; align-items: stretch; height: var(--eem-select-height); box-sizing: border-box; border: 1px solid var(--eem-control-border); border-radius: var(--eem-radius); overflow: hidden; background: #fff; }
+.eem-repeat-price-wrap { display: flex; align-items: center; height: var(--eem-select-height); box-sizing: border-box; border: 1px solid var(--eem-control-border); border-radius: var(--eem-radius); overflow: hidden; background: #fff; }
 .eem-repeat-price-wrap:focus-within { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-repeat-price-sym { padding: 0 11px; background: #f0f4fb; border: none; border-right: 1px solid var(--eem-control-border); font-size: 13px; color: var(--eem-navy); font-weight: 600; display: flex; align-items: center; }
 input.eem-repeat-price-in { margin: 0; padding: 0 10px; height: 100%; border: none; font-size: 13px; font-family: inherit; color: var(--eem-text); background: transparent; width: 90px; outline: none; }
@@ -11106,7 +11108,7 @@ select.eem-filter-select { padding-right:32px; appearance:none; cursor:pointer; 
 /* Edge-to-edge: drop top/side borders + rounded corners AND pull out past the
    .eem-reports-body padding (18px 22px) so the blue bleeds to the page-wrap
    edges and sits flush under the page header. Bottom border stays as a divider. */
-.eem-reports-filter-card { border-top:0; border-left:0; border-right:0; border-radius:0; margin:-38px -46px 18px; }
+.eem-reports-filter-card { border-top:0; border-left:0; border-right:0; border-radius:0; margin:-38px -46px 18px; overflow:visible; }
 .eem-reports-filter-row { display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; background:#fff; padding:14px 18px; }
 .eem-reports-filter-row + .eem-reports-filter-row { border-top:1px solid #e2e8f4; }
 .eem-reports-filter-row .eem-filter-group { flex:1 1 200px; }
@@ -11294,6 +11296,7 @@ table.eem-export-history td { padding:11px 22px; font-size:13px; color:#0d1b3e; 
 .eem-co-main { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .eem-co-rail { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 72px; }
 .eem-co-main > .eem-card, .eem-co-rail > .eem-card { margin-bottom: 0; }
+#eem-co-reservation { overflow: visible; position: relative; z-index: 30; }
 /* All icon() svgs are 14px (outside card titles, which size their own). Without
    this the stroke icons inside buttons render at intrinsic size (huge). */
 .eem-co-workspace .eem-card-icon { width: 14px; height: 14px; }
@@ -11318,7 +11321,7 @@ table.eem-export-history td { padding:11px 22px; font-size:13px; color:#0d1b3e; 
 .eem-co-cs-header .eem-field-hint { flex: 1; min-width: 0; }
 /* The customer card must let the typeahead dropdown escape (.eem-card is
    overflow:hidden) and stack above the cards below it. */
-.eem-co-customer-card { overflow: visible; position: relative; z-index: 20; }
+.eem-co-customer-card { overflow: visible; position: relative; z-index: 40; }
 /* Reuse the canonical .eem-search-wrap/.eem-search-input, but full-width in this card. */
 .eem-co-cs-input-wrap { flex: none; max-width: none; }
 .eem-co-cs-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff; border: 1px solid #e2e8f4; border-radius: 10px; box-shadow: 0 8px 24px rgba(13, 27, 62, .12); z-index: 50; max-height: 340px; overflow-y: auto; }
@@ -11437,7 +11440,7 @@ table.eem-export-history td { padding:11px 22px; font-size:13px; color:#0d1b3e; 
 .eem-co-payment-tab svg { width: 13px; height: 13px; }
 .eem-co-payment-tab:hover { color: #0d1b3e; background: #e8eef8; }
 .eem-co-payment-tab.is-active { color: var(--eem-electric); border-bottom-color: var(--eem-electric); background: #fff; }
-.eem-co-btn-block { width: 100%; justify-content: center; margin-top: 12px; }
+.eem-co-btn-block { width: 100%; justify-content: center; margin-top: 12px; margin-bottom: 10px; }
 .eem-co-cash-field { margin-bottom: 12px; }
 .eem-co-cash-field__label { display: block; font-size: 13px; font-weight: 600; color: #0d1b3e; margin-bottom: 4px; }
 .eem-co-collect-link { text-decoration: none; }
@@ -12042,7 +12045,7 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-venue-card .eem-card-body > .eem-table td:first-child { padding-left: 18px; }
 .eem-venue-card .eem-card-body > .eem-table th:last-child,
 .eem-venue-card .eem-card-body > .eem-table td:last-child { padding-right: 18px; }
-.eem-venue-source-badge { background: var(--eem-bg-alt, #eef2fb); color: var(--eem-navy, #031B4E); }
+.eem-venue-source-badge { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; background: var(--eem-bg-alt, #eef2fb); color: var(--eem-navy, #031B4E); vertical-align: middle; }
 /* Saved-layout name renders as a link-styled button: click it to open the
    layout viewer (replaces the former blue "View" button). */
 .eem-venue-layout-name { background: none; border: none; padding: 0; margin: 0; font-family: inherit; font-size: 14px; font-weight: 700; color: #0d1b3e; cursor: pointer; text-align: left; }
@@ -13955,7 +13958,7 @@ input.eem-pkg-date-input:focus { border-color: var(--eem-electric); box-shadow: 
 .eem-pkg-h--price { width: 130px; flex-shrink: 0; text-align: left; }
 .eem-pkg-h--del  { width: 32px; flex-shrink: 0; }
 .eem-pkg-price-wrap {
-	display: flex; align-items: stretch; flex-shrink: 0;
+	display: flex; align-items: center; flex-shrink: 0;
 	width: 130px;
 	height: var(--eem-select-height); box-sizing: border-box;
 	border: 1px solid var(--eem-control-border);
@@ -13963,7 +13966,7 @@ input.eem-pkg-date-input:focus { border-color: var(--eem-electric); box-shadow: 
 }
 .eem-pkg-price-wrap:focus-within { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-pkg-price-sym {
-	display: flex; align-items: center; padding: 0 11px;
+	display: flex; align-items: center; height: 100%; padding: 0 11px;
 	background: #f0f4fb; border: none; border-right: 1px solid var(--eem-control-border);
 	font-size: 13px; color: var(--eem-navy); font-weight: 600;
 }

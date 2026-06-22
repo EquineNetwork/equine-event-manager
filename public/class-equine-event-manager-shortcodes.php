@@ -9341,81 +9341,33 @@ RV Lot: " . $rv_lot['name'] );
 			$data['stall_selection_mode']     = $stall_pair['selection_mode'];
 		}
 
-		// Config-table overlay — the relational config table is authoritative for
-		// rate/pricing fields and required documents once migration 016 has run.
-		// The postmeta defaults loop above reads legacy _en_ keys that are empty
-		// for table-backed reservations (e.g. NTR 6519), producing $0.00 rates.
-		// Read every pricing + document key from EEM_Reservation_Config so the
-		// customer form sees the real values regardless of postmeta state.
+		// Config-table overlay — the config table is the single source of truth
+		// for ALL reservation fields. The postmeta defaults loop above is a
+		// legacy fallback; overlay every key the config table has so the
+		// customer form always reflects the admin editor's current state.
+		// (Task #212: fixes stale-read divergence for group rider toggles,
+		// shavings, descriptions, tack mode, and any future field.)
 		if ( class_exists( 'EEM_Reservation_Config' ) ) {
 			$eem_cfg = EEM_Reservation_Config::for( (int) $reservation_id );
 
-			// Pricing / rate fields.
-			$rate_keys = array(
-				'stall_nightly_rate',
-				'stall_weekend_rate',
-				'stall_weekly_rate',
-				'stall_early_bird_nightly_rate',
-				'stall_early_bird_weekend_rate',
-				'stall_early_bird_weekly_rate',
-				'stall_early_bird_cutoff_date',
-				'rv_nightly_rate',
-				'rv_weekend_rate',
-				'rv_weekly_rate',
-				'rv_early_bird_nightly_rate',
-				'rv_early_bird_weekend_rate',
-				'rv_early_bird_weekly_rate',
-				'rv_early_bird_cutoff_date',
-				'stall_pricing_mode',
-				'rv_pricing_mode',
-				'stall_weekend_package_start_date',
-				'stall_weekend_package_end_date',
-				'rv_weekend_package_start_date',
-				'rv_weekend_package_end_date',
-				'stall_weekly_package_start_date',
-				'stall_weekly_package_end_date',
-				'rv_weekly_package_start_date',
-				'rv_weekly_package_end_date',
-				'convenience_fee_type',
-				'convenience_fee_amount',
-				'stall_count',
-				'rv_count',
-			);
-			foreach ( $rate_keys as $rk ) {
-				$cfg_val = $eem_cfg->get( $rk, null );
-				if ( null !== $cfg_val && '' !== $cfg_val ) {
-					$data[ $rk ] = $cfg_val;
+			foreach ( array_keys( $defaults ) as $cfg_key ) {
+				$cfg_val = $eem_cfg->get( $cfg_key, null );
+				if ( null === $cfg_val ) {
+					continue;
 				}
-			}
-
-			// Event / venue fields — config-table is authoritative for feed/GEMS
-			// reservations where post-meta is empty.
-			$event_keys = array(
-				'venue_name',
-				'event_location',
-				'venue_address',
-				'available_start_date',
-				'available_end_date',
-				'external_event_name',
-				'external_event_id',
-				'event_details_summary',
-				'event_feed_url',
-				'event_source',
-				'event_id',
-			);
-			foreach ( $event_keys as $ek ) {
-				$cfg_val = $eem_cfg->get( $ek, null );
-				if ( null !== $cfg_val && '' !== (string) $cfg_val ) {
-					$data[ $ek ] = $cfg_val;
+				// Array fields (addons, documents, zones, maps, etc.) — only
+				// overlay when the config value is a non-empty array so empty
+				// legacy defaults aren't replaced with a bare empty array that
+				// would mask a populated postmeta fallback.
+				if ( is_array( $defaults[ $cfg_key ] ) ) {
+					if ( is_array( $cfg_val ) && ! empty( $cfg_val ) ) {
+						$data[ $cfg_key ] = $cfg_val;
+					}
+					continue;
 				}
-			}
-
-			// Required Documents.
-			$data['required_documents_enabled']     = ! empty( $eem_cfg->get( 'required_documents_enabled', $data['required_documents_enabled'] ) ) ? 1 : 0;
-			$data['required_documents_description'] = (string) $eem_cfg->get( 'required_documents_description', $data['required_documents_description'] );
-			$eem_rd_list = $eem_cfg->get( 'required_documents', null );
-			if ( is_array( $eem_rd_list ) ) {
-				$data['required_documents'] = $eem_rd_list;
+				if ( '' !== (string) $cfg_val ) {
+					$data[ $cfg_key ] = $cfg_val;
+				}
 			}
 		}
 

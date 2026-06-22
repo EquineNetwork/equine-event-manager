@@ -83,7 +83,7 @@ class EEM_Create_Order_Page {
 		if ( $rid > 0 && $embedded_post ) {
 			$start          = (string) get_post_meta( $rid, '_en_available_start_date', true );
 			$end            = (string) get_post_meta( $rid, '_en_available_end_date', true );
-			$embedded_dates = ( '' !== $start && '' !== $end ) ? ( $start . ' – ' . $end ) : '';
+			$embedded_dates = self::format_date_range( $start, $end );
 			$embedded_title = $embedded_post->post_title;
 		}
 
@@ -510,7 +510,7 @@ class EEM_Create_Order_Page {
 		foreach ( $posts as $p ) {
 			$start = (string) get_post_meta( $p->ID, '_en_available_start_date', true );
 			$end   = (string) get_post_meta( $p->ID, '_en_available_end_date', true );
-			$dates = ( '' !== $start && '' !== $end ) ? ( $start . ' – ' . $end ) : '';
+			$dates = self::format_date_range( $start, $end );
 			$out[] = array(
 				'id'    => (int) $p->ID,
 				'label' => '' !== $dates ? ( $p->post_title . ' (' . $dates . ')' ) : $p->post_title,
@@ -579,7 +579,7 @@ class EEM_Create_Order_Page {
 
 		wp_send_json_success( array(
 			'title'    => $post->post_title,
-			'dates'    => ( '' !== $start && '' !== $end ) ? ( $start . ' – ' . $end ) : '',
+			'dates'    => self::format_date_range( $start, $end ),
 			'sections' => array(
 				'stall'  => array(
 					'enabled' => ! empty( $d['stalls_enabled'] ),
@@ -862,6 +862,24 @@ class EEM_Create_Order_Page {
 	 */
 	private static function money( float $amount ): string {
 		return '$' . number_format_i18n( $amount, 2 );
+	}
+
+	private static function format_date_range( string $start, string $end ): string {
+		if ( '' === $start || '' === $end ) {
+			return '';
+		}
+		$s = strtotime( $start );
+		$e = strtotime( $end );
+		if ( ! $s || ! $e ) {
+			return $start . ' – ' . $end;
+		}
+		if ( gmdate( 'Y', $s ) === gmdate( 'Y', $e ) && gmdate( 'n', $s ) === gmdate( 'n', $e ) ) {
+			return date_i18n( 'M j', $s ) . '–' . date_i18n( 'j, Y', $e );
+		}
+		if ( gmdate( 'Y', $s ) === gmdate( 'Y', $e ) ) {
+			return date_i18n( 'M j', $s ) . ' – ' . date_i18n( 'M j, Y', $e );
+		}
+		return date_i18n( 'M j, Y', $s ) . ' – ' . date_i18n( 'M j, Y', $e );
 	}
 
 	/**

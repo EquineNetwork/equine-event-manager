@@ -761,6 +761,62 @@
 	// ---- single-lot options (click a chip in Select mode) ----
 	// Replaces the old "Label" tool: clicking a lot opens a compact menu to rename,
 	// price (surcharge), split a unit, or delete it — all in one place.
+	function openLandmarkMenu(r, c) {
+		var z = Z();
+		var cell = z.grid[r] && z.grid[r][c];
+		if (!cell || cell.type !== 'landmark') { return; }
+		var oldLabel = cell.label;
+		var o = document.createElement('div');
+		o.className = 'eem-mb-dialog';
+		o.innerHTML =
+			'<div class="eem-mb-dialog-card eem-mb-form-card">' +
+				'<div class="eem-mb-form-title">Landmark "' + escapeHtml(oldLabel) + '"</div>' +
+				'<div class="eem-mb-form-body">' +
+					'<label class="eem-mb-fl">Name' +
+						'<input type="text" class="eem-mb-input eem-mb-input-wide" id="eem-lm-label" value="' + escapeAttr(oldLabel) + '"></label>' +
+				'</div>' +
+				'<div class="eem-mb-dialog-actions">' +
+					'<button type="button" class="eem-mb-btn eem-mb-btn-danger" id="eem-lm-del">Delete</button>' +
+					'<span class="eem-mb-form-spacer"></span>' +
+					'<button type="button" class="eem-mb-btn eem-mb-form-cancel">Cancel</button>' +
+					'<button type="button" class="eem-mb-btn eem-mb-btn-primary" id="eem-lm-save">Save</button>' +
+				'</div>' +
+			'</div>';
+		(B.overlay || document.body).appendChild(o);
+		requestAnimationFrame(function () { o.classList.add('open'); });
+		function close() { if (o.parentNode) { o.parentNode.removeChild(o); } }
+		o.querySelector('.eem-mb-form-cancel').addEventListener('click', close);
+		o.querySelector('#eem-lm-save').addEventListener('click', function () {
+			var v = (o.querySelector('#eem-lm-label').value || '').trim();
+			if (v && v !== oldLabel) {
+				snapshot();
+				for (var rr = 0; rr < z.grid.length; rr++) {
+					for (var cc = 0; cc < z.grid[rr].length; cc++) {
+						if (z.grid[rr][cc].type === 'landmark' && z.grid[rr][cc].label === oldLabel) {
+							z.grid[rr][cc].label = v;
+						}
+					}
+				}
+				render();
+			}
+			close();
+		});
+		o.querySelector('#eem-lm-del').addEventListener('click', function () {
+			snapshot();
+			for (var rr = 0; rr < z.grid.length; rr++) {
+				for (var cc = 0; cc < z.grid[rr].length; cc++) {
+					if (z.grid[rr][cc].type === 'landmark' && z.grid[rr][cc].label === oldLabel) {
+						z.grid[rr][cc] = { type: 'gap', label: '' };
+					}
+				}
+			}
+			B.sel = null; render(); renderControls(); close();
+		});
+		o.addEventListener('mousedown', function (e) { if (e.target === o) { close(); } });
+		o.addEventListener('keydown', function (e) { if (e.key === 'Escape') { close(); } if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); o.querySelector('#eem-lm-save').click(); } });
+		var f = o.querySelector('#eem-lm-label'); if (f) { f.focus(); f.select(); }
+	}
+
 	function openChipMenu(r, c) {
 		var z = Z();
 		var cell = z.grid[r] && z.grid[r][c];
@@ -976,6 +1032,10 @@
 			// SELECT: a plain click on an existing lot opens its options menu; a click
 			// on empty / a drag shows the multi-select action bar. FILL: a drag just
 			// refreshes the controls so the Make Unit / Surcharge buttons appear.
+			if (B.tool === 'select' && !dragInfo.moved && clickedCell && clickedCell.type === 'landmark') {
+				openLandmarkMenu(dragInfo.r1, dragInfo.c1);
+				return;
+			}
 			if (B.tool === 'select' && !dragInfo.moved && clickedCell && clickedCell.type === 'stall') {
 				openChipMenu(dragInfo.r1, dragInfo.c1);
 				return;

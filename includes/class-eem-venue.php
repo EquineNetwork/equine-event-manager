@@ -277,17 +277,8 @@ class EEM_Venue {
 		if ( $reservation_id <= 0 ) {
 			return 0;
 		}
-		$source   = (string) get_post_meta( $reservation_id, '_en_event_source', true );
-		$event_id = (string) get_post_meta( $reservation_id, '_en_event_id', true );
-		$ext_id   = (string) get_post_meta( $reservation_id, '_en_external_event_id', true );
-		$venue    = '';
-		if ( class_exists( 'EEM_Reservation_Source_Resolver' ) ) {
-			$fields = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
-			$venue  = isset( $fields['venue'] ) ? (string) $fields['venue'] : '';
-		}
-		$resolved_source = '' !== $source ? $source : 'native';
-		$source_venue_id = self::source_venue_key( $resolved_source, $ext_id, $event_id );
-		return self::find( $resolved_source, $source_venue_id, $venue );
+		$parts = self::reservation_venue_parts( $reservation_id );
+		return self::find( $parts['source'], $parts['source_venue_id'], $parts['venue'] );
 	}
 
 	/**
@@ -301,19 +292,58 @@ class EEM_Venue {
 		if ( $reservation_id <= 0 ) {
 			return 0;
 		}
-		$source   = (string) get_post_meta( $reservation_id, '_en_event_source', true );
-		$event_id = (string) get_post_meta( $reservation_id, '_en_event_id', true );
-		$ext_id   = (string) get_post_meta( $reservation_id, '_en_external_event_id', true );
-		$venue    = '';
+		$parts = self::reservation_venue_parts( $reservation_id );
+		return self::resolve( $parts['source'], $parts['source_venue_id'], $parts['venue'] );
+	}
+
+	/**
+	 * Extract source, event_id, external_event_id, and venue name for a
+	 * reservation — reading from the config table first (canonical) and
+	 * using EEM_Events::get_effective_reservation_event_source() so the
+	 * resolved source matches TEC/GEMS/native correctly even when
+	 * _en_event_source post-meta is empty.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return array{source:string,source_venue_id:string,venue:string}
+	 */
+	private static function reservation_venue_parts( int $reservation_id ): array {
+		// Use the authoritative source resolver (config table → post-meta → global default).
+		$source = '';
+		if ( class_exists( 'EEM_Events' ) && method_exists( 'EEM_Events', 'get_effective_reservation_event_source' ) ) {
+			$source = (string) EEM_Events::get_effective_reservation_event_source( $reservation_id );
+		}
+		if ( '' === $source ) {
+			$source = (string) get_post_meta( $reservation_id, '_en_event_source', true );
+		}
+		$resolved_source = '' !== $source ? $source : 'native';
+
+		// Read event linkage from config table, fall back to post-meta.
+		$event_id = '';
+		$ext_id   = '';
+		if ( class_exists( 'EEM_Reservation_Config' ) ) {
+			$cfg      = EEM_Reservation_Config::for( $reservation_id );
+			$event_id = (string) $cfg->get( 'event_id' );
+			$ext_id   = (string) $cfg->get( 'external_event_id' );
+		}
+		if ( '' === $event_id ) {
+			$event_id = (string) get_post_meta( $reservation_id, '_en_event_id', true );
+		}
+		if ( '' === $ext_id ) {
+			$ext_id = (string) get_post_meta( $reservation_id, '_en_external_event_id', true );
+		}
+
+		$venue = '';
 		if ( class_exists( 'EEM_Reservation_Source_Resolver' ) ) {
 			$fields = EEM_Reservation_Source_Resolver::resolve_event_fields( $reservation_id );
 			$venue  = isset( $fields['venue'] ) ? (string) $fields['venue'] : '';
 		}
-		// Use the source venue id when present, else fall back to the event id as
-		// the stable key (keeps the same physical venue stable across reuses).
-		$resolved_source = '' !== $source ? $source : 'native';
+
 		$source_venue_id = self::source_venue_key( $resolved_source, $ext_id, $event_id );
-		return self::resolve( $resolved_source, $source_venue_id, $venue );
+		return array(
+			'source'          => $resolved_source,
+			'source_venue_id' => $source_venue_id,
+			'venue'           => $venue,
+		);
 	}
 
 	/**
@@ -672,6 +702,22 @@ class EEM_Venue {
 			return false;
 		}
 		return false !== $wpdb->delete( self::layouts_table(), array( 'id' => $layout_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB
+	}
+
+	/**
+	 * Delete a venue and all its layouts + source mappings.
+	 *
+	 * @param int $venue_id Venue id.
+	 * @return bool
+	 */
+	public static function delete_venue( int $venue_id ): bool {
+		global $wpdb;
+		if ( $venue_id <= 0 ) {
+			return false;
+		}
+		$wpdb->delete( self::layouts_table(), array( 'venue_id' => $venue_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB
+		$wpdb->delete( self::source_map_table(), array( 'venue_id' => $venue_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB
+		return false !== $wpdb->delete( self::venues_table(), array( 'id' => $venue_id ), array( '%d' ) ); // phpcs:ignore WordPress.DB
 	}
 
 	/* ── Venue detail (address / geo / contact) ────────────────── */
