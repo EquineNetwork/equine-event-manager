@@ -2135,8 +2135,7 @@ th.sorted-desc .eem-sort-icon span:first-child {
 
 .eem-mobile-card {
 	background: var(--eem-surface);
-	border: 1px solid #e2e8f4;
-	border-radius: 8px;
+	border-top: 1px solid #e2e8f4;
 	padding: 13px 14px;
 }
 
@@ -4398,6 +4397,13 @@ a.eem-mob-res-name:focus {
 
 	.eem-table-footer {
 		padding: 10px 12px;
+	}
+}
+
+@media (max-width: 1024px) {
+	.eem-list-card {
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
 	}
 }
 
@@ -11228,6 +11234,7 @@ table.eem-export-history td { padding:11px 22px; font-size:13px; color:#0d1b3e; 
 @media (max-width: 767px) {
 	.eem-customers-table-wrap { display: none; }
 	.eem-customers-mobile { display: block; }
+	.eem-customers-card { border: none; border-radius: 0; }
 }
 @media (min-width: 768px) { .eem-customers-mobile { display: none; } }
 
