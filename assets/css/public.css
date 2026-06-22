@@ -3740,14 +3740,19 @@
 		position: static;
 	}
 }
+@media (max-width: 1039px) {
+	.eem-reservation-workspace__rail {
+		order: -1;
+	}
+}
 @media (max-width: 640px) {
 	.eem-reservation-section--payment {
-		padding: 18px 16px;
+		padding: 18px;
 		border-radius: var(--eem-app-card-radius);
 	}
 	.eem-reservation-section--payment .eem-payment-checkout-block,
 	.eem-reservation-section--payment .eem-payment-card-field-wrap {
-		padding: 16px 14px;
+		padding: 14px 12px;
 		border-radius: var(--eem-app-card-radius);
 	}
 	.eem-reservation-summary-card__sticky {
