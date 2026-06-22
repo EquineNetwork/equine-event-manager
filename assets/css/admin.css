@@ -1176,6 +1176,17 @@ a.eem-btn-add:hover {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   Zoom control — shared across Stall Charts, Map Builder, and
+   customer picker. Charts version is canonical.
+   ───────────────────────────────────────────────────────────── */
+.eem-zoom { display: inline-flex; border: 1px solid var(--eem-line, #d9e2ec); border-radius: var(--eem-radius, 3px); overflow: hidden; }
+.eem-zoom button { border: 0; border-left: 1px solid var(--eem-line, #d9e2ec); background: #fff; color: var(--eem-navy, #031B4E); font-weight: 700; font-size: 13px; padding: 5px 12px; line-height: 1; cursor: pointer; }
+.eem-zoom button:first-child { border-left: 0; }
+.eem-zoom button:hover { background: #eef4ff; }
+.eem-zoom button.is-active { background: var(--eem-electric, #1668F2); color: #fff; }
+.eem-zoom button.is-active:hover { background: var(--eem-electric, #1668F2); }
+
+/* ─────────────────────────────────────────────────────────────
    Form fields — labeled rows, inputs, textareas, selects
    Standard 200px label + flexible control row.
    ───────────────────────────────────────────────────────────── */
@@ -8982,15 +8993,8 @@ body.eem-assign-mode .eem-chart-status--available[data-eem-action="assign-order-
 /* "Map zoom": chips resize inside this capped viewport; the chart card never
    grows. min-width:0 stops the grid's intrinsic width from stretching the card. */
 .eem-smap, .eem-smap-zoombar { min-width: 0; max-width: 100%; }
-/* Chart zoom control — drives --eem-smap-chip; mirrors the map-builder zoom chrome. */
+/* Chart zoom bar layout — the shared .eem-zoom handles button chrome. */
 .eem-smap-zoombar { display: flex; justify-content: flex-end; padding: 8px 0 2px; }
-.eem-smap-zoom { display: inline-flex; border: 1px solid var(--eem-line, #d9e2ec); border-radius: var(--eem-radius, 3px); overflow: hidden; }
-.eem-smap-zoom button { border: 0; border-left: 1px solid var(--eem-line, #d9e2ec); background: #fff; color: var(--eem-navy, #031B4E); font-weight: 700; font-size: 13px; padding: 5px 12px; line-height: 1; cursor: pointer; }
-.eem-smap-zoom button:first-child { border-left: 0; }
-.eem-smap-zoom button:hover { background: #eef4ff; }
-/* Active preset (Fit / 2x / 3x) — the current zoom level reads at a glance. */
-.eem-smap-zoom button.is-active { background: var(--eem-electric, #1668F2); color: #fff; }
-.eem-smap-zoom button.is-active:hover { background: var(--eem-electric, #1668F2); }
 /* Admin chart grid mirrors the Stall Map Builder (.eem-mb-grid): a solid gray
    grid where the 1px gaps + empty/aisle cells read gray, square white stall
    cells, hatched aisles, square cream landmarks. Per the stall-grid visual
@@ -11788,16 +11792,8 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-seg4 button:first-child { border-left: none; }
 .eem-mb-seg4 button.on { background: var(--eem-electric, #1668F2); color: #fff; }
 .eem-mb-gridscroll { overflow: auto; padding: 18px; max-height: 56vh; min-width: 0; max-width: 100%; }
-/* Zoom control — mirrors the row/col stepper chrome; drives grid cell size in JS. */
-/* Pushed to the far right of the toolbar (margin-left:auto) so the zoom control is
-   easy to find at the top-right, mirroring the Stall Charts chart's zoom placement. */
-.eem-mb-zoom { display: inline-flex; margin-left: auto; border: 1px solid var(--eem-border-card, #c3c4c7); border-radius: var(--eem-radius, 3px); overflow: hidden; }
-.eem-mb-zoom button { border: 0; border-left: 1px solid var(--eem-border, #D9E2F2); background: var(--eem-surface, #fff); color: var(--eem-navy, #031B4E); font-weight: 700; font-size: 13px; padding: 5px 11px; line-height: 1; cursor: pointer; }
-.eem-mb-zoom button:first-child { border-left: 0; }
-.eem-mb-zoom button:hover { background: #eef4ff; }
-/* Active preset (Fit / 2x / 3x) — the current zoom level reads at a glance. */
-.eem-mb-zoom button.is-active { background: var(--eem-electric, #1668F2); color: #fff; }
-.eem-mb-zoom button.is-active:hover { background: var(--eem-electric, #1668F2); }
+/* Map Builder zoom — pushed right in the toolbar; shared .eem-zoom handles chrome. */
+.eem-mb-zoom { margin-left: auto; }
 /* Inline mode — the builder lives inside the section card instead of a fixed
    modal overlay (Whitney: "the map builder needs to just live in this card").
    Static positioning, no backdrop, full-width, capped grid viewport that pans. */

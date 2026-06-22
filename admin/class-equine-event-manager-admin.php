@@ -3271,7 +3271,7 @@ class EEM_Admin {
 			</div>
 
 			<div class="eem-smap-zoombar">
-				<span class="eem-smap-zoom" data-eem-smap-zoom>
+				<span class="eem-zoom" data-eem-smap-zoom>
 					<button type="button" data-zoom="out" title="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>">&minus;</button>
 					<button type="button" data-zoom="reset" title="<?php esc_attr_e( 'Reset zoom', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Zoom', 'equine-event-manager' ); ?></button>
 					<button type="button" data-zoom="in" title="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>">+</button>
