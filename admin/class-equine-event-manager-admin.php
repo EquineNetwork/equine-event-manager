@@ -2505,7 +2505,16 @@ class EEM_Admin {
 		$inv               = in_array( $inv, array( 'all', 'stalls', 'rv' ), true ) ? $inv : 'stalls';
 		// View model: 'customer' (default), 'list' (By Location matrix table) and
 		// 'map' (By Location spatial map). Legacy 'location' maps to 'list'.
-		$tab               = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'customer';
+		// When the reservation has no spatial map (Numbered+Quantity mode), default
+		// to 'list' since the map view is unavailable.
+		$has_any_map = false;
+		if ( class_exists( 'EEM_Stall_Map_Importer' ) ) {
+			$stall_snap = EEM_Stall_Map_Importer::get_for_reservation( $reservation_id );
+			$rv_snap    = EEM_Stall_Map_Importer::get_for_reservation( $reservation_id, EEM_Stall_Map_Importer::RV_META_KEY );
+			$has_any_map = ! empty( $stall_snap['barns'] ) || ! empty( $rv_snap['barns'] );
+		}
+		$default_tab       = $has_any_map ? 'customer' : 'list';
+		$tab               = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : $default_tab;
 		if ( 'location' === $tab ) {
 			$tab = 'list';
 		}
