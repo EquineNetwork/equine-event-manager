@@ -588,7 +588,7 @@ class EEM_Venues_Page {
 						number_format_i18n( count( $layouts ) )
 					) );
 				?></h2>
-					<p class="eem-card-subtitle"><?php esc_html_e( 'Click a layout name to preview it.', 'equine-event-manager' ); ?></p>
+					<p class="eem-card-subtitle"><?php esc_html_e( 'Click a facility template to preview the layout.', 'equine-event-manager' ); ?></p>
 					</div>
 				<div class="eem-card-body eem-venue-card-body--flush">
 					<?php if ( empty( $layouts ) ) : ?>
