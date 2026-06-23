@@ -80,7 +80,7 @@ class EEM_REST_Venues_Controller extends EEM_REST_Controller {
 	 * @return WP_REST_Response
 	 */
 	public function list_venues( WP_REST_Request $request ): WP_REST_Response {
-		$rows = EEM_Venue::all_with_counts();
+		$rows = EEM_Venue::all_with_counts( 'active' );
 
 		$items = array_map(
 			static function ( array $row ): array {

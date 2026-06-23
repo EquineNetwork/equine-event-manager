@@ -12043,7 +12043,16 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 /* compact row-action button used in the layouts table */
 .eem-btn-sm { padding: 4px 10px; font-size: 12.5px; }
 .eem-venue-detail { display: flex; flex-direction: column; gap: 18px; }
-.eem-venue-card .eem-card-body { padding: 0; }
+.eem-venue-card .eem-venue-card-body--flush { padding: 0; }
+.eem-venue-info-grid { display: flex; flex-direction: column; gap: 12px; }
+.eem-venue-info-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.eem-venue-info-grid .eem-field-row { display: flex; flex-direction: column; gap: 3px; padding: 0; border: none; margin: 0; }
+.eem-venue-info-grid .eem-field-label { font-size: 12px; color: var(--eem-text-secondary, #64748b); font-weight: 500; }
+@media (max-width: 600px) {
+	.eem-venue-info-row { grid-template-columns: 1fr; }
+	.eem-venue-info-row .eem-field-row[style*="grid-column"] { grid-column: span 1; }
+}
+.eem-venue-info-actions { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--eem-border, #e2e8f0); }
 .eem-venue-card .eem-card-body > .eem-venue-empty-note { padding: 18px; margin: 0; color: var(--eem-muted, #64748b); }
 .eem-venue-card .eem-card-body > .eem-table { margin: 0; }
 /* Align the full-bleed table's outer cells with the 18px card-header inset. */

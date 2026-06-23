@@ -42,7 +42,7 @@
 		overlay.setAttribute('role', 'dialog');
 		overlay.setAttribute('aria-modal', 'true');
 		overlay.innerHTML =
-			'<div class="eem-modal-card"' + (opts.wide ? ' style="max-width:720px;"' : '') + '>' +
+			'<div class="eem-modal-card"' + (opts.wide ? ' style="max-width:900px;max-height:88vh;"' : '') + '>' +
 				'<div class="eem-modal-head' + (opts.danger ? ' eem-modal-head--danger' : '') + '">' +
 					'<h2 class="eem-modal-title' + (opts.danger ? ' eem-modal-title--danger' : '') + '">' + opts.title + '</h2>' +
 				'</div>' +
@@ -145,12 +145,12 @@
 		rows.forEach(function (row) {
 			var name = row.name || row.row_name || '';
 			if (name) {
-				html += '<div style="font-size:12px;font-weight:600;color:#031B4E;margin:8px 0 4px;">' + escapeHtml(name) + '</div>';
+				html += '<div style="font-size:12px;font-weight:600;color:var(--eem-navy,#031B4E);margin:8px 0 4px;">' + escapeHtml(name) + '</div>';
 			}
-			html += '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px;">';
 			var labels = expandRowLabels(row);
-			labels.forEach(function (lbl) {
-				html += '<span style="display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 4px;border-radius:4px;font-size:11px;font-weight:500;background:#f3f4f5;border:1px solid #dcdcde;color:#1d2327;">' + escapeHtml(lbl) + '</span>';
+			html += '<div class="eem-mb-preview-grid" style="grid-template-columns:repeat(' + labels.length + ',42px);grid-auto-rows:38px;margin-bottom:12px;">';
+			labels.forEach(function (lbl, i) {
+				html += '<div class="eem-mb-cust-cell stall" style="grid-column:' + (i + 1) + ';grid-row:1;">' + escapeHtml(lbl) + '</div>';
 			});
 			html += '</div>';
 		});
@@ -209,30 +209,46 @@
 
 	function hasBarns(map) { return map && Array.isArray(map.barns) && map.barns.length > 0; }
 
+	function sameLm(grid, r, c, label) {
+		return r >= 0 && c >= 0 && r < grid.length && c < (grid[0] ? grid[0].length : 0) &&
+			grid[r][c].type === 'landmark' && grid[r][c].label === label;
+	}
+
 	function renderMapGrid(map) {
-		var html = '';
+		var html = '<div class="eem-mb-preview-scroll" style="max-height:70vh;">';
 		(map.barns || []).forEach(function (barn) {
 			var grid = barn.grid || [];
 			if (!grid.length) return;
-			var cols = 0;
-			grid.forEach(function (row) { if (row.length > cols) cols = row.length; });
+			var cols = grid[0] ? grid[0].length : 0;
 			if (!cols) return;
-			if (barn.name) html += '<div style="font-size:12px;font-weight:600;color:#031B4E;margin:8px 0 4px;">' + escapeHtml(barn.name) + '</div>';
-			html += '<div style="display:grid;grid-template-columns:repeat(' + cols + ',32px);gap:2px;margin-bottom:12px;">';
-			grid.forEach(function (row) {
+			if (barn.name) html += '<div style="font-size:12px;font-weight:600;color:var(--eem-navy,#031B4E);margin:8px 0 4px;">' + escapeHtml(barn.name) + '</div>';
+			html += '<div class="eem-mb-preview-grid" style="grid-template-columns:repeat(' + cols + ',42px);grid-auto-rows:38px;">';
+			var consumed = {};
+			for (var r = 0; r < grid.length; r++) {
 				for (var c = 0; c < cols; c++) {
-					var cell = c < row.length ? row[c] : null;
-					if (cell && (cell.type === 'stall' || cell.type === 'rv')) {
-						html += '<span style="display:flex;align-items:center;justify-content:center;height:32px;border-radius:3px;font-size:10px;font-weight:500;background:#e8eaed;border:1px solid #d0d0d0;color:#1d2327;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(cell.label || '') + '</span>';
-					} else if (cell && cell.type === 'landmark') {
-						html += '<span style="display:flex;align-items:center;justify-content:center;height:32px;border-radius:3px;font-size:9px;background:#fff8e1;border:1px solid #e0d6b8;color:#8d7b4f;overflow:hidden;">' + escapeHtml(cell.label || '') + '</span>';
+					if (consumed[r + ',' + c]) continue;
+					var cell = grid[r][c];
+					if (cell && cell.type === 'landmark') {
+						var w = 1;
+						while (sameLm(grid, r, c + w, cell.label)) w++;
+						var h = 1;
+						while (sameLm(grid, r + h, c, cell.label)) h++;
+						for (var rr = r; rr < r + h; rr++) {
+							for (var cc = c; cc < c + w; cc++) {
+								consumed[rr + ',' + cc] = 1;
+							}
+						}
+						html += '<div class="eem-mb-cust-cell landmark" style="grid-column:' + (c + 1) + ' / span ' + w + ';grid-row:' + (r + 1) + ' / span ' + h + ';width:auto;height:auto;">' + escapeHtml(cell.label || '') + '</div>';
+					} else if (cell && (cell.type === 'stall' || cell.type === 'rv')) {
+						html += '<div class="eem-mb-cust-cell stall" style="grid-column:' + (c + 1) + ';grid-row:' + (r + 1) + ';">' + escapeHtml(cell.label || '') + '</div>';
 					} else {
-						html += '<span style="height:32px;"></span>';
+						html += '<div class="eem-mb-cust-cell gap" style="grid-column:' + (c + 1) + ';grid-row:' + (r + 1) + ';"></div>';
 					}
 				}
-			});
+			}
 			html += '</div>';
 		});
+		html += '</div>';
 		return html;
 	}
 
@@ -281,19 +297,52 @@
 
 	function openDeleteVenue(venueId, venueName) {
 		var overlay = openModal({
-			title: 'Delete venue?',
+			title: 'Move to Trash?',
 			danger: true,
-			body: '<p style="margin:0 0 6px;color:var(--eem-error-text);font-weight:600;">This permanently removes "' + escapeHtml(venueName) + '" and all its saved layouts.</p>' +
-				'<p style="margin:0;">Reservations already built from its layouts keep their copy.</p>',
-			confirmLabel: 'Delete Venue'
+			body: '<p style="margin:0 0 6px;font-weight:600;">"' + escapeHtml(venueName) + '" will be moved to the Trash.</p>' +
+				'<p style="margin:0;">You can restore it later from the Trash tab.</p>',
+			confirmLabel: 'Move to Trash'
 		});
 		var confirmBtn = overlay.querySelector('[data-role="confirm"]');
 		confirmBtn.addEventListener('click', function () {
 			confirmBtn.disabled = true;
 			postLayout('eem_venue_delete', { venue_id: venueId }, function () {
 				overlay._close();
-				toast('Venue deleted');
+				toast('Venue moved to Trash');
 				window.location.reload();
+			}, function (msg) {
+				confirmBtn.disabled = false;
+				alert(msg || 'Could not move the venue to Trash.');
+			});
+		});
+	}
+
+	function restoreVenue(venueId) {
+		postLayout('eem_venue_restore', { venue_id: venueId }, function () {
+			toast('Venue restored');
+			var row = document.querySelector('tr[data-venue-id="' + venueId + '"]');
+			if (row) row.remove();
+		}, function (msg) {
+			alert(msg || 'Could not restore the venue.');
+		});
+	}
+
+	function openDeletePermanently(venueId, venueName) {
+		var overlay = openModal({
+			title: 'Delete permanently?',
+			danger: true,
+			body: '<p style="margin:0 0 6px;color:var(--eem-error-text);font-weight:600;">This permanently removes "' + escapeHtml(venueName) + '" and all its saved layouts.</p>' +
+				'<p style="margin:0;">This action cannot be undone.</p>',
+			confirmLabel: 'Delete Permanently'
+		});
+		var confirmBtn = overlay.querySelector('[data-role="confirm"]');
+		confirmBtn.addEventListener('click', function () {
+			confirmBtn.disabled = true;
+			postLayout('eem_venue_delete_permanently', { venue_id: venueId }, function () {
+				overlay._close();
+				toast('Venue permanently deleted');
+				var row = document.querySelector('tr[data-venue-id="' + venueId + '"]');
+				if (row) row.remove();
 			}, function (msg) {
 				confirmBtn.disabled = false;
 				alert(msg || 'Could not delete the venue.');
@@ -301,7 +350,115 @@
 		});
 	}
 
+	/* ── Bulk actions ──────────────────────────────────────────── */
+
+	function updateBulkBar() {
+		/* No-op — bulk bar is always visible in the toolbar. */
+	}
+
+	function bulkDelete() {
+		var checked = document.querySelectorAll('.eem-venue-cb:checked');
+		if (!checked.length) return;
+		var ids = Array.prototype.map.call(checked, function (cb) { return cb.value; });
+		var overlay = openModal({
+			title: 'Move ' + ids.length + (ids.length === 1 ? ' venue' : ' venues') + ' to Trash?',
+			danger: true,
+			body: '<p style="margin:0;font-weight:600;">' + ids.length + (ids.length === 1 ? ' venue' : ' venues') + ' will be moved to the Trash.</p>',
+			confirmLabel: 'Move to Trash'
+		});
+		var confirmBtn = overlay.querySelector('[data-role="confirm"]');
+		confirmBtn.addEventListener('click', function () {
+			confirmBtn.disabled = true;
+			bulkAjax('eem_venue_bulk_delete', ids, overlay, 'Venues moved to Trash');
+		});
+	}
+
+	function bulkRestore() {
+		var checked = document.querySelectorAll('.eem-venue-cb:checked');
+		if (!checked.length) return;
+		var ids = Array.prototype.map.call(checked, function (cb) { return cb.value; });
+		bulkAjax('eem_venue_bulk_restore', ids, null, 'Venues restored');
+	}
+
+	function bulkDeletePermanently() {
+		var checked = document.querySelectorAll('.eem-venue-cb:checked');
+		if (!checked.length) return;
+		var ids = Array.prototype.map.call(checked, function (cb) { return cb.value; });
+		var overlay = openModal({
+			title: 'Delete ' + ids.length + (ids.length === 1 ? ' venue' : ' venues') + ' permanently?',
+			danger: true,
+			body: '<p style="margin:0;color:var(--eem-error-text);font-weight:600;">This permanently removes ' + ids.length + (ids.length === 1 ? ' venue' : ' venues') + ' and all saved layouts. This cannot be undone.</p>',
+			confirmLabel: 'Delete Permanently'
+		});
+		var confirmBtn = overlay.querySelector('[data-role="confirm"]');
+		confirmBtn.addEventListener('click', function () {
+			confirmBtn.disabled = true;
+			bulkAjax('eem_venue_bulk_delete_permanently', ids, overlay, 'Venues permanently deleted');
+		});
+	}
+
+	function bulkAjax(action, ids, overlay, successMsg) {
+		var body = new URLSearchParams();
+		body.append('action', action);
+		body.append('nonce', nonce());
+		ids.forEach(function (id) { body.append('venue_ids[]', id); });
+		fetch(ajaxUrl(), { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() })
+			.then(function (r) { return r.json(); })
+			.then(function (json) {
+				if (overlay) overlay._close();
+				if (json && json.success) {
+					toast(json.data && json.data.message ? json.data.message : successMsg);
+					ids.forEach(function (id) {
+						var row = document.querySelector('tr[data-venue-id="' + id + '"]');
+						if (row) row.remove();
+					});
+					updateBulkBar();
+				} else {
+					alert(json && json.data && json.data.message ? json.data.message : 'Operation failed.');
+				}
+			})
+			.catch(function () { if (overlay) overlay._close(); alert('Operation failed.'); });
+	}
+
+	document.addEventListener('change', function (e) {
+		if (e.target.matches('[data-eem-action="venues-toggle-all"]')) {
+			var state = e.target.checked;
+			document.querySelectorAll('.eem-venue-cb').forEach(function (cb) { cb.checked = state; });
+			updateBulkBar();
+		}
+		if (e.target.matches('.eem-venue-cb')) {
+			var all = document.querySelectorAll('.eem-venue-cb');
+			var allChecked = document.querySelectorAll('.eem-venue-cb:checked');
+			var toggle = document.querySelector('[data-eem-action="venues-toggle-all"]');
+			if (toggle) toggle.checked = all.length > 0 && all.length === allChecked.length;
+			updateBulkBar();
+		}
+	});
+
 	document.addEventListener('click', function (e) {
+		if (e.target.closest('[data-eem-action="venues-bulk-apply"]')) {
+			var sel = document.querySelector('[data-eem-venues-bulk-action]');
+			if (sel && sel.value === 'delete') {
+				bulkDelete();
+			} else if (sel && sel.value === 'restore') {
+				bulkRestore();
+			} else if (sel && sel.value === 'delete-permanently') {
+				bulkDeletePermanently();
+			}
+			return;
+		}
+		var venueRestore = e.target.closest('[data-eem-action="venue-restore"]');
+		if (venueRestore) {
+			e.preventDefault();
+			restoreVenue(venueRestore.getAttribute('data-venue-id'));
+			return;
+		}
+		var venueDelPerm = e.target.closest('[data-eem-action="venue-delete-permanently"]');
+		if (venueDelPerm) {
+			e.preventDefault();
+			openDeletePermanently(venueDelPerm.getAttribute('data-venue-id'), venueDelPerm.getAttribute('data-venue-name'));
+			return;
+		}
 		var view = e.target.closest('[data-eem-action="venue-layout-view"]');
 		if (view) {
 			e.preventDefault();
@@ -324,6 +481,43 @@
 		if (venueDel) {
 			e.preventDefault();
 			openDeleteVenue(venueDel.getAttribute('data-venue-id'), venueDel.getAttribute('data-venue-name'));
+			return;
+		}
+		var saveDetail = e.target.closest('[data-eem-action="venue-save-detail"]');
+		if (saveDetail) {
+			e.preventDefault();
+			saveVenueDetail();
 		}
 	});
+
+	function saveVenueDetail() {
+		var wrap = document.querySelector('.eem-venue-detail');
+		if (!wrap) return;
+		var venueId = wrap.getAttribute('data-venue-id');
+		var fd = new FormData();
+		fd.append('action', 'eem_venue_save_detail');
+		fd.append('nonce', nonce());
+		fd.append('venue_id', venueId);
+		var fields = ['venue_name', 'address_1', 'address_2', 'city', 'state', 'postal_code', 'phone', 'website', 'lat', 'lng'];
+		fields.forEach(function (f) {
+			var el = wrap.querySelector('[name="' + f + '"]');
+			if (el) fd.append(f, el.value);
+		});
+		var btn = wrap.querySelector('[data-eem-action="venue-save-detail"]');
+		if (btn) btn.disabled = true;
+		fetch(ajaxUrl(), { method: 'POST', credentials: 'same-origin', body: fd })
+			.then(function (r) { return r.json(); })
+			.then(function (j) {
+				if (btn) btn.disabled = false;
+				if (j.success) {
+					toast(j.data && j.data.message ? j.data.message : 'Venue saved.');
+				} else {
+					toast((j.data && j.data.message) || 'Save failed.');
+				}
+			})
+			.catch(function () {
+				if (btn) btn.disabled = false;
+				toast('Save failed.');
+			});
+	}
 })();

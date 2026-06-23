@@ -92,9 +92,11 @@ class EEM_Venue {
 			lat double DEFAULT NULL,
 			lng double DEFAULT NULL,
 			geocoded_address varchar(500) NOT NULL DEFAULT '',
+			status varchar(20) NOT NULL DEFAULT 'active',
 			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),
-			KEY normalized_key (normalized_key)
+			KEY normalized_key (normalized_key),
+			KEY status (status)
 		) {$cc};" );
 
 		dbDelta( 'CREATE TABLE ' . self::source_map_table() . " (
@@ -365,6 +367,14 @@ class EEM_Venue {
 				return (string) $native_venue;
 			}
 		}
+
+		if ( 'tec' === $source && '' !== $event_id ) {
+			$tec_venue = (int) get_post_meta( (int) $event_id, '_EventVenueID', true );
+			if ( $tec_venue > 0 ) {
+				return (string) $tec_venue;
+			}
+		}
+
 		return '' !== $ext_id ? $ext_id : $event_id;
 	}
 
@@ -486,19 +496,43 @@ class EEM_Venue {
 	 *
 	 * @return array<int, array<string,mixed>>
 	 */
-	public static function all_with_counts(): array {
+	public static function all_with_counts( string $status = '' ): array {
 		global $wpdb;
 		$v = self::venues_table();
 		$l = self::layouts_table();
 		$m = self::source_map_table();
+		$where = '';
+		if ( '' !== $status ) {
+			$where = $wpdb->prepare( ' WHERE v.status = %s', $status );
+		}
 		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB
-			"SELECT v.id, v.name, v.created_at,
+			"SELECT v.id, v.name, v.status, v.created_at,
 				(SELECT COUNT(*) FROM {$l} WHERE {$l}.venue_id = v.id) AS layout_count,
 				(SELECT COUNT(*) FROM {$m} WHERE {$m}.venue_id = v.id) AS source_count
-			FROM {$v} v ORDER BY v.name ASC",
+			FROM {$v} v{$where} ORDER BY v.name ASC",
 			ARRAY_A
 		);
 		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * Count venues grouped by status.
+	 *
+	 * @return array<string,int> e.g. ['active' => 5, 'trash' => 2]
+	 */
+	public static function counts_by_status(): array {
+		global $wpdb;
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB
+			'SELECT status, COUNT(*) AS cnt FROM ' . self::venues_table() . ' GROUP BY status',
+			ARRAY_A
+		);
+		$out = array( 'active' => 0, 'trash' => 0 );
+		if ( is_array( $rows ) ) {
+			foreach ( $rows as $r ) {
+				$out[ (string) $r['status'] ] = (int) $r['cnt'];
+			}
+		}
+		return $out;
 	}
 
 	/**
@@ -705,12 +739,53 @@ class EEM_Venue {
 	}
 
 	/**
-	 * Delete a venue and all its layouts + source mappings.
+	 * Soft-delete a venue (move to trash).
 	 *
 	 * @param int $venue_id Venue id.
 	 * @return bool
 	 */
+	public static function rename( int $venue_id, string $name ): bool {
+		if ( $venue_id <= 0 || '' === $name ) {
+			return false;
+		}
+		global $wpdb;
+		$result = $wpdb->update( self::venues_table(), array( 'name' => $name ), array( 'id' => $venue_id ), array( '%s' ), array( '%d' ) ); // phpcs:ignore WordPress.DB
+		return false !== $result;
+	}
+
+	/**
+	 * @param int $venue_id Venue id.
+	 * @return bool
+	 */
 	public static function delete_venue( int $venue_id ): bool {
+		global $wpdb;
+		if ( $venue_id <= 0 ) {
+			return false;
+		}
+		return false !== $wpdb->update( self::venues_table(), array( 'status' => 'trash' ), array( 'id' => $venue_id ), array( '%s' ), array( '%d' ) ); // phpcs:ignore WordPress.DB
+	}
+
+	/**
+	 * Restore a trashed venue back to active.
+	 *
+	 * @param int $venue_id Venue id.
+	 * @return bool
+	 */
+	public static function restore_venue( int $venue_id ): bool {
+		global $wpdb;
+		if ( $venue_id <= 0 ) {
+			return false;
+		}
+		return false !== $wpdb->update( self::venues_table(), array( 'status' => 'active' ), array( 'id' => $venue_id ), array( '%s' ), array( '%d' ) ); // phpcs:ignore WordPress.DB
+	}
+
+	/**
+	 * Permanently delete a venue and all its layouts + source mappings.
+	 *
+	 * @param int $venue_id Venue id.
+	 * @return bool
+	 */
+	public static function delete_venue_permanently( int $venue_id ): bool {
 		global $wpdb;
 		if ( $venue_id <= 0 ) {
 			return false;
