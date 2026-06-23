@@ -115,6 +115,7 @@ class EEM_Venue {
 			venue_id bigint(20) unsigned NOT NULL,
 			name varchar(191) NOT NULL DEFAULT '',
 			layout_json longtext NULL,
+			layout_type varchar(20) NOT NULL DEFAULT 'combined',
 			based_on_id bigint(20) unsigned NOT NULL DEFAULT 0,
 			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY  (id),
