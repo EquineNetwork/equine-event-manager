@@ -15,71 +15,68 @@
 
 ---
 
-## ✅ NEW MOCKUPS — ALL DONE (2026-06-21)
+## 📋 v1 — Pre-launch (remaining)
 
-All `.mockups/` files fully implemented and verified. Mockup cleanup pending (see Deferred).
-
----
-
-## ⏸ Deferred (no blocker — do when convenient)
-
-- [~] **Global mobile-first pass — PARTIAL.** Structural scaffolding shipped (2.7.577–580): mobile card border-top separators, `.eem-mobile-cards`/`.eem-desktop-table` class pattern, 44px touch targets via `:where()`, PWA install prompt, sticky toolbars. **NOT yet done:** per-page visual polish to match the Daily Movement standard — consistent row heights, badge sizing parity, spacing/density at phone widths, readable content across all admin pages. Daily Movement is the baseline; every other page needs the same treatment.
-
-- [x] **Page-background color sweep** — **DONE.** `body.eem-shell-page` now uses `var(--eem-bg)` + `min-height: 100vh`; `#wpbody-content` gets `min-height: calc(100vh - 32px)`. No WP gray bleed-through on any page.
-- [x] **Global card padding consistency sweep** — **DONE.** Canonical tokens `--eem-card-header-padding: 13px 18px` and `--eem-card-body-padding: 16px 18px` at admin.css:139-140, consumed by `.eem-card-header` and `.eem-card-body`.
-- [x] **Mockup cleanup — RESOLVED 2026-06-21: nothing to delete.** All three suspected files are LIVE: `reservation_overview_page.html` (hidden "View Event" submenu, browser-verified on-brand); `events_admin_page.html` (referenced in `class-eem-events-list-page.php`); `event_entry_editor_page.html` is the mockup for the LIVE **Division editor** (route `equine-event-manager-entry-editor` — UI relabeled "Entries"→"Division" but the slug + mockup filename kept the "entry" name; browser-confirmed in use at `entry_id=13646`). `division_editor_page.html` never existed — the old "superseded by" note was wrong. Do NOT delete any of these.
-- [x] Global control/button radius sweep → 8px — **DONE.** `--eem-radius: 8px` at admin.css:134, consumed by buttons + inputs plugin-wide.
-- [x] Space Grotesk → IBM Plex Sans plugin-wide. **DONE** — all font-family declarations use CSS custom properties (`--eem-font-ui`, `--eem-font-display`) resolving to IBM Plex Sans. Only a comment reference remains.
-- [x] **MED-4** — **DONE.** Per-order `GET_LOCK('eem_charge_...')` added to all 3 Collect Payment handlers (Stripe intent, Stripe confirm, Auth.net charge). 10s timeout, order re-read inside lock, `RELEASE_LOCK` in `finally`.
-- [x] **LOW-3/4** — **DONE.** Stripe confirm handler now rechecks `payment_status` before processing. `mark_order_paid_manually()` guards against duplicate notes when order already paid.
-- [ ] **Excel stall map import** — let admins upload an Excel (.xlsx) file with their stall layout; plugin reads the cell grid and auto-generates stall rows + map grid. Excel cells map cleanly to the Map Builder's row/column structure (no OCR needed). Avoids manually entering backwards-numbered or complex multi-barn layouts. Whitney flagged 2026-06-22.
-- [x] **Sticky toolbars on list pages** — **DONE (commit ed60d15, 2.7.580).** Toolbar rows stick below WP admin bar on scroll (32px desktop, 46px tablet, 0px mobile); carded variant excluded.
-- [x] **BUG: Reports filter dropdown clipped** — **DONE.** `.eem-reports-filter-card` already has `overflow:visible` in admin.css:11125.
-- [x] **BUG: Create Order reservation date format** — **DONE.** All 3 call sites pass dates through `format_date_range()` which outputs `Jun 26–28, 2026` format.
-- [x] **BUG: Frontend not reflecting backend reservation changes** — **DONE.** Config-table overlay in `get_reservation_meta()` at shortcodes.php:9325-9353 reads from `EEM_Reservation_Config::for()` and overlays every non-null config value on top of post-meta defaults.
-- [x] **BUG: Currency input fields not vertically centered** — **DONE.** `.eem-price-wrap` already has `align-items: center` in admin.css.
-- [x] **Global Zoom control styling** — **DONE.** Shared `.eem-zoom` component at admin.css:1182-1186, used across Map Builder, Stall & RV Charts, and customer picker.
-- [ ] **Map Builder search bar** — add a search input to the Map Builder so admins can search for a stall/lot number, highlight it on the grid, and scroll to it. Useful for large 300+ stall maps. Whitney flagged 2026-06-22.
-- [ ] **Add-On Report** — new report under Reports showing add-on quantities sold per day of the reservation. Columns: Add-On Name | Day 1 (date) | Day 2 | … | Day N | Total. Data source: order line items matching the reservation's configured add-ons. CSV + PDF export. Per-day breakdown method TBD (currently add-ons are flat qty, not per-day). Whitney flagged 2026-06-22.
-- [ ] **Dashboard "Upcoming Reservations" chips** — style doesn't match Reservations list badge style. Should be filled colored pills with Stall/RV/Group labels. Whitney flagged 2026-06-22.
-- [x] **Stall Charts "By List" default for Numbered+Quantity** — **DONE (commit 6538f8c).** When no spatial map is connected, defaults to By List view.
-- [x] Reports — visual verify Customer List + Refund Log render correctly in browser. **DONE 2026-06-21**: both PDF print views render on-brand (branded header, populated tables, footer). Minor data note: Refund Log "Reservation" column blank for order #90011 — likely the per-order reservation_id denormalization gap, not a render bug.
-- [~] **Full end-to-end functionality sweep** — FIRST PASS DONE 2026-06-21 (browser page-load + console-error sweep of all admin surfaces + key transactional pages). Results below. NOT yet exhaustive on customer-side checkout (blocked on fixture — see gap).
-  - **Clean (no console errors, on-brand, render correctly):** Dashboard, Orders list, Order Detail (#90801), Create Order, Events, Reservations, Stall & RV Charts (page-bg fix confirmed live), Daily Movement, Event Entries/Divisions list, Sheets & Results, Customers, Notifications, Reports (Customer List + Refund Log PDFs), Settings (vertical nav intact), Native Events customer calendar ([en_events]).
-  - ✅ ~~**BUG: Collect Payment shows "paid in full" for edited-after-payment orders.**~~ **FIXED.** `collect-payment-page.php:129-130` now computes `$amount_paid` and `$outstanding = max(0, $total_due - $amount_paid)`, gates on actual balance not just status.
-  - ⚠️ **UX inconsistency:** Order Detail shows a green "Paid" badge while also showing a Balance-Due banner on edited orders. Expected Order-Edit state, but reads contradictory. Consider a "Partially paid" / "Balance due" badge state.
-  - ℹ️ Many seed orders show "Unassigned Event" / blank reservation (also seen in Refund Log) — orders not linked to a reservation. Likely the per-order `reservation_id` denormalization gap, or intentional seed data. Verify whether real (non-seed) orders ever land unassigned.
-  - **Coverage gap:** customer-facing `[en_reservation]` checkout form not fully exercised — the only fixture pages point at the corrupted Super Sort (5990) or a map test. Need an `[en_reservation id="6519"]` fixture page (NTR 6519, the healthy reservation) to verify customer checkout end-to-end.
-  - Smoke suite (`tests/run-all-smokes.php`) ran but is heavily polluted by environmental noise (smokes shell out to bare `php` not on PATH → `env: php: No such file`; seed-data preconditions; mockup MD5 drift). Not a reliable functionality signal as-is — worth a separate cleanup pass to make the runner pass `php` on PATH to the child smokes.
+1. [ ] Global mobile visual polish — per-page pass to match Daily Movement standard (row heights, badge sizing, spacing/density). Scaffolding shipped (2.7.577–580); per-page work not started.
+2. [ ] Excel stall map import (.xlsx → stall rows + map grid)
+3. [ ] Map Builder search bar (search/highlight/scroll for large maps)
+4. [ ] Add-On Report (per-day add-on quantities, CSV + PDF)
+5. [ ] Dashboard "Upcoming Reservations" chips (should be filled colored pills matching Reservations list)
+6. [ ] Full end-to-end customer checkout sweep (needs NTR 6519 fixture page)
+7. [ ] UX: Order Detail "Paid" badge contradicts Balance-Due banner on edited orders
+8. [ ] Pre-Entry Import Tool (GH CSV) (#164)
+9. [ ] Vendor System (#166)
+10. [ ] Facility Layout Templates: Save/Load to icon buttons (#169)
+11. [ ] Full map post-meta → config migration (#174)
+12. [ ] Move Save Map / Save Layout / Load Layout buttons (#175)
+13. [ ] Cross-source venue merge / alias (#176)
+14. [ ] Venue layout preview format — grid not white tiles (#178)
+15. [ ] Pricing Mode: allow Nightly + Stay Packages both on (#183)
+16. [ ] Facility Layouts: Save + Upload icon flow (#198)
+17. [ ] Verify post-meta → config-table migration 100% complete (#199)
+18. [ ] Print views: move-customer + readiness/print smoke coverage (#234)
+19. [ ] Verify RV lot name/number split against real GEMS labels (#235)
+20. [ ] Postmeta → relational de-coupling (Phase 1 funnel). Full plan: `docs/WORKPLAN-postmeta-decouple.md`.
+21. [ ] Upload .xlsx → Stall Grid (ZipArchive + SimpleXML; "Download Example Template" link)
+22. [ ] Event Entries — competition management (disciplines + fees + roster)
+23. [ ] PDF Venue Map → overlay (upload PDF, drop/snap stall hotspots)
+24. [ ] Sheets & Results — more source types (CSV, Google Sheets, external URL)
 
 ---
 
-## 🔵 Strategic (v2+)
+## 📋 v2 — Post-launch
 
-### v2 — Architecture + Features
+1. [ ] GH Draw Outs
+2. [ ] QR Code Generator
+3. [ ] Push Notifications (PWA browser push)
+4. [ ] Full permissions matrix (role-based access)
+5. [ ] Accept Deposits (deposit vs balance at checkout)
+6. [ ] Global Handicaps API integration (GH as system-of-record). Full write-up: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`.
+7. [ ] PWA + responsive/touch (full offline-capable app). Scaffolding shipped (manifest + SW + install prompt, 2.7.580); full version is v2.
+8. [ ] Native mobile app (iOS/Android over the same API contract)
 
-1. ~~**`en_venue` → canonical `EEM_Venue` unification**~~ ✅ Done (migration eem-mig-015-native-venue-unify)
-2. **Postmeta → relational de-coupling** — move reservation/division config out of `wp_postmeta` into relational tables. Phase 1 (funnel) is the recommended first move. Full plan: `docs/WORKPLAN-postmeta-decouple.md`.
-3. ~~**Weekly Rate pricing** — third pricing option alongside Nightly and Weekend Rate, for stalls + RVs. Mirror Weekend Rate implementation.~~ ✅ Done
-4. ~~**Paddock Assignments** — merge adjacent stall chips into a bookable paddock unit with its own rate.~~ ✅ Done
-5. **Upload .xlsx → Stall Grid** — parse `.xlsx` into stall rows via `ZipArchive` + `SimpleXML`; no new Composer deps. Include "Download Example Template" link.
-6. ~~**Repo / distribution cleanup**~~ ✅ Done (`.gitattributes` export-ignore shipped)
-7. **GH Draw Outs** — was v1 #4; moved to v2 2026-06-15.
-8. **QR Code Generator** — deferred to v2 (Whitney, 2026-06-15).
-9. **Push Notifications** — PWA browser push notifications. Deferred to v2 (Whitney, 2026-06-15).
-10. **Full permissions matrix** — role-based access controls. Deferred to v2 (Whitney, 2026-06-15).
-11. **Event Entries** — competition management: per-discipline entry, entry fees, entrant roster. Distinct from Pre-Entries/Divisions (which are v1-shipped). Deferred to v2 per CLAUDE.md.
-12. **Global Handicaps API integration** — GH as system-of-record for reservation data; sync vs GH-primary models. Full write-up: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`. Gated on postmeta de-coupling. Moved from v3 → v2 (Whitney, 2026-06-23).
-13. **PWA + responsive/touch** — full offline-capable, installable web app over API. Basic scaffolding shipped (manifest + SW + install prompt, 2.7.580); full version is v2. Moved from v4 → v2 (Whitney, 2026-06-23).
-14. **Native mobile app** — iOS/Android over the same API contract. Moved from v4 → v2 (Whitney, 2026-06-23).
+---
 
-### v3 — Architecture + Deferred Features
+## ✅ Recently completed (verified done this cycle)
 
-1. **PDF Venue Map → overlay** — upload a PDF venue map; render to image + drop/snap stall hotspots. Pairs with Facility Layout Templates.
-2. **Sheets & Results — more source types** — CSV upload, Google Sheets link, external URL. Source-type column on `wp_eem_sheet_entries` + per-type render.
-3. ~~**Financial-security audit**~~ ✅ Done (`docs/SECURITY-AUDIT-REPORT.md` shipped)
-4. ~~**Strict concurrency audit**~~ ✅ Done (advisory locks on all write paths)
-5. **Accept Deposits** — show full total, then "Deposit due now: $X" and "Balance due at event: $Y" at checkout. Deferred to v3 (Whitney, 2026-06-14).
+- Page-background color sweep — `body.eem-shell-page` uses `var(--eem-bg)` + `min-height: 100vh`; no WP gray bleed-through.
+- Global card padding sweep — tokens `--eem-card-header-padding` / `--eem-card-body-padding`.
+- Global control/button radius sweep → 8px (`--eem-radius`).
+- Space Grotesk → IBM Plex Sans plugin-wide.
+- MED-4 — per-order `GET_LOCK('eem_charge_...')` on all 3 Collect Payment handlers.
+- LOW-3/4 — Stripe confirm rechecks `payment_status`; `mark_order_paid_manually()` guards duplicate notes.
+- Sticky toolbars on list pages (commit ed60d15, 2.7.580).
+- BUG: Reports filter dropdown clipped — `overflow:visible`.
+- BUG: Create Order reservation date format — routed through `format_date_range()`.
+- BUG: Frontend not reflecting backend changes — config-table overlay in `get_reservation_meta()`.
+- BUG: Currency inputs not vertically centered — `.eem-price-wrap` `align-items: center`.
+- Global Zoom control styling — shared `.eem-zoom` component.
+- Stall Charts "By List" default for Numbered+Quantity (commit 6538f8c).
+- Reports — Customer List + Refund Log PDF views verified on-brand.
+- Mockup cleanup — nothing to delete; all suspected files are live.
+- `en_venue` → `EEM_Venue` unification (migration 015).
+- Weekly Rate pricing; Paddock Assignments; repo/distribution cleanup.
+- Financial-security audit; strict concurrency audit (advisory locks on all write paths).
 
 ---
 
