@@ -423,17 +423,12 @@ class EEM_Admin {
 			$ver .= '.' . $eem_asset_mtime;
 		}
 
-		// DS-1.A: Google Fonts (Space Grotesk + IBM Plex Sans) — load
-		// from the Google Fonts CDN. admin.css's `--eem-font-display` and
-		// `--eem-font-ui` CSS vars reference these by name; without the
-		// font files being loaded, every plugin admin page rendered with
-		// system-ui fallback (the single biggest visual-fidelity gap
-		// pre-DS-1). `display=swap` lets pages paint with the system
-		// fallback first, then re-render once the web fonts arrive —
-		// avoids FOIT (flash of invisible text) on slow connections.
+		// DS-1.A: Google Fonts (IBM Plex Sans) — admin.css's
+		// `--eem-font-display` and `--eem-font-ui` CSS vars reference
+		// this by name. `display=swap` avoids FOIT on slow connections.
 		wp_enqueue_style(
 			'eem-google-fonts',
-			'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap',
+			'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap',
 			array(),
 			null
 		);

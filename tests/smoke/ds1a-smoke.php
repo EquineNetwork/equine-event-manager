@@ -37,15 +37,12 @@ $detail_src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-or
 $css_src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' );
 
 // ── [1] Google Fonts enqueue ───────────────────────────────────────
-echo "\n[1] Google Fonts enqueue (Space Grotesk + IBM Plex Sans)\n";
+echo "\n[1] Google Fonts enqueue (IBM Plex Sans)\n";
 ok( "admin.php enqueue method references 'eem-google-fonts' handle",
 	str_contains( $admin_src, "wp_enqueue_style(\n\t\t\t'eem-google-fonts'" ) || str_contains( $admin_src, "'eem-google-fonts'" ),
 	$pass, $fail, $log );
 ok( 'enqueue points at fonts.googleapis.com CDN',
 	str_contains( $admin_src, 'fonts.googleapis.com/css2' ),
-	$pass, $fail, $log );
-ok( 'enqueue requests Space Grotesk family',
-	str_contains( $admin_src, 'family=Space+Grotesk' ),
 	$pass, $fail, $log );
 ok( 'enqueue requests IBM Plex Sans family',
 	str_contains( $admin_src, 'family=IBM+Plex+Sans' ) || str_contains( $admin_src, 'IBM+Plex+Sans' ),

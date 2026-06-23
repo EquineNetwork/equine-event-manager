@@ -34,7 +34,7 @@ $rows    = isset( $ctx['rows'] ) && is_array( $ctx['rows'] ) ? $ctx['rows'] : ar
 body { font-family: 'IBM Plex Sans','DejaVu Sans',Helvetica,Arial,sans-serif; color: #1d2327; font-size: 9.5px; }
 .sheet { padding: 8px 10px; }
 .r-logo { max-width: 160px; max-height: 38px; display: block; margin-bottom: 10px; }
-.r-title { font-family: 'Space Grotesk','DejaVu Sans',Arial,sans-serif; font-size: 17px; font-weight: 700; color: #031B4E; }
+.r-title { font-family: 'IBM Plex Sans','DejaVu Sans',Arial,sans-serif; font-size: 17px; font-weight: 700; color: #031B4E; }
 .r-sub { font-size: 10px; color: #50575e; margin-top: 2px; }
 .r-gen { font-size: 9px; color: #8c8f94; margin-top: 2px; }
 .r-head { border-bottom: 2px solid #031B4E; padding-bottom: 12px; margin-bottom: 12px; }

@@ -2078,9 +2078,8 @@ $php_shortcodes_24 = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'public/clas
 
 // 24a. Google Fonts URL present in render_frontend_styles() source.
 c7x_ok(
-	'C10.A: Google Fonts URL (Space Grotesk + IBM Plex Sans) present in render_frontend_styles()',
-	false !== strpos( $php_events_24, 'fonts.googleapis.com/css2?family=Space+Grotesk' ) &&
-	false !== strpos( $php_events_24, 'IBM+Plex+Sans' ),
+	'C10.A: Google Fonts URL (IBM Plex Sans) present in render_frontend_styles()',
+	false !== strpos( $php_events_24, 'fonts.googleapis.com/css2?family=IBM+Plex+Sans' ),
 	$pass, $fail, $log
 );
 

@@ -3905,11 +3905,9 @@
 .eem-event-page *::before {
 	box-sizing: border-box;
 }
-/* 2.3.65 — brand font baseline. The Google Fonts (IBM Plex Sans + Space Grotesk)
-   are enqueued in render_frontend_styles(), but without a base family the page
-   inherited the theme's -apple-system stack. Body copy → IBM Plex Sans; form
-   controls need it set explicitly (they don't inherit font-family). Headings
-   keep their per-element Space Grotesk rules. */
+/* 2.3.65 — brand font baseline. IBM Plex Sans is enqueued in
+   render_frontend_styles(). Body copy + form controls → IBM Plex Sans;
+   form controls need it set explicitly (they don't inherit font-family). */
 .eem-event-page {
 	font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
