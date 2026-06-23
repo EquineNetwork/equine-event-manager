@@ -9,9 +9,11 @@
  * assignment numbers (Unassigned Stalls KPI, Upcoming Reservations progress bars,
  * Needs Attention rows, This Week "Stalls assigned") are wired live via
  * `EEM_Admin::get_dashboard_stall_metrics()` (DS-1.B live-data pass, 2.4.0).
- * The only intentionally-unwired item is the "customers haven't signed the
- * agreement" Needs Attention row — V1 has no per-order signature data source, so
- * that row is omitted rather than faked.
+ * There is intentionally NO "customers haven't signed the agreement" Needs
+ * Attention row: the venue agreement is a clickwrap acknowledgment accepted
+ * inline at front-end checkout (no signature is collected), so an "unsigned"
+ * state cannot exist. This row was dropped from scope (ROADMAP #21) — do not
+ * re-add it or build per-order signature tracking for it.
  *
  * Range filter semantics: `last-7` / `last-30` / `last-90` / `this-year` /
  * `all-time` collapse to a `[from, to]` MySQL-datetime window applied to
@@ -496,10 +498,10 @@ class EEM_Dashboard_Repo {
 	 * stall/RV reservation with no chart configured, or a missing Stripe
 	 * webhook secret. Resolved categories (0 count) drop off the card.
 	 *
-	 * The "customers haven't signed the agreement" row is intentionally NOT
-	 * emitted: V1 records only "Venue Agreement Provided" (event-side), not a
-	 * per-order customer signature, so there's no live data to drive it. It
-	 * returns once signature tracking is recorded per order.
+	 * There is no "customers haven't signed the agreement" row: the venue
+	 * agreement is a clickwrap acknowledgment accepted at front-end checkout
+	 * (no signature collected), so there is no "unsigned" state to flag. Dropped
+	 * from scope per ROADMAP #21 — do not re-add.
 	 *
 	 * @return array<int, array<string, mixed>>
 	 */

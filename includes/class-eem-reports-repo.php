@@ -37,7 +37,7 @@ class EEM_Reports_Repo {
 	 *
 	 * @var array<int,string>
 	 */
-	const REPORTS = array( 'orders', 'reservations', 'revenue', 'stall_occupancy', 'rv_occupancy', 'shavings', 'customer_list', 'refund_log', 'cleaning' );
+	const REPORTS = array( 'orders', 'reservations', 'revenue', 'stall_occupancy', 'rv_occupancy', 'shavings', 'add_ons', 'customer_list', 'refund_log', 'cleaning' );
 
 	/**
 	 * Orders repository.
@@ -157,6 +157,8 @@ class EEM_Reports_Repo {
 				return $this->stall_occupancy_report( $filters );
 			case 'shavings':
 				return $this->shavings_report( $filters );
+			case 'add_ons':
+				return $this->add_ons_report( $filters );
 			case 'customer_list':
 				return $this->customer_list_report( $filters );
 			case 'refund_log':
@@ -1000,6 +1002,231 @@ class EEM_Reports_Repo {
 		return array(
 			'title'             => __( 'Shavings', 'equine-event-manager' ),
 			'slug'              => 'shavings',
+			'event_header'      => $event_header,
+			'headers'           => $headers,
+			'rows'              => array_merge( array( $totals_row ), $rows ),
+			'summary_row_count' => 1,
+			'note_sections'     => $note_sections,
+		);
+	}
+
+	/**
+	 * Parse the `Add-On:` lines a checkout writes into an order's notes
+	 * ("Add-On: <name> | Qty: <n> | Per: <label> | Subtotal: <money>") into a
+	 * name → summed-quantity map. Duplicate names are summed.
+	 *
+	 * @param string $notes Combined order notes.
+	 * @return array<string,int> Add-on name => total quantity.
+	 */
+	private function parse_add_on_lines( string $notes ): array {
+		$out = array();
+		if ( '' === trim( $notes ) ) {
+			return $out;
+		}
+		if ( preg_match_all( '/^Add-On:\s*(.+?)\s*\|\s*Qty:\s*(\d+)/mi', $notes, $matches, PREG_SET_ORDER ) ) {
+			foreach ( $matches as $m ) {
+				$name = trim( (string) $m[1] );
+				$qty  = absint( $m[2] );
+				if ( '' === $name || $qty <= 0 ) {
+					continue;
+				}
+				$out[ $name ] = ( $out[ $name ] ?? 0 ) + $qty;
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Add-On report — general add-on quantities. "All reservations" view is a
+	 * per-add-on summary; a single reservation gets a per-day worksheet so the
+	 * facility can see how many of each add-on are needed each day of the event.
+	 *
+	 * @param array $filters Filters.
+	 * @return array{title:string,slug:string,headers:array,rows:array}
+	 */
+	public function add_ons_report( array $filters ): array {
+		$rid = absint( $filters['reservation_id'] ?? 0 );
+		if ( $rid > 0 ) {
+			return $this->add_ons_daily( $filters );
+		}
+		return $this->add_ons_summary( $filters );
+	}
+
+	/**
+	 * Add-Ons — per-add-on summary across the filtered orders ("All reservations").
+	 *
+	 * @param array $filters Filters.
+	 * @return array{title:string,slug:string,headers:array,rows:array}
+	 */
+	private function add_ons_summary( array $filters ): array {
+		$totals = array(); // name => array(qty, orders)
+		foreach ( $this->get_filtered_orders( $filters ) as $o ) {
+			$addons = $this->parse_add_on_lines( isset( $o['notes'] ) ? (string) $o['notes'] : '' );
+			foreach ( $addons as $name => $qty ) {
+				if ( ! isset( $totals[ $name ] ) ) {
+					$totals[ $name ] = array( 'qty' => 0, 'orders' => 0 );
+				}
+				$totals[ $name ]['qty']    += $qty;
+				$totals[ $name ]['orders'] += 1;
+			}
+		}
+
+		uasort( $totals, static function ( $a, $b ) {
+			return $b['qty'] <=> $a['qty'];
+		} );
+
+		$rows = array();
+		foreach ( $totals as $name => $t ) {
+			$rows[] = array( $name, (string) $t['orders'], (string) $t['qty'] );
+		}
+
+		return array(
+			'title'   => __( 'Add-Ons', 'equine-event-manager' ),
+			'slug'    => 'add_ons',
+			'headers' => array(
+				__( 'Add-On', 'equine-event-manager' ),
+				__( 'Orders', 'equine-event-manager' ),
+				__( 'Total Quantity', 'equine-event-manager' ),
+			),
+			'rows'    => $rows,
+		);
+	}
+
+	/**
+	 * Add-Ons — per-day worksheet for a single reservation. One row per calendar
+	 * day in the event range, one column per add-on type, cells = the quantity
+	 * needed that day (orders whose stall stay covers the day × their add-on qty).
+	 * A navy TOTALS row is pinned on top. Add-ons on orders with no dated stay
+	 * (stand-alone add-on purchases) are surfaced in a separate note section so
+	 * no quantity is silently dropped.
+	 *
+	 * @param array $filters Filters (reservation_id must be > 0).
+	 * @return array{title:string,slug:string,headers:array,rows:array}
+	 */
+	private function add_ons_daily( array $filters ): array {
+		$rid        = absint( $filters['reservation_id'] ?? 0 );
+		$dated      = array(); // each: array('addons'=>[name=>qty], 'arrival'=>, 'departure'=>)
+		$undated    = array(); // name => qty (no stay dates)
+		$names      = array();
+		$min_date   = null;
+		$max_date   = null;
+
+		foreach ( $this->get_filtered_orders( $filters ) as $o ) {
+			$addons = $this->parse_add_on_lines( isset( $o['notes'] ) ? (string) $o['notes'] : '' );
+			if ( empty( $addons ) ) {
+				continue;
+			}
+			$arrival   = isset( $o['stall_arrival_date'] ) ? (string) $o['stall_arrival_date'] : '';
+			$departure = isset( $o['stall_departure_date'] ) ? (string) $o['stall_departure_date'] : '';
+			if ( '' === $arrival || '' === $departure ) {
+				// Stand-alone add-on purchase (no dated stay) — surfaced in a note
+				// section rather than a zero-filled daily column.
+				foreach ( $addons as $name => $qty ) {
+					$undated[ $name ] = ( $undated[ $name ] ?? 0 ) + $qty;
+				}
+				continue;
+			}
+			foreach ( $addons as $name => $qty ) {
+				$names[ $name ] = true;
+			}
+			if ( null === $min_date || $arrival < $min_date ) {
+				$min_date = $arrival;
+			}
+			if ( null === $max_date || $departure > $max_date ) {
+				$max_date = $departure;
+			}
+			$dated[] = array( 'addons' => $addons, 'arrival' => $arrival, 'departure' => $departure );
+		}
+
+		$names = array_keys( $names );
+		sort( $names );
+
+		$res_title    = (string) get_the_title( $rid );
+		$event_header = $res_title;
+		if ( null !== $min_date && null !== $max_date ) {
+			$event_header .= '  ·  ' . date_i18n( 'M j', strtotime( $min_date ) )
+				. ' – ' . date_i18n( 'M j, Y', strtotime( $max_date ) );
+		}
+
+		$headers = array_merge(
+			array( __( 'Date', 'equine-event-manager' ) ),
+			$names,
+			array( __( 'Total', 'equine-event-manager' ) )
+		);
+
+		$note_sections = array();
+		if ( ! empty( $undated ) ) {
+			arsort( $undated );
+			$undated_rows = array();
+			foreach ( $undated as $name => $qty ) {
+				$undated_rows[] = array( $name, (string) $qty );
+			}
+			$note_sections[] = array(
+				'label'   => __( 'Add-ons without a dated stay', 'equine-event-manager' ),
+				'headers' => array(
+					__( 'Add-On', 'equine-event-manager' ),
+					__( 'Total Quantity', 'equine-event-manager' ),
+				),
+				'rows'    => $undated_rows,
+			);
+		}
+
+		if ( empty( $dated ) || null === $min_date || null === $max_date ) {
+			return array(
+				'title'         => __( 'Add-Ons', 'equine-event-manager' ),
+				'slug'          => 'add_ons',
+				'event_header'  => $event_header,
+				'headers'       => $headers,
+				'rows'          => array(),
+				'note_sections' => $note_sections,
+			);
+		}
+
+		$dates   = array();
+		$current = new DateTime( $min_date );
+		$end     = new DateTime( $max_date );
+		while ( $current <= $end ) {
+			$dates[] = $current->format( 'Y-m-d' );
+			$current->modify( '+1 day' );
+		}
+
+		$rows       = array();
+		$col_totals = array_fill_keys( $names, 0 );
+		$grand      = 0;
+		foreach ( $dates as $date ) {
+			$day       = array_fill_keys( $names, 0 );
+			$day_total = 0;
+			foreach ( $dated as $od ) {
+				if ( $date < $od['arrival'] || $date > $od['departure'] ) {
+					continue;
+				}
+				foreach ( $od['addons'] as $name => $qty ) {
+					$day[ $name ] += $qty;
+					$day_total    += $qty;
+				}
+			}
+			$row = array( date_i18n( 'D, M j', strtotime( $date ) ) );
+			foreach ( $names as $name ) {
+				$row[]               = (string) $day[ $name ];
+				$col_totals[ $name ] += $day[ $name ];
+			}
+			$row[]  = (string) $day_total;
+			$grand += $day_total;
+			$rows[] = $row;
+		}
+
+		$totals_row = array(
+			/* translators: %d: number of days. */
+			sprintf( _n( 'TOTALS (%d day)', 'TOTALS (%d days)', count( $dates ), 'equine-event-manager' ), count( $dates ) )
+		);
+		foreach ( $names as $name ) {
+			$totals_row[] = (string) $col_totals[ $name ];
+		}
+		$totals_row[] = (string) $grand;
+
+		return array(
+			'title'             => __( 'Add-Ons', 'equine-event-manager' ),
+			'slug'              => 'add_ons',
 			'event_header'      => $event_header,
 			'headers'           => $headers,
 			'rows'              => array_merge( array( $totals_row ), $rows ),

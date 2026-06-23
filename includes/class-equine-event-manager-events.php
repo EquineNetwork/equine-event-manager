@@ -2975,6 +2975,42 @@ class EEM_Events {
 	 * @param bool  $show_flyer Whether to show the flyer PDF link.
 	 * @return string
 	 */
+	/**
+	 * Countdown badge label + tone for an event card (#22). Pure date math so it
+	 * can be unit-tested without WordPress.
+	 *
+	 * @param string   $start_date Event start (Y-m-d or datetime).
+	 * @param string   $end_date   Event end (Y-m-d or datetime); falls back to start.
+	 * @param int|null $now_ts     Reference "now" timestamp (defaults to WP local time).
+	 * @return array{label:string,tone:string} Empty label when no valid start date.
+	 */
+	public static function event_countdown( string $start_date, string $end_date = '', ?int $now_ts = null ): array {
+		$now_ts = null === $now_ts ? (int) current_time( 'timestamp' ) : $now_ts;
+		$today  = (int) strtotime( gmdate( 'Y-m-d', $now_ts ) );
+		$start  = '' !== $start_date ? (int) strtotime( substr( $start_date, 0, 10 ) ) : 0;
+		$end    = '' !== $end_date ? (int) strtotime( substr( $end_date, 0, 10 ) ) : $start;
+		if ( $start <= 0 ) {
+			return array( 'label' => '', 'tone' => '' );
+		}
+		if ( $today < $start ) {
+			$days = (int) round( ( $start - $today ) / DAY_IN_SECONDS );
+			if ( $days <= 1 ) {
+				$label = __( 'Tomorrow', 'equine-event-manager' );
+			} else {
+				/* translators: %d: number of days until the event starts. */
+				$label = sprintf( _n( 'In %d day', 'In %d days', $days, 'equine-event-manager' ), $days );
+			}
+			return array( 'label' => $label, 'tone' => 'upcoming' );
+		}
+		if ( $today === $start ) {
+			return array( 'label' => __( 'Starts today', 'equine-event-manager' ), 'tone' => 'now' );
+		}
+		if ( $today <= $end ) {
+			return array( 'label' => __( 'Happening now', 'equine-event-manager' ), 'tone' => 'now' );
+		}
+		return array( 'label' => __( 'Ended', 'equine-event-manager' ), 'tone' => 'past' );
+	}
+
 	private function render_event_card_markup( array $event_data, bool $show_flyer = false ): string {
 		if ( empty( $event_data ) ) {
 			return '';
@@ -2987,6 +3023,20 @@ class EEM_Events {
 		$producer_name  = ! empty( $event_data['producer']['name'] ) ? (string) $event_data['producer']['name'] : '';
 		$reserve_label  = ! empty( $event_data['cta_label'] ) ? (string) $event_data['cta_label'] : __( 'Reserve Now', 'equine-event-manager' );
 		$flyer_url      = $show_flyer && ! empty( $event_data['flyer_url'] ) ? (string) $event_data['flyer_url'] : '';
+
+		// #22 — countdown badge (always available) + best-effort flyer thumbnail
+		// (native events whose flyer attachment has a WP-generated preview; other
+		// sources / no-preview gracefully fall back to the "View Flyer" link).
+		$countdown   = self::event_countdown( (string) ( $event_data['start_date'] ?? '' ), (string) ( $event_data['end_date'] ?? '' ) );
+		$flyer_thumb = '';
+		if ( $show_flyer && ! empty( $event_data['flyer_file_id'] ) && function_exists( 'wp_get_attachment_image' ) ) {
+			$flyer_thumb = (string) wp_get_attachment_image(
+				absint( $event_data['flyer_file_id'] ),
+				'medium',
+				false,
+				array( 'class' => 'eem-event-card__flyer-img', 'loading' => 'lazy' )
+			);
+		}
 
 		$venue_bits = array_filter( array( $venue_name, $location_label ), static function ( $v ) {
 			return '' !== trim( (string) $v );
@@ -3006,7 +3056,7 @@ class EEM_Events {
 			<?php endif; ?>
 			<div class="eem-event-card__body">
 				<?php if ( $date_label ) : ?>
-					<div class="eem-event-card__date"><?php echo esc_html( $date_label ); ?></div>
+					<div class="eem-event-card__meta-row"><span class="eem-event-card__date"><?php echo esc_html( $date_label ); ?></span><?php if ( '' !== $countdown['label'] ) : ?><span class="eem-event-card__countdown eem-event-card__countdown--<?php echo esc_attr( $countdown['tone'] ); ?>"><?php echo esc_html( $countdown['label'] ); ?></span><?php endif; ?></div>
 				<?php endif; ?>
 				<h3 class="eem-event-card__title">
 					<?php if ( $event_url ) : ?>
@@ -3026,7 +3076,7 @@ class EEM_Events {
 						<a class="eem-event-card__btn" href="<?php echo esc_url( $event_url ); ?>"><?php echo esc_html( $reserve_label ); ?></a>
 					<?php endif; ?>
 					<?php if ( $flyer_url ) : ?>
-						<a class="eem-event-card__btn eem-event-card__btn--flyer" href="<?php echo esc_url( $flyer_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View Flyer', 'equine-event-manager' ); ?></a>
+						<?php if ( '' !== $flyer_thumb ) : ?><a class="eem-event-card__flyer-thumb" href="<?php echo esc_url( $flyer_url ); ?>" target="_blank" rel="noopener noreferrer" aria-label="<?php esc_attr_e( 'View event flyer', 'equine-event-manager' ); ?>"><?php echo $flyer_thumb; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_get_attachment_image returns safe markup. ?></a><?php else : ?><a class="eem-event-card__btn eem-event-card__btn--flyer" href="<?php echo esc_url( $flyer_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View Flyer', 'equine-event-manager' ); ?></a><?php endif; ?>
 					<?php endif; ?>
 				</div>
 			</div>

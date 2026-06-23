@@ -23,6 +23,25 @@ $rv_table    = $wpdb->prefix . 'en_rv_reservations';
 
 echo "\n=== C5.G.1 ORDERS SEEDER ===\n";
 
+// #23 — stamp a real reservation_id onto every seeded row so the orders JOIN
+// to a reservation the way production rows do (production writes reservation_id
+// at checkout — see shortcodes.php). Use the most recent en_reservation post;
+// fall back to 0 (NULL-equivalent) when none exists yet.
+$seed_reservation_id = 0;
+$res_post_ids        = get_posts( array(
+	'post_type'      => 'en_reservation',
+	'post_status'    => array( 'publish', 'draft', 'pending', 'private' ),
+	'numberposts'    => 1,
+	'fields'         => 'ids',
+	'orderby'        => 'ID',
+	'order'          => 'DESC',
+) );
+if ( ! empty( $res_post_ids ) ) {
+	$seed_reservation_id = (int) $res_post_ids[0];
+}
+echo 'Linking seeded orders to reservation_id=' . $seed_reservation_id
+	. ( $seed_reservation_id ? '' : ' (no en_reservation post found — left 0/NULL)' ) . "\n";
+
 $del_stall = $wpdb->query( $wpdb->prepare( "DELETE FROM `$stall_table` WHERE order_number LIKE %s", 'SEED-%' ) );
 $del_rv    = $wpdb->query( $wpdb->prepare( "DELETE FROM `$rv_table`    WHERE order_number LIKE %s", 'SEED-%' ) );
 echo "Cleaned prior SEED-* rows: stall={$del_stall}, rv={$del_rv}\n";
@@ -102,6 +121,7 @@ foreach ( $specs as $i => $spec ) {
 	$base = array(
 		'event_source'            => 'native',
 		'event_id'                => (int) $event['id'],
+		'reservation_id'          => $seed_reservation_id,
 		'external_event_id'       => $event['ext'],
 		'customer_name'           => $customer,
 		'email'                   => $email,

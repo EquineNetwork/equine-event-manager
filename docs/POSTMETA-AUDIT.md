@@ -10,6 +10,41 @@ Scan: 407 post-meta calls across the plugin's PHP (excludes `tests/`, `.mockups/
 
 ---
 
+## ✅ Re-verification — 2026-06-23 (ROADMAP #10 / #13)
+
+Re-scanned to verify how complete the decouple is. Status against the original audit:
+
+- **#212 (checkout base-rate read) — FIXED.** `EEM_Shortcodes::get_reservation_meta()`
+  now overlays the canonical base-rate fields from `wp_eem_reservation_config`
+  (see the "Overlay canonical base-rate fields…" helper + the config overlay in
+  `get_reservation_meta`). The live pricing risk is closed. Guarded by the new
+  ratchet smoke (below).
+- **Current live-code business-data post-meta count: 214** (`_en_*` /
+  `_equine_event_manager_*` keys in `includes/` + `admin/` + `public/`, excluding
+  `includes/migrations/`). This is the **ratchet baseline** — it should only ever
+  go down. (Raw total across all PHP is now 477, but +91 of that is the `tools/`
+  seeders and 40 is one-time `includes/migrations/` — neither is a live read path.)
+- **Regression guard shipped:** `tests/smoke/postmeta-decouple-ratchet-smoke.php`
+  implements step 5 below — counts business-data post-meta calls and fails if the
+  number rises above 214, and asserts the #212 overlay stays in place. Pure
+  file-scan, runs without WordPress.
+
+**Remaining real gaps (verified still on post-meta), highest-value first:**
+
+| Gap | Where | Tracked |
+|---|---|---|
+| **Map snapshots** `_en_stall_map` / `_en_rv_map` | `class-eem-venues-page.php`, `class-eem-stall-map-importer.php`, Stall Chart reads, `_section-stall.php` fallback | ROADMAP #9 |
+| **Blocked-units hybrid reads** `_en_stall_chart_blocked_*` (+ v1 fallbacks `_en_blocked_stalls` / `_en_blocked_rv_lots`) | `shortcodes.php:253,965`, `orders-repository.php:1737-1763`, `admin:2675` | #13 |
+| **Events / Venues / Producers / Divisions editors** still read/write post-meta as the live store | `class-eem-event-editor-page.php` (24), `class-eem-venue-editor-page.php` (14), `class-eem-producer-editor-page.php` (8), `class-eem-native-event-repo.php` (12) | #13 |
+| **Reservations CPT `_en_*` mirror** writes still mirror config to post-meta | `class-equine-event-manager-reservations-cpt.php` (34) | #13 |
+
+Bottom line: the **reservation builder (setup / pricing / rows) and checkout pricing
+are fully on the config table.** What remains is map snapshots (#9), the blocked-units
+hybrid, and the CPT-style editors (events/venues/producers/divisions) — each a
+sign-off-gated migration, not a quick refactor.
+
+---
+
 ## TL;DR
 
 - **The config decouple already happened for the reservation builder.** Reservation

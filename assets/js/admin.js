@@ -2348,6 +2348,77 @@
 		});
 	}
 
+	/* Special Instructions inline editor (Order Detail full-width card). The
+	   card carries data-reservation-id + data-nonce; Edit swaps the display
+	   <p> for a textarea + Save/Cancel bar, Save posts to the
+	   eem_order_save_special_instructions endpoint and updates in place. */
+	function specialInstructionsCard(target) {
+		return target && target.closest ? target.closest('[data-eem-special-instructions]') : null;
+	}
+	function openSpecialInstructionsEditor(target) {
+		var card = specialInstructionsCard(target);
+		if (!card) { return; }
+		var display = card.querySelector('[data-eem-instructions-display]');
+		var editor = card.querySelector('[data-eem-instructions-editor]');
+		var errEl = card.querySelector('[data-eem-instructions-error]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+		if (display) { display.hidden = true; }
+		if (editor) {
+			editor.hidden = false;
+			var input = editor.querySelector('[data-eem-instructions-input]');
+			if (input) { input.focus(); }
+		}
+		var editBtn = card.querySelector('[data-eem-action="order-special-instructions-edit"]');
+		if (editBtn) { editBtn.hidden = true; }
+	}
+	function closeSpecialInstructionsEditor(target) {
+		var card = specialInstructionsCard(target);
+		if (!card) { return; }
+		var display = card.querySelector('[data-eem-instructions-display]');
+		var editor = card.querySelector('[data-eem-instructions-editor]');
+		if (editor) { editor.hidden = true; }
+		if (display) { display.hidden = false; }
+		var editBtn = card.querySelector('[data-eem-action="order-special-instructions-edit"]');
+		if (editBtn) { editBtn.hidden = false; }
+	}
+	function saveSpecialInstructions(target) {
+		var card = specialInstructionsCard(target);
+		if (!card) { return; }
+		var input = card.querySelector('[data-eem-instructions-input]');
+		var errEl = card.querySelector('[data-eem-instructions-error]');
+		var saveBtn = card.querySelector('[data-eem-action="order-special-instructions-save"]');
+		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
+		if (saveBtn) { saveBtn.disabled = true; }
+		var fd = new FormData();
+		fd.append('action', 'eem_order_save_special_instructions');
+		fd.append('reservation_id', card.getAttribute('data-reservation-id') || '');
+		fd.append('_eem_special_instructions_nonce', card.getAttribute('data-nonce') || '');
+		fd.append('special_instructions', input ? input.value : '');
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST', credentials: 'same-origin', body: fd
+		}).then(function (r) { return r.json().catch(function () { return { success: false, data: { message: 'Unexpected server response.' } }; }); }).then(function (json) {
+			if (saveBtn) { saveBtn.disabled = false; }
+			if (!json || !json.success) {
+				var msg = (json && json.data && json.data.message) ? json.data.message : 'Could not save the instructions.';
+				if (errEl) { errEl.textContent = msg; errEl.hidden = false; }
+				return;
+			}
+			var display = card.querySelector('[data-eem-instructions-display]');
+			if (display && json.data) {
+				var p = display.querySelector('.eem-order-instructions__text');
+				if (p) {
+					p.innerHTML = json.data.text_html || '&mdash;';
+					p.classList.toggle('eem-order-instructions__text--empty', !!json.data.is_empty);
+				}
+			}
+			closeSpecialInstructionsEditor(card);
+			if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast((json.data && json.data.message) || 'Special instructions saved.'); }
+		}).catch(function () {
+			if (saveBtn) { saveBtn.disabled = false; }
+			if (errEl) { errEl.textContent = 'Network error. Please try again.'; errEl.hidden = false; }
+		});
+	}
+
 	/* v2 — Orders-list bulk Cancel. Lean sequential queue over the
 	   eem_order_bulk_cancel_step endpoint (no multi-state modal). */
 	var _bulkCancelKeys = [];
@@ -3128,6 +3199,16 @@
 		},
 		'order-add-discount-confirm': function () {
 			submitAddDiscountForm();
+		},
+		/* Special Instructions inline editor (Order Detail). */
+		'order-special-instructions-edit': function (target) {
+			openSpecialInstructionsEditor(target);
+		},
+		'order-special-instructions-cancel': function (target) {
+			closeSpecialInstructionsEditor(target);
+		},
+		'order-special-instructions-save': function (target) {
+			saveSpecialInstructions(target);
 		},
 		/* C13.C.4b — Remove-discount modal (Order Detail Order Summary). */
 		'order-remove-discount-open': function () {
