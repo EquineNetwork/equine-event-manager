@@ -69,7 +69,10 @@
 					'<button type="button" class="eem-btn eem-btn-primary" data-role="confirm"' + (opts.confirmDisabled ? ' disabled' : '') + '>' + opts.confirmLabel + '</button>' +
 				'</div>' +
 			'</div>';
-		document.body.appendChild(overlay);
+		// Append inside the active map builder overlay when open (z-index 100000)
+		// so the modal stacks above it. Fall back to document.body otherwise.
+		var mbHost = document.querySelector('.eem-mb-overlay.open') || document.body;
+		mbHost.appendChild(overlay);
 		overlay.classList.add('open');
 		var close = function () { overlay.remove(); };
 		overlay.querySelector('[data-role="cancel"]').addEventListener('click', close);
@@ -116,7 +119,10 @@
 	/* ── Load ──────────────────────────────────────────────────── */
 	function openLoad(layoutType) {
 		var lt = layoutType || 'combined';
-		post('eem_venue_list_layouts', { reservation_id: reservationId(), layout_type: lt }).then(function (json) {
+		// Pass layout_type: '' to fetch ALL layouts for the venue — combined layouts
+		// can be loaded from either the stall or RV builder, and hiding them would
+		// make the picker empty for all pre-split (combined) saved layouts.
+		post('eem_venue_list_layouts', { reservation_id: reservationId(), layout_type: '' }).then(function (json) {
 			if (!json || !json.success) {
 				alert(json && json.data && json.data.message ? json.data.message : 'Could not load layouts.');
 				return;
