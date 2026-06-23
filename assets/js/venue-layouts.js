@@ -3,8 +3,8 @@
  *
  * Delegated handlers for the `venue-save-layout` / `venue-load-layout` buttons
  * rendered by templates/admin/reservation-editor/_layout-template-bar.php inside
- * both the stall and RV builders. A Venue layout is COMBINED, so both bars act on
- * the same combined layout regardless of which builder the button sits in.
+ * both the stall and RV builders. Layouts are saved per-type (stall or RV) so
+ * each builder saves only its own map/rows data.
  *
  *  - Save: prompts for a layout name → eem_venue_save_layout (snapshots the
  *    reservation's saved layout to its resolved venue).
@@ -80,24 +80,27 @@
 	}
 
 	/* ── Save ──────────────────────────────────────────────────── */
-	function openSave() {
+	function typeLabel(t) { return t === ‘rv’ ? ‘RV’ : t === ‘stall’ ? ‘Stall’ : ‘Stall & RV’; }
+
+	function openSave(layoutType) {
+		var lt = layoutType || ‘combined’;
 		var overlay = openModal({
-			title: 'Save Layout to Venue',
-			body: '<p style="margin:0 0 10px;">Saves this reservation’s current stall &amp; RV layout to its venue so it can be reused on future reservations.</p>' +
-				'<label class="eem-field-label" for="eem-venue-save-name">Layout name</label>' +
-				'<input type="text" id="eem-venue-save-name" class="eem-field-input" style="width:100%;box-sizing:border-box;" placeholder="e.g. 2026 Main Barn Layout" autocomplete="off">',
-			confirmLabel: 'Save Layout',
+			title: ‘Save ‘ + typeLabel(lt) + ‘ Layout to Venue’,
+			body: ‘<p style="margin:0 0 10px;">Saves this reservation’s current ‘ + typeLabel(lt).toLowerCase() + ‘ layout to its venue so it can be reused on future reservations.</p>’ +
+				‘<label class="eem-field-label" for="eem-venue-save-name">Layout name</label>’ +
+				‘<input type="text" id="eem-venue-save-name" class="eem-field-input" style="width:100%;box-sizing:border-box;" placeholder="e.g. 2026 Main Barn Layout" autocomplete="off">’,
+			confirmLabel: ‘Save Layout’,
 			confirmDisabled: true
 		});
-		var input = overlay.querySelector('#eem-venue-save-name');
-		var confirmBtn = overlay.querySelector('[data-role="confirm"]');
-		input.addEventListener('input', function () { confirmBtn.disabled = (input.value.trim() === ''); });
-		overlay.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !confirmBtn.disabled) confirmBtn.click(); });
-		confirmBtn.addEventListener('click', function () {
+		var input = overlay.querySelector(‘#eem-venue-save-name’);
+		var confirmBtn = overlay.querySelector(‘[data-role="confirm"]’);
+		input.addEventListener(‘input’, function () { confirmBtn.disabled = (input.value.trim() === ‘’); });
+		overlay.addEventListener(‘keydown’, function (e) { if (e.key === ‘Enter’ && !confirmBtn.disabled) confirmBtn.click(); });
+		confirmBtn.addEventListener(‘click’, function () {
 			var name = input.value.trim();
 			if (!name) return;
 			confirmBtn.disabled = true;
-			post('eem_venue_save_layout', { reservation_id: reservationId(), name: name }).then(function (json) {
+			post(‘eem_venue_save_layout’, { reservation_id: reservationId(), name: name, layout_type: lt }).then(function (json) {
 				if (json && json.success) {
 					overlay._close();
 					toast(json.data && json.data.venue_name ? ('Layout saved to ' + json.data.venue_name) : 'Layout saved');
@@ -111,8 +114,9 @@
 	}
 
 	/* ── Load ──────────────────────────────────────────────────── */
-	function openLoad() {
-		post('eem_venue_list_layouts', { reservation_id: reservationId() }).then(function (json) {
+	function openLoad(layoutType) {
+		var lt = layoutType || 'combined';
+		post('eem_venue_list_layouts', { reservation_id: reservationId(), layout_type: lt }).then(function (json) {
 			if (!json || !json.success) {
 				alert(json && json.data && json.data.message ? json.data.message : 'Could not load layouts.');
 				return;
@@ -123,7 +127,7 @@
 				openModal({
 					title: 'Load Layout from Venue',
 					body: '<p style="margin:0;">' + (venueName
-						? ('No saved layouts for ' + escapeHtml(venueName) + ' yet. Use “Save Layout to Venue” to create one.')
+						? ('No saved ' + typeLabel(lt).toLowerCase() + ' layouts for ' + escapeHtml(venueName) + ' yet. Use “Save Layout” to create one.')
 						: 'This reservation isn’t linked to an event yet, so it has no venue to load layouts from.') + '</p>',
 					confirmLabel: 'OK'
 				}).querySelector('[data-role="confirm"]').addEventListener('click', function () {
@@ -174,8 +178,17 @@
 		err.textContent = msg;
 	}
 
+	function detectLayoutType(el) {
+		var overlay = el.closest('.eem-mb-overlay');
+		if (overlay && overlay.__eemTarget) { return overlay.__eemTarget; }
+		return 'combined';
+	}
+
 	document.addEventListener('click', function (e) {
-		if (e.target.closest('[data-eem-action="venue-save-layout"]')) { e.preventDefault(); openSave(); return; }
-		if (e.target.closest('[data-eem-action="venue-load-layout"]')) { e.preventDefault(); openLoad(); }
+		var btn;
+		btn = e.target.closest('[data-eem-action="venue-save-layout"]');
+		if (btn) { e.preventDefault(); openSave(detectLayoutType(btn)); return; }
+		btn = e.target.closest('[data-eem-action="venue-load-layout"]');
+		if (btn) { e.preventDefault(); openLoad(detectLayoutType(btn)); }
 	});
 })();

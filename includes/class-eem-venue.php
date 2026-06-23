@@ -559,15 +559,26 @@ class EEM_Venue {
 	 * Read a reservation's current structural layout into a JSON-able array
 	 * keyed by the LAYOUT_META_KEYS (combined stall + RV + blocked + geometry).
 	 *
-	 * @param int $reservation_id Reservation id.
+	 * @param int    $reservation_id Reservation id.
+	 * @param string $layout_type    'stall', 'rv', or 'combined' (default).
 	 * @return array<string,mixed>
 	 */
-	public static function snapshot_reservation_layout( int $reservation_id ): array {
+	public static function snapshot_reservation_layout( int $reservation_id, string $layout_type = 'combined' ): array {
 		$out = array();
 		$cfg = ( class_exists( 'EEM_Reservation_Config' ) && EEM_Reservation_Config::table_exists() )
 			? EEM_Reservation_Config::for( $reservation_id )
 			: null;
-		foreach ( self::LAYOUT_META_KEYS as $key ) {
+		$keys = self::LAYOUT_META_KEYS;
+		if ( 'stall' === $layout_type ) {
+			$keys = array_filter( $keys, function ( $k ) {
+				return false !== strpos( $k, 'stall' );
+			} );
+		} elseif ( 'rv' === $layout_type ) {
+			$keys = array_filter( $keys, function ( $k ) {
+				return false !== strpos( $k, 'rv' );
+			} );
+		}
+		foreach ( $keys as $key ) {
 			// Post-decouple the map/rows/zones live in the config table, NOT post
 			// meta — read there first so Save Layout captures the live map. Fall
 			// back to legacy post-meta for pre-decouple reservations.
@@ -620,38 +631,52 @@ class EEM_Venue {
 	 * @param int    $venue_id       Canonical venue id.
 	 * @param int    $reservation_id Reservation whose layout to capture.
 	 * @param string $name           Layout name.
+	 * @param string $layout_type    'stall', 'rv', or 'combined' (default).
 	 * @return int New layout id (0 on failure).
 	 */
-	public static function save_layout( int $venue_id, int $reservation_id, string $name ): int {
+	public static function save_layout( int $venue_id, int $reservation_id, string $name, string $layout_type = 'combined' ): int {
 		global $wpdb;
 		if ( $venue_id <= 0 || $reservation_id <= 0 ) {
 			return 0;
 		}
-		$json = wp_json_encode( self::snapshot_reservation_layout( $reservation_id ) );
-		$ok   = $wpdb->insert( self::layouts_table(), array( // phpcs:ignore WordPress.DB
+		$valid_types = array( 'stall', 'rv', 'combined' );
+		if ( ! in_array( $layout_type, $valid_types, true ) ) {
+			$layout_type = 'combined';
+		}
+		$snapshot = self::snapshot_reservation_layout( $reservation_id, $layout_type );
+		$json     = wp_json_encode( $snapshot );
+		$ok       = $wpdb->insert( self::layouts_table(), array( // phpcs:ignore WordPress.DB
 			'venue_id'    => $venue_id,
 			'name'        => '' !== trim( $name ) ? trim( $name ) : __( 'Untitled layout', 'equine-event-manager' ),
 			'layout_json' => $json,
+			'layout_type' => $layout_type,
 			'based_on_id' => 0,
 			'created_at'  => current_time( 'mysql' ),
-		), array( '%d', '%s', '%s', '%d', '%s' ) );
+		), array( '%d', '%s', '%s', '%s', '%d', '%s' ) );
 		return $ok ? (int) $wpdb->insert_id : 0;
 	}
 
 	/**
 	 * Saved layouts for a venue (newest first).
 	 *
-	 * @param int $venue_id Venue id.
+	 * @param int    $venue_id    Venue id.
+	 * @param string $layout_type Optional filter: 'stall', 'rv', 'combined', or '' for all.
 	 * @return array<int, array<string,mixed>>
 	 */
-	public static function get_layouts( int $venue_id ): array {
+	public static function get_layouts( int $venue_id, string $layout_type = '' ): array {
 		global $wpdb;
 		if ( $venue_id <= 0 ) {
 			return array();
 		}
+		$where = 'WHERE venue_id = %d';
+		$args  = array( $venue_id );
+		if ( '' !== $layout_type && in_array( $layout_type, array( 'stall', 'rv', 'combined' ), true ) ) {
+			$where .= ' AND layout_type = %s';
+			$args[] = $layout_type;
+		}
 		$rows = $wpdb->get_results( $wpdb->prepare( // phpcs:ignore WordPress.DB
-			'SELECT id, venue_id, name, based_on_id, created_at FROM ' . self::layouts_table() . ' WHERE venue_id = %d ORDER BY created_at DESC, id DESC',
-			$venue_id
+			'SELECT id, venue_id, name, layout_type, based_on_id, created_at FROM ' . self::layouts_table() . ' ' . $where . ' ORDER BY created_at DESC, id DESC',
+			$args
 		), ARRAY_A );
 		return is_array( $rows ) ? $rows : array();
 	}

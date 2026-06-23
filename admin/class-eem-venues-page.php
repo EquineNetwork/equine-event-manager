@@ -598,19 +598,23 @@ class EEM_Venues_Page {
 							<thead>
 								<tr>
 									<th><?php esc_html_e( 'Layout', 'equine-event-manager' ); ?></th>
+									<th><?php esc_html_e( 'Type', 'equine-event-manager' ); ?></th>
 									<th><?php esc_html_e( 'Saved', 'equine-event-manager' ); ?></th>
 									<th class="eem-table-r"></th>
 								</tr>
 							</thead>
 							<tbody>
 								<?php foreach ( $layouts as $l ) :
-									$lid   = (string) (int) $l['id'];
-									$lname = (string) $l['name'];
+									$lid        = (string) (int) $l['id'];
+									$lname      = (string) $l['name'];
+									$ltype      = (string) ( $l['layout_type'] ?? 'combined' );
+									$ltype_label = 'rv' === $ltype ? __( 'RV', 'equine-event-manager' ) : ( 'stall' === $ltype ? __( 'Stall', 'equine-event-manager' ) : __( 'Stall & RV', 'equine-event-manager' ) );
 								?>
 									<tr data-layout-id="<?php echo esc_attr( $lid ); ?>">
 										<td>
 											<button type="button" class="eem-venue-layout-name" data-eem-action="venue-layout-view" data-layout-id="<?php echo esc_attr( $lid ); ?>" data-layout-name="<?php echo esc_attr( $lname ); ?>"><?php echo esc_html( $lname ); ?></button>
 										</td>
+										<td class="eem-venue-muted"><?php echo esc_html( $ltype_label ); ?></td>
 										<td class="eem-venue-muted"><?php echo esc_html( self::format_date( (string) $l['created_at'] ) ); ?></td>
 										<td class="eem-table-r">
 											<div class="eem-actions-cell">
@@ -747,11 +751,12 @@ class EEM_Venues_Page {
 		if ( '' === $name ) {
 			wp_send_json_error( array( 'message' => __( 'A layout name is required.', 'equine-event-manager' ) ), 400 );
 		}
-		$venue_id = EEM_Venue::resolve_for_reservation( $reservation_id );
+		$layout_type = isset( $_POST['layout_type'] ) ? sanitize_text_field( wp_unslash( $_POST['layout_type'] ) ) : 'combined';
+		$venue_id    = EEM_Venue::resolve_for_reservation( $reservation_id );
 		if ( $venue_id <= 0 ) {
 			wp_send_json_error( array( 'message' => __( 'Link this reservation to an event before saving a layout — the layout is saved to that event\'s venue.', 'equine-event-manager' ) ), 409 );
 		}
-		$layout_id = EEM_Venue::save_layout( $venue_id, $reservation_id, $name );
+		$layout_id = EEM_Venue::save_layout( $venue_id, $reservation_id, $name, $layout_type );
 		if ( $layout_id <= 0 ) {
 			wp_send_json_error( array( 'message' => __( 'Could not save the layout.', 'equine-event-manager' ) ), 500 );
 		}
@@ -778,12 +783,16 @@ class EEM_Venues_Page {
 		if ( $venue_id <= 0 ) {
 			wp_send_json_success( array( 'venue_name' => '', 'layouts' => array() ) );
 		}
-		$venue   = EEM_Venue::get( $venue_id );
-		$out      = array();
-		foreach ( EEM_Venue::get_layouts( $venue_id ) as $l ) {
+		$layout_type = isset( $_POST['layout_type'] ) ? sanitize_text_field( wp_unslash( $_POST['layout_type'] ) ) : '';
+		$venue       = EEM_Venue::get( $venue_id );
+		$out         = array();
+		foreach ( EEM_Venue::get_layouts( $venue_id, $layout_type ) as $l ) {
+			$type_label = 'combined' === ( $l['layout_type'] ?? 'combined' ) ? 'Stall & RV' : ( 'rv' === ( $l['layout_type'] ?? '' ) ? 'RV' : 'Stall' );
 			$out[] = array(
 				'id'      => (int) $l['id'],
 				'name'    => (string) $l['name'],
+				'type'    => (string) ( $l['layout_type'] ?? 'combined' ),
+				'label'   => $type_label,
 				'created' => self::format_date( (string) $l['created_at'] ),
 			);
 		}

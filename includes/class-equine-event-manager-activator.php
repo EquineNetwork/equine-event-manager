@@ -336,6 +336,11 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-036-venue-status-column.php';
 			eem_mig_036_venue_status_column();
 		}
+
+		if ( ! get_option( 'eem_mig_037_layout_type_column_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-037-layout-type-column.php';
+			update_option( 'eem_mig_037_layout_type_column_complete', 1 );
+		}
 	}
 
 	/**
