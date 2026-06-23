@@ -130,11 +130,11 @@
 
 		if (hasStalls) {
 			if (hasStalls && hasRv) html += '<h3 style="margin:0 0 8px;font-size:14px;font-weight:600;">Stalls</h3>';
-			html += stallRows.length > 0 ? renderRowsPreview(stallRows) : renderMapGrid(stallMap);
+			html += hasBarns(stallMap) ? renderMapGrid(stallMap) : renderRowsPreview(stallRows);
 		}
 		if (hasRv) {
 			if (hasStalls && hasRv) html += '<h3 style="margin:16px 0 8px;font-size:14px;font-weight:600;">RV Lots</h3>';
-			html += rvRows.length > 0 ? renderRowsPreview(rvRows) : renderMapGrid(rvMap);
+			html += hasBarns(rvMap) ? renderMapGrid(rvMap) : renderRowsPreview(rvRows);
 		}
 		if (!html) html = '<p style="color:#666;">This layout has no map data.</p>';
 		return html;
@@ -168,8 +168,12 @@
 				labels = labels.concat(expandRange(side.first_label, side.last_label));
 			}
 		});
-		if (!hasSide && row.first_label !== undefined && row.last_label !== undefined) {
-			labels = expandRange(row.first_label, row.last_label);
+		if (!hasSide) {
+			var f = row.first_label !== undefined ? row.first_label : row.first;
+			var l = row.last_label !== undefined ? row.last_label : row.last;
+			if (f !== undefined && l !== undefined) {
+				labels = expandRange(f, l);
+			}
 		}
 		return labels;
 	}
