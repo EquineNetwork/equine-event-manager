@@ -3810,10 +3810,19 @@ a.eem-status-tab.is-active {
 	/* Full-bleed shell (2026-06-20): toolbar rows sit transparent on the #F7F9FC
 	   field above the table card. Their selects/buttons/search carry their own
 	   white chrome. Each row gets bottom spacing before the next row / the card. */
-	background: transparent;
+	background: var(--eem-bg-alt);
 	border-bottom: none;
-	padding: 0;
-	margin-bottom: 10px;
+	padding: 6px 0;
+	margin-bottom: 4px;
+	position: sticky;
+	top: 32px;
+	z-index: var(--eem-z-sticky);
+}
+@media (max-width: 782px) {
+	.eem-list-toolbar { top: 46px; }
+}
+@media (max-width: 600px) {
+	.eem-list-toolbar { top: 0; }
 }
 /* Carded variant (Entries): the toolbar sits INSIDE the .eem-list-card at the
    top, so it's white with a bottom divider + its own padding (the mockup's
@@ -3823,6 +3832,7 @@ a.eem-status-tab.is-active {
 	border-bottom: 1px solid #e2e8f4;
 	padding: 12px 16px;
 	margin-bottom: 0;
+	position: static;
 }
 
 .eem-list-toolbar-left {
