@@ -1,5 +1,11 @@
 # Equine Event Manager — Roadmap & To-Do
 
+> **THIS IS THE TO DO LIST — the only one.** Two lists only: **v1 (pre-launch)** and **v2 (post-launch)**.
+> Read this file first every session. Do not invent a parallel task list, and do not reconstruct tasks
+> from the codebase. Check items off here in the same step you finish them. CLEANUP.md, the README
+> implementation checklist, and the `.mockups/*_scope.md` files are NOT to-do lists — every still-open
+> item from them has been folded into the v1 list below.
+
 ---
 
 ## 🔖 SESSION HANDOFF — 2026-06-23
@@ -41,6 +47,17 @@
 22. [ ] Event Entries — competition management (disciplines + fees + roster)
 23. [ ] PDF Venue Map → overlay (upload PDF, drop/snap stall hotspots)
 24. [ ] Sheets & Results — more source types (CSV, Google Sheets, external URL)
+25. [ ] Full permissions matrix (role-based access) — needs discussion; may land pre-launch
+26. [ ] Order Detail: make "Special Instructions" editable (inline edit + Save Changes bar) — currently display-only
+27. [ ] Customer page: consume group fields — show `_en_group_description` text + enforce `_en_group_riders_per_group` max on the rider input (saved today but never read)
+28. [ ] Customer Preview button: wire the editor "Preview" button to the live customer event page URL (currently a disabled stub that 404s)
+29. [ ] Reservation editor save bar: restore Visibility + Published-date displays (dropped when the rail card was retired)
+30. [ ] Dashboard "Needs Attention": agreement-signature row (needs per-order signature tracking; not emitted today)
+31. [ ] Events flyer variant: `show_flyer` thumbnail + countdown badge (today `flyer="yes"` only adds a "View Flyer" link)
+32. [ ] Events list filter: support multi-value timeframe (`filter="past,ongoing"`) — currently silently falls back to default
+33. [ ] Release-prep: set real git committer attribution (user.name / user.email)
+34. [ ] Release-prep: drop `Update URI: false` + audit README for placeholder URLs before any public release
+35. [ ] Dev tooling: seeder populates `reservation_id` on seeded orders (replace the stopgap backfill script)
 
 ---
 
@@ -49,11 +66,10 @@
 1. [ ] GH Draw Outs
 2. [ ] QR Code Generator
 3. [ ] Push Notifications (PWA browser push)
-4. [ ] Full permissions matrix (role-based access)
-5. [ ] Accept Deposits (deposit vs balance at checkout)
-6. [ ] Global Handicaps API integration (GH as system-of-record). Full write-up: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`.
-7. [ ] PWA + responsive/touch (full offline-capable app). Scaffolding shipped (manifest + SW + install prompt, 2.7.580); full version is v2.
-8. [ ] Native mobile app (iOS/Android over the same API contract)
+4. [ ] Accept Deposits (deposit vs balance at checkout)
+5. [ ] Global Handicaps API integration (GH as system-of-record). Full write-up: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`.
+6. [ ] PWA + responsive/touch (full offline-capable app). Scaffolding shipped (manifest + SW + install prompt, 2.7.580); full version is v2.
+7. [ ] Native mobile app (iOS/Android over the same API contract)
 
 ---
 
