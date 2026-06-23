@@ -324,6 +324,10 @@ class EEM_Shortcodes {
 		$group_existing_names         = $group_reservations_enabled ? $this->get_existing_group_names( (int) $reservation_id ) : array();
 		$group_grounds_fee_enabled    = ! empty( $data['group_rider_grounds_fee_enabled'] ) && (float) $data['group_rider_grounds_fee_amount'] > 0;
 		$group_deposit_enabled        = ! empty( $data['group_rider_deposit_enabled'] ) && (float) $data['group_rider_deposit_amount'] > 0;
+			// Admin-authored group blurb + max riders per reservation (0 = unlimited).
+			// Saved by the Reservation Editor's Group section but, pre-#20, never read here.
+			$group_description            = $group_reservations_enabled ? trim( (string) ( $data['group_description'] ?? '' ) ) : '';
+			$group_riders_per_group       = $group_reservations_enabled ? max( 0, (int) ( $data['group_riders_per_group'] ?? 0 ) ) : 0;
 		$show_section_toggles         = ( ! empty( $data['stalls_enabled'] ) ? 1 : 0 ) + ( ! empty( $data['rv_enabled'] ) ? 1 : 0 ) > 1;
 		$reservation_description      = ! empty( $data['reservation_description'] ) ? trim( (string) $data['reservation_description'] ) : '';
 
@@ -1187,6 +1191,9 @@ class EEM_Shortcodes {
 							</div>
 							<div class="eem-reservation-section__body">
 								<p class="eem-reservation-help"><?php esc_html_e( 'This is a group reservation — we’ll capture the rider count and a first and last name for each rider. Switch the toggle off if you’re not booking for a group.', 'equine-event-manager' ); ?></p>
+								<?php if ( '' !== $group_description ) : ?>
+									<div class="eem-reservation-help eem-group-reservation__description"><?php echo nl2br( esc_html( $group_description ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- esc_html runs before nl2br. ?></div>
+								<?php endif; ?>
 								<div class="eem-group-reservation-fields" data-eem-group-fields hidden>
 									<div class="eem-product-list eem-product-list--group-reservation">
 										<?php $this->render_product_list_header(); ?>
@@ -1195,12 +1202,12 @@ class EEM_Shortcodes {
 												<div class="eem-product-line-item__title">
 													<span class="eem-product-line-item__title-text"><?php esc_html_e( 'Number of Riders', 'equine-event-manager' ); ?> <strong>*</strong></span>
 												</div>
-												<div class="eem-product-line-item__description"><?php esc_html_e( 'Use the quantity controls to set how many riders are in the group reservation.', 'equine-event-manager' ); ?></div>
+												<div class="eem-product-line-item__description"><?php esc_html_e( 'Use the quantity controls to set how many riders are in the group reservation.', 'equine-event-manager' ); ?><?php if ( $group_riders_per_group > 0 ) : ?> <?php echo esc_html( sprintf( /* translators: %d: maximum riders. */ _n( 'Maximum %d rider per reservation.', 'Maximum %d riders per reservation.', $group_riders_per_group, 'equine-event-manager' ), $group_riders_per_group ) ); ?><?php endif; ?></div>
 											</div>
 											<div class="eem-product-line-item__qty">
 												<div class="eem-quantity-control">
 													<button type="button" class="eem-quantity-button" data-eem-quantity-step="-1" aria-label="<?php esc_attr_e( 'Decrease quantity', 'equine-event-manager' ); ?>">-</button>
-													<input type="number" name="group_rider_count" min="1" step="1" value="1" data-eem-group-count inputmode="numeric" />
+													<input type="number" name="group_rider_count" min="1" step="1" value="1" data-eem-group-count inputmode="numeric"<?php echo $group_riders_per_group > 0 ? ' max="' . esc_attr( (string) $group_riders_per_group ) . '"' : ''; ?> />
 													<button type="button" class="eem-quantity-button" data-eem-quantity-step="1" aria-label="<?php esc_attr_e( 'Increase quantity', 'equine-event-manager' ); ?>">+</button>
 												</div>
 											</div>
@@ -3408,7 +3415,23 @@ class EEM_Shortcodes {
 				$errors[] = __( 'Please enter how many riders are included in the group reservation.', 'equine-event-manager' );
 			}
 
-			if ( count( $submission['group_riders'] ) < $submission['group_rider_count'] ) {
+			// #20 — enforce the admin-configured max riders per reservation
+				// (blank/0 = unlimited). Mirrors the client-side max attribute.
+				$group_riders_max = max( 0, (int) ( $data['group_riders_per_group'] ?? 0 ) );
+				if ( $group_riders_max > 0 && $submission['group_rider_count'] > $group_riders_max ) {
+					$errors[] = sprintf(
+						/* translators: %d: maximum riders allowed per reservation. */
+						_n(
+							'A group reservation can include at most %d rider.',
+							'A group reservation can include at most %d riders.',
+							$group_riders_max,
+							'equine-event-manager'
+						),
+						$group_riders_max
+					);
+				}
+
+				if ( count( $submission['group_riders'] ) < $submission['group_rider_count'] ) {
 				$errors[] = __( 'Please complete the first and last name for each rider in the group reservation.', 'equine-event-manager' );
 			} else {
 				for ( $index = 0; $index < $submission['group_rider_count']; $index++ ) {
@@ -12547,8 +12570,12 @@ RV Lot: " . $rv_lot['name'] );
 				function renderRiderFields() {
 					var count = parseInt(countInput.value || '0', 10);
 					var existingValues = [];
+					var maxRiders = parseInt(countInput.getAttribute('max') || '0', 10);
 
 					count = Math.max(1, count || 1);
+					if (maxRiders > 0 && count > maxRiders) {
+						count = maxRiders;
+					}
 					countInput.value = count;
 
 					list.querySelectorAll('.eem-group-rider-card').forEach(function(card) {

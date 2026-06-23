@@ -2209,6 +2209,14 @@
 	color: #0f172a;
 	font-weight: 600;
 }
+/* #20 — admin-authored group reservation blurb (what a group includes). */
+.eem-group-reservation__description {
+	margin-top: 8px;
+	padding: 10px 12px;
+	border-left: 3px solid #0ea5e9;
+	background: #f0f9ff;
+	border-radius: 4px;
+}
 /* 2.3.84 — RV add-on helper note: breathing room so it doesn't touch the
    product-row divider directly above it. */
 .eem-rv-addon-help {
