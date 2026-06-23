@@ -156,11 +156,12 @@ class EEM_Order_Detail_Page {
 
 		// A "paid" order whose total grew after line-item edits has a real uncollected
 		// balance. The green "Paid" badge contradicts the Payment Outstanding banner,
-		// so override the display badge to amber "Balance Due" in that case.
-		if ( 'paid' === $status_slug && $this->compute_balance_due( $order ) > 0.005 ) {
-			$status_css   = 'unpaid';
-			$status_label = __( 'Balance Due', 'equine-event-manager' );
-		}
+		// so override the display badge to amber "Balance Due" in that case. Extracted
+		// to a testable helper so the header badge, banner, and Order Summary stay in
+		// agreement (ROADMAP #6).
+		$display_badge = $this->compute_display_status( $order, $status_slug, $status_css, $status_label );
+		$status_css    = $display_badge['css'];
+		$status_label  = $display_badge['label'];
 
 		eem_render_page_open( array(
 			'title'      => $order_number_str,
@@ -426,10 +427,11 @@ class EEM_Order_Detail_Page {
 	}
 
 	/**
-	 * Conditional Payment Outstanding banner. Renders when the order's
-	 * status is one of the outstanding-balance states (Unpaid, Invoice
-	 * Sent, Partially Paid); silently absent when Paid / Refunded /
-	 * Cancelled.
+	 * Conditional Payment Outstanding banner. Balance-driven: renders whenever
+	 * the order has a real uncollected balance — including a fully-"paid" order
+	 * whose total rose after a line item was added (ROADMAP #6, kept in lockstep
+	 * with the header "Balance Due" badge override). Silently absent for terminal
+	 * states (Cancelled / Refunded / Partially Refunded) and zero-balance orders.
 	 *
 	 * @param array<string, mixed> $order
 	 * @param string               $status_slug
@@ -1243,6 +1245,35 @@ class EEM_Order_Detail_Page {
 	 */
 	private function compute_balance_due( array $order ): float {
 		return round( max( 0.0, $this->compute_grand_total( $order ) - $this->compute_amount_paid( $order ) ), 2 );
+	}
+
+	/**
+	 * Resolve the status badge actually shown in the header so it can never
+	 * contradict the Payment Outstanding banner / Order Summary (ROADMAP #6).
+	 *
+	 * A 'paid' order whose recomputed grand total exceeds what was collected
+	 * (line items added after payment) has a genuine uncollected balance, so its
+	 * green "Paid" badge is overridden to the amber "Balance Due" badge — the
+	 * same balance signal the banner and Order Summary already use. Every other
+	 * status passes through unchanged.
+	 *
+	 * @param array<string, mixed> $order        Order row.
+	 * @param string               $status_slug  Raw order status slug.
+	 * @param string               $status_css   Base badge CSS suffix.
+	 * @param string               $status_label Base badge label.
+	 * @return array{css:string,label:string}    Display css + label to render.
+	 */
+	private function compute_display_status( array $order, string $status_slug, string $status_css, string $status_label ): array {
+		if ( 'paid' === $status_slug && $this->compute_balance_due( $order ) > 0.005 ) {
+			return array(
+				'css'   => 'unpaid',
+				'label' => __( 'Balance Due', 'equine-event-manager' ),
+			);
+		}
+		return array(
+			'css'   => $status_css,
+			'label' => $status_label,
+		);
 	}
 
 	/**

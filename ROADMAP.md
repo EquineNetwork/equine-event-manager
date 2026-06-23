@@ -45,6 +45,7 @@
 > Completed in a remote session on the `claude/plugin-github-deployment-7m9ntj` branch. Code-complete + lint-clean + smoke written; NOT yet visually verified or merged to `main`. Walk through each, verify on Local, then check off and move to Done.
 
 - [ ] **Order Detail "Special Instructions" editable** (was #19). Inline editor on the Order Detail full-width card: an **Edit** button reveals a textarea + **Save Changes / Cancel** bar; saves via the new `eem_order_save_special_instructions` AJAX endpoint (capability + per-reservation nonce gated) back to the reservation's `_en_special_instructions` meta, updates in place + toast. Newlines now render as `<br>`. Note: the text is reservation-level (no other consumer in the codebase), so an edit shows on every order for that reservation. Smoke: `tests/smoke/order-special-instructions-smoke.php`.
+- [ ] **Order Detail "Paid" badge vs Balance-Due banner** (was #6). Investigation found the contradiction was **already largely resolved** in shipped code (header badge override + balance-driven banner + balance-driven Order Summary all agree). This session made it **verifiable + regression-guarded**: extracted the badge override into a discrete, unit-tested `compute_display_status()` helper; fixed a stale docstring that still claimed the banner is "silently absent when Paid"; added a smoke asserting all three surfaces agree on edited-up vs fully-paid orders. **Behavior unchanged** — verify on an order that was paid then had a line item added (badge, banner, and summary should all say Balance Due). Smoke: `tests/smoke/order-paid-badge-consistency-smoke.php`.
 - [ ] **Customer page consumes the group fields** (was #20). The customer event page now reads the two group fields the editor was already saving: (a) shows the admin-authored **Group Description** as a styled blurb in the Group Reservation section; (b) enforces **Riders Per Group** max on the rider-count input — `max` attribute + stepper clamp + a "Maximum N riders per reservation." note + **server-side validation** rejecting over-max submissions (blank/0 = unlimited). Smoke: `tests/smoke/group-riders-max-smoke.php` (real `validate_submission()` invoked, 4 cases incl. singular/plural). **Verify on a group-enabled reservation — NTR 6519 or a group fixture.**
 
 ### 🔲 Remaining
@@ -53,7 +54,7 @@
 3. [ ] Map Builder search bar (search/highlight/scroll for large maps)
 4. [ ] Add-On Report (per-day add-on quantities, CSV + PDF)
 5. [ ] Full end-to-end customer checkout sweep (needs NTR 6519 fixture page). NOTE (2026-06-23): this is also the recommended way to SEED test data — real checkout writes a correct `reservation_id` column + notes tag + config-based pricing (production-representative), unlike the synthetic seeders. Prerequisite: a live NTR 6519 customer event page to run checkouts through.
-6. [ ] UX: Order Detail "Paid" badge contradicts Balance-Due banner on edited orders
+6. ➡️ _Moved to **For Review** (done this session — already resolved in shipped code; made testable + regression-guarded)._
 7. [ ] Pre-Entry Import Tool (GH CSV) (#164)
 8. [ ] Vendor System (#166)
 9. [ ] Full map post-meta → config migration (#174)
