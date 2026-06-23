@@ -40,7 +40,7 @@
 13. [ ] Cross-source venue merge / alias (#176)
 14. [x] Venue layout preview format — grid not white tiles (#178)
 15. [ ] Pricing Mode: allow Nightly + Stay Packages both on (#183)
-16. [ ] Facility Layouts: Save + Upload icon flow (#198)
+16. [x] Facility Layouts: Save + Upload icon flow (#198)
 17. [ ] Verify post-meta → config-table migration 100% complete (#199)
 18. [ ] Print views: move-customer + readiness/print smoke coverage (#234)
 19. [ ] Verify RV lot name/number split against real GEMS labels (#235)
