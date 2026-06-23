@@ -2699,10 +2699,12 @@ class EEM_Admin {
 					</div>
 				<?php endif; ?>
 				<?php
-				$eem_avail_stalls = max( 0, $stall_count - (int) ( $grid['peak_stalls_used'] ?? 0 ) );
-				$eem_avail_rv     = max( 0, $rv_count - (int) ( $grid['peak_rv_used'] ?? 0 ) );
+				$eem_used_stalls  = (int) ( $grid['peak_stalls_used'] ?? 0 );
+				$eem_used_rv      = (int) ( $grid['peak_rv_used'] ?? 0 );
+				$eem_avail_stalls = max( 0, $stall_count - $eem_used_stalls );
+				$eem_avail_rv     = max( 0, $rv_count - $eem_used_rv );
 				?>
-				<!-- KPI bar -->
+				<!-- KPI / metrics bar — blue hero band (matches Daily Movement, #26). -->
 				<div class="eem-sc-kpi-bar">
 					<div class="eem-sc-kpi-cards">
 						<div class="eem-sc-kpi-card" data-inv-section="stalls">
@@ -2710,6 +2712,13 @@ class EEM_Admin {
 							<div>
 								<div class="eem-sc-kpi-num"><?php echo esc_html( number_format_i18n( $stall_count ) ); ?></div>
 								<div class="eem-sc-kpi-label"><?php esc_html_e( 'Total Stalls', 'equine-event-manager' ); ?></div>
+							</div>
+						</div>
+						<div class="eem-sc-kpi-card" data-inv-section="stalls">
+							<div class="eem-sc-kpi-icon" aria-hidden="true">&#9638;</div>
+							<div>
+								<div class="eem-sc-kpi-num"><?php echo esc_html( number_format_i18n( $eem_used_stalls ) ); ?></div>
+								<div class="eem-sc-kpi-label"><?php esc_html_e( 'In Use Stalls', 'equine-event-manager' ); ?></div>
 							</div>
 						</div>
 						<div class="eem-sc-kpi-card" data-inv-section="stalls">
@@ -2724,6 +2733,13 @@ class EEM_Admin {
 							<div>
 								<div class="eem-sc-kpi-num"><?php echo esc_html( number_format_i18n( $rv_count ) ); ?></div>
 								<div class="eem-sc-kpi-label"><?php esc_html_e( 'Total RV Lots', 'equine-event-manager' ); ?></div>
+							</div>
+						</div>
+						<div class="eem-sc-kpi-card" data-inv-section="rv">
+							<div class="eem-sc-kpi-icon" aria-hidden="true">&#11041;</div>
+							<div>
+								<div class="eem-sc-kpi-num"><?php echo esc_html( number_format_i18n( $eem_used_rv ) ); ?></div>
+								<div class="eem-sc-kpi-label"><?php esc_html_e( 'In Use RV Lots', 'equine-event-manager' ); ?></div>
 							</div>
 						</div>
 						<div class="eem-sc-kpi-card" data-inv-section="rv">
