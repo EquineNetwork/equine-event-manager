@@ -359,10 +359,9 @@ class EEM_Venues_Page {
 								<td><?php echo '' !== $r['city_state'] ? esc_html( $r['city_state'] ) : '<span class="eem-venue-muted">—</span>'; ?></td>
 								<td>
 									<?php if ( (int) $r['tpl_count'] > 0 ) : ?>
-										<span class="eem-tpl-count"><?php echo esc_html( number_format_i18n( (int) $r['tpl_count'] ) ); ?></span>
-										<a class="eem-tpl-link" href="<?php echo esc_url( $detail_url . '#facility-templates' ); ?>"><?php esc_html_e( 'View', 'equine-event-manager' ); ?></a>
+										<a class="eem-btn eem-btn-secondary eem-btn--sm" href="<?php echo esc_url( $detail_url . '#facility-templates' ); ?>"><?php echo esc_html( sprintf( _n( '%s Template', '%s Templates', (int) $r['tpl_count'], 'equine-event-manager' ), number_format_i18n( (int) $r['tpl_count'] ) ) ); ?></a>
 									<?php else : ?>
-										<span class="eem-venue-muted">—</span>
+										<span class="eem-venue-muted"><?php esc_html_e( 'None', 'equine-event-manager' ); ?></span>
 									<?php endif; ?>
 								</td>
 								<td>
@@ -581,15 +580,14 @@ class EEM_Venues_Page {
 			</div>
 
 			<div id="facility-templates" class="eem-card eem-venue-card">
-				<div class="eem-card-header"><h2 class="eem-card-title"><svg class="eem-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> <?php
+				<div class="eem-card-header"><div><h2 class="eem-card-title"><svg class="eem-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> <?php
 					echo esc_html( sprintf(
 						/* translators: %s: layout count */
 						_n( 'Facility Templates (%s)', 'Facility Templates (%s)', count( $layouts ), 'equine-event-manager' ),
 						number_format_i18n( count( $layouts ) )
 					) );
 				?></h2>
-					<p class="eem-card-subtitle"><?php esc_html_e( 'Click a facility template to preview the layout.', 'equine-event-manager' ); ?></p>
-					</div>
+					<p class="eem-card-subtitle"><?php esc_html_e( 'Click a facility template to preview the layout.', 'equine-event-manager' ); ?></p></div></div>
 				<div class="eem-card-body eem-venue-card-body--flush">
 					<?php if ( empty( $layouts ) ) : ?>
 						<p class="eem-venue-empty-note"><?php esc_html_e( 'No saved layouts for this venue yet. Use "Save Layout" on a reservation\'s stall or RV builder to capture one.', 'equine-event-manager' ); ?></p>
