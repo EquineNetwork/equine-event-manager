@@ -34,11 +34,11 @@
 7. [ ] UX: Order Detail "Paid" badge contradicts Balance-Due banner on edited orders
 8. [ ] Pre-Entry Import Tool (GH CSV) (#164)
 9. [ ] Vendor System (#166)
-10. [ ] Facility Layout Templates: Save/Load to icon buttons (#169)
+10. [x] Facility Layout Templates: Save/Load to icon buttons (#169)
 11. [ ] Full map post-meta → config migration (#174)
 12. [ ] Move Save Map / Save Layout / Load Layout buttons (#175)
 13. [ ] Cross-source venue merge / alias (#176)
-14. [ ] Venue layout preview format — grid not white tiles (#178)
+14. [x] Venue layout preview format — grid not white tiles (#178)
 15. [ ] Pricing Mode: allow Nightly + Stay Packages both on (#183)
 16. [ ] Facility Layouts: Save + Upload icon flow (#198)
 17. [ ] Verify post-meta → config-table migration 100% complete (#199)
@@ -64,9 +64,9 @@
 37. [ ] Stall & RV Charts — layout chip status colors + click-to-set status. Define distinct chip colors for booked / cleaning / blocked / etc.; make chips clickable to mark a unit as Cleaning / Checked Out / Checked In / etc. Colors + interaction details TBD — discuss before implementing.
 38. [ ] Stall & RV Charts — add a blue metrics bar (matching the Daily Movement metrics bar) at the top of the page showing important metrics.
 39. [ ] Hotel-style 15-min cart hold (NOT implemented today). When a customer selects a stall/RV lot it should be held for a time window (~15 min) and shown as taken to other customers during that window, then auto-released if checkout isn't completed. NOTE: actual double-booking is already prevented at submit via the per-reservation advisory lock (the race loser is told the unit is taken and is NOT charged) — this item is the UX hold-while-in-cart enhancement, not a correctness fix. Needs: hold/expiry state on stall+RV tables, session-tied claim, availability query counting active holds, and a cron/cleanup to expire abandoned holds. Discuss design before implementing.
-40. [ ] Fix the venue layout preview modal. (Possibly overlaps with #14 — confirm whether this is the same grid-vs-white-tiles issue or a separate modal bug, and merge if so.)
-41. [ ] Edit Venue page — add helper text below the "Venue Layouts" card title (explanatory subtitle under the heading).
-42. [ ] **Source-switch resilience (BUG).** Existing events/reservations must render + function on the customer-facing frontend regardless of which event source (Native / TEC / GEMS) is currently enabled in Settings. Each reservation's OWN `event_source` must drive its frontend rendering — never the site's global source-mode setting. **Found 2026-06-23:** a Native-sourced reservation's public page (`/equine-event/{id}/`) shows only the event header and **no booking form**, while feed/GEMS and TEC reservations render the full form. The form itself works (the `[en_reservation]` shortcode renders correctly for the native reservation in isolation) — the native event single-page template just never inlines it. Fix so all three sources render the booking form, and so switching the global source never breaks already-created events/reservations.
+40. [x] Fix the venue layout preview modal. (Overlapped with #14 — same grid-vs-white-tiles issue. Fixed: square cells, gray grid background, scoped to venue modal only.)
+41. [x] Edit Venue page — add helper text below the "Venue Layouts" card title (explanatory subtitle under the heading).
+42. [x] **Source-switch resilience (BUG).** Existing events/reservations must render + function on the customer-facing frontend regardless of which event source (Native / TEC / GEMS) is currently enabled in Settings. Each reservation's OWN `event_source` must drive its frontend rendering — never the site's global source-mode setting. **Found + fixed 2026-06-23:** Native-sourced reservation public pages (`/equine-event/{id}/`) were rendering only the event header with no booking form. Root cause: in `EEM_Events::get_normalized_reservation_event_data()` the Native/TEC branch handed off to `get_normalized_event_data()`, which returns event-shaped data with `reservation_id` defaulting to 0 — so the `$has_reservation` gate downstream silently hid the form. Fix injected `reservation_id` onto the returned array. Visually verified on test reservation 15242.
 
 ---
 
