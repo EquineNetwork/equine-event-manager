@@ -5409,6 +5409,11 @@ class EEM_Admin {
 			$blocked_rv_lots = $this->sanitize_chart_unit_list( is_array( $blocked_rv_lots ) ? $blocked_rv_lots : array(), $rv_lot_names );
 		}
 
+		// Stalls currently being cleaned are unavailable for booking.
+		$cleaning_units     = EEM_Stall_Status_Repo::get_cleaning_units( $reservation_id );
+		$unavailable_stalls = array_unique( array_merge( $blocked_stall_units, $cleaning_units ) );
+		$unavailable_rv     = array_unique( array_merge( $blocked_rv_lots, array_intersect( $cleaning_units, $rv_lot_names ) ) );
+
 		return array(
 			// 2.3.52 — chart is active when Stall OR RV reservations are enabled.
 			// Replaces the removed _en_stall_chart_enabled gate (the field that
@@ -5419,8 +5424,9 @@ class EEM_Admin {
 			'rv_lot_names'          => $rv_lot_names,
 			'blocked_stall_units'   => $blocked_stall_units,
 			'blocked_rv_lots'       => $blocked_rv_lots,
-			'available_stall_units' => array_values( array_diff( $stall_units, $blocked_stall_units ) ),
-			'available_rv_lot_names'=> array_values( array_diff( $rv_lot_names, $blocked_rv_lots ) ),
+			'cleaning_stall_units'  => $cleaning_units,
+			'available_stall_units' => array_values( array_diff( $stall_units, $unavailable_stalls ) ),
+			'available_rv_lot_names'=> array_values( array_diff( $rv_lot_names, $unavailable_rv ) ),
 			// For V1 rows, all non-blocked lots are auto-assignable (zone rates live
 			// in _en_rv_zones which is not consumed here; treat all lots as eligible).
 			'auto_assign_rv_lot_names' => ! empty( $rv_lots )

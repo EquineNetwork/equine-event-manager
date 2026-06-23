@@ -368,6 +368,30 @@ class EEM_Stall_Status_Repo {
 	}
 
 	/**
+	 * Get distinct stall units currently flagged 'needs_cleaning' for a reservation.
+	 *
+	 * Used by the customer-facing inventory gate: stalls being cleaned are
+	 * excluded from the available pool so they cannot be booked until an admin
+	 * marks them clean.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return string[] Stall unit labels with at least one night in needs_cleaning.
+	 */
+	public static function get_cleaning_units( int $reservation_id ): array {
+		global $wpdb;
+		$table = $wpdb->prefix . 'eem_stall_status';
+
+		$units = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT DISTINCT stall_unit FROM {$table} WHERE reservation_id = %d AND status = 'needs_cleaning'",
+				$reservation_id
+			)
+		);
+
+		return $units ?: array();
+	}
+
+	/**
 	 * Get all stall statuses for a specific order.
 	 *
 	 * @param int $order_id Order row ID (wp_en_stall_reservations.id).

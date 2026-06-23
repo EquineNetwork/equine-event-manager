@@ -1763,6 +1763,11 @@ class EEM_Orders_Repository {
 		$blocked_stall_units = $this->sanitize_chart_unit_list( is_array( $blocked_stall_units ) ? $blocked_stall_units : array(), $stall_units );
 		$blocked_rv_lots     = $this->sanitize_chart_unit_list( is_array( $blocked_rv_lots ) ? $blocked_rv_lots : array(), $rv_units );
 
+		// Stalls currently being cleaned are unavailable for customer booking.
+		$cleaning_units = EEM_Stall_Status_Repo::get_cleaning_units( $reservation_id );
+		$unavailable_stalls = array_unique( array_merge( $blocked_stall_units, $cleaning_units ) );
+		$unavailable_rv     = array_unique( array_merge( (array) $blocked_rv_lots, array_intersect( $cleaning_units, $rv_units ) ) );
+
 		return array(
 			// 2.3.52 — a reservation has a chart when Stall OR RV reservations
 			// are enabled. The legacy _en_stall_chart_enabled toggle was removed
@@ -1772,8 +1777,9 @@ class EEM_Orders_Repository {
 			'rv_units'             => $rv_units,
 			'blocked_stall_units'  => $blocked_stall_units,
 			'blocked_rv_units'     => $blocked_rv_lots,
-			'available_stall_units'=> array_values( array_diff( $stall_units, $blocked_stall_units ) ),
-			'available_rv_units'   => array_values( array_diff( $rv_units, $blocked_rv_lots ) ),
+			'cleaning_stall_units' => $cleaning_units,
+			'available_stall_units'=> array_values( array_diff( $stall_units, $unavailable_stalls ) ),
+			'available_rv_units'   => array_values( array_diff( $rv_units, $unavailable_rv ) ),
 			// For V1 rows all non-blocked lots are auto-assignable; legacy path
 			// filters by zone rate presence via get_auto_assignable_rv_lot_names().
 			'auto_assignable_rv_units' => ! empty( $rv_lots )
