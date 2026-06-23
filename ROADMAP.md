@@ -46,7 +46,7 @@
 9. [ ] Vendor System (#166)
 10. [ ] Full map post-meta → config migration (#174)
 11. [ ] Cross-source venue merge / alias (#176)
-12. [ ] Pricing Mode: allow Nightly + Stay Packages both on (#183)
+12. [x] Pricing Mode: allow Nightly + Stay Packages both on (#183)
 13. [ ] Verify post-meta → config-table migration 100% complete (#199)
 14. [ ] Print views: move-customer + readiness/print smoke coverage (#234)
 15. [ ] Verify RV lot name/number split against real GEMS labels (#235)
