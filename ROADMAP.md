@@ -19,6 +19,8 @@
 - Desktop, tablet, AND mobile are all equally important — "facilities are going to be using this on tablets a lot."
 - Mobile customer cards use border-top separators between them, NOT individual card borders.
 
+**Working cadence (locked 2026-06-23):** Tackle v1 items one at a time, together. After each item, Whitney visually verifies it BEFORE it's marked done. Only then check it off here (`[ ]` → `[x]`) in the same step. Never batch-mark items done; never mark done without Whitney's visual verification.
+
 ---
 
 ## 📋 v1 — Pre-launch (remaining)
@@ -58,6 +60,12 @@
 33. [ ] Release-prep: set real git committer attribution (user.name / user.email)
 34. [ ] Release-prep: drop `Update URI: false` + audit README for placeholder URLs before any public release
 35. [ ] Dev tooling: seeder populates `reservation_id` on seeded orders (replace the stopgap backfill script)
+36. [ ] RV amenities/hookups on reservations — in the Edit Reservation editor, let admin identify what each RV lot (or RV spot type) offers: 30 amp / 50 amp / water / sewage, etc. Display on the customer frontend as labeled icon chips (matching the existing "RV Spot Type" card style — electric/water icons with labels). Build approach TBD — locked in; discuss before implementing.
+37. [ ] Stall & RV Charts — layout chip status colors + click-to-set status. Define distinct chip colors for booked / cleaning / blocked / etc.; make chips clickable to mark a unit as Cleaning / Checked Out / Checked In / etc. Colors + interaction details TBD — discuss before implementing.
+38. [ ] Stall & RV Charts — add a blue metrics bar (matching the Daily Movement metrics bar) at the top of the page showing important metrics.
+39. [ ] Hotel-style 15-min cart hold (NOT implemented today). When a customer selects a stall/RV lot it should be held for a time window (~15 min) and shown as taken to other customers during that window, then auto-released if checkout isn't completed. NOTE: actual double-booking is already prevented at submit via the per-reservation advisory lock (the race loser is told the unit is taken and is NOT charged) — this item is the UX hold-while-in-cart enhancement, not a correctness fix. Needs: hold/expiry state on stall+RV tables, session-tied claim, availability query counting active holds, and a cron/cleanup to expire abandoned holds. Discuss design before implementing.
+40. [ ] Fix the venue layout preview modal. (Possibly overlaps with #14 — confirm whether this is the same grid-vs-white-tiles issue or a separate modal bug, and merge if so.)
+41. [ ] Edit Venue page — add helper text below the "Venue Layouts" card title (explanatory subtitle under the heading).
 
 ---
 
@@ -70,6 +78,7 @@
 5. [ ] Global Handicaps API integration (GH as system-of-record). Full write-up: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`.
 6. [ ] PWA + responsive/touch (full offline-capable app). Scaffolding shipped (manifest + SW + install prompt, 2.7.580); full version is v2.
 7. [ ] Native mobile app (iOS/Android over the same API contract)
+8. [ ] Update plugin language to .NET? (exploratory — port the plugin's logic off PHP/WordPress to a .NET backend; ties into the "not chained to WordPress forever" / GH-as-system-of-record direction in `docs/ARCHITECTURE-DATA-OWNERSHIP.md`. Confirm scope + intent before any work.)
 
 ---
 
