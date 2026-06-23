@@ -30,7 +30,7 @@
 3. [ ] Map Builder search bar (search/highlight/scroll for large maps)
 4. [ ] Add-On Report (per-day add-on quantities, CSV + PDF)
 5. [ ] Dashboard "Upcoming Reservations" chips (should be filled colored pills matching Reservations list)
-6. [ ] Full end-to-end customer checkout sweep (needs NTR 6519 fixture page)
+6. [ ] Full end-to-end customer checkout sweep (needs NTR 6519 fixture page). NOTE (2026-06-23): this is also the recommended way to SEED test data — real checkout writes a correct `reservation_id` column + notes tag + config-based pricing (production-representative), unlike the synthetic seeders. Prerequisite: a live NTR 6519 customer event page to run checkouts through.
 7. [ ] UX: Order Detail "Paid" badge contradicts Balance-Due banner on edited orders
 8. [ ] Pre-Entry Import Tool (GH CSV) (#164)
 9. [ ] Vendor System (#166)
@@ -44,7 +44,7 @@
 17. [ ] Verify post-meta → config-table migration 100% complete (#199)
 18. [ ] Print views: move-customer + readiness/print smoke coverage (#234)
 19. [ ] Verify RV lot name/number split against real GEMS labels (#235)
-20. [ ] Postmeta → relational de-coupling (Phase 1 funnel). Full plan: `docs/WORKPLAN-postmeta-decouple.md`.
+20. [ ] Postmeta → relational de-coupling (Phase 1 funnel). Audit + remediation plan: `docs/POSTMETA-AUDIT.md`. (As of 2026-06-23: reservation setup/pricing/rows are on the config table; #212 checkout base-rate read is FIXED; remaining gaps are map snapshots `_en_stall_map`/`_en_rv_map` (see #11) + hybrid blocked-units reads + events/venues/producers/divisions editors still on post-meta.)
 21. [ ] Upload .xlsx → Stall Grid (ZipArchive + SimpleXML; "Download Example Template" link)
 22. [ ] Event Entries — competition management (disciplines + fees + roster)
 23. [ ] PDF Venue Map → overlay (upload PDF, drop/snap stall hotspots)
@@ -59,7 +59,7 @@
 32. [ ] Events list filter: support multi-value timeframe (`filter="past,ongoing"`) — currently silently falls back to default
 33. [ ] Release-prep: set real git committer attribution (user.name / user.email)
 34. [ ] Release-prep: drop `Update URI: false` + audit README for placeholder URLs before any public release
-35. [ ] Dev tooling: seeder populates `reservation_id` on seeded orders (replace the stopgap backfill script)
+35. [ ] Dev tooling: seeder populates `reservation_id` on seeded orders (replace the stopgap backfill script). NOTE (2026-06-23): NOT a seeding blocker — the PRODUCTION checkout/admin paths already write `reservation_id` correctly (shortcodes.php:5036/5147); only the synthetic seeders (`tools/seed-test-data.php`, `scripts/seed-orders.php`) skip it. Prefer seeding via real checkout (#6); this stays as dev-tooling cleanup.
 36. [ ] RV amenities/hookups on reservations — in the Edit Reservation editor, let admin identify what each RV lot (or RV spot type) offers: 30 amp / 50 amp / water / sewage, etc. Display on the customer frontend as labeled icon chips (matching the existing "RV Spot Type" card style — electric/water icons with labels). Build approach TBD — locked in; discuss before implementing.
 37. [ ] Stall & RV Charts — layout chip status colors + click-to-set status. Define distinct chip colors for booked / cleaning / blocked / etc.; make chips clickable to mark a unit as Cleaning / Checked Out / Checked In / etc. Colors + interaction details TBD — discuss before implementing.
 38. [ ] Stall & RV Charts — add a blue metrics bar (matching the Daily Movement metrics bar) at the top of the page showing important metrics.
