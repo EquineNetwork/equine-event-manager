@@ -23,7 +23,7 @@ All `.mockups/` files fully implemented and verified. Mockup cleanup pending (se
 
 ## ⏸ Deferred (no blocker — do when convenient)
 
-- [x] **Global mobile-first pass — DONE (2.7.577–2.7.580).** Phase 0 (390px audit) → Phase 1 (mobile card primitive `.eem-mobile-cards`/`.eem-desktop-table` across 11 list pages) → Phase 2 (per-page apply + verify: Orders, Reservations, Stall & RV Charts, Reports, Customers, Events, Producers, Venues, Notifications, Entries, Categories) → Phase 3 (44px touch targets via `:where()` rule 2.7.579, sticky toolbars 2.7.580, PWA install prompt 2.7.580). All shipped.
+- [~] **Global mobile-first pass — PARTIAL.** Structural scaffolding shipped (2.7.577–580): mobile card border-top separators, `.eem-mobile-cards`/`.eem-desktop-table` class pattern, 44px touch targets via `:where()`, PWA install prompt, sticky toolbars. **NOT yet done:** per-page visual polish to match the Daily Movement standard — consistent row heights, badge sizing parity, spacing/density at phone widths, readable content across all admin pages. Daily Movement is the baseline; every other page needs the same treatment.
 
 - [x] **Page-background color sweep** — **DONE.** `body.eem-shell-page` now uses `var(--eem-bg)` + `min-height: 100vh`; `#wpbody-content` gets `min-height: calc(100vh - 32px)`. No WP gray bleed-through on any page.
 - [x] **Global card padding consistency sweep** — **DONE.** Canonical tokens `--eem-card-header-padding: 13px 18px` and `--eem-card-body-padding: 16px 18px` at admin.css:139-140, consumed by `.eem-card-header` and `.eem-card-body`.
@@ -64,17 +64,24 @@ All `.mockups/` files fully implemented and verified. Mockup cleanup pending (se
 4. ~~**Paddock Assignments** — merge adjacent stall chips into a bookable paddock unit with its own rate.~~ ✅ Done
 5. **Upload .xlsx → Stall Grid** — parse `.xlsx` into stall rows via `ZipArchive` + `SimpleXML`; no new Composer deps. Include "Download Example Template" link.
 6. ~~**Repo / distribution cleanup**~~ ✅ Done (`.gitattributes` export-ignore shipped)
+7. **GH Draw Outs** — was v1 #4; moved to v2 2026-06-15.
+8. **QR Code Generator** — deferred to v2 (Whitney, 2026-06-15).
+9. **Push Notifications** — PWA browser push notifications. Deferred to v2 (Whitney, 2026-06-15).
+10. **Full permissions matrix** — role-based access controls. Deferred to v2 (Whitney, 2026-06-15).
+11. **Event Entries** — competition management: per-discipline entry, entry fees, entrant roster. Distinct from Pre-Entries/Divisions (which are v1-shipped). Deferred to v2 per CLAUDE.md.
 
 ### v3 — Architecture + Deferred Features
 
 1. **PDF Venue Map → overlay** — upload a PDF venue map; render to image + drop/snap stall hotspots. Pairs with Facility Layout Templates.
 2. **Sheets & Results — more source types** — CSV upload, Google Sheets link, external URL. Source-type column on `wp_eem_sheet_entries` + per-type render.
-3. **Financial-security audit** — full money path (Stripe + Auth.net charge/refund, amount integrity, idempotency, webhook auth, capability + nonce). Deliverable: `docs/SECURITY-AUDIT-REPORT.md`.
-4. **Strict concurrency audit** — every reserve/assign write path under high-demand sellout conditions; document guarantees.
+3. ~~**Financial-security audit**~~ ✅ Done (`docs/SECURITY-AUDIT-REPORT.md` shipped)
+4. ~~**Strict concurrency audit**~~ ✅ Done (advisory locks on all write paths)
+5. **Accept Deposits** — show full total, then "Deposit due now: $X" and "Balance due at event: $Y" at checkout. Deferred to v3 (Whitney, 2026-06-14).
+6. **Global Handicaps API integration** — GH as system-of-record for reservation data; sync vs GH-primary models. Full write-up: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`. Gated on v2 postmeta de-coupling.
 
 ### v4 — Headless Clients *(gated on v2 decouple + v3 API)*
 
-1. **PWA + responsive/touch** — responsive/touch audit on all admin + customer pages (tablet ~768px, phone ~390px); offline-capable, installable web app (`manifest.json` + service worker + install prompt) over the v3 API.
+1. **PWA + responsive/touch** — offline-capable, installable web app (`manifest.json` + service worker + install prompt) over the v3 API. Basic PWA scaffolding shipped (manifest + SW + install prompt, 2.7.580) but full offline + API-backed version is v4.
 2. **Native mobile app** — iOS/Android over the same API contract.
 
 ---
