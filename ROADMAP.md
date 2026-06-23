@@ -53,6 +53,8 @@
 
 - [ ] **Move-customer AJAX guard smoke** (was #11 / #234). The existing per-night-move smoke covers the serialize/parse/resolve helpers + repo round-trip but left the live `ajax_move_stall_assignment` handler "browser-verified at ship time" with no automated coverage. New smoke locks in the handler's entry-point guards: nonce + capability gate, missing-parameter rejection, order-not-found, and stall/RV `kind` routing. The fixture-dependent conflict branches (blocked destination / not-in-chart / occupied-by-another-order) still need a full chart-config fixture and remain browser-verified — noted in the smoke. Smoke: `tests/smoke/move-stall-assignment-guards-smoke.php`. **Note: runs on Local only (needs WP + EEM_Admin); not self-verifiable in the remote container — please run it on Local.**
 
+- [ ] **Postmeta→config audit re-verified + ratchet smoke** (was #10 + #13). Re-scanned the codebase and refreshed `docs/POSTMETA-AUDIT.md`. **Findings:** the reservation builder (setup/pricing/rows) AND checkout pricing are fully on the config table — **#212 is confirmed fixed** (config base-rate overlay in `get_reservation_meta`). So the migration is **not** 100% complete (answers #10): the real remaining gaps are map snapshots `_en_stall_map`/`_en_rv_map` (tracked #9), the blocked-units hybrid reads, and the events/venues/producers/divisions CPT editors — all sign-off-gated migrations. **New regression guard:** `tests/smoke/postmeta-decouple-ratchet-smoke.php` counts business-data post-meta calls (baseline **214**) and fails if it rises, plus guards the #212 overlay. Pure file-scan — **self-verified in this session, 2/2 pass** (no Local needed). Lower the baseline as the decouple proceeds.
+
 ### 🔲 Remaining
 1. [ ] Global mobile visual polish — per-page pass to match Daily Movement standard (row heights, badge sizing, spacing/density). Scaffolding shipped (2.7.577–580); per-page work not started.
 2. [ ] Excel stall map import (.xlsx → stall rows + map grid)
@@ -63,10 +65,10 @@
 7. [ ] Pre-Entry Import Tool (GH CSV) (#164)
 8. [ ] Vendor System (#166)
 9. [ ] Full map post-meta → config migration (#174)
-10. [ ] Verify post-meta → config-table migration 100% complete (#199)
+10. ➡️ _Moved to **For Review** (done this session — verified: builder + checkout pricing done, map/blocked/editors remain; ratchet smoke shipped)._
 11. ➡️ _Moved to **For Review** (done this session — move-customer AJAX guard smoke; conflict branches still browser-verified)._
 12. [ ] Verify RV lot name/number split against real GEMS labels (#235)
-13. [ ] Postmeta → relational de-coupling (Phase 1 funnel). Audit + remediation plan: `docs/POSTMETA-AUDIT.md`. (As of 2026-06-23: reservation setup/pricing/rows are on the config table; #212 checkout base-rate read is FIXED; remaining gaps are map snapshots `_en_stall_map`/`_en_rv_map` (see #9) + hybrid blocked-units reads + events/venues/producers/divisions editors still on post-meta.)
+13. ➡️ _Audit re-verified + ratchet smoke shipped this session (see For Review with #10). The remaining decouple **migrations** (map snapshots #9, blocked-units hybrid, CPT editors) are still open and sign-off-gated — keep this item for the actual data migrations._
 14. [ ] Upload .xlsx → Stall Grid (ZipArchive + SimpleXML; "Download Example Template" link)
 15. [ ] Event Entries — competition management (disciplines + fees + roster)
 16. [ ] PDF Venue Map → overlay (upload PDF, drop/snap stall hotspots)
