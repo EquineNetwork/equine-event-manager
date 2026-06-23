@@ -69,6 +69,9 @@ All `.mockups/` files fully implemented and verified. Mockup cleanup pending (se
 9. **Push Notifications** — PWA browser push notifications. Deferred to v2 (Whitney, 2026-06-15).
 10. **Full permissions matrix** — role-based access controls. Deferred to v2 (Whitney, 2026-06-15).
 11. **Event Entries** — competition management: per-discipline entry, entry fees, entrant roster. Distinct from Pre-Entries/Divisions (which are v1-shipped). Deferred to v2 per CLAUDE.md.
+12. **Global Handicaps API integration** — GH as system-of-record for reservation data; sync vs GH-primary models. Full write-up: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`. Gated on postmeta de-coupling. Moved from v3 → v2 (Whitney, 2026-06-23).
+13. **PWA + responsive/touch** — full offline-capable, installable web app over API. Basic scaffolding shipped (manifest + SW + install prompt, 2.7.580); full version is v2. Moved from v4 → v2 (Whitney, 2026-06-23).
+14. **Native mobile app** — iOS/Android over the same API contract. Moved from v4 → v2 (Whitney, 2026-06-23).
 
 ### v3 — Architecture + Deferred Features
 
@@ -77,12 +80,6 @@ All `.mockups/` files fully implemented and verified. Mockup cleanup pending (se
 3. ~~**Financial-security audit**~~ ✅ Done (`docs/SECURITY-AUDIT-REPORT.md` shipped)
 4. ~~**Strict concurrency audit**~~ ✅ Done (advisory locks on all write paths)
 5. **Accept Deposits** — show full total, then "Deposit due now: $X" and "Balance due at event: $Y" at checkout. Deferred to v3 (Whitney, 2026-06-14).
-6. **Global Handicaps API integration** — GH as system-of-record for reservation data; sync vs GH-primary models. Full write-up: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`. Gated on v2 postmeta de-coupling.
-
-### v4 — Headless Clients *(gated on v2 decouple + v3 API)*
-
-1. **PWA + responsive/touch** — offline-capable, installable web app (`manifest.json` + service worker + install prompt) over the v3 API. Basic PWA scaffolding shipped (manifest + SW + install prompt, 2.7.580) but full offline + API-backed version is v4.
-2. **Native mobile app** — iOS/Android over the same API contract.
 
 ---
 
