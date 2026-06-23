@@ -6526,10 +6526,20 @@ class EEM_Admin {
 	 * @return array{key:string, label:string}
 	 */
 	private function readiness_display( string $status ): array {
-		if ( in_array( $status, array( 'occupied', 'checked_in' ), true ) ) {
+		// #25: checked-in / checked-out are surfaced as distinct labels (and, via a
+		// modifier class in the cell render, distinct colors). The display KEY is
+		// kept stable (checked_in→occupied, checked_out→cleaning) so the render's
+		// occupied-vs-status branching + the cell menu are unaffected.
+		if ( 'checked_in' === $status ) {
+			return array( 'key' => 'occupied', 'label' => __( 'Checked In', 'equine-event-manager' ) );
+		}
+		if ( 'occupied' === $status ) {
 			return array( 'key' => 'occupied', 'label' => __( 'Occupied', 'equine-event-manager' ) );
 		}
-		if ( in_array( $status, array( 'needs_cleaning', 'checked_out' ), true ) ) {
+		if ( 'checked_out' === $status ) {
+			return array( 'key' => 'cleaning', 'label' => __( 'Checked Out', 'equine-event-manager' ) );
+		}
+		if ( 'needs_cleaning' === $status ) {
 			return array( 'key' => 'cleaning', 'label' => __( 'Cleaning', 'equine-event-manager' ) );
 		}
 		if ( 'blocked' === $status ) {
@@ -6721,6 +6731,15 @@ class EEM_Admin {
 		$eem_has_today  = in_array( $eem_today_key, $eem_dates, true );
 		?>
 		<div class="eem-chart-table-scroll eem-loc-readiness" data-reservation-id="<?php echo esc_attr( (string) (int) $reservation_id ); ?>" data-dates="<?php echo esc_attr( implode( ',', $eem_dates ) ); ?>" data-nonce="<?php echo esc_attr( $eem_nonce ); ?>">
+			<?php // #25 — status color legend (global chip tokens, see admin.css :root). ?>
+			<div class="eem-loc-legend" role="img" aria-label="<?php esc_attr_e( 'Stall status color key', 'equine-event-manager' ); ?>">
+				<span class="eem-loc-legend__item"><span class="eem-loc-legend__sw eem-loc-cell--occupied"></span><?php esc_html_e( 'Occupied', 'equine-event-manager' ); ?></span>
+				<span class="eem-loc-legend__item"><span class="eem-loc-legend__sw eem-loc-cell--checkedin"></span><?php esc_html_e( 'Checked In', 'equine-event-manager' ); ?></span>
+				<span class="eem-loc-legend__item"><span class="eem-loc-legend__sw eem-loc-cell--checkedout"></span><?php esc_html_e( 'Checked Out', 'equine-event-manager' ); ?></span>
+				<span class="eem-loc-legend__item"><span class="eem-loc-legend__sw eem-loc-cell--cleaning"></span><?php esc_html_e( 'Cleaning', 'equine-event-manager' ); ?></span>
+				<span class="eem-loc-legend__item"><span class="eem-loc-legend__sw eem-loc-cell--blocked"></span><?php esc_html_e( 'Blocked', 'equine-event-manager' ); ?></span>
+				<span class="eem-loc-legend__item"><span class="eem-loc-legend__sw eem-loc-cell--available"></span><?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
+			</div>
 			<table class="<?php echo esc_attr( $table_class ); ?> eem-loc-table">
 				<thead>
 					<tr>
@@ -6789,6 +6808,15 @@ class EEM_Admin {
 								// Occupied cells show the customer NAME (name only); the rest show the status word.
 								$eem_occ_name = ( 'occupied' === $eem_disp['key'] && '' !== (string) ( $eem_cell['label'] ?? '' ) ) ? (string) $eem_cell['label'] : '';
 								$eem_cell_text = '' !== $eem_occ_name ? $eem_occ_name : $eem_disp['label'];
+								// #25: distinct chip color for the check-in lifecycle. The base
+								// class stays (--occupied / --cleaning); this modifier recolors
+								// checked-in (teal) and checked-out (orange) on top.
+								$eem_substatus_class = '';
+								if ( 'checked_in' === $eem_stored ) {
+									$eem_substatus_class = ' eem-loc-cell--checkedin';
+								} elseif ( 'checked_out' === $eem_stored ) {
+									$eem_substatus_class = ' eem-loc-cell--checkedout';
+								}
 								?>
 								<td class="eem-loc-cell-td">
 									<?php if ( 'blocked' === $eem_disp['key'] ) : ?>
@@ -6800,12 +6828,12 @@ class EEM_Admin {
 									$eem_ogrp  = isset( $eem_cell['group_name'] ) ? trim( (string) $eem_cell['group_name'] ) : '';
 									$eem_onote = isset( $eem_cell['special_requests'] ) ? trim( (string) $eem_cell['special_requests'] ) : '';
 									?>
-										<button type="button" class="eem-loc-cell eem-loc-cell--occupied" data-eem-action="stall-pill-click" data-kind="<?php echo esc_attr( $kind ); ?>" data-order-key="<?php echo esc_attr( $eem_okey ); ?>" data-order-id="<?php echo esc_attr( $eem_okey ); ?>" data-order-number="<?php echo esc_attr( $this->format_order_number_display( $eem_onum ) ); ?>" data-customer-name="<?php echo esc_attr( $eem_cell_text ); ?>" data-customer="<?php echo esc_attr( $eem_cell_text ); ?>" data-stall="<?php echo esc_attr( $eem_unit ); ?>" data-date="<?php echo esc_attr( $eem_dk ); ?>"<?php echo '' !== $eem_ogrp ? ' data-group-name="' . esc_attr( $eem_ogrp ) . '"' : ''; ?><?php echo '' !== $eem_onote ? ' data-special-requests="' . esc_attr( $eem_onote ) . '"' : ''; ?> data-is-tack="<?php echo ! empty( $eem_cell['is_tack'] ) ? '1' : '0'; ?>">
+										<button type="button" class="eem-loc-cell eem-loc-cell--occupied<?php echo esc_attr( $eem_substatus_class ); ?>" data-eem-action="stall-pill-click" data-kind="<?php echo esc_attr( $kind ); ?>" data-order-key="<?php echo esc_attr( $eem_okey ); ?>" data-order-id="<?php echo esc_attr( $eem_okey ); ?>" data-order-number="<?php echo esc_attr( $this->format_order_number_display( $eem_onum ) ); ?>" data-customer-name="<?php echo esc_attr( $eem_cell_text ); ?>" data-customer="<?php echo esc_attr( $eem_cell_text ); ?>" data-stall="<?php echo esc_attr( $eem_unit ); ?>" data-date="<?php echo esc_attr( $eem_dk ); ?>"<?php echo '' !== $eem_ogrp ? ' data-group-name="' . esc_attr( $eem_ogrp ) . '"' : ''; ?><?php echo '' !== $eem_onote ? ' data-special-requests="' . esc_attr( $eem_onote ) . '"' : ''; ?> data-is-tack="<?php echo ! empty( $eem_cell['is_tack'] ) ? '1' : '0'; ?>">
 											<span class="eem-loc-cell__label"><?php echo esc_html( $eem_cell_text ); ?></span>
 											<svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
 										</button>
 									<?php else : ?>
-										<button type="button" class="eem-loc-cell eem-loc-cell--<?php echo esc_attr( $eem_disp['key'] ); ?>" data-eem-action="loc-cell-status" data-kind="<?php echo esc_attr( $kind ); ?>" data-stall="<?php echo esc_attr( $eem_unit ); ?>" data-date="<?php echo esc_attr( $eem_dk ); ?>" data-status="<?php echo esc_attr( $eem_disp['key'] ); ?>">
+										<button type="button" class="eem-loc-cell eem-loc-cell--<?php echo esc_attr( $eem_disp['key'] ); ?><?php echo esc_attr( $eem_substatus_class ); ?>" data-eem-action="loc-cell-status" data-kind="<?php echo esc_attr( $kind ); ?>" data-stall="<?php echo esc_attr( $eem_unit ); ?>" data-date="<?php echo esc_attr( $eem_dk ); ?>" data-status="<?php echo esc_attr( $eem_disp['key'] ); ?>">
 											<span class="eem-loc-cell__label"><?php echo esc_html( $eem_cell_text ); ?></span>
 											<svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
 										</button>
