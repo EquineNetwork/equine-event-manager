@@ -3150,7 +3150,23 @@ class EEM_Events {
 				$event_id = absint( get_post_meta( $reservation_id, '_en_event_id', true ) );
 			}
 
-			return $event_id ? self::get_normalized_event_data( $event_id ) : array();
+			if ( ! $event_id ) {
+				return array();
+			}
+
+			$event_data = self::get_normalized_event_data( $event_id );
+
+			// get_normalized_event_data() is event-shaped — it doesn't know which
+			// reservation called it, so reservation_id stays at the default 0 and
+			// the booking form gets silently hidden by the $has_reservation gate.
+			// We're rendering for THIS reservation, so inject it. (Source-switch
+			// resilience: a reservation's own event_source drives the frontend,
+			// regardless of the site's global source setting.)
+			if ( ! empty( $event_data ) ) {
+				$event_data['reservation_id'] = $reservation_id;
+			}
+
+			return $event_data;
 		}
 
 		$feed_url    = $cfg_str( 'event_feed_url' );
