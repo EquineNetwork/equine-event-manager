@@ -3196,8 +3196,6 @@
 			}
 		},
 		'venue-load-layout': function (target) {
-			/* DEBUG — remove after confirming fix */
-			console.log('[EEM] venue-load-layout hit. EEM.venueLayoutLoad =', typeof (window.EEM && EEM.venueLayoutLoad));
 			if (window.EEM && typeof EEM.venueLayoutLoad === 'function') {
 				EEM.venueLayoutLoad(target);
 			}
