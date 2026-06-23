@@ -182,7 +182,13 @@
    `EEM_Admin::enqueue_backend_shell_styles` in DS-1.A. */
 body.eem-shell-page {
 	font-family: var(--eem-font-ui);
-	background: #F7F9FC;
+	background: var(--eem-bg);
+	min-height: 100vh;
+}
+/* Ensure the plugin background covers the full viewport on short-content pages
+   so no WP gray (#f0f0f1) bleeds through below the plugin content. */
+body.eem-shell-page #wpbody-content {
+	min-height: calc(100vh - 32px); /* 32px = WP admin bar height */
 }
 
 .eem-page {
@@ -205,7 +211,7 @@ body.eem-shell-page #wpcontent,
 body.eem-shell-page #wpbody,
 body.eem-shell-page #wpbody-content,
 body.eem-shell-page .wrap {
-	background: #F7F9FC;
+	background: var(--eem-bg);
 }
 body.eem-shell-page #wpcontent {
 	padding-left: 0;

@@ -516,8 +516,14 @@ class EEM_Orders_Repository {
 			return false;
 		}
 
+		// LOW-4: guard against duplicate note writes if order is already paid.
+		$current_status = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
+		if ( 'paid' === $current_status ) {
+			return false;
+		}
+
 		// C6.D — capture pre-update status for the status_change funnel.
-		$old_status_slug = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
+		$old_status_slug = $current_status;
 
 		$updated_any     = false;
 		$paid_at         = current_time( 'mysql' );
