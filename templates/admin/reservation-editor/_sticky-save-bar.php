@@ -56,6 +56,10 @@ $status_label  = isset( $status_labels[ $status ] ) ? $status_labels[ $status ] 
 
 $dot_modifier = 'publish' === $status ? 'published' : ( 'trash' === $status ? 'trash' : 'draft' );
 
+$visibility     = 'private' === $status ? __( 'Private', 'equine-event-manager' ) : __( 'Public', 'equine-event-manager' );
+$pub_date_ts    = strtotime( (string) $post->post_date );
+$pub_date_label = $pub_date_ts ? date_i18n( get_option( 'date_format' ), $pub_date_ts ) : __( "\xe2\x80\x94", 'equine-event-manager' );
+
 /* Nonce — same action as rail card so JS dispatcher works unchanged */
 $nonce = wp_create_nonce( 'eem_reservation_editor' );
 ?>
@@ -70,22 +74,38 @@ $nonce = wp_create_nonce( 'eem_reservation_editor' );
 		<span data-eem-publish-status><?php echo esc_html( $status_label ); ?></span>
 	</div>
 
+	<!-- Visibility + Published date -->
+	<div class="eem-sticky-save-meta">
+		<span class="eem-sticky-save-meta-item">
+			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false" style="width:14px;height:14px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+			<?php echo esc_html( $visibility ); ?>
+		</span>
+		<span class="eem-sticky-save-meta-item">
+			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false" style="width:14px;height:14px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+			<?php echo esc_html( $pub_date_label ); ?>
+		</span>
+	</div>
+
 	<!-- Spacer -->
 	<div class="eem-sticky-save-spacer"></div>
 
 	<!-- Action buttons — order matches mockup line 1591–1601 -->
 	<div class="eem-sticky-save-actions">
 
-		<?php /* Preview — wired to C10 when it ships; disabled stub until then.
-		         Button matches rail card's disabled pattern per C7.X.16 Issue D3. */ ?>
-		<button type="button"
-			class="eem-btn-preview"
-			disabled
-			aria-disabled="true"
-			title="<?php esc_attr_e( 'Customer preview available after C10 ships.', 'equine-event-manager' ); ?>">
+		<?php
+		$preview_url = class_exists( 'EEM_Events' ) ? EEM_Events::get_reservation_public_url( $reservation_id ) : '';
+		if ( $preview_url ) : ?>
+		<a href="<?php echo esc_url( $preview_url ); ?>" class="eem-btn-preview" target="_blank" rel="noopener noreferrer">
+			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+			<span><?php esc_html_e( 'Preview', 'equine-event-manager' ); ?></span>
+		</a>
+		<?php else : ?>
+		<button type="button" class="eem-btn-preview" disabled aria-disabled="true"
+			title="<?php esc_attr_e( 'Preview available when published.', 'equine-event-manager' ); ?>">
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
 			<span><?php esc_html_e( 'Preview', 'equine-event-manager' ); ?></span>
 		</button>
+		<?php endif; ?>
 
 		<?php /* Save as Draft — always available; switches a published reservation back to draft */ ?>
 		<button type="button"

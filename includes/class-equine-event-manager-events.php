@@ -3393,38 +3393,56 @@ class EEM_Events {
 	}
 
 	/**
-	 * Parse an event timeframe attribute into a supported key.
+	 * Parse an event timeframe attribute into supported key(s).
+	 *
+	 * Accepts a single value or comma-separated list (e.g. "past,ongoing").
 	 *
 	 * @param string $timeframe Raw timeframe attribute.
-	 * @return string
+	 * @return string|array<int, string> Single key or array of keys.
 	 */
 	private static function parse_timeframe_filter( $timeframe ) {
-		$timeframe = sanitize_key( (string) $timeframe );
+		$raw   = (string) $timeframe;
+		$parts = array_filter( array_map( 'sanitize_key', explode( ',', $raw ) ) );
 
-		if ( in_array( $timeframe, array( 'upcoming', 'current_upcoming', 'ongoing', 'current', 'past', 'all', 'include_past' ), true ) ) {
-			if ( 'upcoming' === $timeframe ) {
-				return 'current_upcoming';
-			}
-
-			if ( 'current' === $timeframe ) {
-				return 'ongoing';
-			}
-
-			if ( 'include_past' === $timeframe ) {
-				return 'all';
-			}
-
-			return $timeframe;
+		if ( count( $parts ) <= 1 ) {
+			return self::normalize_single_timeframe( $parts ? reset( $parts ) : '' );
 		}
 
+		$normalized = array_unique( array_map( array( __CLASS__, 'normalize_single_timeframe' ), $parts ) );
+
+		if ( in_array( 'all', $normalized, true ) ) {
+			return 'all';
+		}
+
+		return count( $normalized ) === 1 ? reset( $normalized ) : array_values( $normalized );
+	}
+
+	/**
+	 * Normalize a single timeframe keyword.
+	 *
+	 * @param string $tf Raw keyword.
+	 * @return string
+	 */
+	private static function normalize_single_timeframe( $tf ) {
+		$aliases = array(
+			'upcoming'     => 'current_upcoming',
+			'current'      => 'ongoing',
+			'include_past' => 'all',
+		);
+		if ( isset( $aliases[ $tf ] ) ) {
+			return $aliases[ $tf ];
+		}
+		if ( in_array( $tf, array( 'current_upcoming', 'ongoing', 'past', 'all' ), true ) ) {
+			return $tf;
+		}
 		return 'current_upcoming';
 	}
 
 	/**
 	 * Filter normalized events by timeframe.
 	 *
-	 * @param array<int, array<string, mixed>> $events Event collection.
-	 * @param string                           $timeframe Supported timeframe key.
+	 * @param array<int, array<string, mixed>> $events     Event collection.
+	 * @param string|array<int, string>        $timeframe  Single key or array of keys (OR logic).
 	 * @return array<int, array<string, mixed>>
 	 */
 	private static function filter_events_by_timeframe( $events, $timeframe ) {
@@ -3432,12 +3450,13 @@ class EEM_Events {
 			return array_values( $events );
 		}
 
-		$today = wp_date( 'Y-m-d', current_time( 'timestamp' ) );
+		$frames = is_array( $timeframe ) ? $timeframe : array( $timeframe );
+		$today  = wp_date( 'Y-m-d', current_time( 'timestamp' ) );
 
 		return array_values(
 			array_filter(
 				$events,
-				static function ( $event ) use ( $timeframe, $today ) {
+				static function ( $event ) use ( $frames, $today ) {
 					$start_date = self::normalize_date_for_input( isset( $event['start_date'] ) ? (string) $event['start_date'] : '' );
 					$end_date   = self::normalize_date_for_input( isset( $event['end_date'] ) ? (string) $event['end_date'] : '' );
 					$sort_date  = $end_date ? $end_date : $start_date;
@@ -3446,17 +3465,22 @@ class EEM_Events {
 						return false;
 					}
 
-					if ( 'past' === $timeframe ) {
-						return $sort_date < $today;
+					foreach ( $frames as $tf ) {
+						if ( 'past' === $tf && $sort_date < $today ) {
+							return true;
+						}
+						if ( 'ongoing' === $tf ) {
+							$begin = $start_date ? $start_date : $sort_date;
+							if ( $begin <= $today && $sort_date >= $today ) {
+								return true;
+							}
+						}
+						if ( 'current_upcoming' === $tf && $sort_date >= $today ) {
+							return true;
+						}
 					}
 
-					if ( 'ongoing' === $timeframe ) {
-						// Currently running: started on/before today AND not yet ended.
-						$begin = $start_date ? $start_date : $sort_date;
-						return $begin <= $today && $sort_date >= $today;
-					}
-
-					return $sort_date >= $today;
+					return false;
 				}
 			)
 		);

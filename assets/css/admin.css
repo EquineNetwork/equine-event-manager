@@ -6582,10 +6582,13 @@ a.eem-dashboard-qa-btn:focus {
 	margin-bottom: 8px;
 }
 .eem-dashboard-res-tag {
+	display: inline-flex;
+	align-items: center;
 	padding: 3px 9px;
-	border-radius: var(--eem-radius-sm);
+	border-radius: 20px;
 	font-size: 11.5px;
 	font-weight: 600;
+	white-space: nowrap;
 	line-height: 1.4;
 }
 .eem-dashboard-tag-stall { background: var(--eem-type-stall-bg); color: var(--eem-type-stall-text); border: 1px solid var(--eem-type-stall-border); }
@@ -7877,6 +7880,21 @@ a.eem-btn-preview:hover { background: #EEF4FF; border-color: var(--eem-electric)
 .eem-sticky-save-status--published .eem-sticky-save-dot { background: #22c55e; }
 .eem-sticky-save-status--draft .eem-sticky-save-dot { background: #8c8f94; }
 .eem-sticky-save-status--trash .eem-sticky-save-dot { background: #b91c1c; }
+/* Visibility + Published date inline meta */
+.eem-sticky-save-meta {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	margin-left: 14px;
+	font-size: 12.5px;
+	color: #50575e;
+}
+.eem-sticky-save-meta-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+.eem-sticky-save-meta-item svg { opacity: 0.6; }
 /* Spacer pushes buttons to the right */
 .eem-sticky-save-spacer { flex: 1; }
 /* Button cluster (right side) */
@@ -8049,6 +8067,7 @@ input.eem-repeat-price-in:focus { box-shadow: none; }
 	.eem-btn-manage-layout { align-self: flex-start; }
 	/* On mobile, hide the status badge in the sticky save bar (mockup line 285) */
 	.eem-sticky-save-status { display: none; }
+	.eem-sticky-save-meta { display: none; }
 }
 
 /* ════════════════════════════════════════════════════════════════════
