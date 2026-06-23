@@ -41,6 +41,11 @@
 - [x] Reservation editor save bar — restored Visibility + Published-date displays
 - [x] Events list filter — multi-value timeframe support (`filter="past,ongoing"`)
 
+### 🔍 For Review (awaiting Whitney's visual verification)
+> Completed in a remote session on the `claude/plugin-github-deployment-7m9ntj` branch. Code-complete + lint-clean + smoke written; NOT yet visually verified or merged to `main`. Walk through each, verify on Local, then check off and move to Done.
+
+- [ ] **Order Detail "Special Instructions" editable** (was #19). Inline editor on the Order Detail full-width card: an **Edit** button reveals a textarea + **Save Changes / Cancel** bar; saves via the new `eem_order_save_special_instructions` AJAX endpoint (capability + per-reservation nonce gated) back to the reservation's `_en_special_instructions` meta, updates in place + toast. Newlines now render as `<br>`. Note: the text is reservation-level (no other consumer in the codebase), so an edit shows on every order for that reservation. Smoke: `tests/smoke/order-special-instructions-smoke.php`.
+
 ### 🔲 Remaining
 1. [ ] Global mobile visual polish — per-page pass to match Daily Movement standard (row heights, badge sizing, spacing/density). Scaffolding shipped (2.7.577–580); per-page work not started.
 2. [ ] Excel stall map import (.xlsx → stall rows + map grid)
@@ -60,7 +65,7 @@
 16. [ ] PDF Venue Map → overlay (upload PDF, drop/snap stall hotspots)
 17. [ ] Sheets & Results — more source types (CSV, Google Sheets, external URL)
 18. [ ] Full permissions matrix (role-based access) — needs discussion; may land pre-launch
-19. [ ] Order Detail: make "Special Instructions" editable (inline edit + Save Changes bar) — currently display-only
+19. ➡️ _Moved to **For Review** (done this session — Order Detail Special Instructions inline editor)._
 20. [ ] Customer page: consume group fields — show `_en_group_description` text + enforce `_en_group_riders_per_group` max on the rider input (saved today but never read)
 21. [ ] Dashboard "Needs Attention": agreement-signature row (needs per-order signature tracking; not emitted today)
 22. [ ] Events flyer variant: `show_flyer` thumbnail + countdown badge (today `flyer="yes"` only adds a "View Flyer" link)

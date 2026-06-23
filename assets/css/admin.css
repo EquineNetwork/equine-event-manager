@@ -5646,6 +5646,22 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
 	line-height: 1.6;
 }
 
+/* Inline editor (admin Edit on the Special Instructions card). */
+.eem-order-instructions__editor {
+	padding: 0 16px 14px;
+}
+.eem-order-instructions__input {
+	width: 100%;
+	min-height: 84px;
+	resize: vertical;
+}
+.eem-order-instructions__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 10px;
+}
+
 /* ── REQUIRED DOCUMENTS card (admin upload on behalf of customer) ── */
 .eem-order-docs__body {
 	padding: 8px 16px 14px;

@@ -378,6 +378,10 @@ class EEM_Plugin {
 		add_action( 'wp_ajax_eem_order_remove_custom_item', array( 'EEM_Order_Detail_Page', 'ajax_remove_custom_item' ) );
 		add_action( 'wp_ajax_eem_order_add_discount', array( 'EEM_Order_Detail_Page', 'ajax_add_discount' ) );
 
+		// Order Detail — inline-edit the reservation's Special Instructions text.
+		// Handler writes the `_en_special_instructions` reservation post meta.
+		add_action( 'wp_ajax_eem_order_save_special_instructions', array( 'EEM_Order_Detail_Page', 'ajax_save_special_instructions' ) );
+
 		// C14 — admin Collect Payment Stripe charge (two-step: create intent →
 		// confirm). Capability + nonce gated; reuses the Stripe REST primitives on
 		// EEM_Shortcodes. Admin-only (no nopriv).
