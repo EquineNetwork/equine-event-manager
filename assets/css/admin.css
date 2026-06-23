@@ -11101,7 +11101,7 @@ tr:hover .eem-row-actions,
 .eem-card { background:#fff; border:1px solid #e2e8f4; border-radius:var(--eem-radius-lg); overflow:hidden; }
 .eem-card-header { padding:13px 18px; border-bottom:1px solid #f0f4fb; }
 .eem-card-title { font-family:'IBM Plex Sans',sans-serif; font-size:14px; font-weight:700; color:#0d1b3e; }
-.eem-card-subtitle { font-size:12.5px; color:#50575e; margin-top:3px; line-height:1.45; }
+.eem-card-subtitle { font-size:12.5px; color:#50575e; margin-top:10px; line-height:1.45; }
 .eem-card-body { padding:16px 18px; }
 .eem-card-zip { border:1px solid #c0d8ff; background:#F0F4FB; margin-bottom:18px; }
 .eem-card-zip .eem-card-header { background:transparent; border-bottom:1px solid #c0d8ff; }
