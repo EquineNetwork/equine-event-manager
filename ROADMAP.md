@@ -76,7 +76,7 @@
 18. [ ] Full permissions matrix (role-based access) — needs discussion; may land pre-launch
 19. ➡️ _Moved to **For Review** (done this session — Order Detail Special Instructions inline editor)._
 20. ➡️ _Moved to **For Review** (done this session — customer page consumes group description + riders-per-group max)._
-21. [ ] Dashboard "Needs Attention": agreement-signature row (needs per-order signature tracking; not emitted today)
+21. ❌ **REMOVED (2026-06-23, Whitney).** No "agreement-signature" Needs Attention row — the venue agreement is a clickwrap acknowledgment accepted inline at front-end checkout, **not a signature**, so an "unsigned" state cannot exist. There is nothing to track. Stale "pending signature tracking" code comments in `class-eem-dashboard-repo.php` updated to reflect this. Do not re-add.
 22. [ ] Events flyer variant: `show_flyer` thumbnail + countdown badge (today `flyer="yes"` only adds a "View Flyer" link)
 23. ➡️ _Moved to **For Review** (done this session — both seeders now stamp `reservation_id`)._
 24. [ ] RV amenities/hookups on reservations — in the Edit Reservation editor, let admin identify what each RV lot (or RV spot type) offers: 30 amp / 50 amp / water / sewage, etc. Display on the customer frontend as labeled icon chips (matching the existing "RV Spot Type" card style — electric/water icons with labels). Build approach TBD — locked in; discuss before implementing.
