@@ -11924,6 +11924,7 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
    #eem-venue-modal so the editor's "Preview Full Chart" (same classes) keeps the
    customer-facing white-tile style (per stall-grid-visual-standard memory). */
 #eem-venue-modal .eem-mb-preview-grid { background: var(--eem-border, #D9E2F2); gap: 1px; }
+#eem-venue-modal .eem-mb-cust-cell { border-radius: 0; }
 #eem-venue-modal .eem-mb-cust-cell.stall { border: none; }
 #eem-venue-modal .eem-mb-cust-cell.gap { background: var(--eem-border, #D9E2F2); }
 /* ── Division detail stats (Entries → Divisions rework, Slice 3) ──
