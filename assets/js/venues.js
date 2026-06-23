@@ -208,16 +208,24 @@
 	function renderMapGrid(map) {
 		var html = '';
 		(map.barns || []).forEach(function (barn) {
+			var grid = barn.grid || [];
+			if (!grid.length) return;
+			var cols = 0;
+			grid.forEach(function (row) { if (row.length > cols) cols = row.length; });
+			if (!cols) return;
 			if (barn.name) html += '<div style="font-size:12px;font-weight:600;color:#031B4E;margin:8px 0 4px;">' + escapeHtml(barn.name) + '</div>';
-			html += '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px;">';
-			(barn.grid || []).forEach(function (row) {
-				row.forEach(function (cell) {
-					if (cell.type === 'stall' || cell.type === 'rv') {
-						html += '<span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:4px;font-size:11px;font-weight:500;background:#f3f4f5;border:1px solid #dcdcde;color:#1d2327;">' + escapeHtml(cell.label || '') + '</span>';
-					} else if (cell.type === 'land' || cell.type === 'empty') {
-						html += '<span style="display:inline-block;width:36px;height:36px;"></span>';
+			html += '<div style="display:grid;grid-template-columns:repeat(' + cols + ',32px);gap:2px;margin-bottom:12px;">';
+			grid.forEach(function (row) {
+				for (var c = 0; c < cols; c++) {
+					var cell = c < row.length ? row[c] : null;
+					if (cell && (cell.type === 'stall' || cell.type === 'rv')) {
+						html += '<span style="display:flex;align-items:center;justify-content:center;height:32px;border-radius:3px;font-size:10px;font-weight:500;background:#e8eaed;border:1px solid #d0d0d0;color:#1d2327;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(cell.label || '') + '</span>';
+					} else if (cell && cell.type === 'landmark') {
+						html += '<span style="display:flex;align-items:center;justify-content:center;height:32px;border-radius:3px;font-size:9px;background:#fff8e1;border:1px solid #e0d6b8;color:#8d7b4f;overflow:hidden;">' + escapeHtml(cell.label || '') + '</span>';
+					} else {
+						html += '<span style="height:32px;"></span>';
 					}
-				});
+				}
 			});
 			html += '</div>';
 		});
