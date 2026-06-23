@@ -154,6 +154,14 @@ class EEM_Order_Detail_Page {
 		$status_css       = EEM_Orders_List_Page::status_slug_to_css_class( $status_slug );
 		$status_label     = isset( $order['status_label'] ) ? (string) $order['status_label'] : __( 'Unpaid', 'equine-event-manager' );
 
+		// A "paid" order whose total grew after line-item edits has a real uncollected
+		// balance. The green "Paid" badge contradicts the Payment Outstanding banner,
+		// so override the display badge to amber "Balance Due" in that case.
+		if ( 'paid' === $status_slug && $this->compute_balance_due( $order ) > 0.005 ) {
+			$status_css   = 'unpaid';
+			$status_label = __( 'Balance Due', 'equine-event-manager' );
+		}
+
 		eem_render_page_open( array(
 			'title'      => $order_number_str,
 			'meta'       => $this->build_header_meta_html( $order, $event_title, $reservation_id, $status_slug, $status_css, $status_label ),
