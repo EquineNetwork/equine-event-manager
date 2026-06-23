@@ -59,6 +59,8 @@
 
 - [ ] **Stall & RV chart chip status colors** (was #25). The click-to-set interaction already existed; this adds **6 distinct, global-token-driven chip colors** and un-collapses the lifecycle so staff see check-in state at a glance: **Occupied** (blue), **Checked In** (teal), **Checked Out** (orange), **Cleaning** (purple), **Blocked** (gray), **Available** (green) — plus a legend above the By Location matrix. Colors are defined once as `--eem-chip-*` tokens in the admin.css `:root` block (your "global settings" ask — centrally managed, can't collide with other palettes); the existing 4 keep their exact prior values, only Checked-In/Out are new. Smoke: `tests/smoke/stall-chip-status-colors-smoke.php` (**self-verified 20/20** + headless screenshot). **Verify on NTR 6519: check a customer in/out and confirm the cell recolors teal/orange.**
 
+- [ ] **Events flyer variant: countdown badge + flyer thumbnail** (was #22). Event cards (the `flyer="yes"` / cards view) now show a **countdown badge** — "In N days" / "Tomorrow" / "Starts today" / "Happening now" / "Ended", color-toned upcoming/now/past — computed by a pure, unit-tested `EEM_Events::event_countdown()`. The flyer also upgrades from a plain link to a **clickable thumbnail** when the flyer attachment has a WP-generated preview (native events); other sources / no-preview **gracefully fall back to the existing "View Flyer" link** (flyers are PDFs, so thumbnails aren't universal). Smoke: `tests/smoke/event-countdown-badge-smoke.php` — **countdown self-verified 7/7 + headless screenshot**. **Verify on a page using the events cards shortcode; if you want guaranteed flyer thumbnails everywhere, flagging now: that needs flyers as image uploads (today they're PDFs).**
+
 ### 🔲 Remaining
 1. [ ] Global mobile visual polish — per-page pass to match Daily Movement standard (row heights, badge sizing, spacing/density). Scaffolding shipped (2.7.577–580); per-page work not started.
 2. [ ] Excel stall map import (.xlsx → stall rows + map grid)
@@ -81,7 +83,7 @@
 19. ➡️ _Moved to **For Review** (done this session — Order Detail Special Instructions inline editor)._
 20. ➡️ _Moved to **For Review** (done this session — customer page consumes group description + riders-per-group max)._
 21. ❌ **REMOVED (2026-06-23, Whitney).** No "agreement-signature" Needs Attention row — the venue agreement is a clickwrap acknowledgment accepted inline at front-end checkout, **not a signature**, so an "unsigned" state cannot exist. There is nothing to track. Stale "pending signature tracking" code comments in `class-eem-dashboard-repo.php` updated to reflect this. Do not re-add.
-22. [ ] Events flyer variant: `show_flyer` thumbnail + countdown badge (today `flyer="yes"` only adds a "View Flyer" link)
+22. ➡️ _Moved to **For Review** (done this session — countdown badge + graceful flyer thumbnail on event cards)._
 23. ➡️ _Moved to **For Review** (done this session — both seeders now stamp `reservation_id`)._
 24. [ ] RV amenities/hookups on reservations — in the Edit Reservation editor, let admin identify what each RV lot (or RV spot type) offers: 30 amp / 50 amp / water / sewage, etc. Display on the customer frontend as labeled icon chips (matching the existing "RV Spot Type" card style — electric/water icons with labels). Build approach TBD — locked in; discuss before implementing.
 25. ➡️ _Moved to **For Review** (done this session — 6 distinct global-token chip colors + lifecycle un-collapse + legend; click-to-set already existed)._

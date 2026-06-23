@@ -5079,6 +5079,38 @@ a.eem-event-list-row__btn--results:focus {
 	letter-spacing: 0.03em;
 	margin-bottom: 6px;
 }
+/* #22 — date + countdown badge row. */
+.eem-event-card__meta-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 6px;
+}
+.eem-event-card__meta-row .eem-event-card__date { margin-bottom: 0; }
+.eem-event-card__countdown {
+	flex-shrink: 0;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	padding: 3px 9px;
+	border-radius: 999px;
+	white-space: nowrap;
+}
+.eem-event-card__countdown--upcoming { background: #eaf1fe; color: #1355cc; }
+.eem-event-card__countdown--now { background: #e7f8ef; color: #15803d; }
+.eem-event-card__countdown--past { background: #f1f2f4; color: #6b7280; }
+/* #22 — flyer thumbnail (replaces the View Flyer link when a preview exists). */
+.eem-event-card__flyer-thumb {
+	display: block;
+	margin-top: 12px;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	overflow: hidden;
+	line-height: 0;
+}
+.eem-event-card__flyer-thumb img { width: 100%; height: auto; display: block; }
+.eem-event-card__flyer-thumb:hover { border-color: #1668F2; }
 .eem-event-card__title {
 	font-size: 18px;
 	font-weight: 700;
