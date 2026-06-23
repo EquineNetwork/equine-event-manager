@@ -46,6 +46,7 @@ class EEM_Settings_Page {
 			'shortcodes'     => array( 'label' => __( 'Shortcodes', 'equine-event-manager' ),      'icon' => 'editor-code' ),
 			'payments'       => array( 'label' => __( 'Payments', 'equine-event-manager' ),        'icon' => 'money-alt' ),
 			'addons'         => array( 'label' => __( 'Add-Ons', 'equine-event-manager' ),         'icon' => 'admin-plugins' ),
+			'import-export'  => array( 'label' => __( 'Import / Export', 'equine-event-manager' ), 'icon' => 'upload' ),
 			'danger'         => array( 'label' => __( 'Uninstall', 'equine-event-manager' ),       'icon' => 'warning' ),
 		);
 	}
@@ -162,7 +163,7 @@ class EEM_Settings_Page {
 	 * @return void
 	 */
 	private function render_panel( $panel_id ) {
-		$method = 'render_' . $panel_id . '_panel';
+		$method = 'render_' . str_replace( '-', '_', $panel_id ) . '_panel';
 		if ( method_exists( $this, $method ) ) {
 			$this->$method();
 		} else {
@@ -1398,8 +1399,8 @@ class EEM_Settings_Page {
 				break;
 
 			case 'shortcodes':
-				// Read-only reference list; submitting is a no-op success so the
-				// JS submit handler still gets a well-formed response.
+			case 'import-export':
+				// Read-only / standalone-AJAX panels; submitting is a no-op success.
 				break;
 
 			default:
@@ -1836,5 +1837,299 @@ class EEM_Settings_Page {
 			$replacements[ '{{' . $token . '}}' ] = (string) $value;
 		}
 		return strtr( (string) $template, $replacements );
+	}
+
+	/**
+	 * Render the Import / Export settings panel.
+	 *
+	 * Provides a CSV upload tool for importing orders from external systems.
+	 * The UI walks through: upload → column mapping → preview → commit.
+	 *
+	 * @return void
+	 */
+	private function render_import_export_panel(): void {
+		$reservations = get_posts( array(
+			'post_type'   => 'en_reservation',
+			'post_status' => 'publish',
+			'numberposts' => 100,
+			'orderby'     => 'title',
+			'order'       => 'ASC',
+		) );
+		$nonce = wp_create_nonce( 'eem_import_csv' );
+		?>
+		<div class="eem-settings-import-export">
+			<div class="eem-card">
+				<div class="eem-card-header">
+					<h3><?php esc_html_e( 'Import Orders from CSV', 'equine-event-manager' ); ?></h3>
+				</div>
+				<div class="eem-card-body">
+					<p class="eem-card-subtitle"><?php esc_html_e( 'Upload a CSV file to create orders. Each row becomes one order marked as Paid with an IMP- prefix.', 'equine-event-manager' ); ?></p>
+
+					<!-- Step 1: Select reservation + upload -->
+					<div id="eem-import-step-1">
+						<div class="eem-field-row">
+							<label class="eem-field-label" for="eem-import-reservation"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?></label>
+							<select id="eem-import-reservation" class="eem-field-select">
+								<option value=""><?php esc_html_e( '— Select a reservation —', 'equine-event-manager' ); ?></option>
+								<?php foreach ( $reservations as $res ) : ?>
+									<option value="<?php echo esc_attr( (string) $res->ID ); ?>"><?php echo esc_html( $res->post_title . ' (#' . $res->ID . ')' ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</div>
+						<div class="eem-field-row">
+							<label class="eem-field-label" for="eem-import-csv"><?php esc_html_e( 'CSV File', 'equine-event-manager' ); ?></label>
+							<input type="file" id="eem-import-csv" accept=".csv" class="eem-field-input" />
+						</div>
+						<div style="margin-top:16px">
+							<button type="button" class="eem-btn eem-btn-primary" data-eem-action="import-csv-upload"><?php esc_html_e( 'Upload & Preview', 'equine-event-manager' ); ?></button>
+						</div>
+					</div>
+
+					<!-- Step 2: Column mapping (shown after upload) -->
+					<div id="eem-import-step-2" style="display:none">
+						<h4 style="margin:16px 0 8px"><?php esc_html_e( 'Column Mapping', 'equine-event-manager' ); ?></h4>
+						<p class="eem-card-subtitle"><?php esc_html_e( 'Map CSV columns to order fields. Required fields are marked with *.', 'equine-event-manager' ); ?></p>
+						<div id="eem-import-mapping-rows"></div>
+						<div style="margin-top:16px">
+							<button type="button" class="eem-btn eem-btn-primary" data-eem-action="import-csv-commit"><?php esc_html_e( 'Import Orders', 'equine-event-manager' ); ?></button>
+							<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="import-csv-cancel" style="margin-left:8px"><?php esc_html_e( 'Cancel', 'equine-event-manager' ); ?></button>
+						</div>
+					</div>
+
+					<!-- Step 3: Preview table (shown alongside mapping) -->
+					<div id="eem-import-step-3" style="display:none;margin-top:16px">
+						<h4><?php esc_html_e( 'Preview (first 10 rows)', 'equine-event-manager' ); ?></h4>
+						<div style="overflow-x:auto">
+							<table id="eem-import-preview-table" class="eem-table" style="font-size:12px"></table>
+						</div>
+						<p id="eem-import-total-count" style="margin-top:8px;font-weight:600"></p>
+					</div>
+
+					<!-- Step 4: Result -->
+					<div id="eem-import-step-4" style="display:none;margin-top:16px">
+						<div id="eem-import-result"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+		(function(){
+			var importKey = '';
+			var csvHeaders = [];
+			var nonce = <?php echo wp_json_encode( $nonce ); ?>;
+			var ajaxUrl = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
+
+			var FIELDS = [
+				{ key: 'last_name',             label: 'Last Name *',          required: true },
+				{ key: 'first_name',            label: 'First Name *',         required: true },
+				{ key: 'email',                 label: 'Email',                required: false },
+				{ key: 'phone',                 label: 'Phone',                required: false },
+				{ key: 'stall_qty',             label: 'Stall Qty',            required: false },
+				{ key: 'stall_dates',           label: 'Stall Dates/Package',  required: false },
+				{ key: 'shavings_qty',          label: 'Shavings Qty',         required: false },
+				{ key: 'shavings_total',        label: 'Shavings Total ($)',   required: false },
+				{ key: 'rv_qty',                label: 'RV Qty',               required: false },
+				{ key: 'rv_dates',              label: 'RV Dates/Package',     required: false },
+				{ key: 'rv_price_each',         label: 'RV Price Each ($)',    required: false },
+				{ key: 'rv_total',              label: 'RV Total ($)',         required: false },
+				{ key: 'confirmation_numbers',  label: 'Confirmation Numbers', required: false },
+				{ key: 'notes',                 label: 'Notes',                required: false },
+			];
+
+			function autoMap(csvHeaders) {
+				var map = {};
+				var aliases = {
+					'last_name':            ['last name', 'last', 'surname'],
+					'first_name':           ['first name', 'first', 'given name'],
+					'email':                ['email', 'e-mail', 'email address'],
+					'phone':                ['phone', 'telephone', 'phone number', 'tel'],
+					'stall_qty':            ['stall qty', 'stall quantity', 'stalls'],
+					'stall_dates':          ['stall dates', 'stall dates/package', 'stall package'],
+					'shavings_qty':         ['shavings qty', 'shavings quantity'],
+					'shavings_total':       ['shavings total', 'shavings total ($)', 'shavings $'],
+					'rv_qty':               ['rv qty', 'rv quantity'],
+					'rv_dates':             ['rv dates', 'rv dates/package', 'rv package'],
+					'rv_price_each':        ['rv price each', 'rv price each ($)', 'rv price'],
+					'rv_total':             ['rv total', 'rv total ($)', 'rv $'],
+					'confirmation_numbers': ['confirmation numbers', 'confirmation', 'conf', 'conf #'],
+					'notes':                ['notes', 'comments', 'special instructions'],
+				};
+				csvHeaders.forEach(function(h) {
+					var lc = h.toLowerCase().trim();
+					for (var field in aliases) {
+						if (aliases[field].indexOf(lc) !== -1) {
+							map[field] = h;
+							break;
+						}
+					}
+				});
+				return map;
+			}
+
+			function buildMappingUI(headers) {
+				var container = document.getElementById('eem-import-mapping-rows');
+				var guessed = autoMap(headers);
+				container.innerHTML = '';
+				FIELDS.forEach(function(f) {
+					var row = document.createElement('div');
+					row.className = 'eem-field-row';
+					row.style.display = 'flex';
+					row.style.alignItems = 'center';
+					row.style.gap = '12px';
+					row.style.marginBottom = '8px';
+
+					var label = document.createElement('label');
+					label.style.width = '180px';
+					label.style.flexShrink = '0';
+					label.style.fontSize = '13px';
+					label.textContent = f.label;
+
+					var sel = document.createElement('select');
+					sel.className = 'eem-field-select';
+					sel.setAttribute('data-import-field', f.key);
+					sel.style.flex = '1';
+
+					var emptyOpt = document.createElement('option');
+					emptyOpt.value = '';
+					emptyOpt.textContent = '— Skip —';
+					sel.appendChild(emptyOpt);
+
+					headers.forEach(function(h) {
+						var opt = document.createElement('option');
+						opt.value = h;
+						opt.textContent = h;
+						if (guessed[f.key] === h) opt.selected = true;
+						sel.appendChild(opt);
+					});
+
+					row.appendChild(label);
+					row.appendChild(sel);
+					container.appendChild(row);
+				});
+			}
+
+			function buildPreviewTable(headers, rows) {
+				var table = document.getElementById('eem-import-preview-table');
+				var html = '<thead><tr>';
+				headers.forEach(function(h) { html += '<th style="padding:6px 8px;white-space:nowrap">' + h + '</th>'; });
+				html += '</tr></thead><tbody>';
+				rows.forEach(function(row) {
+					html += '<tr>';
+					headers.forEach(function(h) { html += '<td style="padding:4px 8px;white-space:nowrap">' + (row[h] || '') + '</td>'; });
+					html += '</tr>';
+				});
+				html += '</tbody>';
+				table.innerHTML = html;
+			}
+
+			function getColumnMap() {
+				var map = {};
+				var selects = document.querySelectorAll('[data-import-field]');
+				selects.forEach(function(sel) {
+					if (sel.value) map[sel.getAttribute('data-import-field')] = sel.value;
+				});
+				return map;
+			}
+
+			/* Upload handler */
+			document.addEventListener('click', function(e) {
+				var target = e.target.closest('[data-eem-action]');
+				if (!target) return;
+				var action = target.getAttribute('data-eem-action');
+
+				if (action === 'import-csv-upload') {
+					var fileInput = document.getElementById('eem-import-csv');
+					var resSelect = document.getElementById('eem-import-reservation');
+					if (!resSelect.value) { alert('Please select a reservation.'); return; }
+					if (!fileInput.files.length) { alert('Please select a CSV file.'); return; }
+
+					var fd = new FormData();
+					fd.append('action', 'eem_import_preview');
+					fd.append('_wpnonce', nonce);
+					fd.append('csv_file', fileInput.files[0]);
+
+					target.disabled = true;
+					target.textContent = 'Uploading...';
+
+					fetch(ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+						.then(function(r) { return r.json(); })
+						.then(function(resp) {
+							target.disabled = false;
+							target.textContent = 'Upload & Preview';
+							if (!resp.success) { alert(resp.data.message || 'Upload failed.'); return; }
+							importKey = resp.data.import_key;
+							csvHeaders = resp.data.headers;
+							buildMappingUI(csvHeaders);
+							buildPreviewTable(csvHeaders, resp.data.preview);
+							document.getElementById('eem-import-total-count').textContent = 'Total rows: ' + resp.data.row_count;
+							document.getElementById('eem-import-step-1').style.display = 'none';
+							document.getElementById('eem-import-step-2').style.display = '';
+							document.getElementById('eem-import-step-3').style.display = '';
+						})
+						.catch(function() {
+							target.disabled = false;
+							target.textContent = 'Upload & Preview';
+							alert('Upload failed. Please try again.');
+						});
+				}
+
+				if (action === 'import-csv-commit') {
+					var map = getColumnMap();
+					if (!map.last_name || !map.first_name) { alert('Last Name and First Name are required.'); return; }
+					var resId = document.getElementById('eem-import-reservation').value;
+					if (!confirm('This will create orders for all rows in the CSV. Continue?')) return;
+
+					var fd = new FormData();
+					fd.append('action', 'eem_import_commit');
+					fd.append('_wpnonce', nonce);
+					fd.append('import_key', importKey);
+					fd.append('reservation_id', resId);
+					for (var field in map) {
+						fd.append('column_map[' + field + ']', map[field]);
+					}
+
+					target.disabled = true;
+					target.textContent = 'Importing...';
+
+					fetch(ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+						.then(function(r) { return r.json(); })
+						.then(function(resp) {
+							target.disabled = false;
+							target.textContent = 'Import Orders';
+							var resultDiv = document.getElementById('eem-import-result');
+							if (!resp.success) {
+								resultDiv.innerHTML = '<div style="color:#b91c1c;font-weight:600">' + (resp.data.message || 'Import failed.') + '</div>';
+							} else {
+								var html = '<div style="color:#16a34a;font-weight:600">' + resp.data.message + '</div>';
+								if (resp.data.skipped > 0) html += '<div style="margin-top:4px">Skipped: ' + resp.data.skipped + ' rows (no name or qty)</div>';
+								if (resp.data.errors && resp.data.errors.length) {
+									html += '<div style="margin-top:8px;color:#b91c1c"><strong>Errors:</strong><ul>';
+									resp.data.errors.forEach(function(e) { html += '<li>' + e + '</li>'; });
+									html += '</ul></div>';
+								}
+								resultDiv.innerHTML = html;
+							}
+							document.getElementById('eem-import-step-2').style.display = 'none';
+							document.getElementById('eem-import-step-3').style.display = 'none';
+							document.getElementById('eem-import-step-4').style.display = '';
+						})
+						.catch(function() {
+							target.disabled = false;
+							target.textContent = 'Import Orders';
+							alert('Import failed. Please try again.');
+						});
+				}
+
+				if (action === 'import-csv-cancel') {
+					document.getElementById('eem-import-step-1').style.display = '';
+					document.getElementById('eem-import-step-2').style.display = 'none';
+					document.getElementById('eem-import-step-3').style.display = 'none';
+					document.getElementById('eem-import-step-4').style.display = 'none';
+				}
+			});
+		})();
+		</script>
+		<?php
 	}
 }
