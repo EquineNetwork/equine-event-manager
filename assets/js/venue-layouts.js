@@ -83,27 +83,27 @@
 	}
 
 	/* ── Save ──────────────────────────────────────────────────── */
-	function typeLabel(t) { return t === ‘rv’ ? ‘RV’ : t === ‘stall’ ? ‘Stall’ : ‘Stall & RV’; }
+	function typeLabel(t) { return t === 'rv' ? 'RV' : t === 'stall' ? 'Stall' : 'Stall & RV'; }
 
 	function openSave(layoutType) {
-		var lt = layoutType || ‘combined’;
+		var lt = layoutType || 'combined';
 		var overlay = openModal({
-			title: ‘Save ‘ + typeLabel(lt) + ‘ Layout to Venue’,
-			body: ‘<p style="margin:0 0 10px;">Saves this reservation\’s current‘ + typeLabel(lt).toLowerCase() + ‘ layout to its venue so it can be reused on future reservations.</p>’ +
-				‘<label class="eem-field-label" for="eem-venue-save-name">Layout name</label>’ +
-				‘<input type="text" id="eem-venue-save-name" class="eem-field-input" style="width:100%;box-sizing:border-box;" placeholder="e.g. 2026 Main Barn Layout" autocomplete="off">’,
-			confirmLabel: ‘Save Layout’,
+			title: 'Save ' + typeLabel(lt) + ' Layout to Venue',
+			body: '<p style="margin:0 0 10px;">Saves this reservation\'s current' + typeLabel(lt).toLowerCase() + ' layout to its venue so it can be reused on future reservations.</p>' +
+				'<label class="eem-field-label" for="eem-venue-save-name">Layout name</label>' +
+				'<input type="text" id="eem-venue-save-name" class="eem-field-input" style="width:100%;box-sizing:border-box;" placeholder="e.g. 2026 Main Barn Layout" autocomplete="off">',
+			confirmLabel: 'Save Layout',
 			confirmDisabled: true
 		});
-		var input = overlay.querySelector(‘#eem-venue-save-name’);
-		var confirmBtn = overlay.querySelector(‘[data-role="confirm"]’);
-		input.addEventListener(‘input’, function () { confirmBtn.disabled = (input.value.trim() === ‘’); });
-		overlay.addEventListener(‘keydown’, function (e) { if (e.key === ‘Enter’ && !confirmBtn.disabled) confirmBtn.click(); });
-		confirmBtn.addEventListener(‘click’, function () {
+		var input = overlay.querySelector('#eem-venue-save-name');
+		var confirmBtn = overlay.querySelector('[data-role="confirm"]');
+		input.addEventListener('input', function () { confirmBtn.disabled = (input.value.trim() === ''); });
+		overlay.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !confirmBtn.disabled) confirmBtn.click(); });
+		confirmBtn.addEventListener('click', function () {
 			var name = input.value.trim();
 			if (!name) return;
 			confirmBtn.disabled = true;
-			post(‘eem_venue_save_layout’, { reservation_id: reservationId(), name: name, layout_type: lt }).then(function (json) {
+			post('eem_venue_save_layout', { reservation_id: reservationId(), name: name, layout_type: lt }).then(function (json) {
 				if (json && json.success) {
 					overlay._close();
 					toast(json.data && json.data.venue_name ? ('Layout saved to ' + json.data.venue_name) : 'Layout saved');
@@ -133,8 +133,8 @@
 				openModal({
 					title: 'Load Layout from Venue',
 					body: '<p style="margin:0;">' + (venueName
-						? ('No saved ' + typeLabel(lt).toLowerCase() + ' layouts for ' + escapeHtml(venueName) + ' yet. Use “Save Layout” to create one.')
-						: 'This reservation isn’t linked to an event yet, so it has no venue to load layouts from.') + '</p>',
+						? ('No saved ' + typeLabel(lt).toLowerCase() + ' layouts for ' + escapeHtml(venueName) + ' yet. Use "Save Layout" to create one.')
+						: 'This reservation is not linked to an event yet, so it has no venue to load layouts from.') + '</p>',
 					confirmLabel: 'OK'
 				}).querySelector('[data-role="confirm"]').addEventListener('click', function () {
 					document.getElementById('eem-venue-layout-modal').remove();
@@ -150,7 +150,7 @@
 			}).join('');
 			var overlay = openModal({
 				title: 'Load Layout from Venue',
-				body: '<p style="margin:0 0 10px;">Loading a layout <strong>replaces</strong> this reservation’s current stall &amp; RV layout with a copy from ' + escapeHtml(venueName) + '. The saved venue layout is not changed.</p>' +
+				body: '<p style="margin:0 0 10px;">Loading a layout <strong>replaces</strong> this reservation\'s current stall &amp; RV layout with a copy from ' + escapeHtml(venueName) + '. The saved venue layout is not changed.</p>' +
 					'<div class="eem-venue-load-options">' + rows + '</div>',
 				confirmLabel: 'Load Layout'
 			});
