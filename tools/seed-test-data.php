@@ -186,6 +186,9 @@ class EEM_Test_Data_Seeder {
 				$wpdb->insert( $stall_tbl, array( // phpcs:ignore WordPress.DB
 					'event_source'          => 'native',
 					'event_id'              => $target['id'],
+					// #23 — denormalized reservation post id, matching the production
+					// checkout path (shortcodes writes reservation_id at order time).
+					'reservation_id'        => $target['id'],
 					'customer_name'         => $name,
 					'email'                 => $email,
 					'phone'                 => $phone,
@@ -216,6 +219,8 @@ class EEM_Test_Data_Seeder {
 				$wpdb->insert( $rv_tbl, array( // phpcs:ignore WordPress.DB
 					'event_source'    => 'native',
 					'event_id'        => $target['id'],
+					// #23 — denormalized reservation post id (see stall insert above).
+					'reservation_id'  => $target['id'],
 					'customer_name'   => $name,
 					'email'           => $email,
 					'phone'           => $phone,
