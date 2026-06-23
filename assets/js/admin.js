@@ -3188,6 +3188,19 @@
 			}
 		},
 
+		/* Venue Layout Templates — delegate to venue-layouts.js handlers exposed
+		   on window.EEM so the admin.js dispatcher doesn't swallow the event. */
+		'venue-save-layout': function (target) {
+			if (window.EEM && typeof EEM.venueLayoutSave === 'function') {
+				EEM.venueLayoutSave(target);
+			}
+		},
+		'venue-load-layout': function (target) {
+			if (window.EEM && typeof EEM.venueLayoutLoad === 'function') {
+				EEM.venueLayoutLoad(target);
+			}
+		},
+
 		/* Stay Packages — pricing mode toggle */
 		'toggle-stall-pricing-mode': function (target) {
 			eemTogglePricingMode(target, 'stall');

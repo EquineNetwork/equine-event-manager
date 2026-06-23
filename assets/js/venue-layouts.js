@@ -190,11 +190,8 @@
 		return 'combined';
 	}
 
-	document.addEventListener('click', function (e) {
-		var btn;
-		btn = e.target.closest('[data-eem-action="venue-save-layout"]');
-		if (btn) { e.preventDefault(); openSave(detectLayoutType(btn)); return; }
-		btn = e.target.closest('[data-eem-action="venue-load-layout"]');
-		if (btn) { e.preventDefault(); openLoad(detectLayoutType(btn)); }
-	});
+	/* Expose on window.EEM so admin.js dispatcher can delegate directly. */
+	window.EEM = window.EEM || {};
+	window.EEM.venueLayoutSave = function (target) { openSave(detectLayoutType(target)); };
+	window.EEM.venueLayoutLoad = function (target) { openLoad(detectLayoutType(target)); };
 })();
