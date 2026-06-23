@@ -89,7 +89,7 @@
 		var lt = layoutType || ‘combined’;
 		var overlay = openModal({
 			title: ‘Save ‘ + typeLabel(lt) + ‘ Layout to Venue’,
-			body: ‘<p style="margin:0 0 10px;">Saves this reservation’s current ‘ + typeLabel(lt).toLowerCase() + ‘ layout to its venue so it can be reused on future reservations.</p>’ +
+			body: ‘<p style="margin:0 0 10px;">Saves this reservation\’s current‘ + typeLabel(lt).toLowerCase() + ‘ layout to its venue so it can be reused on future reservations.</p>’ +
 				‘<label class="eem-field-label" for="eem-venue-save-name">Layout name</label>’ +
 				‘<input type="text" id="eem-venue-save-name" class="eem-field-input" style="width:100%;box-sizing:border-box;" placeholder="e.g. 2026 Main Barn Layout" autocomplete="off">’,
 			confirmLabel: ‘Save Layout’,
