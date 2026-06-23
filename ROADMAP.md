@@ -51,6 +51,8 @@
 
 - [ ] **Seeders populate `reservation_id`** (was #23). Both synthetic seeders now stamp a real reservation post id onto seeded order rows so they JOIN to a reservation like production checkout rows do. `tools/seed-test-data.php` uses the discovered `$target['id']` (the reservation post it's already seeding against) on both the stall + RV inserts; `scripts/seed-orders.php` discovers the most-recent `en_reservation` post and stamps it (falls back to 0 when none exists). Makes `scripts/dev-backfill-seed-reservation-ids.php` redundant for fresh seeds. **Verify on Local:** re-run a seeder, then confirm seeded orders carry a non-NULL `reservation_id` (and the Order Detail "Edit Reservation" link resolves).
 
+- [ ] **Move-customer AJAX guard smoke** (was #11 / #234). The existing per-night-move smoke covers the serialize/parse/resolve helpers + repo round-trip but left the live `ajax_move_stall_assignment` handler "browser-verified at ship time" with no automated coverage. New smoke locks in the handler's entry-point guards: nonce + capability gate, missing-parameter rejection, order-not-found, and stall/RV `kind` routing. The fixture-dependent conflict branches (blocked destination / not-in-chart / occupied-by-another-order) still need a full chart-config fixture and remain browser-verified — noted in the smoke. Smoke: `tests/smoke/move-stall-assignment-guards-smoke.php`. **Note: runs on Local only (needs WP + EEM_Admin); not self-verifiable in the remote container — please run it on Local.**
+
 ### 🔲 Remaining
 1. [ ] Global mobile visual polish — per-page pass to match Daily Movement standard (row heights, badge sizing, spacing/density). Scaffolding shipped (2.7.577–580); per-page work not started.
 2. [ ] Excel stall map import (.xlsx → stall rows + map grid)
@@ -62,7 +64,7 @@
 8. [ ] Vendor System (#166)
 9. [ ] Full map post-meta → config migration (#174)
 10. [ ] Verify post-meta → config-table migration 100% complete (#199)
-11. [ ] Print views: move-customer + readiness/print smoke coverage (#234)
+11. ➡️ _Moved to **For Review** (done this session — move-customer AJAX guard smoke; conflict branches still browser-verified)._
 12. [ ] Verify RV lot name/number split against real GEMS labels (#235)
 13. [ ] Postmeta → relational de-coupling (Phase 1 funnel). Audit + remediation plan: `docs/POSTMETA-AUDIT.md`. (As of 2026-06-23: reservation setup/pricing/rows are on the config table; #212 checkout base-rate read is FIXED; remaining gaps are map snapshots `_en_stall_map`/`_en_rv_map` (see #9) + hybrid blocked-units reads + events/venues/producers/divisions editors still on post-meta.)
 14. [ ] Upload .xlsx → Stall Grid (ZipArchive + SimpleXML; "Download Example Template" link)
