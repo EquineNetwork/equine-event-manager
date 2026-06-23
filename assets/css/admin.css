@@ -11919,6 +11919,13 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-cust-cell.gap { background: transparent; }
 .eem-mb-cust-cell.landmark { background: #fff7e6; color: var(--eem-warn-text, #b45309); font-size: 9.5px; text-align: center; line-height: 1.1; padding: 2px; }
 .eem-mb-preview-foot { padding: 14px 20px; border-top: 1px solid var(--eem-border, #D9E2F2); font-weight: 700; color: var(--eem-navy, #031B4E); flex: none; }
+/* Venue layout preview modal — override the shared preview-grid to the Map Builder
+   gray-grid look (background shows through 1px gaps as grid lines). Scoped to
+   #eem-venue-modal so the editor's "Preview Full Chart" (same classes) keeps the
+   customer-facing white-tile style (per stall-grid-visual-standard memory). */
+#eem-venue-modal .eem-mb-preview-grid { background: var(--eem-border, #D9E2F2); gap: 1px; }
+#eem-venue-modal .eem-mb-cust-cell.stall { border: none; }
+#eem-venue-modal .eem-mb-cust-cell.gap { background: var(--eem-border, #D9E2F2); }
 /* ── Division detail stats (Entries → Divisions rework, Slice 3) ──
    Reuses the dashboard KPI card vocabulary (colored top border, navy value)
    in a full-width 3-up grid. Renders into .eem-page-body (padding:0), so the
