@@ -341,6 +341,11 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-037-layout-type-column.php';
 			update_option( 'eem_mig_037_layout_type_column_complete', 1 );
 		}
+
+		if ( ! get_option( 'eem_mig_038_normalize_caps_names_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-038-normalize-caps-names.php';
+			eem_mig_038_normalize_caps_names();
+		}
 	}
 
 	/**

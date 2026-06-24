@@ -13,6 +13,32 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+if ( ! function_exists( 'eem_normalize_caps_name' ) ) {
+	/**
+	 * Normalize an accidental ALL-CAPS name to Title Case ("EVANS" -> "Evans").
+	 *
+	 * Only strings whose letters are ENTIRELY uppercase are changed — a name
+	 * already containing any lowercase letter (McCann, Lopez Dugas, Anne-Claire,
+	 * o'Brien) is assumed intentional and returned untouched. Strings with no
+	 * letters (digits/punctuation only) are returned unchanged.
+	 *
+	 * Shared by the CSV importer (applied at import time) and migration #038
+	 * (one-time cleanup of already-imported rows), hence a guarded global rather
+	 * than a class method — migrations run before admin classes are loaded.
+	 *
+	 * @param string $name Raw name value.
+	 * @return string Normalized name.
+	 */
+	function eem_normalize_caps_name( $name ) {
+		$name    = (string) $name;
+		$letters = preg_replace( '/[^\p{L}]/u', '', $name );
+		if ( '' === $letters || $letters !== mb_strtoupper( $letters, 'UTF-8' ) ) {
+			return $name; // No letters, or already has lowercase — leave as-is.
+		}
+		return mb_convert_case( mb_strtolower( $name, 'UTF-8' ), MB_CASE_TITLE, 'UTF-8' );
+	}
+}
+
 class EEM_Import_Handler {
 
 	/**
@@ -171,6 +197,11 @@ class EEM_Import_Handler {
 				continue;
 			}
 
+			// Normalize accidental ALL-CAPS entries (e.g. "EVANS" -> "Evans");
+			// names already entered in mixed case (McCann, Lopez Dugas) are left
+			// exactly as-is. See eem_normalize_caps_name().
+			$last_name     = eem_normalize_caps_name( $last_name );
+			$first_name    = eem_normalize_caps_name( $first_name );
 			$customer_name = $last_name . ', ' . $first_name;
 			$email         = sanitize_email( self::mapped_val( $row, $map, 'email' ) );
 			$phone         = sanitize_text_field( self::mapped_val( $row, $map, 'phone' ) );

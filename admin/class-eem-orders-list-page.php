@@ -784,7 +784,14 @@ class EEM_Orders_List_Page {
 	 */
 	// C6.A: promoted to public static so EEM_Order_Detail_Page can share the same "#NNNNN" rendering.
 	public static function format_order_number_display( $order_number ) {
-		$digits = preg_replace( '/\D/', '', (string) $order_number );
+		$raw = trim( (string) $order_number );
+		// Preserve a leading alpha source-prefix (e.g. "IMP-" on CSV-imported
+		// orders) so an order's origin is visible at a glance; only the numeric
+		// portion is zero-padded. Plain numeric order numbers render as "#00020".
+		if ( preg_match( '/^([A-Za-z]+)-?(\d+)$/', $raw, $m ) ) {
+			return sprintf( '%s-%05d', strtoupper( $m[1] ), (int) $m[2] );
+		}
+		$digits = preg_replace( '/\D/', '', $raw );
 		$n      = '' === $digits ? 0 : (int) $digits;
 		return sprintf( '#%05d', $n );
 	}

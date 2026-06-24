@@ -5470,6 +5470,10 @@ class EEM_Admin {
 		if ( '' === $order_number ) {
 			return '—';
 		}
+		// Preserve a leading alpha source-prefix (e.g. "IMP-" on imported orders).
+		if ( preg_match( '/^([A-Za-z]+)-?(\d+)$/', $order_number, $m ) ) {
+			return sprintf( '%s-%05d', strtoupper( $m[1] ), (int) $m[2] );
+		}
 		return is_numeric( $order_number ) ? sprintf( '#%05d', (int) $order_number ) : '#' . $order_number;
 	}
 
