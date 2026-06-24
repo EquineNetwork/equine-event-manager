@@ -5169,9 +5169,7 @@
 		}
 
 		// 6. Reset barn + zone filters to "all" when the inventory mode changes.
-		//    Includes the By Customer barn select (V1 #14) so its filter doesn't
-		//    linger and hide rows after an inventory switch.
-		document.querySelectorAll('.eem-loc-barn-select, .eem-cust-barn-select').forEach(function (sel) {
+		document.querySelectorAll('.eem-loc-barn-select').forEach(function (sel) {
 			sel.value = 'all';
 		});
 		document.querySelectorAll('#eem-sc-loc-stalls [data-barn]').forEach(function (row) {
@@ -5195,10 +5193,6 @@
 				(inv === 'rv'     && hasRv);
 			row.style.display = show ? '' : 'none';
 		});
-		// V1 #14 — recompute the By Customer filter (barn reset to "all" above)
-		// so the .hidden flags clear for rows the prior barn filter had hidden.
-		eemApplyStallChartFilter(document.getElementById('eem-stall-chart-panel-customer'));
-
 		var custEmptyNote = document.querySelector('#eem-stall-chart-panel-customer .eem-stall-chart-empty-note');
 		if (custEmptyNote && custRows.length > 0) {
 			var anyVisible = Array.prototype.slice.call(custRows).some(function (r) {
@@ -5848,12 +5842,8 @@
 		if (!panel) return;
 		var input = panel.querySelector('.eem-stall-chart-search-input');
 		var q = input ? input.value.toLowerCase().trim() : '';
-		// V1 #14 — the By Customer panel carries its own barn <select>; the By
-		// Location panels use the barn tabs. Prefer the panel-local select when
-		// present so each panel filters independently.
-		var custBarnSel = panel.querySelector('.eem-cust-barn-select');
 		var barnFilter = document.querySelector('.eem-stall-chart-barn-tab.active');
-		var activeBarn = custBarnSel ? (custBarnSel.value || 'all') : (barnFilter ? barnFilter.getAttribute('data-barn') : 'all');
+		var activeBarn = barnFilter ? barnFilter.getAttribute('data-barn') : 'all';
 		var groupToggle = panel.querySelector('[data-eem-action="stall-chart-toggle-groups"]');
 		var groupsOnly = !!groupToggle && groupToggle.getAttribute('aria-pressed') === 'true';
 		var tackToggle = panel.querySelector('[data-eem-action="stall-chart-toggle-tack"]');
@@ -5862,21 +5852,12 @@
 		var visible = 0;
 		rows.forEach(function (row) {
 			var haystack = (row.getAttribute('data-stall-chart-search') || '').toLowerCase();
+			var barn = (row.getAttribute('data-barn') || '').toLowerCase();
 			var hasGroup = (row.getAttribute('data-group') || '').trim() !== '';
 			var hasTack = (row.getAttribute('data-has-tack') || '0') === '1';
 			var matchesSearch = !q || haystack.indexOf(q) !== -1;
-			var matchesBarn;
-			if (custBarnSel) {
-				// By Customer: a row can span multiple barns (data-barns token list).
-				// Selecting a specific barn requires the row to include it; RV-only
-				// rows (no barn) drop out of a specific-barn filter.
-				var custBarns = (row.getAttribute('data-barns') || '').toLowerCase().split(/\s+/).filter(Boolean);
-				matchesBarn = activeBarn === 'all' || custBarns.indexOf(activeBarn) !== -1;
-			} else {
-				// By Location: empty barn = customer rows that ignore the barn tabs.
-				var barn = (row.getAttribute('data-barn') || '').toLowerCase();
-				matchesBarn = activeBarn === 'all' || barn === '' || barn === activeBarn;
-			}
+			// Empty barn = By-Customer rows; they ignore the By-Location barn tabs.
+			var matchesBarn = activeBarn === 'all' || barn === '' || barn === activeBarn;
 			var matchesGroup = !groupsOnly || hasGroup;
 			var matchesTack = !tackOnly || hasTack;
 			var show = matchesSearch && matchesBarn && matchesGroup && matchesTack && !row.classList.contains('eem-chart-barn-row');
@@ -5890,13 +5871,6 @@
 	document.addEventListener('input', function (ev) {
 		var t = ev.target;
 		if (!t || !t.classList.contains('eem-stall-chart-search-input')) return;
-		eemApplyStallChartFilter(t.closest('.eem-stall-chart-tab-panel') || document.body);
-	});
-
-	// V1 #14 — By Customer barn <select> filters the assignment list by barn.
-	document.addEventListener('change', function (ev) {
-		var t = ev.target;
-		if (!t || !t.classList.contains('eem-cust-barn-select')) return;
 		eemApplyStallChartFilter(t.closest('.eem-stall-chart-tab-panel') || document.body);
 	});
 

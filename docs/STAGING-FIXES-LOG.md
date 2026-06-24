@@ -51,32 +51,13 @@ at the bottom. Session task IDs in brackets.
 
 ---
 
-## 🟡 IMPLEMENTED — pending Whitney visual verification (do NOT redo)
+## ❌ DECIDED AGAINST — not building
 
-> Work done in a **Claude Code web session (2026-06-24)** on branch
-> **`claude/session-context-recovery-4c6f8m`** (draft PR open). NOT yet merged to
-> `main` and NOT visually verified. Desktop: review the branch/PR rather than
-> re-implementing. No version bump applied (awaiting Whitney's OK per ROADMAP).
-
-- **[#14] Barn filter on By Customer** — added a barn `<select>` ("All Barns" + one
-  option per configured barn) to the By Customer filter row, mirroring the By
-  Location barn filter. Implementation:
-  - PHP (`admin/class-equine-event-manager-admin.php`): dropdown emitted in the By
-    Customer filter row, gated on `'rv' !== $inv && ! empty( $barn_options )`
-    (hidden in RV-only mode / when no named barns). Each customer `<tr>` now emits
-    `data-barns="<space-separated barn slugs>"` computed from the order's stall
-    units via `$unit_block_map` (same `sanitize_html_class(strtolower())`
-    normalization as the dropdown option values, so slugs align).
-  - JS (`assets/js/admin.js`): `eemApplyStallChartFilter` prefers a panel-local
-    `.eem-cust-barn-select` when present and matches rows whose `data-barns` token
-    list includes the selected slug; a `change` listener re-runs the filter; the
-    inventory-switch handler resets the select to "all" and recomputes so a stale
-    barn filter can't leave rows hidden after switching Stalls/RV/All.
-  - **Behavior decision (flag for Whitney):** selecting a specific barn hides
-    RV-only orders (they have no barn). "All Barns" shows everything. If you'd
-    rather RV-only orders always remain visible, say so and it's a one-line change.
-  - Stacks correctly with the existing search box, Show-by-group, and Tack filters.
-  - `php -l` + `node --check` both clean. Not yet browser-verified on a live chart.
+- **[#14] Barn filter on By Customer — DROPPED (Whitney, 2026-06-24).** By Customer is
+  a customer-centric list; barn is a location concept and the barn filter already
+  lives on By Location. No barn filter on By Customer. (A web session had briefly
+  implemented one on branch `claude/session-context-recovery-4c6f8m`; that code was
+  reverted in the same session — do not re-add.)
 
 ## 🔜 IN THE CURRENT BATCH (not yet shipped — designs locked)
 

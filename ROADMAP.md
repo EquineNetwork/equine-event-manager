@@ -12,18 +12,16 @@
 
 > ### ⚠️ WEB SESSION IN FLIGHT — 2026-06-24 (read before picking up stall-chart work)
 > A Claude Code **web session** is working on branch
-> **`claude/session-context-recovery-4c6f8m`** (draft PR open) — NOT on `main`.
-> Done this session, **pending Whitney visual verification, NOT merged, NO version bump**:
+> **`claude/session-context-recovery-4c6f8m`** — NOT on `main`. **No version bump.**
 > - **Staging log tidy:** moved #15 (`&amp;` encoding), #18 (Dashboard RV parity), #5
 >   (default By Location) into `docs/STAGING-FIXES-LOG.md` → FIXED & SHIPPED (they shipped
 >   2.7.587–588 but were still listed as "in batch").
-> - **#14 Barn filter on By Customer** — IMPLEMENTED (barn `<select>` in the By Customer
->   filter row + per-row `data-barns` + JS filter wiring). Files: `admin/class-equine-event-manager-admin.php`,
->   `assets/js/admin.js`. Full write-up + one behavior question for Whitney in
->   `docs/STAGING-FIXES-LOG.md` → "🟡 IMPLEMENTED — pending Whitney visual verification".
+> - **#14 Barn filter on By Customer — DROPPED by Whitney** (barn filter belongs on By
+>   Location, which already has it). Briefly implemented then reverted in-session; the
+>   code files are back to baseline. Do NOT re-add. Logged under "❌ DECIDED AGAINST" in
+>   `docs/STAGING-FIXES-LOG.md`.
 >
-> **Desktop: do NOT re-implement #14 — review the branch/PR instead.** Remaining batch
-> items (#16, #17, #2, #3, #4, #10) are untouched and still open.
+> Remaining batch items (#16, #17, #2, #3, #4, #10) are untouched and still open.
 
 **Current state:** v2.7.580+ on `main`. Separate stall/RV layout saving shipped (migration 037).
 
