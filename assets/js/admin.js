@@ -5353,6 +5353,10 @@
 		var autoAll = t.closest('[data-eem-action="stall-chart-auto-assign-all"]');
 		if (autoAll) {
 			ev.preventDefault();
+			// Confirm before bulk auto-assigning (prevents accidental Generate —
+			// Whitney 2026-06-24). Undo via "Clear All Assignments".
+			var autoAllMsg = autoAll.getAttribute('data-eem-confirm');
+			if (autoAllMsg && !window.confirm(autoAllMsg)) { return; }
 			eemRunAutoAssign('', autoAll);
 			return;
 		}

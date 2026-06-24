@@ -410,6 +410,7 @@ class EEM_Plugin {
 		add_action( 'admin_post_equine_event_manager_mark_order_paid', array( $this->admin, 'handle_mark_order_paid' ) );
 		add_action( 'admin_post_equine_event_manager_update_order_assignments', array( $this->admin, 'handle_update_order_assignments' ) );
 		add_action( 'admin_post_equine_event_manager_generate_stall_assignments', array( $this->admin, 'handle_generate_stall_assignments' ) );
+		add_action( 'admin_post_equine_event_manager_clear_stall_assignments', array( $this->admin, 'handle_clear_stall_assignments' ) );
 		add_action( 'init', array( $this->shortcodes, 'register' ) );
 		add_action( 'wp_ajax_equine_event_manager_create_stripe_payment_intent', array( $this->shortcodes, 'ajax_create_stripe_payment_intent' ) );
 		add_action( 'wp_ajax_nopriv_equine_event_manager_create_stripe_payment_intent', array( $this->shortcodes, 'ajax_create_stripe_payment_intent' ) );

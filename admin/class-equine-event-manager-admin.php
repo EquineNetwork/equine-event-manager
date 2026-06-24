@@ -2513,12 +2513,15 @@ class EEM_Admin {
 			$rv_snap    = EEM_Stall_Map_Importer::get_for_reservation( $reservation_id, EEM_Stall_Map_Importer::RV_META_KEY );
 			$has_any_map = ! empty( $stall_snap['barns'] ) || ! empty( $rv_snap['barns'] );
 		}
-		$default_tab       = $has_any_map ? 'customer' : 'list';
+		// Default landing is By Location — List (Whitney 2026-06-24): stalls read
+		// Available until the admin assigns, so the location list is the natural
+		// starting view rather than an empty-looking By Customer.
+		$default_tab       = 'list';
 		$tab               = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : $default_tab;
 		if ( 'location' === $tab ) {
 			$tab = 'list';
 		}
-		$tab               = in_array( $tab, array( 'customer', 'list', 'map' ), true ) ? $tab : 'customer';
+		$tab               = in_array( $tab, array( 'customer', 'list', 'map' ), true ) ? $tab : 'list';
 		$reservation_title = get_the_title( $reservation_id );
 		$screen_title      = sprintf(
 			/* translators: %s: reservation title. */
@@ -2593,7 +2596,10 @@ class EEM_Admin {
 		<header class="eem-sc-pagehead">
 			<h1 class="eem-sc-pagehead-title" id="eem-header-event-name"><?php echo esc_html( $screen_title ); ?></h1>
 			<div class="eem-sc-pagehead-actions">
-				<button class="eem-sc-btn-primary" type="button" data-eem-action="stall-chart-auto-assign-all">
+				<a class="eem-sc-btn-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=equine_event_manager_clear_stall_assignments&reservation_id=' . $reservation_id ), 'equine_event_manager_clear_stall_assignments_' . $reservation_id ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Clear ALL stall & RV assignments for this reservation? Every unit returns to Available.', 'equine-event-manager' ) ); ?>');">
+					<?php esc_html_e( 'Clear All Assignments', 'equine-event-manager' ); ?>
+				</a>
+				<button class="eem-sc-btn-primary" type="button" data-eem-action="stall-chart-auto-assign-all" data-eem-confirm="<?php echo esc_attr__( 'Auto-assign every order to a stall/RV lot now? You can Clear All Assignments to undo.', 'equine-event-manager' ); ?>">
 					<?php esc_html_e( 'Generate Assignments', 'equine-event-manager' ); ?>
 				</button>
 			</div>
@@ -2686,7 +2692,7 @@ class EEM_Admin {
 			: array();
 		?>
 				<?php $eem_unsaved = isset( $grid['unsaved_order_count'] ) ? (int) $grid['unsaved_order_count'] : 0; ?>
-				<?php if ( $eem_unsaved > 0 ) : ?>
+				<?php if ( false ) : // Suggestion banner removed (Whitney 2026-06-24): stalls stay Available until manually assigned; no auto-suggest push. ?>
 					<!-- Global amber banner: full-bleed, flush under the page header. -->
 					<div class="eem-sc-banner-amber eem-sc-banner-amber--global" role="status">
 						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -11486,6 +11492,59 @@ class EEM_Admin {
 			$reservation_id,
 			$updated_any ? 'stall_assignments_generated' : 'stall_assignments_generation_failed',
 			$updated_any ? null : __( 'Assignments were generated, but no order records needed updating.', 'equine-event-manager' ),
+			$return_page
+		);
+	}
+
+	/**
+	 * Clear ALL saved stall + RV assignments for a reservation — the inverse of
+	 * Generate. Every order's `Assigned Stall Units` / `Assigned RV Lots` notes
+	 * are emptied so the chart returns to all-Available. Use this to undo an
+	 * accidental Generate, or to start manual assignment from a clean slate.
+	 *
+	 * @return void
+	 */
+	public function handle_clear_stall_assignments() {
+		$this->guard_admin_action();
+
+		$reservation_id = isset( $_GET['reservation_id'] ) ? absint( wp_unslash( $_GET['reservation_id'] ) ) : 0;
+		$return_page    = isset( $_GET['return_page'] ) ? sanitize_key( wp_unslash( $_GET['return_page'] ) ) : '';
+		check_admin_referer( 'equine_event_manager_clear_stall_assignments_' . $reservation_id );
+
+		$reservation = $reservation_id ? get_post( $reservation_id ) : null;
+		if ( ! $reservation instanceof WP_Post || 'en_reservation' !== $reservation->post_type ) {
+			$this->redirect_to_stall_chart_notice( 0, 'stall_assignments_cleared_failed', __( 'That reservation could not be loaded.', 'equine-event-manager' ) );
+		}
+
+		$orders = array_filter(
+			$this->orders_repository->get_orders( '', 'date', 'asc' ),
+			function ( $order ) use ( $reservation_id ) {
+				return absint( isset( $order['reservation_id'] ) ? $order['reservation_id'] : 0 ) === $reservation_id;
+			}
+		);
+
+		if ( ! $this->acquire_assignment_lock( $reservation_id ) ) {
+			$this->redirect_to_reservation_notice_destination( $reservation_id, 'stall_assignments_cleared_failed', __( 'Another change to this event is still finishing. Please wait a moment and try again.', 'equine-event-manager' ), $return_page );
+		}
+		$cleared = 0;
+		try {
+			foreach ( $orders as $order ) {
+				if ( $this->orders_repository->update_order_unit_assignments( $order['order_key'], '', '' ) ) {
+					$cleared++;
+				}
+			}
+		} finally {
+			$this->release_assignment_lock( $reservation_id );
+		}
+
+		$this->redirect_to_reservation_notice_destination(
+			$reservation_id,
+			'stall_assignments_cleared',
+			sprintf(
+				/* translators: %d: number of orders cleared */
+				_n( 'Cleared assignments for %d order — every stall & RV lot is back to Available.', 'Cleared assignments for %d orders — every stall & RV lot is back to Available.', $cleared, 'equine-event-manager' ),
+				$cleared
+			),
 			$return_page
 		);
 	}
