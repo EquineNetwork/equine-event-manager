@@ -7772,8 +7772,8 @@ body.eem-shell-page--reservation-editor .eem-event-editor .eem-reservation-edito
 .eem-edit-rail { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 44px; }
 
 /* ── Rail cards (mockup line 235) ── */
-.eem-rail-card { background: #fff; border: 1px solid #e5e7eb; border-radius: var(--eem-radius); overflow: hidden; }
-.eem-rail-header { padding: 11px 16px; border-bottom: 1px solid #dcdcde; background: #f3f4f5; display: flex; align-items: center; justify-content: space-between; }
+.eem-rail-card { background: #fff; border: 1px solid #e5e7eb; border-radius: var(--eem-radius); overflow: visible; }
+.eem-rail-header { padding: 11px 16px; border-bottom: 1px solid #dcdcde; background: #f3f4f5; display: flex; align-items: center; justify-content: space-between; border-radius: var(--eem-radius) var(--eem-radius) 0 0; }
 .eem-rail-title { font-family: var(--eem-font-display); font-size: 13px; font-weight: 700; color: var(--eem-navy); }
 .eem-rail-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
 .eem-rail-hint { font-size: 12.5px; color: var(--eem-text-muted); line-height: 1.5; margin-bottom: 6px; }
