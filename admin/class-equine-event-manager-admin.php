@@ -7350,8 +7350,18 @@ class EEM_Admin {
 			if ( empty( $rv_manual ) ) {
 				$rv_manual = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Units' ) );
 			}
-			$stall_units  = $this->allocate_stall_chart_units( $config['available_stall_units'], $stall_map, $stall_dates, $stall_needed, $stall_manual, $order['order_key'] );
-			$rv_units     = $this->allocate_rv_lot_rows( isset( $config['rv_lot_names'] ) ? $config['rv_lot_names'] : array(), isset( $config['auto_assign_rv_lot_names'] ) ? $config['auto_assign_rv_lot_names'] : ( isset( $config['available_rv_lot_names'] ) ? $config['available_rv_lot_names'] : array() ), $rv_map, $rv_dates, $rv_needed, $rv_lot_name, $rv_manual, $order['order_key'] );
+			// By Customer STALL #/RV # show ONLY saved (admin-assigned) units —
+			// blank ("—") until the admin actually assigns via the map, list, or
+			// Generate Assignments (Whitney 2026-06-24). The auto-suggester is
+			// intentionally NOT shown here: it requires per-order dates to space
+			// units apart, and unassigned orders must read blank rather than a
+			// placeholder 1..qty sequence (which also collided across orders when
+			// dates were absent). Generate Assignments still computes + SAVES
+			// allocations separately; once saved they appear here.
+			$stall_assigned_units = array_values( array_unique( array_map( 'strval', (array) $stall_manual ) ) );
+			$rv_assigned_units    = array_values( array_unique( array_map( 'strval', (array) $rv_manual ) ) );
+			$stall_units  = array( 'assigned' => $stall_assigned_units, 'unassigned' => max( 0, $stall_needed - count( $stall_assigned_units ) ) );
+			$rv_units     = array( 'assigned' => $rv_assigned_units, 'unassigned' => max( 0, $rv_needed - count( $rv_assigned_units ) ) );
 			$daily_counts = array();
 
 			foreach ( $stall_dates as $date_key ) {

@@ -346,6 +346,11 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-038-normalize-caps-names.php';
 			eem_mig_038_normalize_caps_names();
 		}
+
+		if ( ! get_option( 'eem_mig_039_backfill_order_dates_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-039-backfill-order-dates.php';
+			eem_mig_039_backfill_order_dates();
+		}
 	}
 
 	/**

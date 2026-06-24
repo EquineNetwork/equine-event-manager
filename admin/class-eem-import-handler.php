@@ -39,6 +39,74 @@ if ( ! function_exists( 'eem_normalize_caps_name' ) ) {
 	}
 }
 
+if ( ! function_exists( 'eem_stay_day_tokens' ) ) {
+	/**
+	 * Extract the set of weekday abbreviations (sun..sat) present in a stay-type
+	 * or package-name string. Handles full names ("Friday"), abbreviations
+	 * ("Fri"), spaces/punctuation, and multiple days ("Friday-Sunday; Saturday-
+	 * Sunday").
+	 *
+	 * @param string $s Stay-type label or package name.
+	 * @return string[] Distinct day abbreviations found.
+	 */
+	function eem_stay_day_tokens( $s ) {
+		$s     = strtolower( (string) $s );
+		$names = array( 'sunday' => 'sun', 'monday' => 'mon', 'tuesday' => 'tue', 'wednesday' => 'wed', 'thursday' => 'thu', 'friday' => 'fri', 'saturday' => 'sat' );
+		$found = array();
+		foreach ( $names as $full => $ab ) {
+			if ( false !== strpos( $s, $full ) ) { $found[ $ab ] = true; }
+		}
+		foreach ( array( 'sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat' ) as $ab ) {
+			if ( preg_match( '/\b' . $ab . '\b/', $s ) ) { $found[ $ab ] = true; }
+		}
+		return array_keys( $found );
+	}
+}
+
+if ( ! function_exists( 'eem_match_stay_package_dates' ) ) {
+	/**
+	 * Derive [arrival, departure] (Y-m-d) for an order from its stay-type label
+	 * by matching the reservation's packages of the relevant component type. A
+	 * package contributes when its day-token set is a subset of the order's
+	 * tokens; arrival = earliest start, departure = latest end. Falls back to the
+	 * widest package window when the stay-type carries no day names (e.g.
+	 * "Imported") or nothing matches.
+	 *
+	 * @param string                       $stay_type Order stay-type label.
+	 * @param array<int,array<string,mixed>> $packages Packages (name/start_date/end_date) of the relevant type.
+	 * @return array{0:string,1:string} [arrival, departure]; ['',''] when undeterminable.
+	 */
+	function eem_match_stay_package_dates( $stay_type, array $packages ) {
+		if ( empty( $packages ) ) { return array( '', '' ); }
+		$order_tokens = eem_stay_day_tokens( $stay_type );
+		$starts = array();
+		$ends   = array();
+		foreach ( $packages as $p ) {
+			$ps = (string) ( $p['start_date'] ?? '' );
+			$pe = (string) ( $p['end_date'] ?? '' );
+			if ( '' === $ps || '' === $pe ) { continue; }
+			if ( empty( $order_tokens ) ) {
+				$starts[] = $ps; $ends[] = $pe; // No day info — consider all.
+				continue;
+			}
+			$pkg_tokens = eem_stay_day_tokens( (string) ( $p['name'] ?? '' ) );
+			if ( ! empty( $pkg_tokens ) && array() === array_diff( $pkg_tokens, $order_tokens ) ) {
+				$starts[] = $ps; $ends[] = $pe;
+			}
+		}
+		if ( empty( $starts ) ) {
+			foreach ( $packages as $p ) {
+				if ( ! empty( $p['start_date'] ) ) { $starts[] = (string) $p['start_date']; }
+				if ( ! empty( $p['end_date'] ) )   { $ends[]   = (string) $p['end_date']; }
+			}
+		}
+		if ( empty( $starts ) || empty( $ends ) ) { return array( '', '' ); }
+		sort( $starts );
+		sort( $ends );
+		return array( $starts[0], end( $ends ) );
+	}
+}
+
 class EEM_Import_Handler {
 
 	/**
