@@ -198,6 +198,8 @@ class EEM_Order_Detail_Page {
 
 		<?php $this->render_special_instructions_card( $reservation_id ); ?>
 
+		<?php $this->render_internal_notes_card( $order ); ?>
+
 		<?php $this->render_required_documents_card( $order, $reservation_id ); ?>
 
 		<?php
@@ -2469,6 +2471,13 @@ class EEM_Order_Detail_Page {
 		// type taxonomy (which it wouldn't recognize otherwise).
 		$entries = array_map( array( 'EEM_Order_Telemetry', 'enrich_entry_for_render' ), $entries );
 
+		// #16 — internal notes (event_type 'ordernote') now live in their own
+		// Internal Notes card (render_internal_notes_card); the Activity Log
+		// shows only the audit trail, not the manually-added notes.
+		$entries = array_values( array_filter( $entries, static function ( $e ) {
+			return 'ordernote' !== ( isset( $e['event_type'] ) ? (string) $e['event_type'] : '' );
+		} ) );
+
 		$count = count( $entries );
 		?>
 		<div class="eem-order-activity" data-eem-activity-section>
@@ -2496,17 +2505,71 @@ class EEM_Order_Detail_Page {
 				}
 				?>
 			</div>
-			<?php $this->render_add_note_form( $order ); ?>
 		</div>
 		<?php
 	}
 
 	/**
-	 * Add-Note form (C6.E.2) — single textarea + Submit button at the
-	 * bottom of the Activity Log section. AJAX-submitted via the
-	 * `add-note-submit` dispatch arm in admin.js. On success the AJAX
-	 * handler returns pre-rendered entry HTML which JS prepends to the
-	 * `[data-eem-activity-list]` mount node, bumps the count badge, and
+	 * Internal Notes card (#16) — full-width card below Special Instructions.
+	 *
+	 * A timestamped feed of manually-added internal notes (Activity Log entries
+	 * of type `ordernote`) plus the Add-Note form. Distinct from the Activity
+	 * Log audit trail: notes are authored by staff (or auto-posted at import,
+	 * e.g. "Imported with confirmation # X") and read back through the same
+	 * canonical activity-log query, filtered to the `ordernote` type. Reuses the
+	 * shared `eem_render_activity_log` partial for the entry list.
+	 *
+	 * @param array<string, mixed> $order Order row.
+	 * @return void
+	 */
+	private function render_internal_notes_card( array $order ): void {
+		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		if ( '' === $order_key ) {
+			return;
+		}
+
+		// Notes are per-order — fetch by order key and keep only `ordernote`
+		// entries (the audit-trail types stay in the Activity Log section).
+		$entries = EEM_Activity_Log::get_for_order_key( $order_key, 100 );
+		$notes   = array_values( array_filter( $entries, static function ( $e ) {
+			return 'ordernote' === ( isset( $e['event_type'] ) ? (string) $e['event_type'] : '' );
+		} ) );
+		$notes   = array_map( array( 'EEM_Order_Telemetry', 'enrich_entry_for_render' ), $notes );
+		$count   = count( $notes );
+		?>
+		<div class="eem-order-full-width">
+			<div class="eem-card eem-order-card eem-order-internal-notes" data-eem-internal-notes data-eem-order-key="<?php echo esc_attr( $order_key ); ?>">
+				<div class="eem-order-card__header">
+					<div class="eem-order-card__title"><?php echo EEM_Dashboard_Icons::svg( 'file' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- self-authored inline SVG. ?> <?php esc_html_e( 'Internal Notes', 'equine-event-manager' ); ?></div>
+					<span class="eem-order-internal-notes__count" data-eem-internal-notes-count><?php
+						echo esc_html( sprintf(
+							/* translators: %s: number of internal notes */
+							_n( '%s note', '%s notes', $count, 'equine-event-manager' ),
+							number_format_i18n( $count )
+						) );
+					?></span>
+				</div>
+				<div class="eem-order-internal-notes__list" data-eem-activity-list>
+					<?php
+					if ( function_exists( 'eem_render_activity_log' ) ) {
+						eem_render_activity_log( $notes, array(
+							'empty_message' => __( 'No internal notes yet.', 'equine-event-manager' ),
+						) );
+					}
+					?>
+				</div>
+				<?php $this->render_add_note_form( $order ); ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Add-Note form (#16) — single textarea + Submit button at the bottom of
+	 * the Internal Notes card. AJAX-submitted via the `add-note-submit`
+	 * dispatch arm in admin.js. On success the AJAX handler returns
+	 * pre-rendered entry HTML which JS prepends to the card's
+	 * `[data-eem-activity-list]` mount node, bumps the note count, and
 	 * shows a toast confirmation.
 	 *
 	 * Validation contract — server is authoritative (cap, nonce, trim,

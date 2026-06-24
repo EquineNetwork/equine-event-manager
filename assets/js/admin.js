@@ -2706,7 +2706,9 @@
 	function submitAddNoteForm(target) {
 		var form = target.closest('[data-eem-add-note-form]');
 		if (!form) return;
-		var section = form.closest('.eem-order-activity');
+		// #16 — the Add-Note form lives in the Internal Notes card now; fall back
+		// to the legacy Activity Log section selector for safety.
+		var section = form.closest('[data-eem-internal-notes]') || form.closest('.eem-order-activity');
 		var textarea = form.querySelector('[data-eem-add-note-textarea]');
 		var errEl    = form.querySelector('[data-eem-add-note-error]');
 		var btn      = form.querySelector('[data-eem-add-note-submit]');
@@ -2751,10 +2753,13 @@
 				}
 				// Update count badge — server returns authoritative new_count.
 				if (json.data && typeof json.data.new_count !== 'undefined') {
-					var countBadge = section.querySelector('[data-eem-activity-count]');
+					var isNotes    = section.hasAttribute('data-eem-internal-notes');
+					var countBadge = section.querySelector(isNotes ? '[data-eem-internal-notes-count]' : '[data-eem-activity-count]');
 					if (countBadge) {
 						var n = parseInt(json.data.new_count, 10) || 0;
-						countBadge.textContent = (n === 1) ? '1 entry' : (n + ' entries');
+						countBadge.textContent = isNotes
+							? ((n === 1) ? '1 note' : (n + ' notes'))
+							: ((n === 1) ? '1 entry' : (n + ' entries'));
 					}
 				}
 			}

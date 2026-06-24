@@ -10429,9 +10429,14 @@ class EEM_Admin {
 			$entry_html = (string) ob_get_clean();
 		}
 
-		// Authoritative new_count = full re-query length, so the badge
-		// stays correct even if a parallel write landed.
-		$new_count = count( EEM_Activity_Log::get_for_order_key( $order_key, 1000 ) );
+		// Authoritative new_count = number of internal notes (event_type
+		// 'ordernote') for this order, so the Internal Notes card badge stays
+		// correct even if a parallel write landed. (#16 — notes were split out
+		// of the Activity Log into their own card.)
+		$all_entries = EEM_Activity_Log::get_for_order_key( $order_key, 1000 );
+		$new_count   = count( array_filter( $all_entries, static function ( $e ) {
+			return 'ordernote' === ( isset( $e['event_type'] ) ? (string) $e['event_type'] : '' );
+		} ) );
 
 		wp_send_json_success( array(
 			'html'      => $entry_html,
