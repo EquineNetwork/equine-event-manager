@@ -4707,6 +4707,22 @@ class EEM_Admin {
 					}
 				}
 			}
+			// Also pull barn names from a connected stall MAP — Mapped /
+			// Pick-from-layout reservations (incl. imported setups) define their
+			// barns in the map, not stall_rows, so without this the BARNS column
+			// reads "—" even though the chart has barns.
+			$eem_list_map = class_exists( 'EEM_Stall_Map_Importer' )
+				? EEM_Stall_Map_Importer::get_for_reservation( $rid )
+				: array();
+			foreach ( (array) ( $eem_list_map['barns'] ?? array() ) as $eem_barn ) {
+				$eem_bn = isset( $eem_barn['name'] ) ? (string) $eem_barn['name'] : '';
+				if ( '' !== $eem_bn && ! in_array( $eem_bn, $barn_names, true ) ) {
+					$barn_names[] = $eem_bn;
+				}
+			}
+			$eem_has_stall_map = ! empty( $eem_list_map['barns'] );
+			$eem_has_rv_map    = class_exists( 'EEM_Stall_Map_Importer' )
+				&& ! empty( EEM_Stall_Map_Importer::get_for_reservation( $rid, EEM_Stall_Map_Importer::RV_META_KEY )['barns'] );
 
 			// RV zone names (derived from row names since zones collapsed onto rows)
 			$rv_rows_list  = $cfg->get( 'rv_rows' );
@@ -4722,7 +4738,7 @@ class EEM_Admin {
 			// Chart status — 2.3.50: the reservation is in this list because it
 			// sells stalls and/or RV lots. "configured" once any layout exists
 			// (stall rows or RV zones); "partial" until then.
-			$chart_status = ( $has_rows || ! empty( $rv_zone_names ) ) ? 'configured' : 'partial';
+			$chart_status = ( $has_rows || ! empty( $rv_zone_names ) || $eem_has_stall_map || $eem_has_rv_map ) ? 'configured' : 'partial';
 
 			// Stats blurb. Available/Reserved/Blocked for configured charts;
 			// "Not yet configured" placeholder for empty/partial charts.

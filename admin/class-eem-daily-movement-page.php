@@ -716,12 +716,17 @@ class EEM_Daily_Movement_Page {
 						<td class="eem-dm-cell-stall"><?php echo esc_html( implode( ', ', $row['stall_numbers'] ) ?: '—' ); ?></td>
 						<td><?php echo esc_html( $row['customer_name'] ); ?></td>
 						<td class="eem-dm-cell-order">
-							<?php if ( $order ) :
-								$order_number = isset( $order['order_number'] ) ? (string) $order['order_number'] : '';
-								$display      = EEM_Orders_List_Page::format_order_number_display( $order_number );
-								$url          = EEM_Orders_List_Page::order_detail_url( $order_key );
+							<?php
+							// Use the row's own order_number (the status menu below relies
+							// on it too) — the $order_map lookup can miss when the DM
+							// service's order_key doesn't match the orders-repo key,
+							// which left this column reading "—".
+							$dm_disp_num = isset( $row['order_number'] ) ? (string) $row['order_number'] : '';
+							if ( '' !== $dm_disp_num ) :
+								$display = EEM_Orders_List_Page::format_order_number_display( $dm_disp_num );
+								$url     = $order_key ? EEM_Orders_List_Page::order_detail_url( $order_key ) : '';
 							?>
-								<a href="<?php echo esc_url( $url ); ?>"><?php echo esc_html( $display ); ?></a>
+								<?php if ( $url ) : ?><a href="<?php echo esc_url( $url ); ?>"><?php echo esc_html( $display ); ?></a><?php else : ?><?php echo esc_html( $display ); ?><?php endif; ?>
 							<?php else : ?>
 								—
 							<?php endif; ?>

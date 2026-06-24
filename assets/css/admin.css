@@ -8757,7 +8757,17 @@ select.eem-field-select--auto { width: auto; }
    icon-to-text gap. Icon right edge lands at ~22px; 44px gives a 22px clearance. */
 .eem-stall-chart-filter-search .eem-stall-chart-search-input { padding-left: 25px; }
 .eem-stall-chart-filter-hint { font-size: 12px; color: #8c8f94; white-space: nowrap; }
-.eem-stall-chart-empty-note { font-size: 13px; color: #8c8f94; padding: 12px 18px; margin: 0; }
+.eem-stall-chart-empty-note {
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--eem-text-muted, #6b7280);
+	text-align: center;
+	padding: 40px 24px;
+	margin: 16px 0 0;
+	background: var(--eem-bg, #f8fafc);
+	border: 1px dashed var(--eem-border, #d9e2f2);
+	border-radius: var(--eem-radius, 8px);
+}
 .eem-stall-chart-no-data { font-size: 13px; color: #6B7A99; padding: 28px 20px; margin: 0; text-align: center; }
 
 /* ── Occupancy table ── */
