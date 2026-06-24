@@ -1865,6 +1865,18 @@ class EEM_Settings_Page {
 				<div class="eem-card-body">
 					<p class="eem-card-subtitle"><?php esc_html_e( 'Upload a CSV file to create orders. Each row becomes one order marked as Paid with an IMP- prefix.', 'equine-event-manager' ); ?></p>
 
+					<div style="background:#f8f9fa;border:1px solid #e2e4e7;border-radius:6px;padding:16px;margin-bottom:20px">
+						<p style="margin:0 0 8px;font-weight:600;font-size:13px"><?php esc_html_e( 'Guidelines', 'equine-event-manager' ); ?></p>
+						<ul style="margin:0 0 12px;padding-left:20px;font-size:13px;line-height:1.6">
+							<li><?php esc_html_e( 'First Name and Last Name columns are required. All other columns are optional.', 'equine-event-manager' ); ?></li>
+							<li><?php esc_html_e( 'Stall Dates and RV Dates should match your stay package names (e.g. "Thursday-Sunday" matches "Stall Thu-Sun").', 'equine-event-manager' ); ?></li>
+							<li><?php esc_html_e( 'Shavings Total should equal Shavings Qty times the per-bag price set on the reservation.', 'equine-event-manager' ); ?></li>
+							<li><?php esc_html_e( 'Customers with only shavings (no stalls or RV) are supported.', 'equine-event-manager' ); ?></li>
+							<li><?php esc_html_e( 'If a customer has both stalls and RV, they are grouped into one order automatically.', 'equine-event-manager' ); ?></li>
+						</ul>
+						<a href="<?php echo esc_url( EQUINE_EVENT_MANAGER_URL . 'assets/templates/import-orders-template.csv' ); ?>" download class="eem-btn eem-btn-secondary" style="font-size:13px"><?php esc_html_e( 'Download CSV Template', 'equine-event-manager' ); ?></a>
+					</div>
+
 					<!-- Step 1: Select reservation + upload -->
 					<div id="eem-import-step-1">
 						<div class="eem-field-row">
