@@ -629,6 +629,16 @@ class EEM_Import_Handler {
 			$cfg = EEM_Reservation_Config::for( $reservation_id );
 			$cfg->set_many( $cfg_values )->save();
 			EEM_Reservation_Config::flush_cache( $reservation_id );
+			// Mirror pricing mode to post meta (resilient fallback — see
+			// EEM_Reservations_CPT::get_meta_values) so imported reservations
+			// keep their Stay Packages pricing on environments where the
+			// config-table column read/write isn't taking.
+			if ( isset( $cfg_values['stall_pricing_mode'] ) ) {
+				update_post_meta( $reservation_id, '_en_stall_pricing_mode', $cfg_values['stall_pricing_mode'] );
+			}
+			if ( isset( $cfg_values['rv_pricing_mode'] ) ) {
+				update_post_meta( $reservation_id, '_en_rv_pricing_mode', $cfg_values['rv_pricing_mode'] );
+			}
 		}
 
 		/* ── Stay Packages ─────────────────────────────────────── */

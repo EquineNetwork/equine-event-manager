@@ -1138,16 +1138,23 @@ class EEM_Reservation_Editor_Page {
 			// (save_meta already ran above the publish gate)
 		}
 
-		// ── Stay Packages pricing mode (stored in reservation_config) ──
+		// ── Stay Packages pricing mode ──
+		// Primary store is the reservation_config table; ALSO mirror to post
+		// meta as a resilient fallback (read back by get_meta_values). The
+		// post-meta mirror is what makes this persist on environments where the
+		// table column write isn't taking (observed on WP Engine staging,
+		// 2.7.583) — post meta is the storage that demonstrably works there.
 		if ( isset( $_POST['en_reservation']['stall_pricing_mode'] ) ) {
 			$spm = in_array( $_POST['en_reservation']['stall_pricing_mode'], array( 'nightly', 'packages', 'both' ), true )
 				? $_POST['en_reservation']['stall_pricing_mode'] : 'nightly';
 			$cfg->set( 'stall_pricing_mode', $spm )->save();
+			update_post_meta( $reservation_id, '_en_stall_pricing_mode', $spm );
 		}
 		if ( isset( $_POST['en_reservation']['rv_pricing_mode'] ) ) {
 			$rpm = in_array( $_POST['en_reservation']['rv_pricing_mode'], array( 'nightly', 'packages', 'both' ), true )
 				? $_POST['en_reservation']['rv_pricing_mode'] : 'nightly';
 			$cfg->set( 'rv_pricing_mode', $rpm )->save();
+			update_post_meta( $reservation_id, '_en_rv_pricing_mode', $rpm );
 		}
 
 		// ── C8 mapped-layout meta (not routed through en_reservation[]) ──

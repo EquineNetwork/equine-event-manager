@@ -1662,17 +1662,20 @@ class EEM_Reservations_CPT {
 		// Expose the reservation ID for section templates that need it (e.g. Stay Packages query).
 		$values['_reservation_id'] = (int) $post_id;
 
-		// Stay Packages pricing mode (stored in wp_eem_reservation_config, not post meta).
-		// These are table-only fields with no postmeta equivalent (introduced with
-		// Stay Packages, migration 026); in postmeta-only mode they default to
-		// 'nightly', which is correct for pre-Stay-Packages reservations.
+		// Stay Packages pricing mode. Primary store is the reservation_config
+		// table, but it is ALSO mirrored to post meta (`_en_stall_pricing_mode`
+		// / `_en_rv_pricing_mode`) on save — see EEM_Reservation_Editor_Page.
+		// The post-meta mirror is the resilient fallback for environments where
+		// the table column read/write isn't taking (observed on a WP Engine
+		// staging install, 2.7.583): read the table first, then post meta, then
+		// default to 'nightly'.
 		if ( $prefer_postmeta ) {
-			$values['stall_pricing_mode'] = 'nightly';
-			$values['rv_pricing_mode']    = 'nightly';
+			$values['stall_pricing_mode'] = get_post_meta( $post_id, '_en_stall_pricing_mode', true ) ?: 'nightly';
+			$values['rv_pricing_mode']    = get_post_meta( $post_id, '_en_rv_pricing_mode', true ) ?: 'nightly';
 		} else {
 			$cfg = EEM_Reservation_Config::for( (int) $post_id );
-			$values['stall_pricing_mode'] = $cfg->get( 'stall_pricing_mode' ) ?: 'nightly';
-			$values['rv_pricing_mode']    = $cfg->get( 'rv_pricing_mode' ) ?: 'nightly';
+			$values['stall_pricing_mode'] = $cfg->get( 'stall_pricing_mode' ) ?: ( get_post_meta( $post_id, '_en_stall_pricing_mode', true ) ?: 'nightly' );
+			$values['rv_pricing_mode']    = $cfg->get( 'rv_pricing_mode' ) ?: ( get_post_meta( $post_id, '_en_rv_pricing_mode', true ) ?: 'nightly' );
 		}
 
 		// Scenario B (V1 #4): resolve the inventory-type / customer-selection pair
