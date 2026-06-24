@@ -11545,7 +11545,7 @@ class EEM_Admin {
 				_n( 'Cleared assignments for %d order — every stall & RV lot is back to Available.', 'Cleared assignments for %d orders — every stall & RV lot is back to Available.', $cleared, 'equine-event-manager' ),
 				$cleared
 			),
-			$return_page
+			'stall_chart'
 		);
 	}
 
@@ -13672,6 +13672,8 @@ class EEM_Admin {
 			'assignment_update_failed' => array( 'error', $error ? $error : __( 'Assignments could not be updated.', 'equine-event-manager' ) ),
 			'stall_assignments_generated' => array( 'success', __( 'Stall assignments generated for this reservation.', 'equine-event-manager' ) ),
 			'stall_assignments_generation_failed' => array( 'error', $error ? $error : __( 'Stall assignments could not be generated.', 'equine-event-manager' ) ),
+			'stall_assignments_cleared' => array( 'success', $error ? $error : __( 'All stall & RV assignments cleared — every unit is back to Available.', 'equine-event-manager' ) ),
+			'stall_assignments_cleared_failed' => array( 'error', $error ? $error : __( 'Assignments could not be cleared.', 'equine-event-manager' ) ),
 			'settings_saved'     => array( 'success', __( 'Settings saved.', 'equine-event-manager' ) ),
 			'native_events_disabled' => array( 'info', __( 'Native Events is currently turned off. Re-enable it in Settings > Features to access those event screens again.', 'equine-event-manager' ) ),
 		);
