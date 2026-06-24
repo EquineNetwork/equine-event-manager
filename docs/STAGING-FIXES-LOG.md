@@ -32,6 +32,11 @@ at the bottom. Session task IDs in brackets.
 - **Fix:** (a) By Customer shows ONLY saved/assigned units ("—" until assigned). (b) Migration #039 derives arrival/departure/effective dates from each order's stay-type label matched to the reservation's stay packages by weekday. **Note:** the WHERE had to match `arrival_date IS NULL OR = '0000-00-00'` — comparing a DATE column to `''` is invalid under strict SQL mode and silently voids the predicate.
 - **Prevention:** Never show unsaved suggestions as committed data. Never compare DATE/DATETIME columns to `''` — use `IS NULL` / `'0000-00-00'`. Orders must resolve stay-type → dates at creation (see #17 import fix below).
 
+### Dashboard RV parity + `&amp;` double-encoding + By Location default (v2.7.587–588)
+- **[#18] Dashboard RV parity** — "Rv" → "RV"; Upcoming Reservations card shows RV count alongside stalls; This Week card adds RV assigned. Shipped 2.7.587.
+- **[#15] `&amp;` double-encoding** in reservation dropdowns (Daily Movement etc.) — fixed in the Choices dropdowns. Shipped 2.7.587.
+- **[#5] Default to By Location** when orders exist but nothing assigned — landing view now defaults to By Location — List. Shipped 2.7.588 (and reinforced 2.7.591: configured/empty-state handling).
+
 ### Earlier (same shake-out)
 - **CSV import**: shavings-only + RV-only-with-shavings customers handled; IMP- order numbers.
 - **Import/Export tool** for full reservation setup (event + venue + config + packages + orders).
@@ -46,15 +51,38 @@ at the bottom. Session task IDs in brackets.
 
 ---
 
+## 🟡 IMPLEMENTED — pending Whitney visual verification (do NOT redo)
+
+> Work done in a **Claude Code web session (2026-06-24)** on branch
+> **`claude/session-context-recovery-4c6f8m`** (draft PR open). NOT yet merged to
+> `main` and NOT visually verified. Desktop: review the branch/PR rather than
+> re-implementing. No version bump applied (awaiting Whitney's OK per ROADMAP).
+
+- **[#14] Barn filter on By Customer** — added a barn `<select>` ("All Barns" + one
+  option per configured barn) to the By Customer filter row, mirroring the By
+  Location barn filter. Implementation:
+  - PHP (`admin/class-equine-event-manager-admin.php`): dropdown emitted in the By
+    Customer filter row, gated on `'rv' !== $inv && ! empty( $barn_options )`
+    (hidden in RV-only mode / when no named barns). Each customer `<tr>` now emits
+    `data-barns="<space-separated barn slugs>"` computed from the order's stall
+    units via `$unit_block_map` (same `sanitize_html_class(strtolower())`
+    normalization as the dropdown option values, so slugs align).
+  - JS (`assets/js/admin.js`): `eemApplyStallChartFilter` prefers a panel-local
+    `.eem-cust-barn-select` when present and matches rows whose `data-barns` token
+    list includes the selected slug; a `change` listener re-runs the filter; the
+    inventory-switch handler resets the select to "all" and recomputes so a stale
+    barn filter can't leave rows hidden after switching Stalls/RV/All.
+  - **Behavior decision (flag for Whitney):** selecting a specific barn hides
+    RV-only orders (they have no barn). "All Barns" shows everything. If you'd
+    rather RV-only orders always remain visible, say so and it's a one-line change.
+  - Stacks correctly with the existing search box, Show-by-group, and Tack filters.
+  - `php -l` + `node --check` both clean. Not yet browser-verified on a live chart.
+
 ## 🔜 IN THE CURRENT BATCH (not yet shipped — designs locked)
 
-- **[#14] Barn filter on By Customer** — it has a Barn column but no Barn filter like By Location.
-- **[#15] `&amp;` double-encoding** in reservation dropdowns (Daily Movement etc.). Likely the Choices.js enhancement double-encoding the option label; native breadcrumb renders fine. Fix: decode-before-escape and/or configure the select-enhancer not to re-encode. Repair any title actually stored encoded.
 - **[#16] Confirmation # → Order Notes card** (LOCKED): exclude Confirmation Numbers from the Special Requests display; add an "Order Notes" card below Special Instructions for free-text internal notes (separate from the Activity Log audit trail); put the confirmation # in its own labeled field + log "Imported with confirmation # X".
 - **[#17] Shavings count** (LOCKED — all three): a Shavings column in By Customer, on Daily Movement arrivals, and on the stall map cell / assignment chip. Also: CSV import should resolve stay-type → dates at creation so future imports don't need migration #039.
-- **[#18] Dashboard RV parity**: "Rv" → "RV"; Upcoming Reservations card show RV count (e.g. 94/94) alongside stalls; "This Week" card add RV assigned.
 - **[#2] Assign from Order detail** — no assignment affordance on the order page.
 - **[#3] Unify By Location List + Map click menus** — both should offer assign / cleaning / checked-in / tack / block (biggest item).
 - **[#4] Consistent status colors** across List chips + Map cells (green=available, blue=assigned, red=blocked, orange=tack).
-- **[#5] Default to By Location** when orders exist but nothing assigned (lower priority now — By Customer is populated).
 - **[#10] Dashboard date wording**: "In 3 days" (event) vs "Opens in 1 day" (reservation) reads as conflicting.
