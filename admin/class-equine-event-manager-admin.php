@@ -5588,8 +5588,12 @@ class EEM_Admin {
 				$rv_manual = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, 'rv', 'Assigned RV Units' ) );
 			}
 			$rv_lot_name  = $this->parse_rv_lot_name_from_notes( $order['notes'] );
-			$stall_units  = $this->allocate_stall_chart_units( $config['available_stall_units'], $stall_map, $stall_dates, $stall_needed, $stall_manual, $order['order_key'] );
-			$rv_units     = $this->allocate_rv_lot_rows( isset( $config['rv_lot_names'] ) ? $config['rv_lot_names'] : array(), isset( $config['auto_assign_rv_lot_names'] ) ? $config['auto_assign_rv_lot_names'] : ( isset( $config['available_rv_lot_names'] ) ? $config['available_rv_lot_names'] : array() ), $rv_map, $rv_dates, $rv_needed, $rv_lot_name, $rv_manual, $order['order_key'] );
+			// Auto-suggestion OFF (Whitney 2026-06-24): the chart shows ONLY saved
+			// assignments. Every unit reads Available until the admin assigns it
+			// (manually on the map/list, or via Generate Assignments which saves).
+			// No proposed/suggested layout is computed or displayed.
+			$stall_units  = array( 'assigned' => array_values( array_unique( array_map( 'strval', (array) $stall_manual ) ) ), 'unassigned' => 0 );
+			$rv_units     = array( 'assigned' => array_values( array_unique( array_map( 'strval', (array) $rv_manual ) ) ), 'unassigned' => 0 );
 
 			// V1 Scenario F: surface the customer's Special Requests on the chart
 			// (pill tooltip + by-customer note) so admins see them while assigning.
@@ -6944,7 +6948,7 @@ class EEM_Admin {
 							$eem_row_group,
 						);
 						?>
-						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="" data-has-stalls="<?php echo ! empty( $row['stall_units'] ) ? '1' : '0'; ?>" data-has-rv="<?php echo ! empty( $row['rv_units'] ) ? '1' : '0'; ?>" data-group="<?php echo esc_attr( $eem_row_group ); ?>" data-has-tack="<?php echo ! empty( $row['tack_units'] ) ? '1' : '0'; ?>">
+						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="" data-has-stalls="<?php echo ! empty( $row['has_stall'] ) ? '1' : '0'; ?>" data-has-rv="<?php echo ! empty( $row['has_rv'] ) ? '1' : '0'; ?>" data-group="<?php echo esc_attr( $eem_row_group ); ?>" data-has-tack="<?php echo ! empty( $row['tack_units'] ) ? '1' : '0'; ?>">
 							<?php $eem_order_url = admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $row['order_key'] ) ); ?>
 							<td>
 								<div class="eem-chart-cust-cell">
@@ -7398,6 +7402,12 @@ class EEM_Admin {
 				'daily_counts'     => $daily_counts,
 				'stall_units'      => $stall_units['assigned'],
 				'rv_units'         => $rv_units['assigned'],
+				// Whether the ORDER includes stalls / RV (by quantity) — drives the
+				// By Customer Stalls/RV/Both row filter. Must be based on what was
+				// PURCHASED, not what's assigned, so every customer shows in the
+				// roster (Available) before any assignment is made.
+				'has_stall'        => $stall_needed > 0,
+				'has_rv'           => $rv_needed > 0,
 				'unassigned'       => implode( ' | ', $unassigned ),
 				// V1 Scenario F: special requests shown under the customer name.
 				'special_requests' => trim( (string) $this->get_special_requests_from_order_notes( $order['notes'] ) ),
