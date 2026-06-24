@@ -51,6 +51,28 @@ at the bottom. Session task IDs in brackets.
 
 ---
 
+## 🟡 IMPLEMENTED — pending Whitney visual verification (do NOT redo)
+
+> Work done in a **Claude Code web session (2026-06-24)** on branch
+> **`claude/session-context-recovery-4c6f8m`**. NOT merged to `main`, NOT visually
+> verified, NO version bump. Desktop: review the branch rather than re-implementing.
+
+- **[#10] Dashboard date wording** — the Upcoming Reservations and Upcoming Events
+  cards now read consistently. Root cause: the reservation chip was computed from the
+  **event start date** (`_en_source_event_start_date`) but labeled "Opens in N days" /
+  bare "In N days" (>7-day branch), which (a) implied a registration-open countdown
+  that nothing actually measures, and (b) collided with the events card's "In N days".
+  Fix (`includes/class-eem-dashboard-repo.php`):
+  - Renamed `format_opens_in()` → `format_event_countdown()` (event-anchored, only 3
+    in-file references updated) and changed wording to **"Happening now" / "Starts
+    today" / "Starts in N days"** for all day counts (no more bare "In N days").
+  - Aligned the events-card helper `event_when_label()` to the same phrasing
+    ("Today" → "Starts today", "In N days" → "Starts in N days"; "Happening now" kept).
+  - Both cards now use identical relative-time language anchored on the event start.
+  - **Wording flag for Whitney:** I chose "Starts in N days". If you'd rather use a
+    different verb (e.g. "Event in N days" or plain "In N days" on both), it's a quick
+    string swap. `php -l` clean; not yet browser-verified.
+
 ## ❌ DECIDED AGAINST — not building
 
 - **[#14] Barn filter on By Customer — DROPPED (Whitney, 2026-06-24).** By Customer is
@@ -66,4 +88,3 @@ at the bottom. Session task IDs in brackets.
 - **[#2] Assign from Order detail** — no assignment affordance on the order page.
 - **[#3] Unify By Location List + Map click menus** — both should offer assign / cleaning / checked-in / tack / block (biggest item).
 - **[#4] Consistent status colors** across List chips + Map cells (green=available, blue=assigned, red=blocked, orange=tack).
-- **[#10] Dashboard date wording**: "In 3 days" (event) vs "Opens in 1 day" (reservation) reads as conflicting.

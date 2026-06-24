@@ -20,8 +20,13 @@
 >   Location, which already has it). Briefly implemented then reverted in-session; the
 >   code files are back to baseline. Do NOT re-add. Logged under "❌ DECIDED AGAINST" in
 >   `docs/STAGING-FIXES-LOG.md`.
+> - **#10 Dashboard date wording — IMPLEMENTED, pending Whitney verify.** Unified both
+>   Dashboard cards on event-anchored wording ("Starts in N days" / "Starts today" /
+>   "Happening now"); renamed `format_opens_in` → `format_event_countdown`. File:
+>   `includes/class-eem-dashboard-repo.php`. Details + wording flag in `docs/STAGING-FIXES-LOG.md`
+>   → "🟡 IMPLEMENTED — pending Whitney visual verification".
 >
-> Remaining batch items (#16, #17, #2, #3, #4, #10) are untouched and still open.
+> Remaining batch items (#16, #17, #2, #3, #4) are untouched and still open.
 
 **Current state:** v2.7.580+ on `main`. Separate stall/RV layout saving shipped (migration 037).
 

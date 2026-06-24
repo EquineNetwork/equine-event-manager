@@ -445,7 +445,7 @@ class EEM_Dashboard_Repo {
 				'id'         => $res_id,
 				'name'       => get_the_title( $post ),
 				'date_range' => self::format_date_range( $start_str, $end_str ),
-				'opens_in'   => self::format_opens_in( $days_until ),
+				'opens_in'   => self::format_event_countdown( $days_until ),
 				'tags'       => array_keys( $tags ),
 				'orders'     => $count,
 				'revenue'    => self::format_currency( $revenue ),
@@ -542,7 +542,7 @@ class EEM_Dashboard_Repo {
 			);
 			if ( $worst['start_ts'] > 0 ) {
 				$days = (int) floor( ( $worst['start_ts'] - strtotime( 'today' ) ) / DAY_IN_SECONDS );
-				$opens = self::format_opens_in( $days );
+				$opens = self::format_event_countdown( $days );
 				$desc_parts[] = $opens['label'];
 			}
 			$items[] = array(
@@ -828,28 +828,36 @@ class EEM_Dashboard_Repo {
 	}
 
 	/**
-	 * "Opens in N days" / "Opens today" / "Open now" + tone class.
+	 * Relative "when" chip for a reservation's event, anchored on the event
+	 * START date (callers pass days-until-event-start, derived from
+	 * `_en_source_event_start_date`). Wording is kept consistent with the
+	 * Upcoming Events card (event_when_label) so both Dashboard cards read the
+	 * same way: "Happening now" / "Starts today" / "Starts in N days".
 	 *
-	 * @param int $days_until
+	 * (Formerly format_opens_in / "Opens in N days" — that phrasing implied a
+	 * registration-open countdown, but the value measured is the event start,
+	 * which conflicted with the events card. #10.)
+	 *
+	 * @param int $days_until Days until the event starts (negative = underway).
 	 * @return array{label:string, tone:string}
 	 */
-	public static function format_opens_in( $days_until ) {
+	public static function format_event_countdown( $days_until ) {
 		if ( $days_until < 0 ) {
-			return array( 'label' => __( 'Open now', 'equine-event-manager' ), 'tone' => 'opens-soon' );
+			return array( 'label' => __( 'Happening now', 'equine-event-manager' ), 'tone' => 'opens-soon' );
 		}
 		if ( 0 === $days_until ) {
-			return array( 'label' => __( 'Opens today', 'equine-event-manager' ), 'tone' => 'opens-soon' );
+			return array( 'label' => __( 'Starts today', 'equine-event-manager' ), 'tone' => 'opens-soon' );
 		}
 		if ( $days_until <= 7 ) {
 			return array(
-				/* translators: %d: days until reservation opens */
-				'label' => sprintf( _n( 'Opens in %d day', 'Opens in %d days', $days_until, 'equine-event-manager' ), $days_until ),
+				/* translators: %d: days until the event starts */
+				'label' => sprintf( _n( 'Starts in %d day', 'Starts in %d days', $days_until, 'equine-event-manager' ), $days_until ),
 				'tone'  => 'opens-soon',
 			);
 		}
 		return array(
-			/* translators: %d: days until reservation opens */
-			'label' => sprintf( _n( 'In %d day', 'In %d days', $days_until, 'equine-event-manager' ), $days_until ),
+			/* translators: %d: days until the event starts */
+			'label' => sprintf( _n( 'Starts in %d day', 'Starts in %d days', $days_until, 'equine-event-manager' ), $days_until ),
 			'tone'  => 'future',
 		);
 	}
@@ -938,9 +946,10 @@ class EEM_Dashboard_Repo {
 	}
 
 	/**
-	 * Relative "when" chip for an upcoming event: Happening now / Today /
-	 * In N days. Tone drives the pill colour (opens-soon = live/today/green,
-	 * future = blue).
+	 * Relative "when" chip for an upcoming event: Happening now / Starts today /
+	 * Starts in N days. Wording matches format_event_countdown so the Upcoming
+	 * Events and Upcoming Reservations cards read consistently (#10). Tone drives
+	 * the pill colour (opens-soon = live/today/green, future = blue).
 	 *
 	 * @param int $start_ts Event start (unix, 0 if none).
 	 * @param int $end_ts   Event end (unix, 0 if none).
@@ -952,13 +961,13 @@ class EEM_Dashboard_Repo {
 			return array( 'label' => __( 'Happening now', 'equine-event-manager' ), 'tone' => 'opens-soon' );
 		}
 		if ( $start_ts && $start_ts === $today ) {
-			return array( 'label' => __( 'Today', 'equine-event-manager' ), 'tone' => 'opens-soon' );
+			return array( 'label' => __( 'Starts today', 'equine-event-manager' ), 'tone' => 'opens-soon' );
 		}
 		if ( $start_ts && $start_ts > $today ) {
 			$days = (int) round( ( $start_ts - $today ) / DAY_IN_SECONDS );
 			return array(
 				/* translators: %d: number of days until the event starts. */
-				'label' => sprintf( _n( 'In %d day', 'In %d days', $days, 'equine-event-manager' ), $days ),
+				'label' => sprintf( _n( 'Starts in %d day', 'Starts in %d days', $days, 'equine-event-manager' ), $days ),
 				'tone'  => 'future',
 			);
 		}
