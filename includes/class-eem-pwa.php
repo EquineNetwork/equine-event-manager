@@ -2,8 +2,15 @@
 /**
  * Equine Event Manager — PWA support.
  *
- * Outputs the Web App Manifest link and registers the service worker on both
- * admin and front-end pages so the site is installable as "Equine Event Manager."
+ * DEFERRED TO v2 (2026-06-23, Whitney). The plugin is nowhere near PWA-ready, so
+ * the install banner, Web App Manifest, and service worker are all DISABLED.
+ *
+ * Because a service worker registered on a previous version persists in the
+ * browser until explicitly unregistered, init() now outputs a one-time cleanup
+ * script that unregisters any lingering EEM service worker instead of registering
+ * one. The manifest link and the "Install Equine Event Manager" banner are no
+ * longer emitted at all. When PWA work resumes in v2, restore the manifest +
+ * service-worker registration + install-prompt logic from git history.
  *
  * @package EEM_Plugin
  */
@@ -14,49 +21,38 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class EEM_PWA {
 
+	/**
+	 * Hook the cleanup script into the admin + front-end footers. No manifest
+	 * link, no service-worker registration, no install banner — PWA is v2.
+	 *
+	 * @return void
+	 */
 	public static function init(): void {
-		add_action( 'wp_head', array( __CLASS__, 'output_manifest_link' ) );
-		add_action( 'admin_head', array( __CLASS__, 'output_manifest_link' ) );
-		add_action( 'wp_footer', array( __CLASS__, 'register_service_worker' ) );
-		add_action( 'admin_footer', array( __CLASS__, 'register_service_worker' ) );
+		add_action( 'wp_footer', array( __CLASS__, 'unregister_service_worker' ) );
+		add_action( 'admin_footer', array( __CLASS__, 'unregister_service_worker' ) );
 	}
 
-	public static function output_manifest_link(): void {
-		$manifest_url = EQUINE_EVENT_MANAGER_URL . 'assets/manifest.json';
-		printf(
-			'<link rel="manifest" href="%s">' . "\n" .
-			'<meta name="theme-color" content="#0a1628">' . "\n",
-			esc_url( $manifest_url )
-		);
-	}
-
-	public static function register_service_worker(): void {
+	/**
+	 * Unregister any service worker left over from the pre-v2 PWA build so
+	 * browsers that already installed it stop serving cached content and stop
+	 * firing the install prompt. Safe to run on every page load — a no-op once
+	 * no EEM service worker remains.
+	 *
+	 * @return void
+	 */
+	public static function unregister_service_worker(): void {
 		$sw_url = EQUINE_EVENT_MANAGER_URL . 'assets/js/eem-sw.js';
 		?>
 		<script>
 		if ('serviceWorker' in navigator) {
-			navigator.serviceWorker.register(<?php echo wp_json_encode( $sw_url ); ?>, {scope: '/'}).catch(function(){});
+			var eemSwUrl = <?php echo wp_json_encode( $sw_url ); ?>;
+			navigator.serviceWorker.getRegistrations().then(function(regs){
+				regs.forEach(function(r){
+					var w = r.active || r.installing || r.waiting;
+					if (w && w.scriptURL === eemSwUrl) { r.unregister(); }
+				});
+			}).catch(function(){});
 		}
-		(function(){
-			var deferredPrompt;
-			window.addEventListener('beforeinstallprompt', function(e){
-				e.preventDefault();
-				deferredPrompt = e;
-				var b = document.createElement('div');
-				b.className = 'eem-pwa-install';
-				b.innerHTML = '<span>Install Equine Event Manager</span><button class="eem-btn eem-btn--primary eem-pwa-install-btn">Install</button><button class="eem-pwa-install-dismiss">&times;</button>';
-				document.body.appendChild(b);
-				b.querySelector('.eem-pwa-install-btn').addEventListener('click', function(){
-					b.remove();
-					deferredPrompt.prompt();
-					deferredPrompt.userChoice.then(function(){ deferredPrompt = null; });
-				});
-				b.querySelector('.eem-pwa-install-dismiss').addEventListener('click', function(){
-					b.remove();
-					deferredPrompt = null;
-				});
-			});
-		})();
 		</script>
 		<?php
 	}
