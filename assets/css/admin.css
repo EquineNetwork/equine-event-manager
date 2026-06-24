@@ -8357,6 +8357,29 @@ input.eem-event-search-input:focus {
 }
 .eem-row-card-field input:focus,
 .eem-row-card-field select:focus { border-color: var(--eem-electric); }
+/* Nightly Surcharge currency affix ($ symbol + number input) inside an RV Lot
+   Row card. Without these, the generic `.eem-row-card-field input` rule above
+   (width:100%, full border-radius, light border — same specificity, declared
+   later) overrides the affix's own borders/width, splitting the $ box from the
+   input and breaking the seam. Scope higher (.eem-row-card-field .eem-zone-
+   price-wrap input → 0,3,1) so the affix wins and renders as one connected
+   control that fills the field column. */
+.eem-row-card-field .eem-zone-price-wrap { width: 100%; }
+.eem-row-card-field .eem-zone-price-sym {
+	height: 34px;
+	border: 1.5px solid #D9E2F2;
+	border-right: none;
+	border-radius: var(--eem-radius) 0 0 var(--eem-radius);
+	background: #f3f4f5;
+}
+.eem-row-card-field .eem-zone-price-wrap input.eem-zone-price-in {
+	width: 100%;
+	height: 34px;
+	border: 1.5px solid #D9E2F2;
+	border-left: none;
+	border-radius: 0 var(--eem-radius) var(--eem-radius) 0;
+}
+.eem-row-card-field .eem-zone-price-wrap input.eem-zone-price-in:focus { border-color: var(--eem-electric); }
 .eem-row-card-field select {
 	padding-right: 28px;
 	background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236B7A99' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 9px center;
