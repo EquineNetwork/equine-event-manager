@@ -1913,12 +1913,55 @@ class EEM_Settings_Page {
 			</div>
 		</div>
 
+		<!-- Export Setup Card -->
+		<div class="eem-card" style="margin-top:24px">
+			<div class="eem-card-header">
+				<h3><?php esc_html_e( 'Export Reservation Setup', 'equine-event-manager' ); ?></h3>
+			</div>
+			<div class="eem-card-body">
+				<p class="eem-card-subtitle"><?php esc_html_e( 'Download a JSON file containing the full reservation setup (event, venue, config, packages, and all orders). Use this to transfer a reservation to another site.', 'equine-event-manager' ); ?></p>
+				<div class="eem-field-row">
+					<label class="eem-field-label" for="eem-export-reservation"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?></label>
+					<select id="eem-export-reservation" class="eem-field-select">
+						<option value=""><?php esc_html_e( '— Select a reservation —', 'equine-event-manager' ); ?></option>
+						<?php foreach ( $reservations as $res ) : ?>
+							<option value="<?php echo esc_attr( (string) $res->ID ); ?>"><?php echo esc_html( $res->post_title . ' (#' . $res->ID . ')' ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</div>
+				<div style="margin-top:16px">
+					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="export-setup"><?php esc_html_e( 'Download Setup JSON', 'equine-event-manager' ); ?></button>
+				</div>
+			</div>
+		</div>
+
+		<!-- Import Setup JSON Card -->
+		<div class="eem-card" style="margin-top:24px">
+			<div class="eem-card-header">
+				<h3><?php esc_html_e( 'Import Reservation Setup (JSON)', 'equine-event-manager' ); ?></h3>
+			</div>
+			<div class="eem-card-body">
+				<p class="eem-card-subtitle"><?php esc_html_e( 'Upload a setup JSON file exported from another site. This creates a new event, venue, reservation, config, packages, and orders.', 'equine-event-manager' ); ?></p>
+				<div id="eem-json-import-step-1">
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-import-json"><?php esc_html_e( 'JSON File', 'equine-event-manager' ); ?></label>
+						<input type="file" id="eem-import-json" accept=".json" class="eem-field-input" />
+					</div>
+					<div style="margin-top:16px">
+						<button type="button" class="eem-btn eem-btn-primary" data-eem-action="import-json-upload"><?php esc_html_e( 'Import Setup', 'equine-event-manager' ); ?></button>
+					</div>
+				</div>
+				<div id="eem-json-import-result" style="display:none;margin-top:16px"></div>
+			</div>
+		</div>
+
 		<script>
 		(function(){
 			var importKey = '';
 			var csvHeaders = [];
 			var nonce = <?php echo wp_json_encode( $nonce ); ?>;
 			var ajaxUrl = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
+			var exportUrl = <?php echo wp_json_encode( admin_url( 'admin-post.php' ) ); ?>;
 
 			var FIELDS = [
 				{ key: 'last_name',             label: 'Last Name *',          required: true },
@@ -2126,6 +2169,51 @@ class EEM_Settings_Page {
 					document.getElementById('eem-import-step-2').style.display = 'none';
 					document.getElementById('eem-import-step-3').style.display = 'none';
 					document.getElementById('eem-import-step-4').style.display = 'none';
+				}
+
+				if (action === 'export-setup') {
+					var resId = document.getElementById('eem-export-reservation').value;
+					if (!resId) { alert('Please select a reservation.'); return; }
+					var url = exportUrl + '?action=eem_export_setup&reservation_id=' + resId + '&_wpnonce=' + <?php echo wp_json_encode( wp_create_nonce( 'eem_export_setup' ) ); ?>;
+					window.location.href = url;
+				}
+
+				if (action === 'import-json-upload') {
+					var fileInput = document.getElementById('eem-import-json');
+					if (!fileInput.files.length) { alert('Please select a JSON file.'); return; }
+					if (!confirm('This will create a new event, venue, reservation, and all orders from this file. Continue?')) return;
+
+					var fd = new FormData();
+					fd.append('action', 'eem_import_setup');
+					fd.append('_wpnonce', nonce);
+					fd.append('json_file', fileInput.files[0]);
+
+					target.disabled = true;
+					target.textContent = 'Importing...';
+
+					fetch(ajaxUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+						.then(function(r) { return r.json(); })
+						.then(function(resp) {
+							target.disabled = false;
+							target.textContent = 'Import Setup';
+							var resultDiv = document.getElementById('eem-json-import-result');
+							resultDiv.style.display = '';
+							if (!resp.success) {
+								resultDiv.innerHTML = '<div style="color:#b91c1c;font-weight:600">' + (resp.data.message || 'Import failed.') + '</div>';
+							} else {
+								var d = resp.data;
+								var html = '<div style="color:#16a34a;font-weight:600">' + d.message + '</div>';
+								if (d.reservation_id) {
+									html += '<div style="margin-top:8px"><a href="' + <?php echo wp_json_encode( admin_url( 'post.php?action=edit&post=' ) ); ?> + d.reservation_id + '" class="eem-btn eem-btn-secondary" style="text-decoration:none">View Reservation #' + d.reservation_id + '</a></div>';
+								}
+								resultDiv.innerHTML = html;
+							}
+						})
+						.catch(function() {
+							target.disabled = false;
+							target.textContent = 'Import Setup';
+							alert('Import failed. Please try again.');
+						});
 				}
 			});
 		})();

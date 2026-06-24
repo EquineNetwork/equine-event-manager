@@ -1,9 +1,9 @@
 <?php
 /**
- * CSV Import Handler — processes uploaded CSV files and creates orders.
+ * Import/Export Handler — CSV order import + full reservation setup JSON export/import.
  *
  * Handles the Import / Export tab's CSV upload, preview, and order creation.
- * Orders are created with an IMP- prefix and marked as Paid.
+ * Also handles full-setup JSON export/import for migrating reservations between sites.
  *
  * @package EEM_Plugin
  * @since   2.7.581
@@ -346,5 +346,312 @@ class EEM_Import_Handler {
 			return '';
 		}
 		return (string) $row[ $header ];
+	}
+
+	/**
+	 * Export a full reservation setup as JSON (event + venue + config + packages + orders).
+	 *
+	 * Streams a JSON file download directly to the browser.
+	 *
+	 * @return void
+	 */
+	public static function ajax_export_setup(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Permission denied.', 'equine-event-manager' ) );
+		}
+		check_admin_referer( 'eem_export_setup' );
+
+		$reservation_id = isset( $_GET['reservation_id'] ) ? absint( $_GET['reservation_id'] ) : 0;
+		if ( ! $reservation_id ) {
+			wp_die( esc_html__( 'Missing reservation ID.', 'equine-event-manager' ) );
+		}
+
+		$reservation = get_post( $reservation_id );
+		if ( ! $reservation || 'en_reservation' !== $reservation->post_type ) {
+			wp_die( esc_html__( 'Invalid reservation.', 'equine-event-manager' ) );
+		}
+
+		$export = self::build_export( $reservation_id );
+
+		$filename = sanitize_file_name( 'eem-setup-' . $reservation->post_title . '-' . gmdate( 'Y-m-d' ) . '.json' );
+
+		header( 'Content-Type: application/json; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+		header( 'Cache-Control: no-cache' );
+
+		echo wp_json_encode( $export, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE );
+		exit;
+	}
+
+	/**
+	 * Build the full export array for a reservation.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return array Complete setup data.
+	 */
+	private static function build_export( int $reservation_id ): array {
+		global $wpdb;
+
+		$reservation = get_post( $reservation_id );
+		$res_meta    = get_post_meta( $reservation_id );
+
+		$cfg      = class_exists( 'EEM_Reservation_Config' ) ? EEM_Reservation_Config::for( $reservation_id ) : null;
+		$cfg_data = $cfg ? $cfg->all() : array();
+
+		$event_id = (int) ( $cfg_data['event_id'] ?? 0 );
+		$event    = $event_id ? get_post( $event_id ) : null;
+
+		$venue_id = 0;
+		if ( $event ) {
+			$venue_id = (int) get_post_meta( $event_id, '_equine_event_manager_event_venue_id', true );
+		}
+		$venue = $venue_id ? get_post( $venue_id ) : null;
+
+		$packages = array();
+		if ( class_exists( 'EEM_Stay_Packages_Repo' ) ) {
+			$packages = EEM_Stay_Packages_Repo::get_packages( $reservation_id );
+		}
+
+		$stall_table = $wpdb->prefix . 'en_stall_reservations';
+		$rv_table    = $wpdb->prefix . 'en_rv_reservations';
+
+		$stall_orders = $wpdb->get_results( $wpdb->prepare(
+			"SELECT * FROM {$stall_table} WHERE reservation_id = %d AND trashed_at IS NULL ORDER BY id ASC",
+			$reservation_id
+		), ARRAY_A );
+
+		$rv_orders = $wpdb->get_results( $wpdb->prepare(
+			"SELECT * FROM {$rv_table} WHERE reservation_id = %d AND trashed_at IS NULL ORDER BY id ASC",
+			$reservation_id
+		), ARRAY_A );
+
+		$export = array(
+			'export_version' => '1.0',
+			'exported_at'    => current_time( 'c' ),
+			'plugin_version' => defined( 'EEM_VERSION' ) ? EEM_VERSION : 'unknown',
+		);
+
+		if ( $venue ) {
+			$export['venue'] = array(
+				'title' => $venue->post_title,
+				'meta'  => self::flatten_meta( get_post_meta( $venue_id ) ),
+			);
+		}
+
+		if ( $event ) {
+			$export['event'] = array(
+				'title' => $event->post_title,
+				'meta'  => self::flatten_meta( get_post_meta( $event_id ) ),
+			);
+		}
+
+		$export['reservation'] = array(
+			'title'  => $reservation->post_title,
+			'status' => $reservation->post_status,
+			'meta'   => self::flatten_meta( $res_meta ),
+		);
+
+		$export['config']   = $cfg_data;
+		$export['packages'] = $packages;
+
+		$export['stall_orders'] = $stall_orders ?: array();
+		$export['rv_orders']    = $rv_orders ?: array();
+
+		return $export;
+	}
+
+	/**
+	 * Flatten WordPress post meta array (strips single-value arrays).
+	 *
+	 * @param array $meta Raw get_post_meta() result.
+	 * @return array Flattened meta.
+	 */
+	private static function flatten_meta( array $meta ): array {
+		$flat = array();
+		foreach ( $meta as $key => $values ) {
+			if ( strpos( $key, '_edit_' ) === 0 || $key === '_wp_old_slug' ) {
+				continue;
+			}
+			$flat[ $key ] = count( $values ) === 1 ? $values[0] : $values;
+		}
+		return $flat;
+	}
+
+	/**
+	 * Import a full reservation setup from a JSON file upload.
+	 *
+	 * Creates venue, event, reservation, config, packages, and orders.
+	 *
+	 * @return void Sends JSON response.
+	 */
+	public static function ajax_import_setup(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'eem_import_csv', '_wpnonce' );
+
+		if ( empty( $_FILES['json_file'] ) || UPLOAD_ERR_OK !== (int) $_FILES['json_file']['error'] ) {
+			wp_send_json_error( array( 'message' => __( 'No file uploaded or upload error.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$file = sanitize_text_field( $_FILES['json_file']['tmp_name'] );
+		if ( ! is_uploaded_file( $file ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid upload.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$json = file_get_contents( $file );
+		$data = json_decode( $json, true );
+
+		if ( ! is_array( $data ) || empty( $data['reservation'] ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid JSON file — missing reservation data.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$result = self::import_setup( $data );
+
+		wp_send_json_success( $result );
+	}
+
+	/**
+	 * Perform the full setup import from parsed JSON data.
+	 *
+	 * @param array $data Parsed export JSON.
+	 * @return array Summary of created entities.
+	 */
+	private static function import_setup( array $data ): array {
+		global $wpdb;
+
+		$summary = array();
+		$venue_id = 0;
+		$event_id = 0;
+
+		/* ── Venue ─────────────────────────────────────────────── */
+		if ( ! empty( $data['venue'] ) ) {
+			$venue_id = (int) wp_insert_post( array(
+				'post_type'   => 'en_venue',
+				'post_status' => 'publish',
+				'post_title'  => sanitize_text_field( $data['venue']['title'] ?? 'Imported Venue' ),
+			) );
+			if ( $venue_id && ! empty( $data['venue']['meta'] ) ) {
+				foreach ( $data['venue']['meta'] as $key => $val ) {
+					update_post_meta( $venue_id, $key, $val );
+				}
+			}
+			if ( class_exists( 'EEM_Venue' ) && method_exists( 'EEM_Venue', 'sync_post_to_table' ) ) {
+				EEM_Venue::sync_post_to_table( $venue_id );
+			}
+			$summary['venue_id'] = $venue_id;
+		}
+
+		/* ── Event ─────────────────────────────────────────────── */
+		if ( ! empty( $data['event'] ) ) {
+			$event_id = (int) wp_insert_post( array(
+				'post_type'   => 'en_event',
+				'post_status' => 'publish',
+				'post_title'  => sanitize_text_field( $data['event']['title'] ?? 'Imported Event' ),
+			) );
+			if ( $event_id && ! empty( $data['event']['meta'] ) ) {
+				foreach ( $data['event']['meta'] as $key => $val ) {
+					if ( $key === '_equine_event_manager_event_venue_id' && $venue_id ) {
+						$val = $venue_id;
+					}
+					update_post_meta( $event_id, $key, $val );
+				}
+			}
+			if ( class_exists( 'EEM_Native_Event_Repo' ) && method_exists( 'EEM_Native_Event_Repo', 'save' ) ) {
+				$start = get_post_meta( $event_id, '_equine_event_manager_event_start_date', true );
+				$end   = get_post_meta( $event_id, '_equine_event_manager_event_end_date', true );
+				EEM_Native_Event_Repo::save( $event_id, array(
+					'start_date'     => $start,
+					'end_date'       => $end,
+					'venue_id'       => $venue_id,
+					'location_label' => get_post_meta( $event_id, '_equine_event_manager_event_location_label', true ),
+					'featured'       => (int) get_post_meta( $event_id, '_equine_event_manager_event_featured', true ),
+				) );
+			}
+			$summary['event_id'] = $event_id;
+		}
+
+		/* ── Reservation ───────────────────────────────────────── */
+		$res_data = $data['reservation'];
+		$reservation_id = (int) wp_insert_post( array(
+			'post_type'   => 'en_reservation',
+			'post_status' => sanitize_text_field( $res_data['status'] ?? 'publish' ),
+			'post_title'  => sanitize_text_field( $res_data['title'] ?? 'Imported Reservation' ),
+		) );
+
+		if ( ! empty( $res_data['meta'] ) ) {
+			foreach ( $res_data['meta'] as $key => $val ) {
+				if ( $key === '_en_event_id' && $event_id ) {
+					$val = $event_id;
+				}
+				update_post_meta( $reservation_id, $key, $val );
+			}
+		}
+		$summary['reservation_id'] = $reservation_id;
+
+		/* ── Config ────────────────────────────────────────────── */
+		if ( ! empty( $data['config'] ) && class_exists( 'EEM_Reservation_Config' ) ) {
+			$cfg_values = $data['config'];
+			if ( $event_id ) {
+				$cfg_values['event_id'] = $event_id;
+			}
+			$cfg = EEM_Reservation_Config::for( $reservation_id );
+			$cfg->set_many( $cfg_values )->save();
+			EEM_Reservation_Config::flush_cache( $reservation_id );
+		}
+
+		/* ── Stay Packages ─────────────────────────────────────── */
+		$pkg_count = 0;
+		if ( ! empty( $data['packages'] ) && class_exists( 'EEM_Stay_Packages_Repo' ) ) {
+			foreach ( $data['packages'] as $pkg ) {
+				unset( $pkg['id'] );
+				$pkg['reservation_id'] = $reservation_id;
+				EEM_Stay_Packages_Repo::insert( $pkg );
+				$pkg_count++;
+			}
+		}
+		$summary['packages_created'] = $pkg_count;
+
+		/* ── Stall Orders ──────────────────────────────────────── */
+		$stall_count = 0;
+		if ( ! empty( $data['stall_orders'] ) ) {
+			$stall_table = $wpdb->prefix . 'en_stall_reservations';
+			foreach ( $data['stall_orders'] as $row ) {
+				unset( $row['id'] );
+				$row['reservation_id'] = $reservation_id;
+				if ( $event_id ) {
+					$row['event_id'] = $event_id;
+				}
+				$wpdb->insert( $stall_table, $row );
+				$stall_count++;
+			}
+		}
+		$summary['stall_orders_created'] = $stall_count;
+
+		/* ── RV Orders ─────────────────────────────────────────── */
+		$rv_count = 0;
+		if ( ! empty( $data['rv_orders'] ) ) {
+			$rv_table = $wpdb->prefix . 'en_rv_reservations';
+			foreach ( $data['rv_orders'] as $row ) {
+				unset( $row['id'] );
+				$row['reservation_id'] = $reservation_id;
+				if ( $event_id ) {
+					$row['event_id'] = $event_id;
+				}
+				$wpdb->insert( $rv_table, $row );
+				$rv_count++;
+			}
+		}
+		$summary['rv_orders_created'] = $rv_count;
+
+		$summary['message'] = sprintf(
+			__( 'Setup imported: reservation #%d with %d packages, %d stall orders, %d RV orders.', 'equine-event-manager' ),
+			$reservation_id,
+			$pkg_count,
+			$stall_count,
+			$rv_count
+		);
+
+		return $summary;
 	}
 }
