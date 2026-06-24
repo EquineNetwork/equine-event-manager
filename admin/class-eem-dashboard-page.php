@@ -272,7 +272,7 @@ class EEM_Dashboard_Page {
 							</div>
 							<div class="eem-dashboard-res-tags">
 								<?php foreach ( $row['tags'] as $tag ) : ?>
-									<span class="eem-dashboard-res-tag eem-dashboard-tag-<?php echo esc_attr( $tag ); ?>"><?php echo esc_html( ucfirst( $tag ) ); ?></span>
+									<span class="eem-dashboard-res-tag eem-dashboard-tag-<?php echo esc_attr( $tag ); ?>"><?php echo esc_html( 'rv' === $tag ? __( 'RV', 'equine-event-manager' ) : ucfirst( $tag ) ); ?></span>
 								<?php endforeach; ?>
 							</div>
 						</div>
@@ -283,13 +283,22 @@ class EEM_Dashboard_Page {
 							<?php
 							// Stall assignment count, surfaced as a compact stat (no
 							// progress bar) — only when the reservation has stalls.
-							$stall_total = (int) ( $row['stall_progress']['total'] ?? 0 );
+							$stall_total = (int) str_replace( ',', '', (string) ( $row['stall_progress']['total'] ?? 0 ) );
 							if ( $stall_total > 0 ) :
-								$stall_assigned = (int) ( $row['stall_progress']['assigned'] ?? 0 );
 							?>
 								<div class="eem-dashboard-res-stalls">
-									<strong><?php echo esc_html( $stall_assigned . ' / ' . $stall_total ); ?></strong>
+									<strong><?php echo esc_html( ( $row['stall_progress']['assigned'] ?? '0' ) . ' / ' . ( $row['stall_progress']['total'] ?? '0' ) ); ?></strong>
 									<?php esc_html_e( 'stalls', 'equine-event-manager' ); ?>
+								</div>
+							<?php endif; ?>
+							<?php
+							// RV-lot assignment count — only when the reservation has RV lots.
+							$rv_total = (int) str_replace( ',', '', (string) ( $row['rv_progress']['total'] ?? 0 ) );
+							if ( $rv_total > 0 ) :
+							?>
+								<div class="eem-dashboard-res-stalls">
+									<strong><?php echo esc_html( ( $row['rv_progress']['assigned'] ?? '0' ) . ' / ' . ( $row['rv_progress']['total'] ?? '0' ) ); ?></strong>
+									<?php esc_html_e( 'RV lots', 'equine-event-manager' ); ?>
 								</div>
 							<?php endif; ?>
 						</div>

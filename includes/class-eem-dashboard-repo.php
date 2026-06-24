@@ -121,12 +121,13 @@ class EEM_Dashboard_Repo {
 			$cache = EEM_Admin::for_compute()->get_dashboard_stall_metrics();
 		} else {
 			$cache = array(
-				'stalls_unassigned_total' => 0,
-				'stalls_assigned_total'   => 0,
-				'rv_unassigned_total'     => 0,
-				'per_reservation'         => array(),
-				'unconfigured'            => array(),
-				'assigned_by_order_key'   => array(),
+				'stalls_unassigned_total'  => 0,
+				'stalls_assigned_total'    => 0,
+				'rv_unassigned_total'      => 0,
+				'per_reservation'          => array(),
+				'unconfigured'             => array(),
+				'assigned_by_order_key'    => array(),
+				'rv_assigned_by_order_key' => array(),
 			);
 		}
 		return $cache;
@@ -449,6 +450,7 @@ class EEM_Dashboard_Repo {
 				'orders'     => $count,
 				'revenue'    => self::format_currency( $revenue ),
 				'stall_progress' => $this->stall_progress_for( $res_id ),
+				'rv_progress'    => $this->rv_progress_for( $res_id ),
 			);
 		}
 		wp_reset_postdata();
@@ -486,6 +488,25 @@ class EEM_Dashboard_Repo {
 			'total'    => number_format_i18n( $total ),
 			'pct'      => max( 0, min( 100, $pct ) ),
 			'tone'     => $tone,
+		);
+	}
+
+	/**
+	 * Per-reservation RV-lot assignment progress payload (assigned / total),
+	 * parallel to stall_progress_for(). Live via EEM_Admin metrics.
+	 *
+	 * @param int $res_id Reservation post ID.
+	 * @return array{assigned:string, total:string}
+	 */
+	private function rv_progress_for( $res_id ) {
+		$m        = $this->stall_metrics();
+		$pr       = isset( $m['per_reservation'][ (int) $res_id ] ) ? $m['per_reservation'][ (int) $res_id ] : null;
+		$assigned = $pr ? (int) ( $pr['rv_assigned'] ?? 0 ) : 0;
+		$total    = $pr ? (int) ( $pr['rv_total'] ?? 0 ) : 0;
+
+		return array(
+			'assigned' => number_format_i18n( $assigned ),
+			'total'    => number_format_i18n( $total ),
 		);
 	}
 
@@ -712,8 +733,11 @@ class EEM_Dashboard_Repo {
 		$revenue        = 0.0;
 		$invoices_sent  = 0;
 		$refunds_amount = 0.0;
-		$assigned_map   = (array) ( $this->stall_metrics()['assigned_by_order_key'] ?? array() );
+		$metrics         = $this->stall_metrics();
+		$assigned_map    = (array) ( $metrics['assigned_by_order_key'] ?? array() );
+		$rv_assigned_map = (array) ( $metrics['rv_assigned_by_order_key'] ?? array() );
 		$stalls_assigned = 0;
+		$rv_assigned     = 0;
 		foreach ( $orders as $o ) {
 			$slug = (string) ( $o['status_slug'] ?? '' );
 			$amt  = (float) ( $o['total'] ?? 0 );
@@ -723,6 +747,9 @@ class EEM_Dashboard_Repo {
 			$ok = (string) ( $o['order_key'] ?? '' );
 			if ( '' !== $ok && isset( $assigned_map[ $ok ] ) ) {
 				$stalls_assigned += (int) $assigned_map[ $ok ];
+			}
+			if ( '' !== $ok && isset( $rv_assigned_map[ $ok ] ) ) {
+				$rv_assigned += (int) $rv_assigned_map[ $ok ];
 			}
 		}
 
@@ -734,6 +761,7 @@ class EEM_Dashboard_Repo {
 			// Stalls assigned on orders placed this week (no per-assignment
 			// timestamp exists, so order-creation week is the honest proxy).
 			array( 'label' => __( 'Stalls assigned', 'equine-event-manager' ),  'value' => number_format_i18n( $stalls_assigned ), 'tone' => '' ),
+			array( 'label' => __( 'RV lots assigned', 'equine-event-manager' ),'value' => number_format_i18n( $rv_assigned ), 'tone' => '' ),
 		);
 	}
 

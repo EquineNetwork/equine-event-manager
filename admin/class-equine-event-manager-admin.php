@@ -4818,12 +4818,13 @@ class EEM_Admin {
 	 */
 	public function get_dashboard_stall_metrics(): array {
 		$out = array(
-			'stalls_unassigned_total' => 0,
-			'stalls_assigned_total'   => 0,
-			'rv_unassigned_total'     => 0,
-			'per_reservation'         => array(),
-			'unconfigured'            => array(),
-			'assigned_by_order_key'   => array(),
+			'stalls_unassigned_total'  => 0,
+			'stalls_assigned_total'    => 0,
+			'rv_unassigned_total'      => 0,
+			'per_reservation'          => array(),
+			'unconfigured'             => array(),
+			'assigned_by_order_key'    => array(),
+			'rv_assigned_by_order_key' => array(),
 		);
 
 		$chart_ids = EEM_Reservation_Config::with_stalls_or_rv(
@@ -4877,6 +4878,7 @@ class EEM_Admin {
 			$rv_map    = array();
 			$assigned  = 0;
 			$unassigned = 0;
+			$rv_assigned   = 0;
 			$rv_unassigned = 0;
 
 			foreach ( $orders as $order ) {
@@ -4891,26 +4893,25 @@ class EEM_Admin {
 				}
 				$rv_lot_name = $this->parse_rv_lot_name_from_notes( $order['notes'] );
 
-				$stall_units = $this->allocate_stall_chart_units( $config['available_stall_units'], $stall_map, $stall_dates, $stall_needed, $stall_manual, $order['order_key'] );
-				$rv_units    = $this->allocate_rv_lot_rows(
-					isset( $config['rv_lot_names'] ) ? $config['rv_lot_names'] : array(),
-					isset( $config['auto_assign_rv_lot_names'] ) ? $config['auto_assign_rv_lot_names'] : ( isset( $config['available_rv_lot_names'] ) ? $config['available_rv_lot_names'] : array() ),
-					$rv_map,
-					$rv_dates,
-					$rv_needed,
-					$rv_lot_name,
-					$rv_manual,
-					$order['order_key']
-				);
+				// Dashboard rollups reflect SAVED (admin-assigned) units only —
+				// consistent with the By Customer chart showing '—' until assigned.
+				// The auto-suggester feeds the map + Generate Assignments, not these
+				// counts, so suggestions never inflate "assigned" (was showing 301
+				// "assigned" when nothing was actually saved).
+				$stall_saved = array_values( array_unique( array_map( 'strval', (array) $stall_manual ) ) );
+				$rv_saved    = array_values( array_unique( array_map( 'strval', (array) $rv_manual ) ) );
 
-				$order_assigned = count( $stall_units['assigned'] );
+				$order_assigned    = count( $stall_saved );
+				$order_rv_assigned = count( $rv_saved );
 				$assigned       += $order_assigned;
-				$unassigned     += (int) $stall_units['unassigned'];
-				$rv_unassigned  += (int) $rv_units['unassigned'];
+				$unassigned     += max( 0, $stall_needed - $order_assigned );
+				$rv_assigned    += $order_rv_assigned;
+				$rv_unassigned  += max( 0, $rv_needed - $order_rv_assigned );
 
 				$ok = (string) $order['order_key'];
 				if ( '' !== $ok ) {
-					$out['assigned_by_order_key'][ $ok ] = ( $out['assigned_by_order_key'][ $ok ] ?? 0 ) + $order_assigned;
+					$out['assigned_by_order_key'][ $ok ]    = ( $out['assigned_by_order_key'][ $ok ] ?? 0 ) + $order_assigned;
+					$out['rv_assigned_by_order_key'][ $ok ] = ( $out['rv_assigned_by_order_key'][ $ok ] ?? 0 ) + $order_rv_assigned;
 				}
 			}
 
@@ -4921,6 +4922,8 @@ class EEM_Admin {
 				'assigned'      => $assigned,
 				'total'         => $assigned + $unassigned,
 				'unassigned'    => $unassigned,
+				'rv_assigned'   => $rv_assigned,
+				'rv_total'      => $rv_assigned + $rv_unassigned,
 				'rv_unassigned' => $rv_unassigned,
 				'title'         => get_the_title( $rid ),
 				'start_ts'      => $start_ts,

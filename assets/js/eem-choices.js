@@ -32,7 +32,13 @@
 				searchResultLimit: 50,
 				shouldSort: false, // preserve the server-provided option order
 				itemSelectText: '', // no "Press to select" hint
-				allowHTML: false,
+				// allowHTML:true so Choices injects the option's already-escaped
+				// innerHTML once instead of escaping it a SECOND time — otherwise a
+				// title like "Stars & Stripes" (server-rendered as "Stars &amp;
+				// Stripes") displays the literal "Stars &amp; Stripes". Safe here
+				// because every option label is server-side esc_html'd, so no active
+				// HTML can reach the DOM.
+				allowHTML: true,
 				searchPlaceholderValue: sel.getAttribute( 'data-eem-choices-search' ) || 'Search…',
 				position: 'bottom',
 				classNames: {
