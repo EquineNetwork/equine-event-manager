@@ -185,7 +185,7 @@ class EEM_Import_Handler {
 			$conf_numbers  = sanitize_text_field( self::mapped_val( $row, $map, 'confirmation_numbers' ) );
 			$notes_text    = sanitize_text_field( self::mapped_val( $row, $map, 'notes' ) );
 
-			if ( ! $stall_qty && ! $rv_qty ) {
+			if ( ! $stall_qty && ! $rv_qty && ! $shavings_qty ) {
 				$skipped++;
 				continue;
 			}
@@ -206,8 +206,8 @@ class EEM_Import_Handler {
 			}
 			$notes = implode( "\n", $notes_parts );
 
-			/* Stall row */
-			if ( $stall_qty > 0 ) {
+			/* Stall row (also created when stall_qty=0 but shavings exist) */
+			if ( $stall_qty > 0 || $shavings_qty > 0 ) {
 				$stall_subtotal = self::resolve_price_from_dates( $stall_dates, $reservation_id, 'stall', $stall_qty );
 
 				$insert_result = $wpdb->insert( $stall_table, array(
