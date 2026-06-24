@@ -533,48 +533,72 @@ class EEM_Reservation_Editor_Page {
 
 		// Stall Reservations
 		if ( ! empty( $c['stalls_enabled'] ) ) {
-			$nightly = ! empty( $c['stall_nightly_enabled'] );
-			$weekend = ! empty( $c['stall_weekend_enabled'] );
-			if ( ! $nightly && ! $weekend ) {
-				$err['stall'] = __( 'Stall Reservations is enabled but at least one stay type (Nightly or Weekend) must be on.', 'equine-event-manager' );
-			} else {
-				$nightly_rate_ok = $nightly && (float) ( $c['stall_nightly_rate'] ?? 0 ) > 0;
-				$weekend_rate_ok = $weekend && (float) ( $c['stall_weekend_rate'] ?? 0 ) > 0;
-				if ( ! $nightly_rate_ok && ! $weekend_rate_ok ) {
-					$err['stall'] = __( 'Stall Reservations needs a rate above $0 for at least one enabled stay type.', 'equine-event-manager' );
-				} elseif ( ! empty( $c['stall_schedule_enabled'] ) && ( empty( $c['stalls_open_at'] ) || empty( $c['stalls_close_at'] ) ) ) {
-					$err['stall'] = __( 'Stall Reservations: Schedule is enabled but Open and Close datetimes must both be set.', 'equine-event-manager' );
-				} elseif ( ! empty( $c['stall_early_bird_enabled'] ) ) {
-					$eb_cutoff_ok    = ! empty( $c['stall_early_bird_cutoff'] );
-					$eb_nightly_rate = $nightly && (float) ( $c['stall_early_bird_nightly_rate'] ?? 0 ) > 0;
-					$eb_weekend_rate = $weekend && (float) ( $c['stall_early_bird_weekend_rate'] ?? 0 ) > 0;
-					if ( ! $eb_cutoff_ok || ( ! $eb_nightly_rate && ! $eb_weekend_rate ) ) {
-						$err['stall'] = __( 'Stall Reservations: Early Bird is enabled but cutoff date and at least one Early Bird rate must be set.', 'equine-event-manager' );
+			$stall_pm = isset( $c['stall_pricing_mode'] ) ? (string) $c['stall_pricing_mode'] : 'nightly';
+			$stall_uses_rates = ( 'nightly' === $stall_pm || 'both' === $stall_pm );
+			$stall_uses_pkgs  = ( 'packages' === $stall_pm || 'both' === $stall_pm );
+
+			if ( $stall_uses_rates ) {
+				$nightly = ! empty( $c['stall_nightly_enabled'] );
+				$weekend = ! empty( $c['stall_weekend_enabled'] );
+				if ( ! $nightly && ! $weekend ) {
+					$err['stall'] = __( 'Stall Reservations is enabled but at least one stay type (Nightly or Weekend) must be on.', 'equine-event-manager' );
+				} else {
+					$nightly_rate_ok = $nightly && (float) ( $c['stall_nightly_rate'] ?? 0 ) > 0;
+					$weekend_rate_ok = $weekend && (float) ( $c['stall_weekend_rate'] ?? 0 ) > 0;
+					if ( ! $nightly_rate_ok && ! $weekend_rate_ok ) {
+						$err['stall'] = __( 'Stall Reservations needs a rate above $0 for at least one enabled stay type.', 'equine-event-manager' );
+					} elseif ( ! empty( $c['stall_schedule_enabled'] ) && ( empty( $c['stalls_open_at'] ) || empty( $c['stalls_close_at'] ) ) ) {
+						$err['stall'] = __( 'Stall Reservations: Schedule is enabled but Open and Close datetimes must both be set.', 'equine-event-manager' );
+					} elseif ( ! empty( $c['stall_early_bird_enabled'] ) ) {
+						$eb_cutoff_ok    = ! empty( $c['stall_early_bird_cutoff'] );
+						$eb_nightly_rate = $nightly && (float) ( $c['stall_early_bird_nightly_rate'] ?? 0 ) > 0;
+						$eb_weekend_rate = $weekend && (float) ( $c['stall_early_bird_weekend_rate'] ?? 0 ) > 0;
+						if ( ! $eb_cutoff_ok || ( ! $eb_nightly_rate && ! $eb_weekend_rate ) ) {
+							$err['stall'] = __( 'Stall Reservations: Early Bird is enabled but cutoff date and at least one Early Bird rate must be set.', 'equine-event-manager' );
+						}
 					}
+				}
+			}
+			if ( $stall_uses_pkgs && ! isset( $err['stall'] ) ) {
+				$pkg_count = class_exists( 'EEM_Stay_Packages_Repo' ) ? count( EEM_Stay_Packages_Repo::get_packages( $reservation_id, 'stall' ) ) : 0;
+				if ( 0 === $pkg_count ) {
+					$err['stall'] = __( 'Stall Reservations uses Stay Packages pricing but no packages have been added.', 'equine-event-manager' );
 				}
 			}
 		}
 
 		// RV Reservations — parallel to Stall
 		if ( ! empty( $c['rv_enabled'] ) ) {
-			$nightly = ! empty( $c['rv_nightly_enabled'] );
-			$weekend = ! empty( $c['rv_weekend_enabled'] );
-			if ( ! $nightly && ! $weekend ) {
-				$err['rv'] = __( 'RV Reservations is enabled but at least one stay type (Nightly or Weekend) must be on.', 'equine-event-manager' );
-			} else {
-				$nightly_rate_ok = $nightly && (float) ( $c['rv_nightly_rate'] ?? 0 ) > 0;
-				$weekend_rate_ok = $weekend && (float) ( $c['rv_weekend_rate'] ?? 0 ) > 0;
-				if ( ! $nightly_rate_ok && ! $weekend_rate_ok ) {
-					$err['rv'] = __( 'RV Reservations needs a rate above $0 for at least one enabled stay type.', 'equine-event-manager' );
-				} elseif ( ! empty( $c['rv_schedule_enabled'] ) && ( empty( $c['rv_open_at'] ) || empty( $c['rv_close_at'] ) ) ) {
-					$err['rv'] = __( 'RV Reservations: Schedule is enabled but Open and Close datetimes must both be set.', 'equine-event-manager' );
-				} elseif ( ! empty( $c['rv_early_bird_enabled'] ) ) {
-					$eb_cutoff_ok    = ! empty( $c['rv_early_bird_cutoff'] );
-					$eb_nightly_rate = $nightly && (float) ( $c['rv_early_bird_nightly_rate'] ?? 0 ) > 0;
-					$eb_weekend_rate = $weekend && (float) ( $c['rv_early_bird_weekend_rate'] ?? 0 ) > 0;
-					if ( ! $eb_cutoff_ok || ( ! $eb_nightly_rate && ! $eb_weekend_rate ) ) {
-						$err['rv'] = __( 'RV Reservations: Early Bird is enabled but cutoff date and at least one Early Bird rate must be set.', 'equine-event-manager' );
+			$rv_pm = isset( $c['rv_pricing_mode'] ) ? (string) $c['rv_pricing_mode'] : 'nightly';
+			$rv_uses_rates = ( 'nightly' === $rv_pm || 'both' === $rv_pm );
+			$rv_uses_pkgs  = ( 'packages' === $rv_pm || 'both' === $rv_pm );
+
+			if ( $rv_uses_rates ) {
+				$nightly = ! empty( $c['rv_nightly_enabled'] );
+				$weekend = ! empty( $c['rv_weekend_enabled'] );
+				if ( ! $nightly && ! $weekend ) {
+					$err['rv'] = __( 'RV Reservations is enabled but at least one stay type (Nightly or Weekend) must be on.', 'equine-event-manager' );
+				} else {
+					$nightly_rate_ok = $nightly && (float) ( $c['rv_nightly_rate'] ?? 0 ) > 0;
+					$weekend_rate_ok = $weekend && (float) ( $c['rv_weekend_rate'] ?? 0 ) > 0;
+					if ( ! $nightly_rate_ok && ! $weekend_rate_ok ) {
+						$err['rv'] = __( 'RV Reservations needs a rate above $0 for at least one enabled stay type.', 'equine-event-manager' );
+					} elseif ( ! empty( $c['rv_schedule_enabled'] ) && ( empty( $c['rv_open_at'] ) || empty( $c['rv_close_at'] ) ) ) {
+						$err['rv'] = __( 'RV Reservations: Schedule is enabled but Open and Close datetimes must both be set.', 'equine-event-manager' );
+					} elseif ( ! empty( $c['rv_early_bird_enabled'] ) ) {
+						$eb_cutoff_ok    = ! empty( $c['rv_early_bird_cutoff'] );
+						$eb_nightly_rate = $nightly && (float) ( $c['rv_early_bird_nightly_rate'] ?? 0 ) > 0;
+						$eb_weekend_rate = $weekend && (float) ( $c['rv_early_bird_weekend_rate'] ?? 0 ) > 0;
+						if ( ! $eb_cutoff_ok || ( ! $eb_nightly_rate && ! $eb_weekend_rate ) ) {
+							$err['rv'] = __( 'RV Reservations: Early Bird is enabled but cutoff date and at least one Early Bird rate must be set.', 'equine-event-manager' );
+						}
 					}
+				}
+			}
+			if ( $rv_uses_pkgs && ! isset( $err['rv'] ) ) {
+				$pkg_count = class_exists( 'EEM_Stay_Packages_Repo' ) ? count( EEM_Stay_Packages_Repo::get_packages( $reservation_id, 'rv' ) ) : 0;
+				if ( 0 === $pkg_count ) {
+					$err['rv'] = __( 'RV Reservations uses Stay Packages pricing but no packages have been added.', 'equine-event-manager' );
 				}
 			}
 		}
@@ -1085,6 +1109,18 @@ class EEM_Reservation_Editor_Page {
 					'rv_customer_selection' => isset( $_POST['rv_customer_selection'] ) ? EEM_Reservations_CPT::sanitize_rv_customer_selection( wp_unslash( $_POST['rv_customer_selection'] ) ) : '',
 					'rv_has_map'           => ( class_exists( 'EEM_Stall_Map_Importer' ) && ! empty( EEM_Stall_Map_Importer::get_for_reservation( $reservation_id, EEM_Stall_Map_Importer::RV_META_KEY )['barns'] ) ),
 				);
+				// Pricing mode lives in config table, not post meta, so it's
+				// absent from $candidate. Inject the POSTed value so the
+				// validator can distinguish packages-only from nightly.
+				if ( isset( $_POST['en_reservation']['stall_pricing_mode'] ) ) {
+					$candidate['stall_pricing_mode'] = in_array( $_POST['en_reservation']['stall_pricing_mode'], array( 'nightly', 'packages', 'both' ), true )
+						? $_POST['en_reservation']['stall_pricing_mode'] : 'nightly';
+				}
+				if ( isset( $_POST['en_reservation']['rv_pricing_mode'] ) ) {
+					$candidate['rv_pricing_mode'] = in_array( $_POST['en_reservation']['rv_pricing_mode'], array( 'nightly', 'packages', 'both' ), true )
+						? $_POST['en_reservation']['rv_pricing_mode'] : 'nightly';
+				}
+
 				$publish_errors = self::validate_for_publish( $candidate, $reservation_id, $publish_ctx );
 				if ( ! empty( $publish_errors ) ) {
 					$pe_first_key = array_key_first( $publish_errors );
