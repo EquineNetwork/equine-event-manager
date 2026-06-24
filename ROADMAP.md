@@ -80,10 +80,11 @@
 3. [ ] Push Notifications (PWA browser push)
 4. [ ] Accept Deposits (deposit vs balance at checkout)
 5. [ ] Global Handicaps API integration (GH as system-of-record). Full write-up: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`.
-6. [ ] PWA + responsive/touch (full offline-capable app). Scaffolding shipped (manifest + SW + install prompt, 2.7.580); full version is v2.
+6. [ ] PWA + responsive/touch (full offline-capable app). Scaffolding (manifest + SW + install prompt) was DISABLED in 2.7.582 — `EEM_PWA::init()` now only unregisters any lingering service worker; the install banner/manifest no longer emit. Restore from git history when PWA work resumes.
 7. [ ] Native mobile app (iOS/Android over the same API contract)
 8. [ ] Update plugin language to .NET? (exploratory — port the plugin's logic off PHP/WordPress to a .NET backend; ties into the "not chained to WordPress forever" / GH-as-system-of-record direction in `docs/ARCHITECTURE-DATA-OWNERSHIP.md`. Confirm scope + intent before any work.)
 9. [ ] Add orders to Apple Wallet + Google Wallet (passes for confirmed orders — likely tied into the confirmation email + hosted order page).
+10. [ ] Orders list — per-page count control (let the admin choose how many orders show per screen; currently fixed at 25/page). Apply the same pattern to other list pages (Reservations, Customers) if it lands well.
 
 ---
 
