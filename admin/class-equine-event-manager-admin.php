@@ -4843,15 +4843,24 @@ class EEM_Admin {
 				continue;
 			}
 
-			// Configured = has a stall-row layout OR named RV zones (matches
-			// get_stall_charts_list_data()).
+			// Configured = has ANY of: a stall-row layout, RV rows, named RV
+			// zones, OR a connected stall/RV MAP (barns). The map check is
+			// essential — Mapped/Pick-from-layout reservations (incl. imported
+			// setups) define inventory via the map, not stall_rows, so omitting
+			// it falsely flags a fully-configured reservation as "not configured".
 			$cfg        = EEM_Reservation_Config::for( $rid );
 			$stall_rows = $cfg->get( 'stall_rows' );
 			$has_rows   = is_array( $stall_rows ) && ! empty( $stall_rows );
+			$rv_rows    = $cfg->get( 'rv_rows' );
+			$has_rv_rows = is_array( $rv_rows ) && ! empty( $rv_rows );
 			$rv_zones   = $cfg->get( 'rv_zones' );
 			$has_zones  = is_array( $rv_zones ) && ! empty( array_filter( array_column( $rv_zones, 'name' ) ) );
+			$has_stall_map = class_exists( 'EEM_Stall_Map_Importer' )
+				&& ! empty( EEM_Stall_Map_Importer::get_for_reservation( $rid )['barns'] );
+			$has_rv_map = class_exists( 'EEM_Stall_Map_Importer' )
+				&& ! empty( EEM_Stall_Map_Importer::get_for_reservation( $rid, EEM_Stall_Map_Importer::RV_META_KEY )['barns'] );
 
-			if ( ! $has_rows && ! $has_zones ) {
+			if ( ! $has_rows && ! $has_rv_rows && ! $has_zones && ! $has_stall_map && ! $has_rv_map ) {
 				$out['unconfigured'][] = array( 'id' => $rid, 'title' => get_the_title( $rid ) );
 				continue;
 			}

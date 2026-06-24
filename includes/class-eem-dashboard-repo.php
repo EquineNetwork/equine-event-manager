@@ -435,8 +435,8 @@ class EEM_Dashboard_Repo {
 				}
 				$count++;
 				$revenue += (float) ( $o['total'] ?? 0 );
-				if ( ! empty( $o['has_stall'] ) || ! empty( $o['stall_components'] ) ) { $tags['stall'] = true; }
-				if ( ! empty( $o['has_rv'] ) || ! empty( $o['rv_components'] ) )       { $tags['rv']    = true; }
+				if ( ! empty( $o['has_stall'] ) || ! empty( $o['stall_components'] ) || (int) ( $o['stall_quantity'] ?? 0 ) > 0 ) { $tags['stall'] = true; }
+				if ( ! empty( $o['has_rv'] ) || ! empty( $o['rv_components'] ) || (int) ( $o['rv_quantity'] ?? 0 ) > 0 )       { $tags['rv']    = true; }
 			}
 			if ( empty( $tags ) ) { $tags['stall'] = true; }
 

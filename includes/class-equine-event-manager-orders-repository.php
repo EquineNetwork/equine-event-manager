@@ -2142,7 +2142,17 @@ class EEM_Orders_Repository {
 	 * @return array
 	 */
 	private function create_order_seed( $row, $reservation_index ) {
-		$reservation_id = $this->extract_reservation_id_from_notes( isset( $row['notes'] ) ? $row['notes'] : '' );
+		// Prefer the authoritative reservation_id COLUMN (denormalized per
+		// CLEANUP #11; set correctly by checkout, Add-Items, and the setup
+		// importer). Fall back to the legacy notes marker ("Reservation setup
+		// ID: N") only for pre-column orders. Without the column preference,
+		// imported orders — whose notes still carry the SOURCE reservation id
+		// while the column holds the NEW one — resolve to the wrong/old
+		// reservation, so the Stall Chart + customer typeahead for the new
+		// reservation find no orders (empty By Customer, "No match").
+		$reservation_id = ! empty( $row['reservation_id'] )
+			? absint( $row['reservation_id'] )
+			: $this->extract_reservation_id_from_notes( isset( $row['notes'] ) ? $row['notes'] : '' );
 		$event_name     = $this->get_event_name( $row, $reservation_index );
 
 		return array(
