@@ -2889,6 +2889,14 @@ class EEM_Admin {
 								</a>
 							</div>
 
+							<?php // #3 — check-in ring legend (assigned cells are ringed by arrival status). ?>
+							<div class="eem-sc-legend" aria-label="<?php esc_attr_e( 'Check-in status key', 'equine-event-manager' ); ?>">
+								<span class="eem-sc-legend__label"><?php esc_html_e( 'Assigned stalls:', 'equine-event-manager' ); ?></span>
+								<span class="eem-sc-legend__item"><i class="eem-sc-legend-ring eem-sc-legend-ring--pending" aria-hidden="true"></i><?php esc_html_e( 'Not arrived', 'equine-event-manager' ); ?></span>
+								<span class="eem-sc-legend__item"><i class="eem-sc-legend-ring eem-sc-legend-ring--in" aria-hidden="true"></i><?php esc_html_e( 'Checked in', 'equine-event-manager' ); ?></span>
+								<span class="eem-sc-legend__item"><i class="eem-sc-legend-ring eem-sc-legend-ring--out" aria-hidden="true"></i><?php esc_html_e( 'Checked out', 'equine-event-manager' ); ?></span>
+							</div>
+
 							<?php
 							// Show the section-label dividers only when BOTH unit types
 							// exist (so a stalls-only or RV-only reservation isn't labelled).
