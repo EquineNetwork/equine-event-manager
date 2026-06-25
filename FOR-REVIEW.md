@@ -35,6 +35,8 @@ or wait a few minutes for the cache to cycle. Each row says where to look and wh
 | view flip fix | 2.7.603 | **Stall & RV Charts** (open it fresh) | The chart no longer flashes "By Location – List" then snaps to "By Customer." The client now respects the server's default view instead of forcing Customer on load. |
 | manage-assignment highlight | 2.7.603 | **Order detail → Manage Stall Assignment** (on an order that HAS a stall, e.g. #265) | The chart now scrolls to + puts a **blue ring** around the customer's current stall, and the banner reads "X is currently in stall #265 (highlighted). Click another available stall to move them, or Remove from stall." (Was: dropped you on a sea of stalls with no indication.) ⚠️ **Please click-test.** |
 
+| 3 (Checked-in) | 2.7.604 | **By Location** (List or Map), click an **assigned (blue)** stall | The popover now has **Mark Checked In** (toggles to **Mark Pending Arrival** once checked in). Click it → toast confirms; the order's check-in flips (same status shown in By Customer + Daily Movement). RV pills don't show it. Verified the toggle round-trip on Local. ⚠️ **Please click-test.** |
+
 ### #3 status (the full menu unification)
 - **Done tonight:** List available-cell menu can now **Block** (it previously only did Available / Cleaning) — closes the biggest List-vs-Map gap, using the Map's exact `eem_stall_map_action` endpoint + region-swap.
 - **Still to do (needs a live click-test session):** add **Checked-in** + **Unassign** to the List *occupied* popover, and make the List + Map popovers visually identical. These touch more interactive wiring; held so they can be built with live clicking rather than blind. Full plan is in `docs/STAGING-FIXES-LOG.md` under "[#3]".

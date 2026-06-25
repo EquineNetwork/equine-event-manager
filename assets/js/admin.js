@@ -5448,6 +5448,19 @@
 			window._scActiveIsTack = pill.getAttribute('data-is-tack') === '1';
 			var tackLabel = document.querySelector('#eem-stall-chart-tack-btn [data-eem-tack-btn-label]');
 			if (tackLabel) tackLabel.textContent = window._scActiveIsTack ? 'Unmark Tack Stall' : 'Mark as Tack Stall';
+			// #3: check-in toggle context + button label (only meaningful for stalls).
+			window._scActiveOrderNumberRaw = pill.getAttribute('data-order-number-raw') || '';
+			window._scActiveCheckinStatus  = pill.getAttribute('data-checkin-status') || 'occupied';
+			window._scActiveCheckinNonce   = pill.getAttribute('data-checkin-nonce') || '';
+			var checkinBtn = document.getElementById('eem-stall-chart-checkin-btn');
+			var checkinLabel = document.querySelector('#eem-stall-chart-checkin-btn [data-eem-checkin-btn-label]');
+			if (checkinBtn) {
+				// RV lots don't check in here; hide the button for RV pills.
+				checkinBtn.style.display = (window._scActiveKind === 'rv') ? 'none' : '';
+			}
+			if (checkinLabel) {
+				checkinLabel.textContent = (window._scActiveCheckinStatus === 'checked_in') ? 'Mark Pending Arrival' : 'Mark Checked In';
+			}
 			var titleEl = document.getElementById('eem-stall-chart-menu-title');
 			var subEl = document.getElementById('eem-stall-chart-menu-subtitle');
 			if (titleEl) titleEl.textContent = customer;
@@ -5604,6 +5617,39 @@
 						if (window.EEM && window.EEM.showSaveToast) {
 							window.EEM.showSaveToast(data.message || (resp && resp.success ? 'Removed from stall.' : 'Could not remove from stall.'),
 								{ variant: (resp && resp.success) ? 'success' : 'error' });
+						}
+					})
+					.catch(function () {
+						if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast('Could not reach the server.', { variant: 'error' }); }
+					});
+				return;
+			}
+
+			// #3 — toggle this order's check-in (Pending Arrival ⇄ Checked In) from
+			// the occupied-stall popover. One status per order (covers all their stalls).
+			var checkinToggle = t.closest('[data-eem-action="cell-toggle-checkin"]');
+			if (checkinToggle) {
+				ev.preventDefault();
+				var ciMenu = document.getElementById('eem-stall-chart-cell-menu');
+				if (ciMenu) { ciMenu.classList.remove('open'); }
+				var ciTarget = (window._scActiveCheckinStatus === 'checked_in') ? 'occupied' : 'checked_in';
+				var ciBody = new URLSearchParams();
+				ciBody.set('action', 'eem_order_checkin_set');
+				ciBody.set('reservation_id', String((window.eemStallChart || {}).reservationId || ''));
+				ciBody.set('order_number', window._scActiveOrderNumberRaw || '');
+				ciBody.set('target', ciTarget);
+				ciBody.set('_wpnonce', window._scActiveCheckinNonce || '');
+				fetch((window.ajaxurl || '/wp-admin/admin-ajax.php'), { method: 'POST', credentials: 'same-origin', body: ciBody })
+					.then(function (r) { return r.json(); })
+					.then(function (resp) {
+						var data = (resp && resp.data) || {};
+						if (resp && resp.success) {
+							window._scActiveCheckinStatus = data.status || ciTarget;
+							if (window.EEM && window.EEM.showSaveToast) {
+								window.EEM.showSaveToast(data.label ? (data.label + '.') : 'Updated.', { variant: 'success' });
+							}
+						} else if (window.EEM && window.EEM.showSaveToast) {
+							window.EEM.showSaveToast((data && data.message) || 'Could not update check-in.', { variant: 'error' });
 						}
 					})
 					.catch(function () {

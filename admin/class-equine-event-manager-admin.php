@@ -3883,6 +3883,11 @@ class EEM_Admin {
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
 				<span data-eem-tack-btn-label><?php esc_html_e( 'Mark as Tack Stall', 'equine-event-manager' ); ?></span>
 			</button>
+			<?php // #3: toggle this order's check-in (Pending Arrival ⇄ Checked In). ?>
+			<button class="eem-stall-chart-cell-menu-btn cell-action-menu__btn" type="button" data-eem-action="cell-toggle-checkin" id="eem-stall-chart-checkin-btn">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+				<span data-eem-checkin-btn-label><?php esc_html_e( 'Mark Checked In', 'equine-event-manager' ); ?></span>
+			</button>
 			<?php // #3: remove this order from the stall (unassign) — frees the stall back to Available. ?>
 			<button class="eem-stall-chart-cell-menu-btn cell-action-menu__btn cell-action-menu__btn--danger" type="button" data-eem-action="cell-unassign">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -6841,6 +6846,9 @@ class EEM_Admin {
 		}
 		// Per-stall-night readiness store overlays the assignment-derived occupancy.
 		$eem_status_map = EEM_Stall_Status_Repo::get_status_map( (int) $reservation_id );
+		// Per-order check-in status (one per order) — drives the occupied pill's
+		// "Mark Checked In / Pending Arrival" toggle (#3).
+		$eem_checkin_map = EEM_Stall_Status_Repo::get_order_checkin_map( (int) $reservation_id );
 		$eem_dates      = array_keys( $date_columns );
 		$eem_nonce      = wp_create_nonce( 'eem_stall_status_' . (int) $reservation_id );
 		$eem_col_count  = ( $show_secondary_column ? 3 : 2 ) + count( $date_columns );
@@ -6930,7 +6938,7 @@ class EEM_Admin {
 									$eem_onote = isset( $eem_cell['special_requests'] ) ? trim( (string) $eem_cell['special_requests'] ) : '';
 									$eem_oshav = isset( $eem_cell['shavings'] ) ? absint( $eem_cell['shavings'] ) : 0;
 									?>
-										<button type="button" class="eem-loc-cell eem-loc-cell--occupied<?php echo ! empty( $eem_cell['is_tack'] ) ? ' is-tack' : ''; ?>" data-eem-action="stall-pill-click" data-kind="<?php echo esc_attr( $kind ); ?>" data-order-key="<?php echo esc_attr( $eem_okey ); ?>" data-order-id="<?php echo esc_attr( $eem_okey ); ?>" data-order-number="<?php echo esc_attr( $this->format_order_number_display( $eem_onum ) ); ?>" data-customer-name="<?php echo esc_attr( $eem_cell_text ); ?>" data-customer="<?php echo esc_attr( $eem_cell_text ); ?>" data-stall="<?php echo esc_attr( $eem_unit ); ?>" data-date="<?php echo esc_attr( $eem_dk ); ?>"<?php echo '' !== $eem_ogrp ? ' data-group-name="' . esc_attr( $eem_ogrp ) . '"' : ''; ?><?php echo '' !== $eem_onote ? ' data-special-requests="' . esc_attr( $eem_onote ) . '"' : ''; ?><?php echo $eem_oshav > 0 ? ' data-shavings="' . esc_attr( $eem_oshav ) . '"' : ''; ?> data-is-tack="<?php echo ! empty( $eem_cell['is_tack'] ) ? '1' : '0'; ?>">
+										<button type="button" class="eem-loc-cell eem-loc-cell--occupied<?php echo ! empty( $eem_cell['is_tack'] ) ? ' is-tack' : ''; ?>" data-eem-action="stall-pill-click" data-kind="<?php echo esc_attr( $kind ); ?>" data-order-key="<?php echo esc_attr( $eem_okey ); ?>" data-order-id="<?php echo esc_attr( $eem_okey ); ?>" data-order-number="<?php echo esc_attr( $this->format_order_number_display( $eem_onum ) ); ?>" data-customer-name="<?php echo esc_attr( $eem_cell_text ); ?>" data-customer="<?php echo esc_attr( $eem_cell_text ); ?>" data-stall="<?php echo esc_attr( $eem_unit ); ?>" data-date="<?php echo esc_attr( $eem_dk ); ?>"<?php echo '' !== $eem_ogrp ? ' data-group-name="' . esc_attr( $eem_ogrp ) . '"' : ''; ?><?php echo '' !== $eem_onote ? ' data-special-requests="' . esc_attr( $eem_onote ) . '"' : ''; ?><?php echo $eem_oshav > 0 ? ' data-shavings="' . esc_attr( $eem_oshav ) . '"' : ''; ?> data-is-tack="<?php echo ! empty( $eem_cell['is_tack'] ) ? '1' : '0'; ?>" data-order-number-raw="<?php echo esc_attr( (string) $eem_onum ); ?>" data-checkin-status="<?php echo esc_attr( isset( $eem_checkin_map[ (string) $eem_onum ] ) ? $eem_checkin_map[ (string) $eem_onum ] : 'occupied' ); ?>" data-checkin-nonce="<?php echo esc_attr( wp_create_nonce( 'eem_order_checkin_' . (int) $reservation_id . '_' . $eem_onum ) ); ?>">
 											<span class="eem-loc-cell__label"><?php echo esc_html( $eem_cell_text ); ?></span>
 											<svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
 										</button>
