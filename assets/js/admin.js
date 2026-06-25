@@ -5826,6 +5826,7 @@
 					if (window.EEM && window.EEM.showSaveToast) {
 						window.EEM.showSaveToast((resp.data && resp.data.message) || 'Moved.', { variant: 'success' });
 					}
+					eemScSaveViewState();
 					window.location.reload();
 				} else {
 					var errEl2 = document.getElementById('eem-scope-modal-error');
@@ -6128,6 +6129,7 @@
 					if (window.EEM && window.EEM.showSaveToast) {
 						window.EEM.showSaveToast('All ' + units.length + ' assigned.', { variant: 'success' });
 					}
+					eemScSaveViewState();
 					setTimeout(function () { window.location.reload(); }, 600);
 				} else {
 					var msg = 'Could not assign: ' + failed.join(', ') + '. The others were saved.';
@@ -6156,6 +6158,7 @@
 					if (window.EEM && window.EEM.showSaveToast) {
 						window.EEM.showSaveToast((resp.data && resp.data.message) || 'Assigned.', { variant: 'success' });
 					}
+					eemScSaveViewState();
 					setTimeout(function () { window.location.reload(); }, 600);
 				} else {
 					var msg = (resp && resp.data && resp.data.message) || 'Could not assign.';
@@ -6415,9 +6418,27 @@
 			if (resp && resp.success && data.html) {
 				var region = document.getElementById('eem-stall-chart-dynamic');
 				if (region) {
+					// Snapshot zoom + scroll before innerHTML wipes the DOM nodes.
+					var _prevSmapChip = 0, _prevSmapSL = 0, _prevSmapST = 0;
+					var _prevSmapContainer = region.querySelector('[data-eem-smap-kind]');
+					if (_prevSmapContainer) {
+						_prevSmapChip = _prevSmapContainer._eemSmapChip || 0;
+						var _prevSmapScroll = _prevSmapContainer.querySelector('[data-eem-smap-scroll]');
+						if (_prevSmapScroll) { _prevSmapSL = _prevSmapScroll.scrollLeft; _prevSmapST = _prevSmapScroll.scrollTop; }
+					}
 					region.innerHTML = data.html;
 					eemScApplyState(window._eemScInv || 'all', window._eemScTab || 'location');
 					EEM.renderStallMaps();
+					// Restore zoom + scroll to the freshly-rendered containers.
+					if (_prevSmapChip) {
+						var _newSmapContainer = region.querySelector('[data-eem-smap-kind]');
+						if (_newSmapContainer && _newSmapContainer._eemSmapApplyChip) {
+							_newSmapContainer._eemSmapChip = _prevSmapChip;
+							_newSmapContainer._eemSmapApplyChip(_prevSmapChip);
+							var _newSmapScroll = _newSmapContainer.querySelector('[data-eem-smap-scroll]');
+							if (_newSmapScroll) { _newSmapScroll.scrollLeft = _prevSmapSL; _newSmapScroll.scrollTop = _prevSmapST; }
+						}
+					}
 				}
 			}
 			if (window.EEM && window.EEM.showSaveToast) {
@@ -6606,6 +6627,7 @@
 					smapSetActive(level);
 				};
 				container._eemSmapApplyLevel = smapApplyLevel;
+				container._eemSmapApplyChip  = applySmapZoom;
 				smapZoomBar.addEventListener('click', function (ev) {
 					var b = ev.target.closest('[data-zoom]'); if (!b) return;
 					smapApplyLevel(b.getAttribute('data-zoom'));
@@ -6720,6 +6742,70 @@
 		}
 	});
 
+	// ── Stall chart view-state persistence (zoom + scroll survive reload) ──────
+	// eemScSaveViewState() is called immediately before any window.location.reload()
+	// that originates from a stall-chart action.  eemScRestoreViewState() is called
+	// once inside the stall-chart DOMContentLoaded init, after renderStallMaps().
+	// The state is keyed per-reservation and removed on first restore so it never
+	// leaks across non-reload navigations.
+
+	function eemScSaveViewState() {
+		var cfg = window.eemStallChart;
+		if (!cfg || !cfg.reservationId) return;
+		var state = {
+			scrollY: window.scrollY || window.pageYOffset || 0
+		};
+		// Horizontal scroll on every matrix table in view.
+		var matrices = document.querySelectorAll('.eem-chart-table-scroll');
+		if (matrices.length) {
+			state.matrixScrollLeft = matrices[0].scrollLeft || 0;
+		}
+		// Spatial-map zoom + scroll (only present when the map tab is active).
+		var smapContainer = document.querySelector('[data-eem-smap-kind]');
+		if (smapContainer && smapContainer._eemSmapChip) {
+			state.smapChip = smapContainer._eemSmapChip;
+			var smapScroll = smapContainer.querySelector('[data-eem-smap-scroll]');
+			if (smapScroll) {
+				state.smapScrollLeft = smapScroll.scrollLeft || 0;
+				state.smapScrollTop  = smapScroll.scrollTop  || 0;
+			}
+		}
+		try { sessionStorage.setItem('eem_sc_view_' + cfg.reservationId, JSON.stringify(state)); } catch (e) {}
+	}
+
+	function eemScRestoreViewState() {
+		var cfg = window.eemStallChart;
+		if (!cfg || !cfg.reservationId) return;
+		var ssKey = 'eem_sc_view_' + cfg.reservationId;
+		var raw; try { raw = sessionStorage.getItem(ssKey); } catch (e) {}
+		if (!raw) return;
+		try { sessionStorage.removeItem(ssKey); } catch (e) {}
+		var state; try { state = JSON.parse(raw); } catch (e) { return; }
+
+		// Use rAF so the browser has laid out the page before we scroll.
+		requestAnimationFrame(function () {
+			if (state.scrollY) {
+				window.scrollTo(0, state.scrollY);
+			}
+			if (state.matrixScrollLeft) {
+				var matrices = document.querySelectorAll('.eem-chart-table-scroll');
+				if (matrices.length) { matrices[0].scrollLeft = state.matrixScrollLeft; }
+			}
+			if (state.smapChip) {
+				var smapContainer = document.querySelector('[data-eem-smap-kind]');
+				if (smapContainer && smapContainer._eemSmapApplyChip) {
+					smapContainer._eemSmapChip = state.smapChip;
+					smapContainer._eemSmapApplyChip(state.smapChip);
+					var smapScroll = smapContainer.querySelector('[data-eem-smap-scroll]');
+					if (smapScroll) {
+						smapScroll.scrollLeft = state.smapScrollLeft || 0;
+						smapScroll.scrollTop  = state.smapScrollTop  || 0;
+					}
+				}
+			}
+		});
+	}
+
 	// Initialise stall chart inv/tab state from URL params on page load.
 	document.addEventListener('DOMContentLoaded', function () {
 		// Detect the stall-chart detail page. The inventory control was changed
@@ -6743,6 +6829,7 @@
 			if (['customer', 'list', 'map'].indexOf(initTab) === -1) initTab = 'list';
 			eemScApplyState(initInv, initTab);
 			if (EEM.renderStallMaps) EEM.renderStallMaps();
+			eemScRestoreViewState();
 		} catch (e) { /* ignore */ }
 	});
 
