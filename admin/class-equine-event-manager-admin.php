@@ -2881,6 +2881,7 @@ class EEM_Admin {
 							<div class="eem-sc-quick-filters">
 								<span class="eem-sc-qf-label"><?php esc_html_e( 'Quick view', 'equine-event-manager' ); ?></span>
 								<button type="button" class="eem-sc-qf-chip active" data-eem-action="sc-quick-filter" data-status="all"><?php esc_html_e( 'All', 'equine-event-manager' ); ?></button>
+								<button type="button" class="eem-sc-qf-chip" data-eem-action="sc-quick-filter" data-status="occupied"><?php esc_html_e( 'Reserved', 'equine-event-manager' ); ?></button>
 								<button type="button" class="eem-sc-qf-chip" data-eem-action="sc-quick-filter" data-status="cleaning"><?php esc_html_e( 'Needs cleaning', 'equine-event-manager' ); ?></button>
 								<button type="button" class="eem-sc-qf-chip" data-eem-action="sc-quick-filter" data-status="available"><?php esc_html_e( 'Available', 'equine-event-manager' ); ?></button>
 								<button type="button" class="eem-sc-qf-chip" data-eem-action="sc-quick-filter" data-status="blocked"><?php esc_html_e( 'Blocked', 'equine-event-manager' ); ?></button>

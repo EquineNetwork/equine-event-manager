@@ -113,6 +113,15 @@ printf(
 	esc_html__( 'Stalls Close Date/Time', 'equine-event-manager' ),
 	esc_attr( $fmt_dt( $data['stalls_close_at'] ) )
 );
+// Message shown to customers on the event page while reservations are NOT open
+// yet (before the open date / after close). Free text.
+printf(
+	'<div class="eem-sched-field eem-sched-field--full"><span class="eem-sched-field__label">%s</span><textarea class="eem-field-input" name="en_reservation[stalls_schedule_message]" rows="2" placeholder="%s">%s</textarea><span class="eem-field-hint">%s</span></div>',
+	esc_html__( 'Message Until Reservations Open', 'equine-event-manager' ),
+	esc_attr__( 'e.g. Stall reservations open July 1 at 9am.', 'equine-event-manager' ),
+	esc_textarea( (string) ( isset( $data['stalls_schedule_message'] ) ? $data['stalls_schedule_message'] : '' ) ),
+	esc_html__( 'Shown to customers before stalls open (and after they close).', 'equine-event-manager' )
+);
 echo '</div></div>';
 
 echo '<div class="eem-sched-group">';

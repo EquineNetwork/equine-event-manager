@@ -8,6 +8,24 @@
 
 ---
 
+## 🔖 SESSION HANDOFF — 2026-06-25 (laptop pickup)
+
+**Current state:** `main` at **v2.7.611** (all pushed to GitHub). Big push fixing the staging stall-chart shake-out + new features. **On the laptop: pull `main`, update the plugin, CLEAR OPCACHE on WP Engine** (in-WP cache clear does NOT clear PHP OPcache — this caused most "it didn't change" confusion). Full clickable change list is in **`FOR-REVIEW.md`** at repo root.
+
+**Shipped today (2.7.592 → 2.7.611) — verify on staging:** Order Notes card (editable note + confirmation #), shavings counts, consistent stall colors, Assign buttons on imported orders (+migration #040 section-flag backfill), Barn filter on By Customer, dashboard "In N days" wording, **#3 click-menu unification COMPLETE** (Assign/Cleaning/Checked-in/Tack/Block on both List + Map, per-night Block modal, Unblock, visual parity), date-header weekday + timezone fix, check-in lifecycle + red/green/slate "arrival" rings + legend, **VIP flag** (gold ★ on List/Map/By-Customer + map legend), Reserved quick-view chip, OPcache auto-flush on update.
+
+**⏳ IN PROGRESS — needs your test + finish (the thing I was mid-build when you left):**
+- **Scheduled Reservations message field (v2.7.611, just shipped — TEST FIRST).** Added a **"Message Until Reservations Open"** textarea to the Edit Reservation → *Schedule Stall Reservations* section (+ RV parallel). New config columns `stalls_schedule_message` / `rv_schedule_message` (dbDelta adds them on the version bump). Save wired through `sanitize_meta_submission` + `get_meta_values` defaults; customer event page shows it pre-open via `get_closed_message()` (per-reservation message overrides the global Settings pre-open message).
+  - **PICKUP STEPS:** (1) On staging, Edit a reservation → toggle *Schedule Stall Reservations*, set an **Open Date in the future**, type a message, Save → reload the editor and confirm the message **persisted** (this is the one thing I couldn't click-test — the save path is an allow-list and I added the keys, but verify it sticks). (2) Open that reservation's customer event page (`[en_reservation id=N]`) while before the open date → confirm your custom message shows instead of the form. (3) Confirm scheduling actually GATES the form (form hidden until open date).
+  - If the message doesn't persist: check `EEM_Reservations_CPT::sanitize_meta_submission()` (keys `stalls_schedule_message`/`rv_schedule_message`) and that `EEM_Reservation_Config::create_table()` ran (columns exist).
+
+**Still open (not started):**
+- **#21 [Later]** restyle the "View Event" overview page to match plugin design.
+- **#19 [Later]** remove the "X days" chip on the event-flyer card — BLOCKED, needs your mockup.
+- **Stall Logic demo features:** ✅ VIP done. **Deferred to v2:** Stall-assignments CSV export (columns: Stall, Barn, Roper ID, Horse, Rider, Phone, Address, City, State, Zip, VIP). Not-yet-requested from the demo: manual "Add Roper" entry, reassign-to-occupied confirmation, Hybrid (list+map) view, Horse-name capture — ask Whitney before building.
+
+---
+
 ## 🔖 SESSION HANDOFF — 2026-06-23
 
 **Current state:** v2.7.580+ on `main`. Separate stall/RV layout saving shipped (migration 037).

@@ -8895,7 +8895,7 @@ tr.eem-chart-barn-row td { background: #fdf4e7; padding: 9px 22px; font-size: 12
 /* VIP marker on a List cell — a small gold star before the name. */
 .eem-vip-star { color: #E0A800; font-size: 11px; line-height: 1; margin-right: 2px; flex-shrink: 0; }
 /* #3 check-in legend (above the By-Location list). */
-.eem-sc-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; padding: 8px 0 4px; font-size: 12.5px; color: var(--eem-text-secondary); }
+.eem-sc-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; padding: 10px; font-size: 12.5px; color: var(--eem-text-secondary); }
 .eem-sc-legend__label { font-weight: 700; color: var(--eem-text-primary); }
 .eem-sc-legend__item { display: inline-flex; align-items: center; gap: 6px; }
 .eem-sc-legend-ring { width: 13px; height: 13px; border-radius: 3px; background: #eaf1fe; box-sizing: border-box; display: inline-block; }

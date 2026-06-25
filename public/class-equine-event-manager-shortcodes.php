@@ -9257,11 +9257,13 @@ RV Lot: " . $rv_lot['name'] );
 			'stall_schedule_enabled'          => 0,
 			'stalls_open_at'                  => '',
 			'stalls_close_at'                 => '',
+			'stalls_schedule_message'         => '',
 			'stall_inventory'                 => '',
 			'stall_max_per_customer'          => '',
 			'rv_schedule_enabled'             => 0,
 			'rv_open_at'                      => '',
 			'rv_close_at'                     => '',
+			'rv_schedule_message'             => '',
 			'rv_inventory'                    => '',
 			'rv_addons_enabled'               => 0,
 			// v4: RV Lot Zones pricing (_en_rv_zones) + the RV map snapshot
@@ -9899,13 +9901,18 @@ RV Lot: " . $rv_lot['name'] );
 
 		$open_key  = 'stalls' === $type ? 'stalls_open_at' : 'rv_open_at';
 		$close_key = 'stalls' === $type ? 'stalls_close_at' : 'rv_close_at';
+		$msg_key   = 'stalls' === $type ? 'stalls_schedule_message' : 'rv_schedule_message';
 		$open_at   = ! empty( $data[ $open_key ] ) ? $data[ $open_key ] : '';
 		$close_at  = ! empty( $data[ $close_key ] ) ? $data[ $close_key ] : '';
+		$custom    = isset( $data[ $msg_key ] ) ? trim( (string) $data[ $msg_key ] ) : '';
 		$settings  = $this->get_reservation_message_settings();
 		$event_name = ! empty( $data['external_event_name'] ) ? $data['external_event_name'] : get_the_title();
 
 		if ( $open_at && current_time( 'timestamp' ) < strtotime( $open_at ) ) {
-			return $this->replace_reservation_message_tokens( $settings['preopen_message'], $event_name, $open_at, $close_at, $settings['support_phone'], $settings['support_email'] );
+			// Per-reservation "until reservations open" message wins over the global
+			// pre-open default when the admin set one on the Edit Reservation page.
+			$preopen = '' !== $custom ? $custom : $settings['preopen_message'];
+			return $this->replace_reservation_message_tokens( $preopen, $event_name, $open_at, $close_at, $settings['support_phone'], $settings['support_email'] );
 		}
 
 		if ( $close_at && current_time( 'timestamp' ) > strtotime( $close_at ) ) {

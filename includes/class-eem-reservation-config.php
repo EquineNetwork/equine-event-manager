@@ -717,12 +717,14 @@ class EEM_Reservation_Config {
 			'stall_schedule_enabled'         => 'tinyint(1)',
 			'stalls_open_at'                 => 'varchar(10)',
 			'stalls_close_at'                => 'varchar(10)',
+			'stalls_schedule_message'        => 'text',
 			'stall_inventory'                => 'varchar(20)',
 			// RV descriptions / schedule.
 			'rv_description'                 => 'text',
 			'rv_schedule_enabled'            => 'tinyint(1)',
 			'rv_open_at'                     => 'varchar(10)',
 			'rv_close_at'                    => 'varchar(10)',
+			'rv_schedule_message'            => 'text',
 			'rv_inventory'                   => 'varchar(20)',
 			// Pricing — stall.
 			'stall_nightly_rate'             => 'decimal(10,2)',
