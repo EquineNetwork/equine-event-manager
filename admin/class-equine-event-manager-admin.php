@@ -2654,6 +2654,9 @@ class EEM_Admin {
 		$rv_zone_map       = isset( $config['rv_zone_map'] ) ? $config['rv_zone_map'] : array();
 		$reservation_dates = $this->get_reservation_date_range_label( $reservation_id );
 		$reservation_title = get_the_title( $reservation_id );
+		$groups_enabled    = (bool) EEM_Reservations_CPT::section_enabled( $reservation_id, 'group_reservations_enabled' );
+		$tack_mode         = (string) EEM_Reservation_Config::for( $reservation_id )->get( 'stall_tack_mode' );
+		$tack_enabled      = ( 'off' !== $tack_mode );
 
 		// v4 Stall Mapping: when a facility-map snapshot is connected, the
 		// By-Location panel renders the spatial map (above the date matrix) and
@@ -2973,7 +2976,8 @@ class EEM_Admin {
 							<!-- Filter row (Manage Groups joins the toolbar inline when groups exist) -->
 							<div<?php echo $eem_has_groups ? ' data-eem-group-manage data-reservation-id="' . (int) $reservation_id . '"' : ''; ?>>
 								<div class="eem-stall-chart-filter-row">
-									<?php // V1 D2 — filters the list to orders that carry a Group Name. ?>
+									<?php // V1 D2 — only shown when group reservations are enabled on this reservation. ?>
+									<?php if ( $groups_enabled ) : ?>
 									<button type="button" class="eem-stall-chart-group-toggle" data-eem-action="stall-chart-toggle-groups" aria-pressed="false">
 										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
 										<?php esc_html_e( 'Show by group', 'equine-event-manager' ); ?>
@@ -2984,11 +2988,14 @@ class EEM_Admin {
 										<?php esc_html_e( 'Manage Groups', 'equine-event-manager' ); ?>
 									</button>
 									<?php endif; ?>
-									<?php // V1 #5 — filters the list to orders that have a tack stall. ?>
+									<?php endif; ?>
+									<?php // V1 #5 — only shown when tack stall mode is enabled on this reservation. ?>
+									<?php if ( $tack_enabled ) : ?>
 									<button type="button" class="eem-stall-chart-group-toggle eem-stall-chart-tack-toggle" data-eem-action="stall-chart-toggle-tack" aria-pressed="false">
 										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
 										<?php esc_html_e( 'Tack Stalls', 'equine-event-manager' ); ?>
 									</button>
+									<?php endif; ?>
 									<?php // #14 — Barn filter for By Customer (parity with By Location). Shows
 									// customers assigned to a chosen barn, or those not yet assigned. ?>
 									<?php if ( ! empty( $barn_options ) ) : ?>
