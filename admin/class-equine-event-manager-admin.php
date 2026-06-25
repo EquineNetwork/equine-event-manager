@@ -3957,6 +3957,33 @@ class EEM_Admin {
 				);
 			}
 		}
+		// #3 — assignable-customer rosters (per kind) so the By-Location LIST cell
+		// menu can offer "Assign…" with a customer search, matching the Map popover.
+		// Stall roster = orders that bought a stall; RV roster = orders that bought RV.
+		$eem_assign_roster = array( 'stall' => array(), 'rv' => array() );
+		$eem_roster_seen   = array( 'stall' => array(), 'rv' => array() );
+		foreach ( (array) $order_rows as $eem_ar ) {
+			$eem_okey = (string) ( isset( $eem_ar['order_key'] ) ? $eem_ar['order_key'] : '' );
+			if ( '' === $eem_okey ) {
+				continue;
+			}
+			$eem_name = self::format_customer_last_first( (string) ( isset( $eem_ar['customer_name'] ) ? $eem_ar['customer_name'] : '' ) );
+			$eem_name = '' !== $eem_name ? $eem_name : (string) ( isset( $eem_ar['order_number'] ) ? $eem_ar['order_number'] : '' );
+			$eem_entry = array( 'o' => $eem_okey, 'n' => $eem_name );
+			if ( ! empty( $eem_ar['has_stall'] ) && ! isset( $eem_roster_seen['stall'][ $eem_okey ] ) ) {
+				$eem_assign_roster['stall'][] = $eem_entry;
+				$eem_roster_seen['stall'][ $eem_okey ] = true;
+			}
+			if ( ! empty( $eem_ar['has_rv'] ) && ! isset( $eem_roster_seen['rv'][ $eem_okey ] ) ) {
+				$eem_assign_roster['rv'][] = $eem_entry;
+				$eem_roster_seen['rv'][ $eem_okey ] = true;
+			}
+		}
+		foreach ( array( 'stall', 'rv' ) as $eem_rk ) {
+			usort( $eem_assign_roster[ $eem_rk ], static function ( $a, $b ) {
+				return strcasecmp( $a['n'], $b['n'] );
+			} );
+		}
 		?>
 		<script>
 			window.eemStallChart = window.eemStallChart || {};
@@ -3965,6 +3992,7 @@ class EEM_Admin {
 			window.eemStallChart.autoAssignNonce = <?php echo wp_json_encode( $auto_assign_nonce ); ?>;
 			window.eemStallChart.assignNonce = <?php echo wp_json_encode( $assign_nonce ); ?>;
 			window.eemStallChart.assignContext = <?php echo $assign_ctx ? wp_json_encode( $assign_ctx ) : 'null'; ?>;
+			window.eemStallChart.assignRoster = <?php echo wp_json_encode( $eem_assign_roster ); ?>;
 			window.eemStallChart.reservationId = <?php echo (int) $reservation_id; ?>;
 		</script>
 		<?php
@@ -7811,7 +7839,10 @@ class EEM_Admin {
 		$columns = array();
 
 		foreach ( $keys as $key ) {
-			$columns[ $key ] = wp_date( 'M j', strtotime( $key ) );
+			// Anchor at noon so converting the calendar-date key to the site
+			// timezone can't roll back to the previous day (the "Jun 25 shows as
+			// Jun 24 TODAY" bug on non-UTC installs). Include the weekday.
+			$columns[ $key ] = wp_date( 'D, M j', strtotime( $key . ' 12:00:00' ) );
 		}
 
 		return $columns;

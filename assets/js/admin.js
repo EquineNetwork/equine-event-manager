@@ -9231,6 +9231,7 @@ function duplicateReservationAjax(target) {
 		menu.setAttribute('role', 'menu');
 		menu.hidden = true;
 		menu.innerHTML =
+			'<li><button type="button" class="eem-loc-status-option eem-loc-status-option--assign" data-target="assign">Assign…</button></li>' +
 			'<li><button type="button" class="eem-loc-status-option" data-target="available">Available</button></li>' +
 			'<li><button type="button" class="eem-loc-status-option" data-target="needs_cleaning">Cleaning</button></li>' +
 			'<li><button type="button" class="eem-loc-status-option eem-loc-status-option--block" data-target="block">Block</button></li>';
@@ -9301,13 +9302,17 @@ function duplicateReservationAjax(target) {
 			});
 	}
 
-	// Scope modal: Just this night / All nights / Pick nights. Uses the canonical
-	// .eem-modal chrome (verified present in admin.css) so it's actually visible.
+	// Scope modal. The night CHECKBOXES are the single source of truth (this avoids
+	// the radio/checkbox desync where a checked night was ignored because the radio
+	// still said "this night"). "Just this night" / "All nights" are quick presets
+	// that set the checkboxes; Block reads whatever is checked. Canonical .eem-modal
+	// chrome (verified present in admin.css) so it's actually visible.
 	function openBlockModal(stall, kind, cellDate, allDates) {
 		var noun = kind === 'rv' ? 'lot' : 'stall';
+		var dates = (allDates || []).filter(Boolean);
 		var overlay = document.createElement('div');
 		overlay.className = 'eem-modal';
-		var pickRows = (allDates || []).map(function (d) {
+		var nightRows = dates.map(function (d) {
 			return '<label class="eem-block-night"><input type="checkbox" value="' + d + '"' + (d === cellDate ? ' checked' : '') + '> ' + fmtNight(d) + '</label>';
 		}).join('');
 		overlay.innerHTML =
@@ -9315,10 +9320,12 @@ function duplicateReservationAjax(target) {
 				'<div class="eem-modal-head"><div class="eem-modal-title">Block ' + noun + ' ' + stall + '</div>' +
 					'<button type="button" class="eem-modal-close" data-block-cancel aria-label="Close">&times;</button></div>' +
 				'<div class="eem-modal-body">' +
-					'<label class="eem-block-opt"><input type="radio" name="eem-block-scope" value="this" checked> Just this night (' + fmtNight(cellDate) + ')</label>' +
-					'<label class="eem-block-opt"><input type="radio" name="eem-block-scope" value="all"> All nights</label>' +
-					'<label class="eem-block-opt"><input type="radio" name="eem-block-scope" value="pick"> Pick nights…</label>' +
-					'<div class="eem-block-nights" hidden>' + pickRows + '</div>' +
+					'<p class="eem-block-hint">Choose which night(s) to block:</p>' +
+					'<div class="eem-block-presets">' +
+						'<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-block-preset="this">Just this night</button>' +
+						'<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-block-preset="all">All nights</button>' +
+					'</div>' +
+					'<div class="eem-block-nights">' + nightRows + '</div>' +
 				'</div>' +
 				'<div class="eem-modal-foot">' +
 					'<button type="button" class="eem-btn eem-btn-secondary" data-block-cancel>Cancel</button>' +
@@ -9328,30 +9335,106 @@ function duplicateReservationAjax(target) {
 		document.body.appendChild(overlay);
 		overlay.classList.add('open');
 		function close() { overlay.classList.remove('open'); if (overlay.parentNode) { overlay.parentNode.removeChild(overlay); } }
-		overlay.addEventListener('change', function (ev) {
-			if (ev.target && ev.target.name === 'eem-block-scope') {
-				var pick = overlay.querySelector('.eem-block-nights');
-				if (pick) { pick.hidden = ev.target.value !== 'pick'; }
-			}
-		});
+		function setBoxes(predicate) {
+			[].slice.call(overlay.querySelectorAll('.eem-block-nights input')).forEach(function (c) { c.checked = predicate(c.value); });
+		}
 		overlay.addEventListener('click', function (ev) {
 			if (ev.target === overlay) { close(); return; }
 			if (ev.target.closest && ev.target.closest('[data-block-cancel]')) { close(); return; }
+			var preset = ev.target.closest && ev.target.closest('[data-block-preset]');
+			if (preset) {
+				var which = preset.getAttribute('data-block-preset');
+				setBoxes(which === 'all' ? function () { return true; } : function (v) { return v === cellDate; });
+				return;
+			}
 			if (ev.target.closest && ev.target.closest('[data-block-confirm]')) {
-				var scopeEl = overlay.querySelector('input[name="eem-block-scope"]:checked');
-				var scope = scopeEl ? scopeEl.value : 'this';
-				var nights;
-				if (scope === 'all') { nights = 'all'; }
-				else if (scope === 'this') { nights = cellDate; }
-				else {
-					var checked = [].slice.call(overlay.querySelectorAll('.eem-block-nights input:checked')).map(function (c) { return c.value; });
-					if (!checked.length) { return; }
-					nights = checked.join(',');
+				var checked = [].slice.call(overlay.querySelectorAll('.eem-block-nights input:checked')).map(function (c) { return c.value; });
+				if (!checked.length) {
+					if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast('Pick at least one night to block.', { variant: 'error' }); }
+					return;
 				}
+				var nights = (checked.length === dates.length) ? 'all' : checked.join(',');
 				close();
 				postBlock(stall, kind, nights);
 			}
 		});
+	}
+
+	// POST an assignment (op=assign) then swap the shared dynamic region.
+	function postAssign(stall, kind, orderKey) {
+		var cfg = window.eemStallChart || {};
+		var b = new URLSearchParams();
+		b.append('action', 'eem_stall_map_action');
+		b.append('_wpnonce', cfg.moveNonce || '');
+		b.append('reservation_id', String(cfg.reservationId || ''));
+		b.append('op', 'assign');
+		b.append('stall', stall);
+		b.append('kind', kind || 'stall');
+		b.append('order_key', orderKey);
+		b.append('inv', window._eemScInv || 'all');
+		b.append('tab', window._eemScTab || 'location');
+		fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: b })
+			.then(function (r) { return r.json(); })
+			.then(function (resp) {
+				var data = (resp && resp.data) || {};
+				if (resp && resp.success && data.html) {
+					var region = document.getElementById('eem-stall-chart-dynamic');
+					if (region) {
+						region.innerHTML = data.html;
+						if (window.EEM && window.EEM.scApplyState) { window.EEM.scApplyState(window._eemScInv || 'all', window._eemScTab || 'location'); }
+						if (window.EEM && window.EEM.renderStallMaps) { window.EEM.renderStallMaps(); }
+					}
+				}
+				if (window.EEM && window.EEM.showSaveToast) {
+					window.EEM.showSaveToast(data.message || (resp && resp.success ? 'Assigned.' : 'Could not assign.'),
+						{ variant: (resp && resp.success) ? 'success' : 'error' });
+				}
+			})
+			.catch(function () {
+				if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast('Could not reach the server.', { variant: 'error' }); }
+			});
+	}
+
+	// Assign modal: search the per-kind customer roster and pick who goes in this
+	// stall/lot — mirrors the Map popover's assign search, for the List menu.
+	function openAssignPickModal(stall, kind) {
+		var roster = (((window.eemStallChart || {}).assignRoster || {})[kind]) || [];
+		var noun = kind === 'rv' ? 'lot' : 'stall';
+		var overlay = document.createElement('div');
+		overlay.className = 'eem-modal';
+		overlay.innerHTML =
+			'<div class="eem-modal-card">' +
+				'<div class="eem-modal-head"><div class="eem-modal-title">Assign ' + noun + ' ' + stall + '</div>' +
+					'<button type="button" class="eem-modal-close" data-assign-cancel aria-label="Close">&times;</button></div>' +
+				'<div class="eem-modal-body">' +
+					'<input type="text" class="eem-field-input eem-assign-search" placeholder="Search customer…">' +
+					'<div class="eem-assign-list"></div>' +
+				'</div>' +
+				'<div class="eem-modal-foot"><button type="button" class="eem-btn eem-btn-secondary" data-assign-cancel>Cancel</button></div>' +
+			'</div>';
+		document.body.appendChild(overlay);
+		overlay.classList.add('open');
+		var listEl = overlay.querySelector('.eem-assign-list');
+		var searchEl = overlay.querySelector('.eem-assign-search');
+		function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+		function renderList(q) {
+			q = (q || '').toLowerCase();
+			var hits = roster.filter(function (c) { return c.n.toLowerCase().indexOf(q) !== -1; });
+			if (!hits.length) { listEl.innerHTML = '<div class="eem-assign-empty">No match</div>'; return; }
+			listEl.innerHTML = hits.map(function (c) {
+				return '<button type="button" class="eem-assign-row" data-order-key="' + esc(c.o) + '">' + esc(c.n) + '</button>';
+			}).join('');
+		}
+		renderList('');
+		function close() { overlay.classList.remove('open'); if (overlay.parentNode) { overlay.parentNode.removeChild(overlay); } }
+		searchEl.addEventListener('input', function () { renderList(searchEl.value); });
+		overlay.addEventListener('click', function (ev) {
+			if (ev.target === overlay) { close(); return; }
+			if (ev.target.closest && ev.target.closest('[data-assign-cancel]')) { close(); return; }
+			var row = ev.target.closest && ev.target.closest('.eem-assign-row');
+			if (row) { var ok = row.getAttribute('data-order-key'); close(); postAssign(stall, kind, ok); }
+		});
+		if (searchEl.focus) { searchEl.focus(); }
 	}
 
 	// Select-all checkbox toggles every row checkbox within its table.
@@ -9459,6 +9542,15 @@ function duplicateReservationAjax(target) {
 			var target = opt.getAttribute('data-target');
 			var wrap = activeCell.closest('.eem-loc-readiness');
 			if (!wrap) { closeMenu(); return; }
+
+			// #3 — "Assign…" opens a customer search to place an order in this cell.
+			if (target === 'assign') {
+				var asStall = activeCell.getAttribute('data-stall') || '';
+				var asKind = activeCell.getAttribute('data-kind') || 'stall';
+				closeMenu();
+				openAssignPickModal(asStall, asKind);
+				return;
+			}
 
 			// #3 — "Block" opens a scope modal (this night / all nights / pick nights),
 			// then posts op=block with the chosen `nights` through the proven

@@ -39,6 +39,10 @@ or wait a few minutes for the cache to cycle. Each row says where to look and wh
 
 | 3 (visual parity) | 2.7.605 | **By Location → List vs Map**, open a cell popover in each | The Map popover now matches the List popover's chrome (same border, radius, row spacing, hover gray, font weight, red for destructive). They should look like the same menu. |
 
+| date headers fix | 2.7.606 | **By Location** column headers | Now show the **weekday + correct date** ("Thu, Jun 25"). Fixes the bug where staging showed "JUN 24 TODAY" for the 25th (a timezone shift — proven + fixed). |
+| block modal fix | 2.7.606 | **Block** modal | The night checkboxes are now the source of truth — check 27 + 28 and Block → exactly those nights block (no more "only today" because a radio overrode your checkboxes). "Just this night" / "All nights" are quick presets that set the checkboxes. |
+| Assign from List | 2.7.606 | **By Location → List**, click an **available** stall | The dropdown now has **Assign…** (blue) at the top → opens a customer search → pick a customer → they're assigned to that stall. (Was only on the Map; now on the List too.) ⚠️ **Please click-test.** |
+
 ### #3 status — COMPLETE (pending your click-test)
 All five actions are now on both the List and the Map: **Assign · Cleaning · Checked-in · Tack · Block** (+ Remove/Unassign + Move). Per-night block modal works. Colors consistent. Popovers visually aligned. Walk the rows above (Block, per-night modal, Remove, Checked-in, colors, view-flip, highlight, visual parity) to sign off.
 

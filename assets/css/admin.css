@@ -8896,12 +8896,19 @@ tr.eem-chart-barn-row td { background: #fdf4e7; padding: 9px 22px; font-size: 12
 .eem-loc-status-option[data-target="available"]::before { background: #15803d; }
 .eem-loc-status-option[data-target="needs_cleaning"]::before { background: #7c3aed; }
 .eem-loc-status-option[data-target="block"]::before { background: #b91c1c; }
-/* #3 per-night block modal options. */
-.eem-block-opt { display: flex; align-items: center; gap: 9px; padding: 9px 4px; font-size: 14px; color: var(--eem-text-primary); cursor: pointer; }
-.eem-block-opt input { margin: 0; }
-.eem-block-nights { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 4px 26px; padding: 8px 0; border-top: 1px solid var(--eem-border-card, #e2e4e7); }
-.eem-block-night { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--eem-text-primary); cursor: pointer; }
-.eem-block-night input { margin: 0; }
+.eem-loc-status-option[data-target="assign"]::before { background: #1668F2; }
+/* #3 assign-from-list customer search modal. */
+.eem-assign-search { width: 100%; margin-bottom: 10px; }
+.eem-assign-list { max-height: 260px; overflow: auto; display: flex; flex-direction: column; gap: 2px; }
+.eem-assign-row { display: block; width: 100%; text-align: left; padding: 9px 12px; border: 0; background: none; border-radius: var(--eem-radius); font-size: 13.5px; color: var(--eem-text-primary); cursor: pointer; font-family: inherit; }
+.eem-assign-row:hover { background: #f6f7f7; }
+.eem-assign-empty { padding: 12px; font-size: 13px; color: var(--eem-text-secondary); text-align: center; }
+/* #3 per-night block modal. */
+.eem-block-hint { font-size: 13px; color: var(--eem-text-secondary); margin: 0 0 10px; }
+.eem-block-presets { display: flex; gap: 8px; margin-bottom: 10px; }
+.eem-block-nights { display: flex; flex-direction: column; gap: 8px; padding: 10px 0 2px; border-top: 1px solid var(--eem-border-card, #e2e4e7); }
+.eem-block-night { display: flex; align-items: center; gap: 9px; font-size: 14px; color: var(--eem-text-primary); cursor: pointer; }
+.eem-block-night input { margin: 0; width: 16px; height: 16px; }
 .eem-chart-block-name { color: #50575e; font-size: 13px; white-space: nowrap; }
 .eem-chart-cell-wrap { display: flex; justify-content: center; }
 
