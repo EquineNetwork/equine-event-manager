@@ -69,11 +69,16 @@ at the bottom. Session task IDs in brackets.
 - **Fix:** (a) **Import write-path** now mirrors EVERY `SECTION_ENABLED_MAP` flag from the config values to canonical post meta (alongside the existing pricing-mode mirror). Fresh imports work without a save. (b) **Migration #040** backfills existing imported reservations: queries the config table columns directly (no config-object hydration → memory-safe), writes the canonical post meta only when neither canonical nor legacy key exists (never clobbers an admin-saved value). Verified on local: 332 keys backfilled, reservation 15246 now reports `stalls_enabled/rv_enabled = true`, idempotent on re-run.
 - **Prevention:** Any data path that creates a reservation by writing the config table (import, future API, clone) MUST also mirror the section-enabled flags to post meta, OR every `section_enabled()`-gated surface will treat the reservation as "off." The config table is the source of truth; post meta is the read-cache many gates still use.
 
+### Barn filter on By Customer view (v2.7.596) — #14
+- **Need:** By Customer has a Barn column but no Barn filter, unlike By Location.
+- **Fix:** Added a Barn `<select>` (All Barns · each barn · Unassigned) to the By Customer filter row. Each customer row now carries `data-barns` (slugified barn name[s] from its assigned stalls). The shared `eemApplyStallChartFilter()` gained a customer-barn branch so the filter COMPOSES with the existing search box + Show-by-group + Tack toggles. The change listener is wired inside the same IIFE as the filter fn (admin.js has multiple IIFEs — a cross-IIFE call would throw at runtime; verified by reusing the search-input listener's scope).
+- **Behavior note:** since By Customer lists every customer (most unassigned until placed), picking a specific barn shows only customers already assigned there; "Unassigned" shows everyone not yet placed.
+- **Prevention:** when adding a row-level filter to a stall-chart panel, extend `eemApplyStallChartFilter()` (don't add a parallel display-toggling handler — it conflicts with the function's `row.hidden` mechanism), and wire the control's listener in the SAME IIFE as that function.
+
 ---
 
 ## 🔜 IN THE CURRENT BATCH (not yet shipped — designs locked)
 
-- **[#14] Barn filter on By Customer** — it has a Barn column but no Barn filter like By Location.
 - **[#15] `&amp;` double-encoding** in reservation dropdowns (Daily Movement etc.). Likely the Choices.js enhancement double-encoding the option label; native breadcrumb renders fine. Fix: decode-before-escape and/or configure the select-enhancer not to re-encode. Repair any title actually stored encoded.
 - **[#18] Dashboard RV parity**: "Rv" → "RV"; Upcoming Reservations card show RV count (e.g. 94/94) alongside stalls; "This Week" card add RV assigned.
 - **[#2] Assign from Order detail** — no assignment affordance on the order page.

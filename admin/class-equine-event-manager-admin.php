@@ -2979,6 +2979,17 @@ class EEM_Admin {
 										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
 										<?php esc_html_e( 'Tack Stalls', 'equine-event-manager' ); ?>
 									</button>
+									<?php // #14 — Barn filter for By Customer (parity with By Location). Shows
+									// customers assigned to a chosen barn, or those not yet assigned. ?>
+									<?php if ( ! empty( $barn_options ) ) : ?>
+									<select class="eem-field-select eem-field-select--auto eem-cust-barn-select" data-eem-action="stall-chart-filter-cust-barn" aria-label="<?php esc_attr_e( 'Filter by barn', 'equine-event-manager' ); ?>">
+										<option value="all"><?php esc_html_e( 'All Barns', 'equine-event-manager' ); ?></option>
+										<?php foreach ( $barn_options as $barn_label ) : ?>
+											<option value="<?php echo esc_attr( sanitize_html_class( strtolower( $barn_label ) ) ); ?>"><?php echo esc_html( $barn_label ); ?></option>
+										<?php endforeach; ?>
+										<option value="__unassigned"><?php esc_html_e( 'Unassigned', 'equine-event-manager' ); ?></option>
+									</select>
+									<?php endif; ?>
 									<div class="eem-stall-chart-filter-search">
 										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
 										<input type="search" id="eem-stall-chart-cust-search" class="eem-search-input eem-stall-chart-search-input" placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" />
@@ -6972,8 +6983,20 @@ class EEM_Admin {
 							$eem_row_note,
 							$eem_row_group,
 						);
+						// #14 — slugified barn name(s) this order's stalls fall in, so the
+						// By Customer Barn filter can show/hide rows (empty = unassigned).
+						$eem_row_barn_slugs = array();
+						foreach ( (array) $row['stall_units'] as $eem_bsu ) {
+							$eem_bb = isset( $unit_block_map[ (string) $eem_bsu ] ) ? (string) $unit_block_map[ (string) $eem_bsu ] : '';
+							if ( '' !== $eem_bb ) {
+								$eem_slug = sanitize_html_class( strtolower( $eem_bb ) );
+								if ( '' !== $eem_slug && ! in_array( $eem_slug, $eem_row_barn_slugs, true ) ) {
+									$eem_row_barn_slugs[] = $eem_slug;
+								}
+							}
+						}
 						?>
-						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="" data-has-stalls="<?php echo ! empty( $row['has_stall'] ) ? '1' : '0'; ?>" data-has-rv="<?php echo ! empty( $row['has_rv'] ) ? '1' : '0'; ?>" data-group="<?php echo esc_attr( $eem_row_group ); ?>" data-has-tack="<?php echo ! empty( $row['tack_units'] ) ? '1' : '0'; ?>">
+						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="" data-has-stalls="<?php echo ! empty( $row['has_stall'] ) ? '1' : '0'; ?>" data-has-rv="<?php echo ! empty( $row['has_rv'] ) ? '1' : '0'; ?>" data-group="<?php echo esc_attr( $eem_row_group ); ?>" data-has-tack="<?php echo ! empty( $row['tack_units'] ) ? '1' : '0'; ?>" data-barns="<?php echo esc_attr( implode( ' ', $eem_row_barn_slugs ) ); ?>">
 							<?php $eem_order_url = admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $row['order_key'] ) ); ?>
 							<td>
 								<div class="eem-chart-cust-cell">

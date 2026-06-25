@@ -5852,6 +5852,10 @@
 		var groupsOnly = !!groupToggle && groupToggle.getAttribute('aria-pressed') === 'true';
 		var tackToggle = panel.querySelector('[data-eem-action="stall-chart-toggle-tack"]');
 		var tackOnly = !!tackToggle && tackToggle.getAttribute('aria-pressed') === 'true';
+		// #14 — By Customer barn filter (a <select>, distinct from the By-Location
+		// barn tabs). Only present in the customer panel; null elsewhere.
+		var custBarnSel = panel.querySelector('[data-eem-action="stall-chart-filter-cust-barn"]');
+		var custBarn = custBarnSel ? custBarnSel.value : 'all';
 		var rows = Array.prototype.slice.call(panel.querySelectorAll('[data-stall-chart-search]'));
 		var visible = 0;
 		rows.forEach(function (row) {
@@ -5864,7 +5868,16 @@
 			var matchesBarn = activeBarn === 'all' || barn === '' || barn === activeBarn;
 			var matchesGroup = !groupsOnly || hasGroup;
 			var matchesTack = !tackOnly || hasTack;
-			var show = matchesSearch && matchesBarn && matchesGroup && matchesTack && !row.classList.contains('eem-chart-barn-row');
+			// By Customer barn <select>: 'all' = no filter; '__unassigned' = rows with
+			// no assigned barn; otherwise the row's data-barns must include the slug.
+			var matchesCustBarn = true;
+			if (custBarnSel && custBarn !== 'all') {
+				var rowBarns = (row.getAttribute('data-barns') || '').trim();
+				matchesCustBarn = custBarn === '__unassigned'
+					? rowBarns === ''
+					: ((' ' + rowBarns + ' ').indexOf(' ' + custBarn + ' ') !== -1);
+			}
+			var show = matchesSearch && matchesBarn && matchesGroup && matchesTack && matchesCustBarn && !row.classList.contains('eem-chart-barn-row');
 			row.hidden = !show;
 			if (show) visible++;
 		});
@@ -5878,7 +5891,16 @@
 		eemApplyStallChartFilter(t.closest('.eem-stall-chart-tab-panel') || document.body);
 	});
 
-	// Stall chart event typeahead input
+	// #14 — By Customer barn <select> change → re-run the shared panel filter
+		// (defined in this IIFE so eemApplyStallChartFilter is in scope; composes
+		// with the search box + Show-by-group + Tack toggles handled there).
+		document.addEventListener('change', function (evb) {
+			var ct = evb.target;
+			if (!ct || ct.getAttribute('data-eem-action') !== 'stall-chart-filter-cust-barn') return;
+			eemApplyStallChartFilter(ct.closest('.eem-stall-chart-tab-panel') || document.body);
+		});
+
+		// Stall chart event typeahead input
 	document.addEventListener('input', function (ev) {
 		var t = ev.target;
 		if (!t || t.getAttribute('data-eem-input-action') !== 'stall-chart-filter-events') return;
