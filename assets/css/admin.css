@@ -8892,6 +8892,8 @@ tr.eem-chart-barn-row td { background: #fdf4e7; padding: 9px 22px; font-size: 12
 .eem-loc-cell--occupied.eem-ci-pending { box-shadow: inset 0 0 0 2px #ef4444; }
 .eem-loc-cell--occupied.eem-ci-in { box-shadow: inset 0 0 0 2px #15803d; }
 .eem-loc-cell--occupied.eem-ci-out { box-shadow: inset 0 0 0 2px #94a3b8; }
+/* VIP marker on a List cell — a small gold star before the name. */
+.eem-vip-star { color: #E0A800; font-size: 11px; line-height: 1; margin-right: 2px; flex-shrink: 0; }
 /* #3 check-in legend (above the By-Location list). */
 .eem-sc-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; padding: 8px 0 4px; font-size: 12.5px; color: var(--eem-text-secondary); }
 .eem-sc-legend__label { font-weight: 700; color: var(--eem-text-primary); }
@@ -9146,6 +9148,7 @@ body.eem-assign-mode .eem-chart-status--available[data-eem-action="assign-order-
 .eem-smap-sw--resv { background: #dbe4f3; border-color: #bcccea; }
 .eem-smap-sw--tack { background: #fff5e6; border-color: #E8A33D; }
 .eem-smap-sw--block { background: #f87171; border-color: #ef4444; }
+.eem-smap-sw--vip { background: none; border: 0; color: #E0A800; font-size: 14px; line-height: 1; width: auto; }
 .eem-smap-scroll { overflow: auto; padding: 18px 0; background: #fbfcfe; max-height: 640px; -webkit-overflow-scrolling: touch; min-width: 0; max-width: 100%; }
 /* "Map zoom": chips resize inside this capped viewport; the chart card never
    grows. min-width:0 stops the grid's intrinsic width from stretching the card. */
@@ -9189,6 +9192,11 @@ body.eem-assign-mode .eem-chart-status--available[data-eem-action="assign-order-
 .eem-smap-grid--dots .eem-smap-dot { display: block; }
 .eem-smap-grid--dots .eem-smap-tbadge { display: none; }
 .eem-smap-tbadge { position: absolute; top: -5px; right: -5px; font-size: 8px; background: #E8A33D; color: #fff; border-radius: var(--eem-radius-sm); padding: 0 3px; font-weight: 800; }
+/* VIP marker on the spatial map — gold star, top-left so it doesn't collide with
+   the tack 'T' badge (top-right). */
+.eem-smap-grid--dots .eem-smap-vipbadge { display: none; }
+.eem-smap-vipbadge { position: absolute; top: -6px; left: -4px; font-size: 11px; color: #E0A800; text-shadow: 0 0 2px rgba(0,0,0,.35); line-height: 1; pointer-events: none; }
+.eem-smap-stall.is-vip { box-shadow: inset 0 0 0 2px #E0A800; }
 /* Match the amber landmark styling used by the builder, Preview, and customer
    picker so every map surface looks identical (was grey/uppercase). */
 .eem-smap-land { display: flex; align-items: center; justify-content: center; text-align: center; width: auto; height: auto; font-size: clamp(7px, calc(var(--eem-smap-chip, 40px) * 0.22), 11px); font-weight: 700; letter-spacing: .02em; color: #b45309; background: #fff7e6; border: 0; border-radius: 0; padding: 2px; line-height: 1.15; overflow: hidden; }

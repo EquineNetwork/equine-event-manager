@@ -131,6 +131,7 @@ class EEM_Admin {
 		add_action( 'wp_ajax_eem_stall_cell_status_set', array( $this, 'ajax_stall_cell_status_set' ) );
 		add_action( 'wp_ajax_eem_stall_bulk_status_set', array( $this, 'ajax_stall_bulk_status_set' ) );
 		add_action( 'wp_ajax_eem_toggle_tack_stall', array( $this, 'ajax_toggle_tack_stall' ) );
+		add_action( 'wp_ajax_eem_toggle_order_vip', array( $this, 'ajax_toggle_order_vip' ) );
 		add_action( 'wp_ajax_eem_stall_map_action', array( $this, 'ajax_stall_map_action' ) );
 		add_action( 'wp_ajax_eem_group_rename', array( $this, 'ajax_group_rename' ) );
 		add_action( 'wp_ajax_eem_auto_assign', array( $this, 'ajax_auto_assign' ) );
@@ -3139,6 +3140,7 @@ class EEM_Admin {
 			$okey  = (string) ( isset( $row['order_key'] ) ? $row['order_key'] : '' );
 			$onum  = (string) ( isset( $row['order_number'] ) ? $row['order_number'] : '' );
 			$tack  = $with_tack ? array_map( 'strval', (array) ( isset( $row['tack_units'] ) ? $row['tack_units'] : array() ) ) : array();
+			$vip   = ! empty( $row['is_vip'] );
 
 			if ( '' !== $group ) {
 				$group_set[ $group ] = true;
@@ -3160,6 +3162,7 @@ class EEM_Admin {
 					'g' => $group,
 					'o' => $okey,
 					'n' => $onum,
+					'vip' => $vip ? 1 : 0,
 				);
 			}
 		}
@@ -3296,6 +3299,7 @@ class EEM_Admin {
 					<span><i class="eem-smap-sw eem-smap-sw--tack"></i> <?php esc_html_e( 'Tack', 'equine-event-manager' ); ?></span>
 				<?php endif; ?>
 				<span><i class="eem-smap-sw eem-smap-sw--block"></i> <?php esc_html_e( 'Blocked', 'equine-event-manager' ); ?></span>
+				<span><i class="eem-smap-sw eem-smap-sw--vip">★</i> <?php esc_html_e( 'VIP', 'equine-event-manager' ); ?></span>
 				<span class="eem-smap-legend-hint"><?php echo esc_html( $is_rv ? __( 'Click any lot to assign or block.', 'equine-event-manager' ) : __( 'Click any stall to assign, mark tack, or block.', 'equine-event-manager' ) ); ?></span>
 			</div>
 
@@ -3920,6 +3924,11 @@ class EEM_Admin {
 			<button class="eem-stall-chart-cell-menu-btn cell-action-menu__btn" type="button" data-eem-action="toggle-tack-stall" id="eem-stall-chart-tack-btn">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
 				<span data-eem-tack-btn-label><?php esc_html_e( 'Mark as Tack Stall', 'equine-event-manager' ); ?></span>
+			</button>
+			<?php // VIP toggle (customer-level) — gold marker on all their stalls. ?>
+			<button class="eem-stall-chart-cell-menu-btn cell-action-menu__btn" type="button" data-eem-action="cell-toggle-vip" id="eem-stall-chart-vip-btn">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="12 2 15 8.5 22 9.3 17 14 18.5 21 12 17.5 5.5 21 7 14 2 9.3 9 8.5 12 2"/></svg>
+				<span data-eem-vip-btn-label><?php esc_html_e( 'Mark as VIP', 'equine-event-manager' ); ?></span>
 			</button>
 			<?php // #3: toggle this order's check-in (Pending Arrival ⇄ Checked In). ?>
 			<button class="eem-stall-chart-cell-menu-btn cell-action-menu__btn" type="button" data-eem-action="cell-toggle-checkin" id="eem-stall-chart-checkin-btn">
@@ -5781,6 +5790,8 @@ class EEM_Admin {
 			// on the assigned stall pill so barn crews see the count while assigning.
 			$order_shavings = absint( isset( $order['required_shavings_qty'] ) ? $order['required_shavings_qty'] : 0 )
 							+ absint( isset( $order['additional_shavings_qty'] ) ? $order['additional_shavings_qty'] : 0 );
+			// VIP customer flag (order-level) — gold marker on every stall they hold.
+			$order_vip = 'Yes' === $this->get_order_note_value( (string) $order['notes'], 'VIP' );
 			// V1 #5: tack stall designations (subset of assigned units; operational).
 			$tack_lookup = array_fill_keys(
 				array_map( 'strval', (array) $this->parse_assigned_units_string(
@@ -5811,6 +5822,7 @@ class EEM_Admin {
 						'group_name'   => $group_name,
 						'special_requests' => $special_requests,
 						'shavings'     => $order_shavings,
+						'is_vip'       => $order_vip,
 						'arrival'      => (string) $order['stall_arrival_date'],
 						'departure'    => (string) $order['stall_departure_date'],
 					);
@@ -5825,6 +5837,7 @@ class EEM_Admin {
 							'special_requests' => $special_requests,
 							'group_name'       => $group_name,
 							'shavings'         => $order_shavings,
+							'is_vip'           => $order_vip,
 							'is_tack'          => isset( $tack_lookup[ (string) $unit ] ),
 							'suggested'        => $unit_suggested,
 						);
@@ -5872,6 +5885,7 @@ class EEM_Admin {
 							'special_requests' => $special_requests,
 							'group_name'       => $group_name,
 							'shavings'         => $order_shavings,
+							'is_vip'           => $order_vip,
 							'is_tack'          => isset( $tack_lookup[ (string) $unit ] ),
 							'suggested'        => false,
 						);
@@ -6306,6 +6320,44 @@ class EEM_Admin {
 			'message' => $is_tack
 				? __( 'Marked as tack stall.', 'equine-event-manager' )
 				: __( 'Tack designation removed.', 'equine-event-manager' ),
+		) );
+	}
+
+	/**
+	 * AJAX: toggle an order's VIP flag (customer-level) from the stall popover.
+	 *
+	 * @return void
+	 */
+	public function ajax_toggle_order_vip() {
+		check_ajax_referer( 'eem_stall_chart_move', '_wpnonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$order_key = isset( $_POST['order_id'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['order_id'] ) ) : '';
+		if ( '' === $order_key ) {
+			wp_send_json_error( array( 'message' => __( 'Missing order reference.', 'equine-event-manager' ) ), 400 );
+		}
+
+		$order = $this->orders_repository->get_order( $order_key );
+		if ( ! $order ) {
+			wp_send_json_error( array( 'message' => __( 'Order not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		$currently_vip = 'Yes' === $this->get_order_note_value( (string) ( $order['notes'] ?? '' ), 'VIP' );
+		$is_vip        = ! $currently_vip;
+
+		$ok = $this->orders_repository->update_order_vip( $order_key, $is_vip );
+		if ( ! $ok ) {
+			wp_send_json_error( array( 'message' => __( 'Could not update VIP status.', 'equine-event-manager' ) ), 500 );
+		}
+
+		wp_send_json_success( array(
+			'is_vip'  => $is_vip,
+			'message' => $is_vip
+				? __( 'Marked as VIP.', 'equine-event-manager' )
+				: __( 'VIP removed.', 'equine-event-manager' ),
 		) );
 	}
 
@@ -7003,9 +7055,11 @@ class EEM_Admin {
 									$eem_ogrp  = isset( $eem_cell['group_name'] ) ? trim( (string) $eem_cell['group_name'] ) : '';
 									$eem_onote = isset( $eem_cell['special_requests'] ) ? trim( (string) $eem_cell['special_requests'] ) : '';
 									$eem_oshav = isset( $eem_cell['shavings'] ) ? absint( $eem_cell['shavings'] ) : 0;
+									$eem_ovip  = ! empty( $eem_cell['is_vip'] );
 									?>
 										<?php $eem_ci_status = isset( $eem_checkin_map[ (string) $eem_onum ] ) ? (string) $eem_checkin_map[ (string) $eem_onum ] : 'occupied'; $eem_ci_class = 'checked_in' === $eem_ci_status ? 'eem-ci-in' : ( 'checked_out' === $eem_ci_status ? 'eem-ci-out' : 'eem-ci-pending' ); ?>
-									<button type="button" class="eem-loc-cell eem-loc-cell--occupied <?php echo esc_attr( $eem_ci_class ); ?><?php echo ! empty( $eem_cell['is_tack'] ) ? ' is-tack' : ''; ?>" data-eem-action="stall-pill-click" data-kind="<?php echo esc_attr( $kind ); ?>" data-order-key="<?php echo esc_attr( $eem_okey ); ?>" data-order-id="<?php echo esc_attr( $eem_okey ); ?>" data-order-number="<?php echo esc_attr( $this->format_order_number_display( $eem_onum ) ); ?>" data-customer-name="<?php echo esc_attr( $eem_cell_text ); ?>" data-customer="<?php echo esc_attr( $eem_cell_text ); ?>" data-stall="<?php echo esc_attr( $eem_unit ); ?>" data-date="<?php echo esc_attr( $eem_dk ); ?>"<?php echo '' !== $eem_ogrp ? ' data-group-name="' . esc_attr( $eem_ogrp ) . '"' : ''; ?><?php echo '' !== $eem_onote ? ' data-special-requests="' . esc_attr( $eem_onote ) . '"' : ''; ?><?php echo $eem_oshav > 0 ? ' data-shavings="' . esc_attr( $eem_oshav ) . '"' : ''; ?> data-is-tack="<?php echo ! empty( $eem_cell['is_tack'] ) ? '1' : '0'; ?>" data-order-number-raw="<?php echo esc_attr( (string) $eem_onum ); ?>" data-checkin-status="<?php echo esc_attr( isset( $eem_checkin_map[ (string) $eem_onum ] ) ? $eem_checkin_map[ (string) $eem_onum ] : 'occupied' ); ?>" data-checkin-nonce="<?php echo esc_attr( wp_create_nonce( 'eem_order_checkin_' . (int) $reservation_id . '_' . $eem_onum ) ); ?>">
+									<button type="button" class="eem-loc-cell eem-loc-cell--occupied <?php echo esc_attr( $eem_ci_class ); ?><?php echo ! empty( $eem_cell['is_tack'] ) ? ' is-tack' : ''; ?><?php echo $eem_ovip ? ' is-vip' : ''; ?>" data-eem-action="stall-pill-click" data-kind="<?php echo esc_attr( $kind ); ?>" data-order-key="<?php echo esc_attr( $eem_okey ); ?>" data-order-id="<?php echo esc_attr( $eem_okey ); ?>" data-order-number="<?php echo esc_attr( $this->format_order_number_display( $eem_onum ) ); ?>" data-customer-name="<?php echo esc_attr( $eem_cell_text ); ?>" data-customer="<?php echo esc_attr( $eem_cell_text ); ?>" data-stall="<?php echo esc_attr( $eem_unit ); ?>" data-date="<?php echo esc_attr( $eem_dk ); ?>"<?php echo '' !== $eem_ogrp ? ' data-group-name="' . esc_attr( $eem_ogrp ) . '"' : ''; ?><?php echo '' !== $eem_onote ? ' data-special-requests="' . esc_attr( $eem_onote ) . '"' : ''; ?><?php echo $eem_oshav > 0 ? ' data-shavings="' . esc_attr( $eem_oshav ) . '"' : ''; ?> data-is-tack="<?php echo ! empty( $eem_cell['is_tack'] ) ? '1' : '0'; ?>" data-is-vip="<?php echo $eem_ovip ? '1' : '0'; ?>" data-order-number-raw="<?php echo esc_attr( (string) $eem_onum ); ?>" data-checkin-status="<?php echo esc_attr( isset( $eem_checkin_map[ (string) $eem_onum ] ) ? $eem_checkin_map[ (string) $eem_onum ] : 'occupied' ); ?>" data-checkin-nonce="<?php echo esc_attr( wp_create_nonce( 'eem_order_checkin_' . (int) $reservation_id . '_' . $eem_onum ) ); ?>">
+											<?php if ( $eem_ovip ) : ?><span class="eem-vip-star" title="<?php esc_attr_e( 'VIP', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'VIP', 'equine-event-manager' ); ?>">★</span><?php endif; ?>
 											<span class="eem-loc-cell__label"><?php echo esc_html( $eem_cell_text ); ?></span>
 											<svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
 										</button>
@@ -7162,7 +7216,7 @@ class EEM_Admin {
 								<div class="eem-chart-cust-cell">
 									<div class="eem-chart-cust-cell__row">
 										<a class="eem-chart-cust-link" href="<?php echo esc_url( $eem_order_url ); ?>">
-											<?php echo esc_html( self::format_customer_last_first( (string) $row['customer_name'] ) ); ?>
+											<?php if ( ! empty( $row['is_vip'] ) ) : ?><span class="eem-vip-star" title="<?php esc_attr_e( 'VIP', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'VIP', 'equine-event-manager' ); ?>">★</span><?php endif; ?><?php echo esc_html( self::format_customer_last_first( (string) $row['customer_name'] ) ); ?>
 										</a>
 									<?php if ( '' !== $eem_row_group ) : ?>
 										<span class="eem-chart-cust-icon eem-chart-cust-icon--group" style="--eem-group-color:<?php echo esc_attr( $this->group_color_for( $eem_row_group ) ); ?>" tabindex="0" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: group name */ __( 'Group: %s', 'equine-event-manager' ), $eem_row_group ) ); ?>">
@@ -7641,6 +7695,8 @@ class EEM_Admin {
 				'tack_units'       => array_values( array_map( 'strval', (array) $this->parse_assigned_units_string(
 					$this->get_order_component_note_value( $order, 'stall', 'Tack Stalls' )
 				) ) ),
+				// VIP customer flag (order-level) — gold star in By Customer + map.
+				'is_vip'           => 'Yes' === $this->get_order_note_value( (string) $order['notes'], 'VIP' ),
 				// Trip dates per component — surfaced as Arrival/Departure columns in
 				// the By-Customer table (tab-aware).
 				'stall_arrival'    => (string) $order['stall_arrival_date'],

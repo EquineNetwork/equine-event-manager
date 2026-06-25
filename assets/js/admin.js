@@ -5461,6 +5461,10 @@
 			if (checkinLabel) {
 				checkinLabel.textContent = eemCheckinNextLabel(window._scActiveCheckinStatus);
 			}
+			// VIP toggle label from the pill's state.
+			window._scActiveIsVip = pill.getAttribute('data-is-vip') === '1';
+			var vipLabel = document.querySelector('#eem-stall-chart-vip-btn [data-eem-vip-btn-label]');
+			if (vipLabel) { vipLabel.textContent = window._scActiveIsVip ? 'Remove VIP' : 'Mark as VIP'; }
 			var titleEl = document.getElementById('eem-stall-chart-menu-title');
 			var subEl = document.getElementById('eem-stall-chart-menu-subtitle');
 			if (titleEl) titleEl.textContent = customer;
@@ -5617,6 +5621,55 @@
 						if (window.EEM && window.EEM.showSaveToast) {
 							window.EEM.showSaveToast(data.message || (resp && resp.success ? 'Removed from stall.' : 'Could not remove from stall.'),
 								{ variant: (resp && resp.success) ? 'success' : 'error' });
+						}
+					})
+					.catch(function () {
+						if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast('Could not reach the server.', { variant: 'error' }); }
+					});
+				return;
+			}
+
+			// VIP toggle (customer-level) — flips every stall this order holds.
+			var vipToggle = t.closest('[data-eem-action="cell-toggle-vip"]');
+			if (vipToggle) {
+				ev.preventDefault();
+				var vipMenu = document.getElementById('eem-stall-chart-cell-menu');
+				if (vipMenu) { vipMenu.classList.remove('open'); }
+				var vipOrderKey = window._scActiveOrderId || '';
+				var vipBody = new URLSearchParams();
+				vipBody.set('action', 'eem_toggle_order_vip');
+				vipBody.set('_wpnonce', (window.eemStallChart || {}).moveNonce || '');
+				vipBody.set('order_id', vipOrderKey);
+				fetch((window.ajaxurl || '/wp-admin/admin-ajax.php'), { method: 'POST', credentials: 'same-origin', body: vipBody })
+					.then(function (r) { return r.json(); })
+					.then(function (resp) {
+						var data = (resp && resp.data) || {};
+						if (resp && resp.success) {
+							var nowVip = !!data.is_vip;
+							window._scActiveIsVip = nowVip;
+							if (vipOrderKey) {
+								var vsel = '[data-order-key="' + (window.CSS && CSS.escape ? CSS.escape(vipOrderKey) : vipOrderKey) + '"]';
+								document.querySelectorAll(vsel).forEach(function (el) {
+									if (!el.classList || !el.classList.contains('eem-loc-cell--occupied')) { return; }
+									el.setAttribute('data-is-vip', nowVip ? '1' : '0');
+									el.classList.toggle('is-vip', nowVip);
+									var star = el.querySelector('.eem-vip-star');
+									if (nowVip && !star) {
+										star = document.createElement('span');
+										star.className = 'eem-vip-star';
+										star.title = 'VIP';
+										star.textContent = '★';
+										el.insertBefore(star, el.firstChild);
+									} else if (!nowVip && star) {
+										star.parentNode.removeChild(star);
+									}
+								});
+							}
+							var vlbl = document.querySelector('#eem-stall-chart-vip-btn [data-eem-vip-btn-label]');
+							if (vlbl) { vlbl.textContent = nowVip ? 'Remove VIP' : 'Mark as VIP'; }
+							if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast(data.message || 'Updated.', { variant: 'success' }); }
+						} else if (window.EEM && window.EEM.showSaveToast) {
+							window.EEM.showSaveToast((data && data.message) || 'Could not update VIP.', { variant: 'error' });
 						}
 					})
 					.catch(function () {
@@ -6178,6 +6231,14 @@
 						b.className = 'eem-smap-tbadge';
 						b.textContent = 'T';
 						el.appendChild(b);
+					}
+					if (st.vip) {
+						el.classList.add('is-vip');
+						var vb = document.createElement('span');
+						vb.className = 'eem-smap-vipbadge';
+						vb.textContent = '★';
+						vb.title = 'VIP';
+						el.appendChild(vb);
 					}
 					host.appendChild(el);
 					continue;
