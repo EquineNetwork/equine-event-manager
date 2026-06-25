@@ -5616,6 +5616,10 @@ class EEM_Admin {
 			$special_requests = trim( (string) $this->get_special_requests_from_order_notes( $order['notes'] ) );
 			// V1 D2: group name tag (for manual clustering + Show-by-group filter).
 			$group_name = $this->get_group_name_from_order_notes( (string) $order['notes'] );
+			// #17: bags of shavings (required + additional) for this order — surfaced
+			// on the assigned stall pill so barn crews see the count while assigning.
+			$order_shavings = absint( isset( $order['required_shavings_qty'] ) ? $order['required_shavings_qty'] : 0 )
+							+ absint( isset( $order['additional_shavings_qty'] ) ? $order['additional_shavings_qty'] : 0 );
 			// V1 #5: tack stall designations (subset of assigned units; operational).
 			$tack_lookup = array_fill_keys(
 				array_map( 'strval', (array) $this->parse_assigned_units_string(
@@ -5645,6 +5649,7 @@ class EEM_Admin {
 						'suggested'    => $unit_suggested,
 						'group_name'   => $group_name,
 						'special_requests' => $special_requests,
+						'shavings'     => $order_shavings,
 						'arrival'      => (string) $order['stall_arrival_date'],
 						'departure'    => (string) $order['stall_departure_date'],
 					);
@@ -5658,6 +5663,7 @@ class EEM_Admin {
 							'order_number'     => (string) $order['order_number'],
 							'special_requests' => $special_requests,
 							'group_name'       => $group_name,
+							'shavings'         => $order_shavings,
 							'is_tack'          => isset( $tack_lookup[ (string) $unit ] ),
 							'suggested'        => $unit_suggested,
 						);
@@ -5704,6 +5710,7 @@ class EEM_Admin {
 							'order_number'     => (string) $order['order_number'],
 							'special_requests' => $special_requests,
 							'group_name'       => $group_name,
+							'shavings'         => $order_shavings,
 							'is_tack'          => isset( $tack_lookup[ (string) $unit ] ),
 							'suggested'        => false,
 						);
@@ -6825,8 +6832,9 @@ class EEM_Admin {
 									$eem_onum  = isset( $eem_cell['order_number'] ) ? (string) $eem_cell['order_number'] : '';
 									$eem_ogrp  = isset( $eem_cell['group_name'] ) ? trim( (string) $eem_cell['group_name'] ) : '';
 									$eem_onote = isset( $eem_cell['special_requests'] ) ? trim( (string) $eem_cell['special_requests'] ) : '';
+									$eem_oshav = isset( $eem_cell['shavings'] ) ? absint( $eem_cell['shavings'] ) : 0;
 									?>
-										<button type="button" class="eem-loc-cell eem-loc-cell--occupied" data-eem-action="stall-pill-click" data-kind="<?php echo esc_attr( $kind ); ?>" data-order-key="<?php echo esc_attr( $eem_okey ); ?>" data-order-id="<?php echo esc_attr( $eem_okey ); ?>" data-order-number="<?php echo esc_attr( $this->format_order_number_display( $eem_onum ) ); ?>" data-customer-name="<?php echo esc_attr( $eem_cell_text ); ?>" data-customer="<?php echo esc_attr( $eem_cell_text ); ?>" data-stall="<?php echo esc_attr( $eem_unit ); ?>" data-date="<?php echo esc_attr( $eem_dk ); ?>"<?php echo '' !== $eem_ogrp ? ' data-group-name="' . esc_attr( $eem_ogrp ) . '"' : ''; ?><?php echo '' !== $eem_onote ? ' data-special-requests="' . esc_attr( $eem_onote ) . '"' : ''; ?> data-is-tack="<?php echo ! empty( $eem_cell['is_tack'] ) ? '1' : '0'; ?>">
+										<button type="button" class="eem-loc-cell eem-loc-cell--occupied" data-eem-action="stall-pill-click" data-kind="<?php echo esc_attr( $kind ); ?>" data-order-key="<?php echo esc_attr( $eem_okey ); ?>" data-order-id="<?php echo esc_attr( $eem_okey ); ?>" data-order-number="<?php echo esc_attr( $this->format_order_number_display( $eem_onum ) ); ?>" data-customer-name="<?php echo esc_attr( $eem_cell_text ); ?>" data-customer="<?php echo esc_attr( $eem_cell_text ); ?>" data-stall="<?php echo esc_attr( $eem_unit ); ?>" data-date="<?php echo esc_attr( $eem_dk ); ?>"<?php echo '' !== $eem_ogrp ? ' data-group-name="' . esc_attr( $eem_ogrp ) . '"' : ''; ?><?php echo '' !== $eem_onote ? ' data-special-requests="' . esc_attr( $eem_onote ) . '"' : ''; ?><?php echo $eem_oshav > 0 ? ' data-shavings="' . esc_attr( $eem_oshav ) . '"' : ''; ?> data-is-tack="<?php echo ! empty( $eem_cell['is_tack'] ) ? '1' : '0'; ?>">
 											<span class="eem-loc-cell__label"><?php echo esc_html( $eem_cell_text ); ?></span>
 											<svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
 										</button>
@@ -6946,6 +6954,7 @@ class EEM_Admin {
 						<th class="col-stall"<?php echo $show_stall ? '' : ' style="display:none"'; ?>><?php esc_html_e( 'Stall #', 'equine-event-manager' ); ?></th>
 						<th class="col-rv"<?php echo $show_rv ? '' : ' style="display:none"'; ?>><?php esc_html_e( 'Lot Name', 'equine-event-manager' ); ?></th>
 						<th class="col-rv"<?php echo $show_rv ? '' : ' style="display:none"'; ?>><?php esc_html_e( 'RV Lot #', 'equine-event-manager' ); ?></th>
+						<th class="col-stall eem-chart-shavings-col"<?php echo $show_stall ? '' : ' style="display:none"'; ?>><?php esc_html_e( 'Shavings', 'equine-event-manager' ); ?></th>
 						<th class="eem-chart-status-col"><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
 						<th class="eem-chart-notes-col"><?php esc_html_e( 'Notes', 'equine-event-manager' ); ?></th>
 					</tr>
@@ -7035,6 +7044,12 @@ class EEM_Admin {
 							<td class="col-stall eem-chart-stall-assignment"<?php echo $show_stall ? '' : ' style="display:none"'; ?>><?php echo ! empty( $row['stall_units'] ) ? wp_kses_post( $this->render_assignment_summary_chips( $row['stall_units'], 'stall' ) ) : '<span class="eem-chart-dash">—</span>'; ?><?php if ( ! empty( $row['tack_units'] ) ) : ?><div class="eem-chart-tack-note" title="<?php esc_attr_e( 'Tack stall(s)', 'equine-event-manager' ); ?>"><span class="eem-chart-tack-note__dot" aria-hidden="true"></span><?php echo esc_html( sprintf( /* translators: %s: comma-separated tack stall numbers */ __( 'Tack: %s', 'equine-event-manager' ), implode( ', ', array_map( 'strval', (array) $row['tack_units'] ) ) ) ); ?></div><?php endif; ?></td>
 							<td class="col-rv eem-chart-lot-name"<?php echo $show_rv ? '' : ' style="display:none"'; ?>><?php echo ! empty( $eem_lot_zones ) ? esc_html( implode( ', ', $eem_lot_zones ) ) : '<span class="eem-chart-dash">—</span>'; ?></td>
 							<td class="col-rv eem-chart-rv-assignment"<?php echo $show_rv ? '' : ' style="display:none"'; ?>><?php echo ! empty( $row['rv_units'] ) ? wp_kses_post( $this->render_assignment_summary_chips( $row['rv_units'], 'rv' ) ) : '<span class="eem-chart-dash">—</span>'; ?></td>
+							<?php $eem_shav = isset( $row['shavings'] ) ? absint( $row['shavings'] ) : 0; ?>
+							<td class="col-stall eem-chart-shavings-cell"<?php echo $show_stall ? '' : ' style="display:none"'; ?>><?php
+								echo $eem_shav > 0
+									? '<span class="eem-chart-shavings-badge" title="' . esc_attr__( 'Bags of shavings', 'equine-event-manager' ) . '">' . esc_html( sprintf( /* translators: %d: number of bags */ _n( '%d bag', '%d bags', $eem_shav, 'equine-event-manager' ), $eem_shav ) ) . '</span>'
+									: '<span class="eem-chart-dash">—</span>';
+							?></td>
 							<td class="eem-chart-checkin-cell">
 								<?php
 								$eem_onum = (string) $row['order_number'];
@@ -7429,6 +7444,11 @@ class EEM_Admin {
 				'special_requests' => trim( (string) $this->get_special_requests_from_order_notes( $order['notes'] ) ),
 				// V1 D2: group name tag.
 				'group_name'       => $this->get_group_name_from_order_notes( (string) $order['notes'] ),
+				// #17: bags of shavings (required + additional) for this order —
+				// surfaced as a Shavings column in By Customer and on the assigned
+				// stall cell/chip so barn crews know how many bags to drop per stall.
+				'shavings'         => absint( isset( $order['required_shavings_qty'] ) ? $order['required_shavings_qty'] : 0 )
+									+ absint( isset( $order['additional_shavings_qty'] ) ? $order['additional_shavings_qty'] : 0 ),
 				// Shared admin note (one per order) — surfaced in the Notes column and
 				// editable via the shared note modal (also shown on Daily Movement).
 				'admin_note'       => (string) $this->get_order_note_value( (string) $order['notes'], 'Admin Note' ),

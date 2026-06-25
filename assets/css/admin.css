@@ -9004,6 +9004,8 @@ body.eem-assign-mode .eem-chart-status--available[data-eem-action="assign-order-
 /* V1 D2: group line in the stall-pill action popover. */
 .eem-stall-chart-menu-group { display: block; margin-top: 6px; font-size: 11.5px; color: var(--eem-text); }
 .eem-stall-chart-menu-group strong { font-weight: 700; color: var(--eem-navy); }
+.eem-stall-chart-menu-shavings { display: block; margin-top: 6px; font-size: 11.5px; color: var(--eem-text); }
+.eem-stall-chart-menu-shavings strong { font-weight: 700; color: #6d28d9; }
 .eem-chart-order-link { color: #031B4E; font-weight: 600; font-size: 12.5px; text-decoration: none; }
 .eem-chart-order-link:hover { color: #1668F2; }
 .eem-chart-night-count { text-align: center; font-weight: 600; color: #8c8f94; }
@@ -9011,6 +9013,9 @@ body.eem-assign-mode .eem-chart-status--available[data-eem-action="assign-order-
 .eem-chart-stall-assignment { font-size: 13px; color: #031B4E; font-weight: 500; }
 .eem-chart-rv-assignment { font-size: 13px; color: #6d28d9; font-weight: 500; }
 .eem-chart-dash { color: #8c8f94; }
+/* #17: bags-of-shavings badge in By Customer (purple, matches Daily Movement). */
+.eem-chart-shavings-col { white-space: nowrap; }
+.eem-chart-shavings-badge { display: inline-flex; align-items: center; padding: 1px 9px; font-size: 11.5px; font-weight: 700; color: #6d28d9; background: #f3e8ff; border: 1px solid #e3d0fb; border-radius: 999px; white-space: nowrap; }
 
 /* ── RV Lot Occupancy card ── */
 .eem-stall-chart-content-card { background: #fff; border: 1px solid #e5e7eb; border-radius: var(--eem-radius); overflow: hidden; margin-bottom: 14px; }

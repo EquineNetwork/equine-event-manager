@@ -50,13 +50,18 @@ at the bottom. Session task IDs in brackets.
 - **Fix:** (a) Added `Confirmation Numbers?:` + the card/manual-payment lines to the strip regex — kills the leak everywhere special-requests is shown. (b) New **Order Notes card** on the Order Detail page (below Special Instructions, separate from the Activity Log) that surfaces the confirmation # in its own labeled field plus any genuine customer free-text. Two new static parsers on `EEM_Admin`: `parse_confirmation_numbers_from_notes()` + `parse_customer_notes_from_order_notes()`. Card renders nothing when there's neither a conf # nor a note (no empty chrome).
 - **Prevention:** The notes blob is a multi-purpose store — any new "Label: value" metadata line written into it MUST also be added to the strip regex(es) or it will leak into the customer-facing free-text. Activity Log (system trail) and Order Notes (customer/admin text) are deliberately separate surfaces.
 
+### Shavings count surfaced per customer + on the assigned stall pill (v2.7.593)
+- **Need:** Barn crews need to know how many bags of shavings to drop per customer/stall. Daily Movement already showed it; the Stall Chart did not.
+- **Fix:** (a) **By Customer** view gets a **Shavings** column (purple bag badge, "N bags", "—" when none) — sits in the `col-stall` group so it follows the Stalls/Both Show toggle. (b) The **assigned stall pill popover** (by-location map/list) now shows a "Shavings: N bags" line; cell carries a `data-shavings` attribute. Bag count = `required_shavings_qty + additional_shavings_qty`, summed per order by the repo. (c) Daily Movement unchanged (already correct).
+- **Data note:** shavings is stored per ORDER (not per individual stall), so the count shown is the order total. Most barrel-race customers have 1–2 stalls; the popover/column make the per-customer total explicit, which is what the crews actually pull by.
+- **Prevention:** any new per-order operational quantity (bedding, hay, etc.) follows this same pattern — add to the `build_stall_chart_rows()` row array + the grid `occupant`/`cells` arrays + the pill `data-*` + the popover render.
+
 ---
 
 ## 🔜 IN THE CURRENT BATCH (not yet shipped — designs locked)
 
 - **[#14] Barn filter on By Customer** — it has a Barn column but no Barn filter like By Location.
 - **[#15] `&amp;` double-encoding** in reservation dropdowns (Daily Movement etc.). Likely the Choices.js enhancement double-encoding the option label; native breadcrumb renders fine. Fix: decode-before-escape and/or configure the select-enhancer not to re-encode. Repair any title actually stored encoded.
-- **[#17] Shavings count** (LOCKED — all three): a Shavings column in By Customer, on Daily Movement arrivals, and on the stall map cell / assignment chip. Also: CSV import should resolve stay-type → dates at creation so future imports don't need migration #039.
 - **[#18] Dashboard RV parity**: "Rv" → "RV"; Upcoming Reservations card show RV count (e.g. 94/94) alongside stalls; "This Week" card add RV assigned.
 - **[#2] Assign from Order detail** — no assignment affordance on the order page.
 - **[#3] Unify By Location List + Map click menus** — both should offer assign / cleaning / checked-in / tack / block (biggest item).

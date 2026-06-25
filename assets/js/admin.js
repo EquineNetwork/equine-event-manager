@@ -5429,6 +5429,7 @@
 			var orderNum = pill.getAttribute('data-order-number') || '';
 			var special  = pill.getAttribute('data-special-requests') || '';
 			var groupNm  = pill.getAttribute('data-group-name') || '';
+			var shavings = parseInt(pill.getAttribute('data-shavings') || '0', 10) || 0;
 			var srcStall = pill.getAttribute('data-stall') || '';
 			var srcDate  = pill.getAttribute('data-date') || '';
 			window._scActiveOrderId   = orderKey;
@@ -5458,6 +5459,9 @@
 				}
 				if (special) {
 					html += '<span class="eem-stall-chart-menu-special"><strong>Special requests:</strong> ' + esc(special) + '</span>';
+				}
+				if (shavings > 0) {
+					html += '<span class="eem-stall-chart-menu-shavings"><strong>Shavings:</strong> ' + shavings + (shavings === 1 ? ' bag' : ' bags') + '</span>';
 				}
 				subEl.innerHTML = html;
 			}
