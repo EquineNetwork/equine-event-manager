@@ -8378,6 +8378,81 @@ class EEM_Admin {
 	}
 
 	/**
+	 * Parse the customer's confirmation number(s) from an order's notes blob.
+	 *
+	 * Imported orders carry a "Confirmation Numbers: X" metadata line in the
+	 * notes column. This extracts that value so it can be surfaced in a labeled
+	 * field (the Order Notes card) instead of leaking into the free-text
+	 * Special Requests display.
+	 *
+	 * @param string $notes Raw order notes.
+	 * @return string Confirmation number(s), or '' if none.
+	 */
+	public static function parse_confirmation_numbers_from_notes( $notes ) {
+		if ( preg_match( '/(?:^|\n)Confirmation Numbers?:\s*(.+)$/mi', (string) $notes, $matches ) ) {
+			return trim( $matches[1] );
+		}
+
+		return '';
+	}
+
+	/**
+	 * Extract the genuine customer-entered free-text from an order's notes blob.
+	 *
+	 * The notes column is a multi-purpose store: it carries system metadata
+	 * (reservation link, submission token, confirmation number, assigned units,
+	 * billing block, group data, refund/invoice telemetry) interleaved with the
+	 * customer's actual special-requests text. This strips every known metadata
+	 * line — including the multi-line billing block — and returns only what the
+	 * customer (or admin) typed as a note. Used by the Order Notes card on the
+	 * Order Detail page; mirrors the strip rules in
+	 * get_special_requests_from_order_notes() but is static and self-contained.
+	 *
+	 * @param string $notes Raw order notes.
+	 * @return string Free-text customer notes, or '' if none.
+	 */
+	public static function parse_customer_notes_from_order_notes( $notes ) {
+		$lines = preg_split( "/\r\n|\r|\n/", trim( (string) $notes ) );
+
+		if ( empty( $lines ) ) {
+			return '';
+		}
+
+		$out              = array();
+		$skipping_billing = false;
+		$metadata_regex   = '/^(Reservation setup ID:|Submission token:|Confirmation Numbers?:|RV Add-Ons:|Tack Stalls:|Group Name:|Group Charge:|Group Reservation:|Group Riders Count:|Group Riders:|RV Lot:|Assigned Stall Units:|Assigned RV Lots:|Assigned RV Units:|Add-On:|Venue Agreement (Accepted|Provided):|Invoice Type:|Invoice Token:|Invoice Status:|Invoice Sent At:|Invoice Paid At:|Refunded Amount:|Refunded Items:|Last Refund Transaction:|Last Refunded At:|Card Brand:|Card Last4:|Manual Payment Method:)/i';
+
+		foreach ( $lines as $line ) {
+			$line = trim( (string) $line );
+
+			if ( '' === $line ) {
+				if ( ! $skipping_billing ) {
+					$out[] = '';
+				}
+				continue;
+			}
+
+			if ( preg_match( '/^Billing (Name|Address):/i', $line ) ) {
+				$skipping_billing = true;
+				continue;
+			}
+
+			if ( preg_match( $metadata_regex, $line ) ) {
+				$skipping_billing = false;
+				continue;
+			}
+
+			if ( $skipping_billing ) {
+				continue;
+			}
+
+			$out[] = $line;
+		}
+
+		return trim( preg_replace( "/\n{3,}/", "\n\n", implode( "\n", $out ) ) );
+	}
+
+	/**
 	 * Normalize an inventory limit to an integer or null.
 	 *
 	 * @param mixed $value Raw inventory value.
@@ -12807,7 +12882,7 @@ class EEM_Admin {
 
 		$filtered            = array();
 		$skipping_billing    = false;
-		$metadata_line_regex = '/^(Reservation setup ID:|Submission token:|RV Add-Ons:|Tack Stalls:|Group Name:|Group Charge:|Group Reservation:|Group Riders Count:|Group Riders:|RV Lot:|Assigned Stall Units:|Assigned RV Lots:|Assigned RV Units:|Add-On:|Venue Agreement (Accepted|Provided):|Invoice Type:|Invoice Token:|Invoice Status:|Invoice Sent At:|Invoice Paid At:|Refunded Amount:|Refunded Items:|Last Refund Transaction:|Last Refunded At:)/i';
+		$metadata_line_regex = '/^(Reservation setup ID:|Submission token:|Confirmation Numbers?:|RV Add-Ons:|Tack Stalls:|Group Name:|Group Charge:|Group Reservation:|Group Riders Count:|Group Riders:|RV Lot:|Assigned Stall Units:|Assigned RV Lots:|Assigned RV Units:|Add-On:|Venue Agreement (Accepted|Provided):|Invoice Type:|Invoice Token:|Invoice Status:|Invoice Sent At:|Invoice Paid At:|Refunded Amount:|Refunded Items:|Last Refund Transaction:|Last Refunded At:|Card Brand:|Card Last4:|Manual Payment Method:)/i';
 
 		foreach ( $lines as $line ) {
 			$line = trim( (string) $line );

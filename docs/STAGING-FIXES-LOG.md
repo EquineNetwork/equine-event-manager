@@ -44,13 +44,18 @@ at the bottom. Session task IDs in brackets.
 - Plugin **File Editor is disabled** (DISALLOW_FILE_EDIT) — can't read live files via wp-admin.
 - The plugin self-updater **does** replace files; verify a version actually went live via the `?ver=` query string on enqueued assets.
 
+### Confirmation # leaked into Special Requests → Order Notes card (v2.7.592)
+- **Symptom:** Imported customers' confirmation number(s) showed up inside the customer "Special Requests" text (order detail, stall-chart by-customer note + map tooltip).
+- **Root cause:** The import writes "Confirmation Numbers: X" into the order `notes` blob. `get_special_requests_from_order_notes()` strips known metadata lines before display, but its strip regex did not list `Confirmation Numbers:` (nor `Card Brand`/`Card Last4`/`Manual Payment Method`), so those lines leaked through as free-text.
+- **Fix:** (a) Added `Confirmation Numbers?:` + the card/manual-payment lines to the strip regex — kills the leak everywhere special-requests is shown. (b) New **Order Notes card** on the Order Detail page (below Special Instructions, separate from the Activity Log) that surfaces the confirmation # in its own labeled field plus any genuine customer free-text. Two new static parsers on `EEM_Admin`: `parse_confirmation_numbers_from_notes()` + `parse_customer_notes_from_order_notes()`. Card renders nothing when there's neither a conf # nor a note (no empty chrome).
+- **Prevention:** The notes blob is a multi-purpose store — any new "Label: value" metadata line written into it MUST also be added to the strip regex(es) or it will leak into the customer-facing free-text. Activity Log (system trail) and Order Notes (customer/admin text) are deliberately separate surfaces.
+
 ---
 
 ## 🔜 IN THE CURRENT BATCH (not yet shipped — designs locked)
 
 - **[#14] Barn filter on By Customer** — it has a Barn column but no Barn filter like By Location.
 - **[#15] `&amp;` double-encoding** in reservation dropdowns (Daily Movement etc.). Likely the Choices.js enhancement double-encoding the option label; native breadcrumb renders fine. Fix: decode-before-escape and/or configure the select-enhancer not to re-encode. Repair any title actually stored encoded.
-- **[#16] Confirmation # → Order Notes card** (LOCKED): exclude Confirmation Numbers from the Special Requests display; add an "Order Notes" card below Special Instructions for free-text internal notes (separate from the Activity Log audit trail); put the confirmation # in its own labeled field + log "Imported with confirmation # X".
 - **[#17] Shavings count** (LOCKED — all three): a Shavings column in By Customer, on Daily Movement arrivals, and on the stall map cell / assignment chip. Also: CSV import should resolve stay-type → dates at creation so future imports don't need migration #039.
 - **[#18] Dashboard RV parity**: "Rv" → "RV"; Upcoming Reservations card show RV count (e.g. 94/94) alongside stalls; "This Week" card add RV assigned.
 - **[#2] Assign from Order detail** — no assignment affordance on the order page.

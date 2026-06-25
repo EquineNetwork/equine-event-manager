@@ -5646,6 +5646,36 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
 	line-height: 1.6;
 }
 
+/* ── ORDER NOTES card (confirmation # + customer free-text) ── */
+.eem-order-notes__body {
+	padding: 14px 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+.eem-order-notes__field {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+.eem-order-notes__label {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--eem-text-secondary);
+}
+.eem-order-notes__value {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--eem-text-primary);
+}
+.eem-order-notes__text {
+	font-size: 13.5px;
+	color: var(--eem-text-primary);
+	line-height: 1.6;
+}
+
 /* ── REQUIRED DOCUMENTS card (admin upload on behalf of customer) ── */
 .eem-order-docs__body {
 	padding: 8px 16px 14px;
