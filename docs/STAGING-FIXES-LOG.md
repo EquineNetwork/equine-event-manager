@@ -83,11 +83,21 @@ at the bottom. Session task IDs in brackets.
 
 ---
 
-## 🔜 IN THE CURRENT BATCH (not yet shipped — designs locked)
+## 🔜 NEXT — needs a desk + browser to land safely
 
-- **[#15] `&amp;` double-encoding** in reservation dropdowns (Daily Movement etc.). Likely the Choices.js enhancement double-encoding the option label; native breadcrumb renders fine. Fix: decode-before-escape and/or configure the select-enhancer not to re-encode. Repair any title actually stored encoded.
-- **[#18] Dashboard RV parity**: "Rv" → "RV"; Upcoming Reservations card show RV count (e.g. 94/94) alongside stalls; "This Week" card add RV assigned.
-- **[#2] Assign from Order detail** — no assignment affordance on the order page.
-- **[#3] Unify By Location List + Map click menus** — both should offer assign / cleaning / checked-in / tack / block (biggest item).
-- **[#5] Default to By Location** when orders exist but nothing assigned (lower priority now — By Customer is populated).
-- **[#10] Dashboard date wording**: "In 3 days" (event) vs "Opens in 1 day" (reservation) reads as conflicting.
+### [#3] Unify the By Location List + Map click menus — DESIGN LOCKED, code HELD for click-test
+**Why held:** this is an interactive modal rewrite touching the stall-assign tool Whitney uses live at events. The codebase's own lessons (invisible-modal, unwired-handler, runtime/computed bugs that source-presence checks can't catch — see CLAUDE.md) require browser click-testing for modal work. It cannot be verified headless, and shipping it blind risks breaking the assign tool mid-event. The current three menus all FUNCTION; they're just not unified — a UX nicety, not a blocker. So the code waits for a desk session where each action can be clicked.
+
+**Current state (three separate surfaces, all working):**
+1. List **occupied** cell → `#eem-stall-chart-cell-menu` popover → *Move to different stall · View order · Mark/Unmark Tack*.
+2. List **available/cleaning** cell → `#eem-loc-status-menu` (JS-built, admin.js ~9053) → *Available · Cleaning* only.
+3. **Map** cell → `.eem-smap-pop` popover (admin.js ~6048) → *assign-search list · block*.
+
+**Target:** one shared menu, context-aware, offering the full action set — **Assign · Cleaning · Checked-in · Tack · Block** — invoked identically from List and Map.
+
+**Implementation plan (do at a desk, click-test each action):**
+1. Build ONE menu renderer (JS) that takes `{kind, unit, date, state, orderKey, customer}` and emits the relevant buttons: available cell → Assign + Block + Cleaning; occupied cell → Move + View order + Checked-in toggle + Tack toggle + Unassign; blocked cell → Unblock. Reuse the canonical modal class names from admin.css (`eem-modal` / `eem-modal-card` / `eem-modal-head/body/foot` — verify each name exists before shipping, per the invisible-modal lesson).
+2. Wire every button to its EXISTING AJAX endpoint (handlers already exist): assign (`eem_stall_chart_assign`), block/unblock + tack/untack (the `ajax_stall_map_cell` op switch — assign|unassign|block|unblock|tack|untack, admin.php ~3364), cleaning/available status (`EEM_Stall_Status_Repo` bulk/single), check-in (`render_order_checkin_menu` endpoint). No new data model.
+3. Replace the three invokers (`stall-pill-click`, `loc-cell-status`, `.eem-smap` cell click) to open the SAME menu.
+4. Apply the #4 canonical colors to the menu's status affordances (green/blue/red/orange/purple).
+5. **Smoke:** button-handler enumeration (every `data-eem-action` in the menu has a JS handler) + admin.css class-name presence for every class in the menu markup. **Then browser click-test all five actions on both List and Map before marking done.**
