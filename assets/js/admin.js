@@ -5103,6 +5103,10 @@
 	});
 
 	/* ── Stall Chart DETAIL: centralised inv/tab state ── */
+	// Exposed on EEM so handlers in OTHER IIFEs (e.g. the By-Location readiness
+	// menu's Block action) can re-apply inv/tab visibility after a region swap.
+	window.EEM = window.EEM || {};
+	window.EEM.scApplyState = function (inv, tab) { return eemScApplyState(inv, tab); };
 	function eemScApplyState(inv, tab) {
 		// 1. Inventory toggle buttons active state (legacy) + sync the Show select.
 		document.querySelectorAll('[data-eem-action="sc-inv-switch"]').forEach(function (btn) {
@@ -5564,6 +5568,47 @@
 						}
 					})
 					.catch(function () { EEM.showSaveToast('Could not reach the server.', { variant: 'error', sub: '' }); });
+				return;
+			}
+
+			// #3 — Remove from stall (unassign). Same proven endpoint + region-swap
+			// the Map popover uses; frees the stall back to Available everywhere.
+			var unassignBtn = t.closest('[data-eem-action="cell-unassign"]');
+			if (unassignBtn) {
+				ev.preventDefault();
+				var uCfg = window.eemStallChart || {};
+				var uMenu = document.getElementById('eem-stall-chart-cell-menu');
+				if (uMenu) { uMenu.classList.remove('open'); }
+				var uBody = new URLSearchParams();
+				uBody.set('action', 'eem_stall_map_action');
+				uBody.set('_wpnonce', uCfg.moveNonce || '');
+				uBody.set('reservation_id', String(uCfg.reservationId || ''));
+				uBody.set('op', 'unassign');
+				uBody.set('stall', window._scActiveStall || '');
+				uBody.set('kind', window._scActiveKind || 'stall');
+				if (window._scActiveOrderId) { uBody.set('order_key', window._scActiveOrderId); }
+				uBody.set('inv', window._eemScInv || 'all');
+				uBody.set('tab', window._eemScTab || 'location');
+				fetch((window.ajaxurl || '/wp-admin/admin-ajax.php'), { method: 'POST', credentials: 'same-origin', body: uBody })
+					.then(function (r) { return r.json(); })
+					.then(function (resp) {
+						var data = (resp && resp.data) || {};
+						if (resp && resp.success && data.html) {
+							var region = document.getElementById('eem-stall-chart-dynamic');
+							if (region) {
+								region.innerHTML = data.html;
+								if (window.EEM && window.EEM.scApplyState) { window.EEM.scApplyState(window._eemScInv || 'all', window._eemScTab || 'location'); }
+								if (window.EEM && window.EEM.renderStallMaps) { window.EEM.renderStallMaps(); }
+							}
+						}
+						if (window.EEM && window.EEM.showSaveToast) {
+							window.EEM.showSaveToast(data.message || (resp && resp.success ? 'Removed from stall.' : 'Could not remove from stall.'),
+								{ variant: (resp && resp.success) ? 'success' : 'error' });
+						}
+					})
+					.catch(function () {
+						if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast('Could not reach the server.', { variant: 'error' }); }
+					});
 				return;
 			}
 
@@ -9261,7 +9306,7 @@ function duplicateReservationAjax(target) {
 							var region = document.getElementById('eem-stall-chart-dynamic');
 							if (region) {
 								region.innerHTML = data.html;
-								if (typeof eemScApplyState === 'function') { eemScApplyState(window._eemScInv || 'all', window._eemScTab || 'location'); }
+								if (window.EEM && window.EEM.scApplyState) { window.EEM.scApplyState(window._eemScInv || 'all', window._eemScTab || 'location'); }
 								if (window.EEM && window.EEM.renderStallMaps) { window.EEM.renderStallMaps(); }
 							}
 						}

@@ -9532,6 +9532,10 @@ th.sortable { cursor: pointer; white-space: nowrap; }
 .cell-action-menu__btn { display: flex; align-items: center; gap: 8px; padding: 9px 12px; background: #fff; border: none; border-radius: var(--eem-radius); font-size: 13px; font-weight: 500; color: #1d2327; cursor: pointer; text-align: left; width: 100%; font-family: inherit; }
 .cell-action-menu__btn:hover { background: #f6f7f7; }
 .cell-action-menu__btn svg { width: 13px; height: 13px; flex-shrink: 0; color: #6B7A99; }
+/* #3 destructive action (Remove from stall) — red text + icon. */
+.cell-action-menu__btn--danger { color: #b91c1c; }
+.cell-action-menu__btn--danger svg { color: #b91c1c; }
+.cell-action-menu__btn--danger:hover { background: #fef2f2; }
 
 /* ── Destination banner (BEM aliases on existing classes) ── */
 .destination-banner { position: fixed; top: 32px; left: 0; right: 0; z-index: 300; background: #1668F2; color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; font-size: 14px; gap: 12px; box-shadow: 0 2px 8px rgba(22,104,242,.25); }

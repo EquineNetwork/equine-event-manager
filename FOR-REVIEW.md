@@ -27,7 +27,8 @@ or wait a few minutes for the cache to cycle. Each row says where to look and wh
 
 | # | Version | Where to look | What to click-test |
 |---|---------|---------------|--------------------|
-| 3 (slice 1) | 2.7.600 | **Stall & RV Charts → By Location → List** | Click an **available (green)** stall cell → the little menu now has a 3rd option **Block** (red dot) under Available / Cleaning. Click Block → the stall should turn **red (blocked)** in both List and Map. This routes through the same proven endpoint the Map's Block uses. ⚠️ **Please click-test** — interactive, verified structurally on Local but I couldn't auto-click it. |
+| 3 (slice 1) | 2.7.600 | **Stall & RV Charts → By Location → List** | Click an **available (green)** stall cell → the little menu now has a 3rd option **Block** (red dot) under Available / Cleaning. Click Block → the stall should turn **red (blocked)** in both List and Map. This routes through the same proven endpoint the Map's Block uses. ⚠️ **Please click-test.** |
+| 3 (slice 2) | 2.7.601 | **Stall & RV Charts → By Location → List**, click an **assigned (blue)** stall | The cell popover (Move / View order / Tack) now also has a red **Remove from stall** option → click it → the order is unassigned and the stall goes back to **green/Available**. Uses the Map's proven unassign endpoint. ⚠️ **Please click-test.** (Also fixed: the Block from slice 1 now correctly re-applies the Show/Stalls/RV filter after it updates.) |
 
 ### #3 status (the full menu unification)
 - **Done tonight:** List available-cell menu can now **Block** (it previously only did Available / Cleaning) — closes the biggest List-vs-Map gap, using the Map's exact `eem_stall_map_action` endpoint + region-swap.

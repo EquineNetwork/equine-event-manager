@@ -3816,6 +3816,11 @@ class EEM_Admin {
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
 				<span data-eem-tack-btn-label><?php esc_html_e( 'Mark as Tack Stall', 'equine-event-manager' ); ?></span>
 			</button>
+			<?php // #3: remove this order from the stall (unassign) — frees the stall back to Available. ?>
+			<button class="eem-stall-chart-cell-menu-btn cell-action-menu__btn cell-action-menu__btn--danger" type="button" data-eem-action="cell-unassign">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+				<?php esc_html_e( 'Remove from stall', 'equine-event-manager' ); ?>
+			</button>
 		</div>
 
 		<!-- Destination-select banner -->
