@@ -56,6 +56,13 @@ at the bottom. Session task IDs in brackets.
 - **Data note:** shavings is stored per ORDER (not per individual stall), so the count shown is the order total. Most barrel-race customers have 1–2 stalls; the popover/column make the per-customer total explicit, which is what the crews actually pull by.
 - **Prevention:** any new per-order operational quantity (bedding, hay, etc.) follows this same pattern — add to the `build_stall_chart_rows()` row array + the grid `occupant`/`cells` arrays + the pill `data-*` + the popover render.
 
+### Consistent stall-state colors across List + Map + chips (v2.7.594)
+- **Symptom:** The same stall state showed different colors depending on the view. Blocked was GRAY in the By-Location List cells and on the spatial Map, but RED on the status chips. Available was GREEN in the List but WHITE on the Map. Tack had no distinct color in the List (rendered blue + a small badge).
+- **Canonical palette (locked):** green = available · blue = booked · red = blocked · orange = tack · purple = cleaning.
+- **Fix:** (a) **List** (`.eem-loc-cell--*`): blocked gray→red; new `.eem-loc-cell--occupied.is-tack` orange (PHP adds `is-tack` to tack cells). (b) **Map** (`.eem-smap-stall`): base/available white→green; `is-blocked` gray-hatch→red-hatch; added `is-cleaning` purple; legend swatches avail→green, block→red; dot-mode colors aligned (available green, blocked red, cleaning purple). (c) Availability summary `--blocked` stat gray→red. Barn-stat dots + occupancy pills + status chips already matched.
+- **Scope note:** `.eem-smap-stall` is exclusive to the Stall Charts map; the Map Builder uses `.eem-mb-cell`, so its white-canvas aesthetic is untouched.
+- **Prevention:** any new stall-state surface MUST use the five canonical colors above. Don't introduce a fourth gray "blocked" or white "available" — grep `--blocked`/`--available`/`is-blocked` before adding state CSS.
+
 ---
 
 ## 🔜 IN THE CURRENT BATCH (not yet shipped — designs locked)
@@ -65,6 +72,5 @@ at the bottom. Session task IDs in brackets.
 - **[#18] Dashboard RV parity**: "Rv" → "RV"; Upcoming Reservations card show RV count (e.g. 94/94) alongside stalls; "This Week" card add RV assigned.
 - **[#2] Assign from Order detail** — no assignment affordance on the order page.
 - **[#3] Unify By Location List + Map click menus** — both should offer assign / cleaning / checked-in / tack / block (biggest item).
-- **[#4] Consistent status colors** across List chips + Map cells (green=available, blue=assigned, red=blocked, orange=tack).
 - **[#5] Default to By Location** when orders exist but nothing assigned (lower priority now — By Customer is populated).
 - **[#10] Dashboard date wording**: "In 3 days" (event) vs "Opens in 1 day" (reservation) reads as conflicting.

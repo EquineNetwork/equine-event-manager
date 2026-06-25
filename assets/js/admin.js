@@ -5958,7 +5958,7 @@
 					if (st.gc) { el.classList.add('is-grouped'); el.style.setProperty('--eem-grp', st.gc); }
 					// Status/group dot — only visible in dot mode (very small zoom), where
 					// a 4-digit number can't be read. Group color wins; else by status.
-					var eemDotColor = st.gc || (status === 'available' ? '#9fb2cc' : status === 'blocked' ? '#8593a5' : status === 'tack' ? '#E8A33D' : '#1f6fe0');
+					var eemDotColor = st.gc || (status === 'available' ? '#15803d' : status === 'blocked' ? '#ef4444' : status === 'tack' ? '#E8A33D' : status === 'cleaning' ? '#7c3aed' : '#1f6fe0');
 					var eemDot = document.createElement('span');
 					eemDot.className = 'eem-smap-dot';
 					eemDot.style.setProperty('--eem-dot', eemDotColor);

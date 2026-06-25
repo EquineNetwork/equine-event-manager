@@ -8857,10 +8857,14 @@ tr.eem-chart-barn-row td { background: #fdf4e7; padding: 9px 22px; font-size: 12
 .eem-loc-cell-td { white-space: nowrap; }
 .eem-loc-cell { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; border: 1px solid; font-size: 12px; font-weight: 700; font-family: inherit; line-height: 1.5; cursor: pointer; white-space: nowrap; background: #fff; }
 .eem-loc-cell .eem-occ-chevron { width: 12px; height: 12px; flex-shrink: 0; opacity: .7; }
+/* #4 Canonical stall-state colors (match the Map view + status chips):
+   green = available · blue = booked · red = blocked · orange = tack. */
 .eem-loc-cell--occupied { background: #eaf1fe; border-color: #b9d2fb; color: #031b4e; }
 .eem-loc-cell--available { background: #e8f5ee; border-color: #b6e0c7; color: #15803d; }
 .eem-loc-cell--cleaning { background: #f5f3ff; border-color: #ddd6fe; color: #7c3aed; }
-.eem-loc-cell--blocked { background: #f3f4f5; border-color: #e2e4e7; color: #64748b; cursor: default; }
+.eem-loc-cell--blocked { background: #fef2f2; border-color: #fecaca; color: #b91c1c; cursor: default; }
+/* A tack stall is booked-for-gear — orange, overriding the blue booked tint. */
+.eem-loc-cell--occupied.is-tack { background: #fff7ec; border-color: #f0c98a; color: #9a6a14; }
 .eem-loc-cell:hover:not(.eem-loc-cell--blocked) { filter: brightness(0.97); }
 /* Floating readiness picker (one shared menu, positioned on click). */
 .eem-loc-status-menu { position: fixed; z-index: 100000; min-width: 150px; margin: 0; padding: 5px; list-style: none; background: #fff; border: 1px solid #dcdcde; border-radius: 8px; box-shadow: 0 8px 26px rgba(3,27,78,.18); }
@@ -9088,10 +9092,10 @@ body.eem-assign-mode .eem-chart-status--available[data-eem-action="assign-order-
 .eem-smap-legend span { display: inline-flex; align-items: center; gap: 6px; }
 .eem-smap-legend-hint { margin-left: auto; color: #8995a8; }
 .eem-smap-sw { width: 14px; height: 14px; border-radius: var(--eem-radius, 3px); border: 1px solid var(--eem-line, #d9e2ec); display: inline-block; }
-.eem-smap-sw--avail { background: #fff; border-color: #b9c6da; }
+.eem-smap-sw--avail { background: #e8f5ee; border-color: #b6e0c7; }
 .eem-smap-sw--resv { background: #dbe4f3; border-color: #bcccea; }
 .eem-smap-sw--tack { background: #fff5e6; border-color: #E8A33D; }
-.eem-smap-sw--block { background: #9aa6b6; border-color: #9aa6b6; }
+.eem-smap-sw--block { background: #f87171; border-color: #ef4444; }
 .eem-smap-scroll { overflow: auto; padding: 18px 0; background: #fbfcfe; max-height: 640px; -webkit-overflow-scrolling: touch; min-width: 0; max-width: 100%; }
 /* "Map zoom": chips resize inside this capped viewport; the chart card never
    grows. min-width:0 stops the grid's intrinsic width from stretching the card. */
@@ -9108,11 +9112,15 @@ body.eem-assign-mode .eem-chart-status--available[data-eem-action="assign-order-
 .eem-smap-cell--gap { background: #eef1f6; background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, #e2e7ef 5px, #e2e7ef 6px); }
 /* Font scales with the chip (like the builder's .eem-mb-cell) so numbers shrink to
    fit and never overflow/overlap; overflow:hidden clips anything that can't fit. */
-.eem-smap-stall { position: relative; display: flex; align-items: center; justify-content: center; font-size: clamp(5px, calc(var(--eem-smap-chip, 40px) * 0.32), 13px); font-weight: 700; border: 0; border-radius: 0; background: #fff; color: var(--eem-navy, #031B4E); cursor: pointer; user-select: none; line-height: 1; overflow: hidden; }
+/* #4 Canonical stall-state colors on the spatial Map view — match the List
+   cells + status chips: green = available · blue = booked · red = blocked ·
+   orange = tack · purple = cleaning. Base chip (no is-* class) = available. */
+.eem-smap-stall { position: relative; display: flex; align-items: center; justify-content: center; font-size: clamp(5px, calc(var(--eem-smap-chip, 40px) * 0.32), 13px); font-weight: 700; border: 0; border-radius: 0; background: #e8f5ee; color: #15803d; cursor: pointer; user-select: none; line-height: 1; overflow: hidden; }
 .eem-smap-stall:hover { outline: 2px solid var(--eem-electric, #1668F2); outline-offset: -1px; z-index: 1; }
 .eem-smap-stall.is-reserved { background: #dbe4f3; color: #2b4a78; }
-.eem-smap-stall.is-blocked { background: repeating-linear-gradient(45deg, #9aa6b6, #9aa6b6 3px, #8593a5 3px, #8593a5 6px); color: #fff; }
+.eem-smap-stall.is-blocked { background: repeating-linear-gradient(45deg, #fca5a5, #fca5a5 3px, #f87171 3px, #f87171 6px); color: #fff; }
 .eem-smap-stall.is-tack { background: #fff5e6; color: #9a6a14; }
+.eem-smap-stall.is-cleaning { background: #f5f3ff; color: #7c3aed; }
 /* Group membership: a left accent bar whose width scales WITH the cell, so the
    indicator stays proportional ("same size as the box") at every zoom level
    instead of a fixed 4px sliver. */
@@ -9314,7 +9322,7 @@ a.eem-sc-res-name:hover { color: var(--eem-electric); }
 }
 .eem-sc-avail-stat--available strong { color: var(--eem-badge-green-text); }
 .eem-sc-avail-stat--reserved  strong { color: var(--eem-electric); }
-.eem-sc-avail-stat--blocked   strong { color: #64748b; }
+.eem-sc-avail-stat--blocked   strong { color: #b91c1c; }
 .eem-sc-avail-stat--none { color: var(--eem-text-secondary); font-style: italic; }
 
 /* Empty dash placeholder */
