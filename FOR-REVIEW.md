@@ -35,4 +35,7 @@ or wait a few minutes for the cache to cycle. Each row says where to look and wh
 
 ---
 
-## 🔨 (scratch — earlier note)
+## ⏳ Not done yet (need you)
+- **#3 (rest)** — Checked-in + Unassign on the occupied popover, and visual parity between the List and Map popovers. Needs a live click-test session.
+- **#19 [Later]** — remove the "X days" countdown chip on the event-flyer card. **Blocked: need your mockup.**
+- **#21 [Later]** — restyle the "View Event" overview page to match the plugin design. Safe/display-only; can do anytime.
