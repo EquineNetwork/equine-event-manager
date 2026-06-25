@@ -3446,8 +3446,25 @@ class EEM_Admin {
 			$blocked = get_post_meta( $reservation_id, $blocked_meta, true );
 			$blocked = array_values( array_filter( array_map( 'strval', is_array( $blocked ) ? $blocked : array() ) ) );
 
+			// #3 per-night blocking: a `nights` param of 'all' (or empty) blocks the
+			// whole stall (flat list, legacy); otherwise it's a CSV of Y-m-d keys that
+			// block only those nights via the additive overlay meta.
+			$nights_meta_key = $is_rv ? '_en_stall_chart_blocked_rv_lot_nights' : '_en_stall_chart_blocked_stall_nights';
+			$nights_raw      = isset( $_POST['nights'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['nights'] ) ) : 'all';
+			$night_dates     = array();
+			if ( 'all' !== $nights_raw && '' !== $nights_raw ) {
+				foreach ( explode( ',', $nights_raw ) as $d ) {
+					$d = trim( $d );
+					if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $d ) ) {
+						$night_dates[] = $d;
+					}
+				}
+			}
+			$nights_map = get_post_meta( $reservation_id, $nights_meta_key, true );
+			$nights_map = is_array( $nights_map ) ? $nights_map : array();
+
 			if ( 'block' === $op ) {
-				// Refuse to block a unit that's currently assigned.
+				// Refuse to block a unit that's currently assigned (any night).
 				$orders = $this->get_reservation_orders( $reservation_id );
 				foreach ( $orders as $o ) {
 					$units = array_map( 'strval', (array) $this->parse_assigned_units_string(
@@ -3457,14 +3474,24 @@ class EEM_Admin {
 						wp_send_json_error( array( 'message' => sprintf( /* translators: %s: stall/lot */ __( 'Unassign this %s before blocking it.', 'equine-event-manager' ), $unit_noun ) ), 409 );
 					}
 				}
-				if ( ! in_array( $stall, $blocked, true ) ) {
-					$blocked[] = $stall;
+				if ( empty( $night_dates ) ) {
+					// All-nights block → flat list; clear any partial-night overlay.
+					if ( ! in_array( $stall, $blocked, true ) ) {
+						$blocked[] = $stall;
+					}
+					unset( $nights_map[ $stall ] );
+				} else {
+					// Specific nights → merge into the overlay (skip if already all-nights).
+					if ( ! in_array( $stall, $blocked, true ) ) {
+						$existing = isset( $nights_map[ $stall ] ) && is_array( $nights_map[ $stall ] ) ? array_map( 'strval', $nights_map[ $stall ] ) : array();
+						$nights_map[ $stall ] = array_values( array_unique( array_merge( $existing, $night_dates ) ) );
+					}
 				}
 				$message = $is_rv ? __( 'Lot blocked.', 'equine-event-manager' ) : __( 'Stall blocked.', 'equine-event-manager' );
 			} else {
+				// Unblock fully frees the unit (all nights + overlay + editor field).
 				$blocked = array_values( array_diff( $blocked, array( $stall ) ) );
-				// Stalls: also clear the editor's Blocked Stall Numbers field so a
-				// stall blocked there can be unblocked from the map.
+				unset( $nights_map[ $stall ] );
 				if ( ! $is_rv ) {
 					$_cfg = EEM_Reservation_Config::for( $reservation_id );
 					$editor_blocked = $_cfg->get( 'blocked_stalls' );
@@ -3476,6 +3503,7 @@ class EEM_Admin {
 				$message = $is_rv ? __( 'Lot unblocked.', 'equine-event-manager' ) : __( 'Stall unblocked.', 'equine-event-manager' );
 			}
 			update_post_meta( $reservation_id, $blocked_meta, $blocked );
+			update_post_meta( $reservation_id, $nights_meta_key, $nights_map );
 		} elseif ( 'assign' === $op ) {
 			if ( '' === $order_key ) {
 				wp_send_json_error( array( 'message' => __( 'Choose a customer to assign.', 'equine-event-manager' ) ), 400 );
@@ -3725,6 +3753,45 @@ class EEM_Admin {
 			}
 		}
 		return array_keys( $labels );
+	}
+
+	/**
+	 * Per-night blocked overlay for a reservation.
+	 *
+	 * ADDITIVE to the whole-stall blocked list ({@see get_raw_blocked_stall_labels}):
+	 * a unit can be blocked for ALL nights (the flat list) OR for only specific
+	 * nights (this map). Stored as `_en_stall_chart_blocked_stall_nights` (stalls)
+	 * / `_en_stall_chart_blocked_rv_lot_nights` (RV) =
+	 * array<string $label, string[] $date_keys>. No migration is needed — existing
+	 * whole-stall blocks stay in the flat list and keep meaning "all nights."
+	 *
+	 * @param int    $reservation_id Reservation post ID.
+	 * @param string $kind           'stall' | 'rv'.
+	 * @return array<string, string[]> label => list of Y-m-d night keys blocked.
+	 */
+	private function get_blocked_nights_map( int $reservation_id, string $kind = 'stall' ): array {
+		$meta_key = 'rv' === $kind ? '_en_stall_chart_blocked_rv_lot_nights' : '_en_stall_chart_blocked_stall_nights';
+		$raw      = get_post_meta( $reservation_id, $meta_key, true );
+		$out      = array();
+		if ( is_array( $raw ) ) {
+			foreach ( $raw as $label => $dates ) {
+				$label = (string) $label;
+				if ( '' === $label || ! is_array( $dates ) ) {
+					continue;
+				}
+				$clean = array();
+				foreach ( $dates as $d ) {
+					$d = (string) $d;
+					if ( '' !== $d ) {
+						$clean[ $d ] = true;
+					}
+				}
+				if ( ! empty( $clean ) ) {
+					$out[ $label ] = array_keys( $clean );
+				}
+			}
+		}
+		return $out;
 	}
 
 	/**
@@ -5597,8 +5664,8 @@ class EEM_Admin {
 		);
 
 		$date_columns = $this->get_stall_chart_date_columns( $reservation_id, array() );
-		$stall_rows   = $this->initialize_stall_chart_unit_rows( $config['stall_units'], $config['stall_blocks'], $config['blocked_stall_units'], $date_columns, isset( $config['barn_map'] ) ? $config['barn_map'] : array() );
-		$rv_rows      = $this->initialize_rv_lot_chart_rows( $config['rv_lot_names'], isset( $config['blocked_rv_lots'] ) ? $config['blocked_rv_lots'] : array(), $date_columns );
+		$stall_rows   = $this->initialize_stall_chart_unit_rows( $config['stall_units'], $config['stall_blocks'], $config['blocked_stall_units'], $date_columns, isset( $config['barn_map'] ) ? $config['barn_map'] : array(), $this->get_blocked_nights_map( $reservation_id, 'stall' ) );
+		$rv_rows      = $this->initialize_rv_lot_chart_rows( $config['rv_lot_names'], isset( $config['blocked_rv_lots'] ) ? $config['blocked_rv_lots'] : array(), $date_columns, $this->get_blocked_nights_map( $reservation_id, 'rv' ) );
 		$movement     = $this->build_stall_chart_movement_summary( $orders, $date_columns );
 		$issues       = array();
 		$stall_map    = array();
@@ -5952,15 +6019,19 @@ class EEM_Admin {
 	 * @param array $barn_map     Optional precomputed unit→barn-name map (V1 rows).
 	 * @return array<string, array>
 	 */
-	private function initialize_stall_chart_unit_rows( $units, $blocks, $blocked_units, $date_columns, $barn_map = array() ) {
+	private function initialize_stall_chart_unit_rows( $units, $blocks, $blocked_units, $date_columns, $barn_map = array(), $blocked_nights = array() ) {
 		$rows      = array();
 		$block_map = ! empty( $barn_map ) ? $barn_map : $this->map_stall_chart_unit_blocks( $blocks );
 
 		foreach ( (array) $units as $unit ) {
 			$cells = array();
+			// All-nights block (flat list) blocks every date; per-night block only
+			// the listed dates (#3 per-night blocking).
+			$all_nights_blocked = in_array( $unit, $blocked_units, true );
+			$night_set          = isset( $blocked_nights[ (string) $unit ] ) ? array_fill_keys( $blocked_nights[ (string) $unit ], true ) : array();
 
 			foreach ( array_keys( $date_columns ) as $date_key ) {
-				$is_blocked        = in_array( $unit, $blocked_units, true );
+				$is_blocked        = $all_nights_blocked || isset( $night_set[ $date_key ] );
 				$cells[ $date_key ] = array(
 					'type'      => $is_blocked ? 'blocked' : 'available',
 					'label'     => $is_blocked ? __( 'Blocked', 'equine-event-manager' ) : __( 'Available', 'equine-event-manager' ),
@@ -5985,14 +6056,16 @@ class EEM_Admin {
 	 * @param array $date_columns Date columns.
 	 * @return array
 	 */
-	private function initialize_rv_lot_chart_rows( $lot_names, $blocked_lot_names, $date_columns ) {
+	private function initialize_rv_lot_chart_rows( $lot_names, $blocked_lot_names, $date_columns, $blocked_nights = array() ) {
 		$rows = array();
 
 		foreach ( (array) $lot_names as $lot_name ) {
 			$cells = array();
+			$all_nights_blocked = in_array( $lot_name, (array) $blocked_lot_names, true );
+			$night_set          = isset( $blocked_nights[ (string) $lot_name ] ) ? array_fill_keys( $blocked_nights[ (string) $lot_name ], true ) : array();
 
 			foreach ( array_keys( $date_columns ) as $date_key ) {
-				$is_blocked        = in_array( $lot_name, (array) $blocked_lot_names, true );
+				$is_blocked        = $all_nights_blocked || isset( $night_set[ $date_key ] );
 				$cells[ $date_key ] = array(
 					'type'      => $is_blocked ? 'blocked' : 'available',
 					'label'     => $is_blocked ? __( 'Blocked', 'equine-event-manager' ) : __( 'Available', 'equine-event-manager' ),

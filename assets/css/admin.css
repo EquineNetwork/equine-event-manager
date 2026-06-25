@@ -8896,6 +8896,12 @@ tr.eem-chart-barn-row td { background: #fdf4e7; padding: 9px 22px; font-size: 12
 .eem-loc-status-option[data-target="available"]::before { background: #15803d; }
 .eem-loc-status-option[data-target="needs_cleaning"]::before { background: #7c3aed; }
 .eem-loc-status-option[data-target="block"]::before { background: #b91c1c; }
+/* #3 per-night block modal options. */
+.eem-block-opt { display: flex; align-items: center; gap: 9px; padding: 9px 4px; font-size: 14px; color: var(--eem-text-primary); cursor: pointer; }
+.eem-block-opt input { margin: 0; }
+.eem-block-nights { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 4px 26px; padding: 8px 0; border-top: 1px solid var(--eem-border-card, #e2e4e7); }
+.eem-block-night { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--eem-text-primary); cursor: pointer; }
+.eem-block-night input { margin: 0; }
 .eem-chart-block-name { color: #50575e; font-size: 13px; white-space: nowrap; }
 .eem-chart-cell-wrap { display: flex; justify-content: center; }
 

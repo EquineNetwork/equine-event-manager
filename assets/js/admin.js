@@ -9176,6 +9176,104 @@ function duplicateReservationAjax(target) {
 		menu.style.top = top + 'px';
 	}
 
+	// #3 per-night blocking — format a Y-m-d key as "Mon Jun 24" without the
+	// timezone shift a bare new Date('YYYY-MM-DD') would introduce.
+	function fmtNight(d) {
+		var p = String(d).split('-');
+		if (p.length !== 3) { return d; }
+		var dt = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+		return dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+	}
+
+	// POST a block with a chosen night scope ('all' | single Y-m-d | CSV of dates),
+	// then swap the shared dynamic region so List + Map both reflect it.
+	function postBlock(stall, kind, nightsParam) {
+		var cfg = window.eemStallChart || {};
+		var b = new URLSearchParams();
+		b.append('action', 'eem_stall_map_action');
+		b.append('_wpnonce', cfg.moveNonce || '');
+		b.append('reservation_id', String(cfg.reservationId || ''));
+		b.append('op', 'block');
+		b.append('stall', stall);
+		b.append('kind', kind || 'stall');
+		b.append('nights', nightsParam || 'all');
+		b.append('inv', window._eemScInv || 'all');
+		b.append('tab', window._eemScTab || 'location');
+		fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: b })
+			.then(function (r) { return r.json(); })
+			.then(function (resp) {
+				var data = (resp && resp.data) || {};
+				if (resp && resp.success && data.html) {
+					var region = document.getElementById('eem-stall-chart-dynamic');
+					if (region) {
+						region.innerHTML = data.html;
+						if (window.EEM && window.EEM.scApplyState) { window.EEM.scApplyState(window._eemScInv || 'all', window._eemScTab || 'location'); }
+						if (window.EEM && window.EEM.renderStallMaps) { window.EEM.renderStallMaps(); }
+					}
+				}
+				if (window.EEM && window.EEM.showSaveToast) {
+					window.EEM.showSaveToast(data.message || (resp && resp.success ? 'Stall blocked.' : 'Could not block the stall.'),
+						{ variant: (resp && resp.success) ? 'success' : 'error' });
+				}
+			})
+			.catch(function () {
+				if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast('Could not reach the server.', { variant: 'error' }); }
+			});
+	}
+
+	// Scope modal: Just this night / All nights / Pick nights. Uses the canonical
+	// .eem-modal chrome (verified present in admin.css) so it's actually visible.
+	function openBlockModal(stall, kind, cellDate, allDates) {
+		var noun = kind === 'rv' ? 'lot' : 'stall';
+		var overlay = document.createElement('div');
+		overlay.className = 'eem-modal';
+		var pickRows = (allDates || []).map(function (d) {
+			return '<label class="eem-block-night"><input type="checkbox" value="' + d + '"' + (d === cellDate ? ' checked' : '') + '> ' + fmtNight(d) + '</label>';
+		}).join('');
+		overlay.innerHTML =
+			'<div class="eem-modal-card">' +
+				'<div class="eem-modal-head"><div class="eem-modal-title">Block ' + noun + ' ' + stall + '</div>' +
+					'<button type="button" class="eem-modal-close" data-block-cancel aria-label="Close">&times;</button></div>' +
+				'<div class="eem-modal-body">' +
+					'<label class="eem-block-opt"><input type="radio" name="eem-block-scope" value="this" checked> Just this night (' + fmtNight(cellDate) + ')</label>' +
+					'<label class="eem-block-opt"><input type="radio" name="eem-block-scope" value="all"> All nights</label>' +
+					'<label class="eem-block-opt"><input type="radio" name="eem-block-scope" value="pick"> Pick nights…</label>' +
+					'<div class="eem-block-nights" hidden>' + pickRows + '</div>' +
+				'</div>' +
+				'<div class="eem-modal-foot">' +
+					'<button type="button" class="eem-btn eem-btn-secondary" data-block-cancel>Cancel</button>' +
+					'<button type="button" class="eem-btn eem-btn-electric" data-block-confirm>Block</button>' +
+				'</div>' +
+			'</div>';
+		document.body.appendChild(overlay);
+		overlay.classList.add('open');
+		function close() { overlay.classList.remove('open'); if (overlay.parentNode) { overlay.parentNode.removeChild(overlay); } }
+		overlay.addEventListener('change', function (ev) {
+			if (ev.target && ev.target.name === 'eem-block-scope') {
+				var pick = overlay.querySelector('.eem-block-nights');
+				if (pick) { pick.hidden = ev.target.value !== 'pick'; }
+			}
+		});
+		overlay.addEventListener('click', function (ev) {
+			if (ev.target === overlay) { close(); return; }
+			if (ev.target.closest && ev.target.closest('[data-block-cancel]')) { close(); return; }
+			if (ev.target.closest && ev.target.closest('[data-block-confirm]')) {
+				var scopeEl = overlay.querySelector('input[name="eem-block-scope"]:checked');
+				var scope = scopeEl ? scopeEl.value : 'this';
+				var nights;
+				if (scope === 'all') { nights = 'all'; }
+				else if (scope === 'this') { nights = cellDate; }
+				else {
+					var checked = [].slice.call(overlay.querySelectorAll('.eem-block-nights input:checked')).map(function (c) { return c.value; });
+					if (!checked.length) { return; }
+					nights = checked.join(',');
+				}
+				close();
+				postBlock(stall, kind, nights);
+			}
+		});
+	}
+
 	// Select-all checkbox toggles every row checkbox within its table.
 	document.addEventListener('change', function (e) {
 		var all = e.target.closest ? e.target.closest('.eem-loc-select-all') : null;
@@ -9282,42 +9380,17 @@ function duplicateReservationAjax(target) {
 			var wrap = activeCell.closest('.eem-loc-readiness');
 			if (!wrap) { closeMenu(); return; }
 
-			// #3 — "Block" routes through the same proven map-action endpoint the
-			// Map popover uses (op=block → whole-stall block), then swaps the
-			// shared dynamic region so the List + Map both reflect it. Available /
-			// Cleaning keep their per-night readiness path below.
+			// #3 — "Block" opens a scope modal (this night / all nights / pick nights),
+			// then posts op=block with the chosen `nights` through the proven
+			// map-action endpoint + region swap. Available / Cleaning keep their
+			// per-night readiness path below.
 			if (target === 'block') {
-				var cfg = window.eemStallChart || {};
-				var bBody = new URLSearchParams();
-				bBody.append('action', 'eem_stall_map_action');
-				bBody.append('_wpnonce', cfg.moveNonce || '');
-				bBody.append('reservation_id', String(cfg.reservationId || wrap.getAttribute('data-reservation-id') || ''));
-				bBody.append('op', 'block');
-				bBody.append('stall', activeCell.getAttribute('data-stall') || '');
-				bBody.append('kind', activeCell.getAttribute('data-kind') || 'stall');
-				bBody.append('inv', window._eemScInv || 'all');
-				bBody.append('tab', window._eemScTab || 'location');
+				var blkStall = activeCell.getAttribute('data-stall') || '';
+				var blkKind = activeCell.getAttribute('data-kind') || 'stall';
+				var blkDate = activeCell.getAttribute('data-date') || '';
+				var blkDates = (wrap.getAttribute('data-dates') || '').split(',').filter(Boolean);
 				closeMenu();
-				fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: bBody })
-					.then(function (r) { return r.json(); })
-					.then(function (resp) {
-						var data = (resp && resp.data) || {};
-						if (resp && resp.success && data.html) {
-							var region = document.getElementById('eem-stall-chart-dynamic');
-							if (region) {
-								region.innerHTML = data.html;
-								if (window.EEM && window.EEM.scApplyState) { window.EEM.scApplyState(window._eemScInv || 'all', window._eemScTab || 'location'); }
-								if (window.EEM && window.EEM.renderStallMaps) { window.EEM.renderStallMaps(); }
-							}
-						}
-						if (window.EEM && window.EEM.showSaveToast) {
-							window.EEM.showSaveToast(data.message || (resp && resp.success ? 'Stall blocked.' : 'Could not block the stall.'),
-								{ variant: (resp && resp.success) ? 'success' : 'error' });
-						}
-					})
-					.catch(function () {
-						if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast('Could not reach the server.', { variant: 'error' }); }
-					});
+				openBlockModal(blkStall, blkKind, blkDate, blkDates);
 				return;
 			}
 
