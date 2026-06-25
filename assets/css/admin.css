@@ -5675,6 +5675,27 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
 	color: var(--eem-text-primary);
 	line-height: 1.6;
 }
+.eem-order-notes__input {
+	width: 100%;
+	resize: vertical;
+	min-height: 64px;
+}
+.eem-order-notes__hint {
+	font-size: 12px;
+	color: var(--eem-text-secondary);
+	margin: 4px 0 0;
+}
+.eem-order-notes__actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-top: 8px;
+}
+.eem-order-notes__status {
+	font-size: 12.5px;
+	font-weight: 600;
+	color: var(--eem-badge-green-text, #15803d);
+}
 
 /* ── REQUIRED DOCUMENTS card (admin upload on behalf of customer) ── */
 .eem-order-docs__body {

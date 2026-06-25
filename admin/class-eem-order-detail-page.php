@@ -1428,30 +1428,37 @@ class EEM_Order_Detail_Page {
 	 * Order Notes card — full-width, below Special Instructions.
 	 *
 	 * Surfaces order-level data that lives in the order's notes blob: the
-	 * customer's confirmation number(s) as a labeled field, plus any genuine
-	 * customer-entered free-text. This is deliberately separate from the
-	 * Activity Log (system event trail) and from Special Instructions (the
-	 * reservation-level instructions shown to every customer). The
-	 * confirmation number is rendered as its own labeled row rather than
-	 * leaking into the free-text — that leak was the bug this card fixes.
+	 * customer's confirmation number(s) and any genuine customer-entered
+	 * free-text (both read-only), plus an EDITABLE admin "Note" the staff can
+	 * type and save. The admin note is the same `Admin Note:` line surfaced in
+	 * the Stall Chart Notes column and on Daily Movement, so editing it here
+	 * keeps every surface in sync. Saved over AJAX via `eem_order_admin_note_set`.
 	 *
-	 * Renders nothing when there is neither a confirmation number nor any
-	 * customer note (no empty chrome for orders that have neither).
+	 * Deliberately separate from the Activity Log (system event trail) and from
+	 * Special Instructions (the reservation-level instructions). Always renders
+	 * because the editable note field is always available.
 	 *
-	 * @param array<string,mixed> $order Order row (must carry 'notes').
+	 * @param array<string,mixed> $order Order row (must carry 'notes' + 'order_key').
 	 * @return void
 	 */
 	private function render_order_notes_card( array $order ): void {
-		$notes = isset( $order['notes'] ) ? (string) $order['notes'] : '';
-		$conf  = class_exists( 'EEM_Admin' ) ? EEM_Admin::parse_confirmation_numbers_from_notes( $notes ) : '';
-		$text  = class_exists( 'EEM_Admin' ) ? EEM_Admin::parse_customer_notes_from_order_notes( $notes ) : '';
+		$notes     = isset( $order['notes'] ) ? (string) $order['notes'] : '';
+		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		$conf      = class_exists( 'EEM_Admin' ) ? EEM_Admin::parse_confirmation_numbers_from_notes( $notes ) : '';
+		$text      = class_exists( 'EEM_Admin' ) ? EEM_Admin::parse_customer_notes_from_order_notes( $notes ) : '';
 
-		if ( '' === $conf && '' === trim( $text ) ) {
-			return;
+		// Current admin note (single line, matches EEM_Admin::get_order_note_value).
+		$admin_note = '';
+		if ( preg_match( '/(?:^|\n)Admin Note:\s*(.+?)(?:\n|$)/i', $notes, $m ) ) {
+			$admin_note = trim( $m[1] );
 		}
+		$nonce = '' !== $order_key ? wp_create_nonce( 'eem_order_admin_note_' . $order_key ) : '';
 		?>
 		<div class="eem-order-full-width">
-			<div class="eem-card eem-order-card">
+			<div class="eem-card eem-order-card eem-order-notes"
+				data-order-key="<?php echo esc_attr( $order_key ); ?>"
+				data-nonce="<?php echo esc_attr( $nonce ); ?>"
+				data-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>">
 				<div class="eem-order-card__header">
 					<div class="eem-order-card__title"><?php echo EEM_Dashboard_Icons::svg( 'file-text' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- self-authored inline SVG. ?> <?php esc_html_e( 'Order Notes', 'equine-event-manager' ); ?></div>
 				</div>
@@ -1466,6 +1473,17 @@ class EEM_Order_Detail_Page {
 						<div class="eem-order-notes__field">
 							<span class="eem-order-notes__label"><?php esc_html_e( 'Customer Notes', 'equine-event-manager' ); ?></span>
 							<p class="eem-order-notes__text"><?php echo nl2br( esc_html( trim( $text ) ) ); ?></p>
+						</div>
+					<?php endif; ?>
+					<?php if ( '' !== $order_key ) : ?>
+						<div class="eem-order-notes__field">
+							<label class="eem-order-notes__label" for="eem-order-note-input"><?php esc_html_e( 'Note', 'equine-event-manager' ); ?></label>
+							<textarea id="eem-order-note-input" class="eem-field-input eem-order-notes__input" rows="3" placeholder="<?php esc_attr_e( 'Add a note about this order…', 'equine-event-manager' ); ?>"><?php echo esc_textarea( $admin_note ); ?></textarea>
+							<p class="eem-order-notes__hint"><?php esc_html_e( 'Also shows in the Stall Chart Notes column and on Daily Movement.', 'equine-event-manager' ); ?></p>
+							<div class="eem-order-notes__actions">
+								<button type="button" class="eem-btn eem-btn-electric eem-btn-sm" data-eem-action="order-notes-save"><?php esc_html_e( 'Save Note', 'equine-event-manager' ); ?></button>
+								<span class="eem-order-notes__status" role="status" aria-live="polite"></span>
+							</div>
 						</div>
 					<?php endif; ?>
 				</div>

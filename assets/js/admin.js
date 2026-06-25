@@ -5900,6 +5900,40 @@
 			eemApplyStallChartFilter(ct.closest('.eem-stall-chart-tab-panel') || document.body);
 		});
 
+		// Order Notes card — save the editable admin note (Order Detail page).
+		// Self-contained (only globals): posts to eem_order_admin_note_set, which
+		// stores the same "Admin Note:" line shown on the Stall Chart + Daily Movement.
+		document.addEventListener('click', function (ev) {
+			var btn = ev.target && ev.target.closest ? ev.target.closest('[data-eem-action="order-notes-save"]') : null;
+			if (!btn) return;
+			ev.preventDefault();
+			var card = btn.closest('.eem-order-notes');
+			if (!card) return;
+			var ta = card.querySelector('.eem-order-notes__input');
+			var status = card.querySelector('.eem-order-notes__status');
+			var fd = new FormData();
+			fd.append('action', 'eem_order_admin_note_set');
+			fd.append('order_key', card.getAttribute('data-order-key') || '');
+			fd.append('_wpnonce', card.getAttribute('data-nonce') || '');
+			fd.append('note', ta ? ta.value : '');
+			btn.disabled = true;
+			if (status) { status.textContent = ''; }
+			fetch(card.getAttribute('data-ajax-url') || window.ajaxurl, {
+				method: 'POST', credentials: 'same-origin', body: fd
+			}).then(function (r) { return r.json(); }).then(function (resp) {
+				btn.disabled = false;
+				if (resp && resp.success) {
+					if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast('Note saved'); }
+					else if (status) { status.textContent = 'Saved'; }
+				} else if (status) {
+					status.textContent = (resp && resp.data && resp.data.message) || 'Could not save the note.';
+				}
+			}).catch(function () {
+				btn.disabled = false;
+				if (status) { status.textContent = 'Could not save the note.'; }
+			});
+		});
+
 		// Stall chart event typeahead input
 	document.addEventListener('input', function (ev) {
 		var t = ev.target;

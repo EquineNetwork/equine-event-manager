@@ -83,6 +83,13 @@ at the bottom. Session task IDs in brackets.
 
 ---
 
+### Order Notes card is now editable (v2.7.598) — #16 follow-up
+- **Need:** The Order Notes card (shipped 2.7.592) was read-only. Whitney wants to add/edit a note on the order.
+- **Fix:** Added an editable **Note** field (textarea + Save Note button) to the card. It reads/writes the order's `Admin Note:` line via the existing `eem_order_admin_note_set` AJAX endpoint — the SAME note shown in the Stall Chart Notes column and on Daily Movement, so all three surfaces stay in sync. Confirmation # and Customer Notes remain read-only (system/customer data). The card now always renders (the note field is always available). Self-contained JS handler (globals only), saves on click with a toast. Verified the save→read-back→clear round-trip on local.
+- **Prevention:** order-level admin notes have ONE store (`Admin Note:` line via `update_order_admin_note`) and ONE endpoint (`eem_order_admin_note_set`). Any new place to edit the note must reuse them, not add a parallel field.
+
+---
+
 ## 🔜 NEXT — needs a desk + browser to land safely
 
 ### [#3] Unify the By Location List + Map click menus — DESIGN LOCKED, code HELD for click-test
