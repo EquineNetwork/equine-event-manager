@@ -5791,10 +5791,19 @@
 		if (!host || document.getElementById('eem-assign-banner')) { return; }
 		var noun = ctx.kind === 'rv' ? 'RV lot' : 'stall';
 		var dates = (ctx.arrival || ctx.departure) ? (' for ' + eemFmtDate(ctx.arrival) + (ctx.departure ? ' – ' + eemFmtDate(ctx.departure) : '')) : '';
+		var assigned = (ctx.assignedUnits || []).filter(Boolean);
 		var banner = document.createElement('div');
 		banner.id = 'eem-assign-banner';
 		banner.className = 'eem-assign-banner';
-		banner.innerHTML = '<strong>Assigning ' + (ctx.customer || 'this customer') + '</strong> &mdash; click an available ' + noun + dates + ' to place them.';
+		if (assigned.length) {
+			// Already placed — tell the admin WHERE and that the spot is highlighted,
+			// instead of "click an available stall" on a sea of identical cells.
+			banner.innerHTML = '<strong>' + (ctx.customer || 'This customer') + '</strong> is currently in ' + noun +
+				(assigned.length > 1 ? 's' : '') + ' <strong>' + assigned.map(function (u) { return '#' + u; }).join(', ') +
+				'</strong> (highlighted). Click another available ' + noun + ' to move them, or use “Remove from ' + noun + '” on the highlighted ' + noun + '.';
+		} else {
+			banner.innerHTML = '<strong>Assigning ' + (ctx.customer || 'this customer') + '</strong> &mdash; click an available ' + noun + dates + ' to place them.';
+		}
 		// Place the banner directly above the "Stall Units" / "RV Lots" divider
 		// (the row of units to click). Falls back to above the chart host when no
 		// divider is present (e.g. the By Customer table view).
@@ -5803,6 +5812,26 @@
 			divider.parentNode.insertBefore(banner, divider);
 		} else {
 			host.parentNode.insertBefore(banner, host);
+		}
+
+		// Highlight (and scroll to) the order's currently-assigned unit(s) in both the
+		// List and the Map. The Map grid renders async, so re-run on a short delay.
+		if (assigned.length) {
+			var highlightAssigned = function () {
+				var first = null;
+				assigned.forEach(function (u) {
+					var sel = '.eem-loc-cell[data-stall="' + (window.CSS && CSS.escape ? CSS.escape(u) : u) + '"], .eem-smap-stall[data-eem-smap-stall="' + (window.CSS && CSS.escape ? CSS.escape(u) : u) + '"]';
+					document.querySelectorAll(sel).forEach(function (el) {
+						el.classList.add('eem-assign-current');
+						if (!first) { first = el; }
+					});
+				});
+				if (first && first.scrollIntoView) {
+					first.scrollIntoView({ block: 'center', inline: 'center' });
+				}
+			};
+			highlightAssigned();
+			setTimeout(highlightAssigned, 400);
 		}
 	})();
 
@@ -6437,13 +6466,18 @@
 		if (!document.querySelector('[data-eem-action="sc-inv-switch"], [data-eem-action="sc-inv-select"], #eem-sc-view-select, [data-eem-smap]')) return;
 		try {
 			var params  = new URLSearchParams(window.location.search);
-			// Default view is Stalls / By Customer (Whitney 2026-06-20) — must match
-			// the PHP default, else this client init overrides it back to "all".
-			var initInv = params.get('inv') || 'stalls';
-			var initTab = params.get('tab') || 'customer';
+			// Respect the SERVER's chosen default (the View select's selected option,
+			// e.g. By Location–List when orders exist but nothing's assigned per #5).
+			// Reading the select avoids the client overriding the server back to
+			// "customer" on load — that caused the chart to flash List then snap to
+			// By Customer. URL param still wins when present (deep links).
+			var viewSelectEl = document.getElementById('eem-sc-view-select');
+			var invSelectEl  = document.getElementById('eem-sc-inv-select');
+			var initInv = params.get('inv') || (invSelectEl && invSelectEl.value) || 'stalls';
+			var initTab = params.get('tab') || (viewSelectEl && viewSelectEl.value) || 'list';
 			if (['all', 'stalls', 'rv'].indexOf(initInv) === -1) initInv = 'stalls';
 			if (initTab === 'location') initTab = 'list';
-			if (['customer', 'list', 'map'].indexOf(initTab) === -1) initTab = 'customer';
+			if (['customer', 'list', 'map'].indexOf(initTab) === -1) initTab = 'list';
 			eemScApplyState(initInv, initTab);
 			if (EEM.renderStallMaps) EEM.renderStallMaps();
 		} catch (e) { /* ignore */ }

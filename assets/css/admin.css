@@ -9149,6 +9149,10 @@ body.eem-assign-mode .eem-chart-status--available[data-eem-action="assign-order-
 .eem-smap-stall.is-blocked { background: repeating-linear-gradient(45deg, #fca5a5, #fca5a5 3px, #f87171 3px, #f87171 6px); color: #fff; }
 .eem-smap-stall.is-tack { background: #fff5e6; color: #9a6a14; }
 .eem-smap-stall.is-cleaning { background: #f5f3ff; color: #7c3aed; }
+/* #3 — the order being managed (arrived via "Manage Stall Assignment"): a bright
+   ring so the admin can immediately see where this customer currently is. */
+.eem-smap-stall.eem-assign-current { outline: 3px solid var(--eem-electric, #1668F2); outline-offset: -2px; z-index: 2; box-shadow: 0 0 0 3px rgba(22,104,242,.25); }
+.eem-loc-cell.eem-assign-current { outline: 3px solid var(--eem-electric, #1668F2); outline-offset: 1px; box-shadow: 0 0 0 3px rgba(22,104,242,.20); }
 /* Group membership: a left accent bar whose width scales WITH the cell, so the
    indicator stays proportional ("same size as the box") at every zoom level
    instead of a fixed 4px sliver. */

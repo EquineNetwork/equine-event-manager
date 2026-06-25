@@ -3933,15 +3933,22 @@ class EEM_Admin {
 			$assign_order = $this->orders_repository->get_order( $assign_order_key );
 			if ( $assign_order && absint( $assign_order['reservation_id'] ) === absint( $reservation_id ) ) {
 				$assign_kind = ( isset( $_GET['assign_kind'] ) && 'rv' === sanitize_key( wp_unslash( $_GET['assign_kind'] ) ) ) ? 'rv' : 'stall'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				// Units this order is ALREADY assigned to (so the chart can highlight +
+				// scroll to them — otherwise "Manage Stall Assignment" lands on a sea of
+				// stalls with no indication of where this customer currently is).
+				$assign_units = array_values( array_map( 'strval', (array) $this->parse_assigned_units_string(
+					$this->get_order_component_note_value( $assign_order, ( 'rv' === $assign_kind ? 'rv' : 'stall' ), ( 'rv' === $assign_kind ? 'Assigned RV Lots' : 'Assigned Stall Units' ) )
+				) ) );
 				$assign_ctx  = array(
-					'orderKey'    => $assign_order_key,
-					'kind'        => $assign_kind,
-					'customer'    => (string) $assign_order['customer_name'],
-					'arrival'     => (string) ( 'rv' === $assign_kind ? $assign_order['rv_arrival_date'] : $assign_order['stall_arrival_date'] ),
-					'departure'   => (string) ( 'rv' === $assign_kind ? $assign_order['rv_departure_date'] : $assign_order['stall_departure_date'] ),
-					'orderNumber' => $this->format_order_number_display( (string) ( $assign_order['order_number'] ?? '' ) ),
+					'orderKey'      => $assign_order_key,
+					'kind'          => $assign_kind,
+					'customer'      => (string) $assign_order['customer_name'],
+					'arrival'       => (string) ( 'rv' === $assign_kind ? $assign_order['rv_arrival_date'] : $assign_order['stall_arrival_date'] ),
+					'departure'     => (string) ( 'rv' === $assign_kind ? $assign_order['rv_departure_date'] : $assign_order['stall_departure_date'] ),
+					'orderNumber'   => $this->format_order_number_display( (string) ( $assign_order['order_number'] ?? '' ) ),
+					'assignedUnits' => $assign_units,
 					// Where to send the admin back after they place this order.
-					'returnUrl'   => EEM_Order_Detail_Page::url( $assign_order_key ),
+					'returnUrl'     => EEM_Order_Detail_Page::url( $assign_order_key ),
 				);
 			}
 		}
