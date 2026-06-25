@@ -369,6 +369,15 @@ class EEM_Activator {
 		}
 
 		self::activate();
+
+		// Best-effort OPcache flush on every version change. On WP Engine the
+		// in-WP "Clear all caches" does NOT reset PHP OPcache, so a freshly
+		// updated plugin can serve stale bytecode until the cache TTL expires.
+		// Guarded with function_exists; a silent no-op where the host restricts
+		// or disables the API (managed hosts often do).
+		if ( function_exists( 'opcache_reset' ) ) {
+			@opcache_reset(); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- best-effort; restricted hosts return false.
+		}
 	}
 
 	/**

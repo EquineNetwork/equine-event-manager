@@ -41,6 +41,7 @@ at the bottom. Session task IDs in brackets.
 
 ### WP Engine environment gotchas (learned the hard way)
 - The in-WordPress "WP Engine → Caching → Clear all caches" does **page + object cache only — NOT PHP OPcache**. After a plugin update, class files can serve stale bytecode until a real OPcache reset (portal / redeploy).
+- **STANDING RULE (2.7.599):** every plugin update can serve stale PHP on WP Engine. `EEM_Activator::maybe_upgrade()` now calls a guarded `opcache_reset()` on every version change as a best-effort self-heal — BUT it's chicken-and-egg: the new main-file version must load first for the change to be detected, so the *immediate* update can still look stale for a cycle. When a freshly-pushed change "isn't showing" on staging: (1) confirm the code is correct on LOCAL first (don't re-push blind); (2) then on staging, hard-refresh, and if still stale, clear OPcache via the WP Engine portal or wait for the cache TTL. Verify the live version via an enqueued asset's `?ver=` query string. NEVER diagnose a "not working" report as a code bug until local proves the code is fine — it's usually OPcache.
 - Plugin **File Editor is disabled** (DISALLOW_FILE_EDIT) — can't read live files via wp-admin.
 - The plugin self-updater **does** replace files; verify a version actually went live via the `?ver=` query string on enqueued assets.
 
