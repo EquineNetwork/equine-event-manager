@@ -351,6 +351,11 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-039-backfill-order-dates.php';
 			eem_mig_039_backfill_order_dates();
 		}
+
+		if ( ! get_option( 'eem_mig_040_section_enabled_postmeta_mirror_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-040-section-enabled-postmeta-mirror.php';
+			eem_mig_040_section_enabled_postmeta_mirror();
+		}
 	}
 
 	/**

@@ -63,6 +63,12 @@ at the bottom. Session task IDs in brackets.
 - **Scope note:** `.eem-smap-stall` is exclusive to the Stall Charts map; the Map Builder uses `.eem-mb-cell`, so its white-canvas aesthetic is untouched.
 - **Prevention:** any new stall-state surface MUST use the five canonical colors above. Don't introduce a fourth gray "blocked" or white "available" — grep `--blocked`/`--available`/`is-blocked` before adding state CSS.
 
+### Assign from Order Detail + import mirrors section-enabled flags (v2.7.595) — #2 + #20
+- **Symptom:** No "Assign Stalls" / "Assign RV" button on imported orders' detail pages. The deep-link assign flow (#219) existed, but the button was gated on `EEM_Reservations_CPT::section_enabled('stalls_enabled')`.
+- **Root cause:** The config TABLE had `stalls_enabled=1`/`rv_enabled=1`, but the import never wrote the matching POST META (`_eem_section_enabled_stalls`, etc.). `section_enabled()` reads post meta only, so it returned false → button hidden, editor sections collapsed — until the admin opened + re-saved the reservation editor.
+- **Fix:** (a) **Import write-path** now mirrors EVERY `SECTION_ENABLED_MAP` flag from the config values to canonical post meta (alongside the existing pricing-mode mirror). Fresh imports work without a save. (b) **Migration #040** backfills existing imported reservations: queries the config table columns directly (no config-object hydration → memory-safe), writes the canonical post meta only when neither canonical nor legacy key exists (never clobbers an admin-saved value). Verified on local: 332 keys backfilled, reservation 15246 now reports `stalls_enabled/rv_enabled = true`, idempotent on re-run.
+- **Prevention:** Any data path that creates a reservation by writing the config table (import, future API, clone) MUST also mirror the section-enabled flags to post meta, OR every `section_enabled()`-gated surface will treat the reservation as "off." The config table is the source of truth; post meta is the read-cache many gates still use.
+
 ---
 
 ## 🔜 IN THE CURRENT BATCH (not yet shipped — designs locked)

@@ -707,6 +707,23 @@ class EEM_Import_Handler {
 			if ( isset( $cfg_values['rv_pricing_mode'] ) ) {
 				update_post_meta( $reservation_id, '_en_rv_pricing_mode', $cfg_values['rv_pricing_mode'] );
 			}
+			// #20: mirror EVERY section-enabled flag to post meta. The config table
+			// holds the truth, but many gates read EEM_Reservations_CPT::section_enabled()
+			// which only looks at post meta — without this an imported reservation is
+			// functionally "off" (no Assign Stalls button, sections hidden) until the
+			// admin opens + re-saves the editor. Mirror so a fresh import works as-is.
+			if ( class_exists( 'EEM_Reservations_CPT' ) ) {
+				foreach ( EEM_Reservations_CPT::SECTION_ENABLED_MAP as $field => $slug ) {
+					if ( ! array_key_exists( $field, $cfg_values ) ) {
+						continue;
+					}
+					update_post_meta(
+						$reservation_id,
+						EEM_Reservations_CPT::section_enabled_meta_key( $field ),
+						! empty( $cfg_values[ $field ] ) ? 1 : 0
+					);
+				}
+			}
 		}
 
 		/* ── Stay Packages ─────────────────────────────────────── */
