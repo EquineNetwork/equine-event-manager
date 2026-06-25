@@ -43,6 +43,8 @@ or wait a few minutes for the cache to cycle. Each row says where to look and wh
 | block modal fix | 2.7.606 | **Block** modal | The night checkboxes are now the source of truth — check 27 + 28 and Block → exactly those nights block (no more "only today" because a radio overrode your checkboxes). "Just this night" / "All nights" are quick presets that set the checkboxes. |
 | Assign from List | 2.7.606 | **By Location → List**, click an **available** stall | The dropdown now has **Assign…** (blue) at the top → opens a customer search → pick a customer → they're assigned to that stall. (Was only on the Map; now on the List too.) ⚠️ **Please click-test.** |
 
+| unblock | 2.7.607 | **By Location → List**, click a **Blocked** cell | Blocked cells are now clickable (they were dead before) → menu offers **Unblock this night** / **Unblock all nights**. Per-night aware: unblocking one night of an all-nights block leaves the other nights blocked. ⚠️ **Please click-test.** |
+
 ### #3 status — COMPLETE (pending your click-test)
 All five actions are now on both the List and the Map: **Assign · Cleaning · Checked-in · Tack · Block** (+ Remove/Unassign + Move). Per-night block modal works. Colors consistent. Popovers visually aligned. Walk the rows above (Block, per-night modal, Remove, Checked-in, colors, view-flip, highlight, visual parity) to sign off.
 

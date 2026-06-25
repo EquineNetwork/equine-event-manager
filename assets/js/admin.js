@@ -9230,13 +9230,21 @@ function duplicateReservationAjax(target) {
 		menu.className = 'eem-loc-status-menu';
 		menu.setAttribute('role', 'menu');
 		menu.hidden = true;
-		menu.innerHTML =
-			'<li><button type="button" class="eem-loc-status-option eem-loc-status-option--assign" data-target="assign">Assign…</button></li>' +
+		document.body.appendChild(menu);
+		return menu;
+	}
+
+	// Menu options depend on the cell's status: a BLOCKED cell offers Unblock; any
+	// other cell offers Assign / Available / Cleaning / Block.
+	function menuHtmlFor(status) {
+		if (status === 'blocked') {
+			return '<li><button type="button" class="eem-loc-status-option eem-loc-status-option--unblock" data-target="unblock-this">Unblock this night</button></li>' +
+				'<li><button type="button" class="eem-loc-status-option eem-loc-status-option--unblock" data-target="unblock-all">Unblock all nights</button></li>';
+		}
+		return '<li><button type="button" class="eem-loc-status-option eem-loc-status-option--assign" data-target="assign">Assign…</button></li>' +
 			'<li><button type="button" class="eem-loc-status-option" data-target="available">Available</button></li>' +
 			'<li><button type="button" class="eem-loc-status-option" data-target="needs_cleaning">Cleaning</button></li>' +
 			'<li><button type="button" class="eem-loc-status-option eem-loc-status-option--block" data-target="block">Block</button></li>';
-		document.body.appendChild(menu);
-		return menu;
 	}
 
 	function closeMenu() {
@@ -9247,6 +9255,7 @@ function duplicateReservationAjax(target) {
 	function openMenu(cell) {
 		buildMenu();
 		activeCell = cell;
+		menu.innerHTML = menuHtmlFor(cell.getAttribute('data-status') || '');
 		menu.hidden = false;
 		var r = cell.getBoundingClientRect();
 		var w = menu.offsetWidth, h = menu.offsetHeight;
@@ -9294,6 +9303,41 @@ function duplicateReservationAjax(target) {
 				}
 				if (window.EEM && window.EEM.showSaveToast) {
 					window.EEM.showSaveToast(data.message || (resp && resp.success ? 'Stall blocked.' : 'Could not block the stall.'),
+						{ variant: (resp && resp.success) ? 'success' : 'error' });
+				}
+			})
+			.catch(function () {
+				if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast('Could not reach the server.', { variant: 'error' }); }
+			});
+	}
+
+	// POST an unblock ('all' = whole stall, or a CSV of nights), swap the region.
+	function postUnblock(stall, kind, nights) {
+		var cfg = window.eemStallChart || {};
+		var b = new URLSearchParams();
+		b.append('action', 'eem_stall_map_action');
+		b.append('_wpnonce', cfg.moveNonce || '');
+		b.append('reservation_id', String(cfg.reservationId || ''));
+		b.append('op', 'unblock');
+		b.append('stall', stall);
+		b.append('kind', kind || 'stall');
+		b.append('nights', nights || 'all');
+		b.append('inv', window._eemScInv || 'all');
+		b.append('tab', window._eemScTab || 'location');
+		fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: b })
+			.then(function (r) { return r.json(); })
+			.then(function (resp) {
+				var data = (resp && resp.data) || {};
+				if (resp && resp.success && data.html) {
+					var region = document.getElementById('eem-stall-chart-dynamic');
+					if (region) {
+						region.innerHTML = data.html;
+						if (window.EEM && window.EEM.scApplyState) { window.EEM.scApplyState(window._eemScInv || 'all', window._eemScTab || 'location'); }
+						if (window.EEM && window.EEM.renderStallMaps) { window.EEM.renderStallMaps(); }
+					}
+				}
+				if (window.EEM && window.EEM.showSaveToast) {
+					window.EEM.showSaveToast(data.message || (resp && resp.success ? 'Unblocked.' : 'Could not unblock.'),
 						{ variant: (resp && resp.success) ? 'success' : 'error' });
 				}
 			})
@@ -9542,6 +9586,16 @@ function duplicateReservationAjax(target) {
 			var target = opt.getAttribute('data-target');
 			var wrap = activeCell.closest('.eem-loc-readiness');
 			if (!wrap) { closeMenu(); return; }
+
+			// #3 — Unblock (this night or all nights) on a blocked cell.
+			if (target === 'unblock-this' || target === 'unblock-all') {
+				var ubStall = activeCell.getAttribute('data-stall') || '';
+				var ubKind = activeCell.getAttribute('data-kind') || 'stall';
+				var ubNights = (target === 'unblock-this') ? (activeCell.getAttribute('data-date') || 'all') : 'all';
+				closeMenu();
+				postUnblock(ubStall, ubKind, ubNights);
+				return;
+			}
 
 			// #3 — "Assign…" opens a customer search to place an order in this cell.
 			if (target === 'assign') {

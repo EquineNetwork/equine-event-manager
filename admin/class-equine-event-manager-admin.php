@@ -3489,15 +3489,45 @@ class EEM_Admin {
 				}
 				$message = $is_rv ? __( 'Lot blocked.', 'equine-event-manager' ) : __( 'Stall blocked.', 'equine-event-manager' );
 			} else {
-				// Unblock fully frees the unit (all nights + overlay + editor field).
-				$blocked = array_values( array_diff( $blocked, array( $stall ) ) );
-				unset( $nights_map[ $stall ] );
-				if ( ! $is_rv ) {
+				$clear_editor = static function () use ( $is_rv, $reservation_id, $stall ) {
+					if ( $is_rv ) {
+						return;
+					}
 					$_cfg = EEM_Reservation_Config::for( $reservation_id );
 					$editor_blocked = $_cfg->get( 'blocked_stalls' );
 					if ( is_array( $editor_blocked ) ) {
 						$editor_blocked = array_values( array_diff( array_map( 'strval', $editor_blocked ), array( $stall ) ) );
 						$_cfg->set( 'blocked_stalls', $editor_blocked )->save();
+					}
+				};
+				if ( empty( $night_dates ) ) {
+					// Unblock ALL nights — fully free the unit (flat list + overlay + editor).
+					$blocked = array_values( array_diff( $blocked, array( $stall ) ) );
+					unset( $nights_map[ $stall ] );
+					$clear_editor();
+				} else {
+					// Per-night unblock. If the unit is whole-stall blocked (flat list),
+					// convert it to a per-night block of all OTHER event nights, then drop
+					// it from the flat list. Otherwise just remove the named nights from
+					// the overlay.
+					if ( in_array( $stall, $blocked, true ) ) {
+						$all_event_nights = array_keys( $this->get_stall_chart_date_columns( $reservation_id, array() ) );
+						$remaining        = array_values( array_diff( array_map( 'strval', $all_event_nights ), $night_dates ) );
+						$blocked          = array_values( array_diff( $blocked, array( $stall ) ) );
+						$clear_editor();
+						if ( ! empty( $remaining ) ) {
+							$nights_map[ $stall ] = $remaining;
+						} else {
+							unset( $nights_map[ $stall ] );
+						}
+					} else {
+						$cur = isset( $nights_map[ $stall ] ) && is_array( $nights_map[ $stall ] ) ? array_map( 'strval', $nights_map[ $stall ] ) : array();
+						$cur = array_values( array_diff( $cur, $night_dates ) );
+						if ( ! empty( $cur ) ) {
+							$nights_map[ $stall ] = $cur;
+						} else {
+							unset( $nights_map[ $stall ] );
+						}
 					}
 				}
 				$message = $is_rv ? __( 'Lot unblocked.', 'equine-event-manager' ) : __( 'Stall unblocked.', 'equine-event-manager' );
@@ -6957,7 +6987,7 @@ class EEM_Admin {
 								?>
 								<td class="eem-loc-cell-td">
 									<?php if ( 'blocked' === $eem_disp['key'] ) : ?>
-										<span class="eem-loc-cell eem-loc-cell--blocked"><?php echo esc_html( $eem_disp['label'] ); ?></span>
+										<button type="button" class="eem-loc-cell eem-loc-cell--blocked" data-eem-action="loc-cell-status" data-kind="<?php echo esc_attr( $kind ); ?>" data-stall="<?php echo esc_attr( $eem_unit ); ?>" data-date="<?php echo esc_attr( $eem_dk ); ?>" data-status="blocked"><?php echo esc_html( $eem_disp['label'] ); ?><svg class="eem-occ-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>
 									<?php elseif ( 'occupied' === $eem_disp['key'] ) : ?>
 									<?php
 									$eem_okey  = isset( $eem_cell['order_key'] ) ? (string) $eem_cell['order_key'] : '';

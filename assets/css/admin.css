@@ -8883,7 +8883,7 @@ tr.eem-chart-barn-row td { background: #fdf4e7; padding: 9px 22px; font-size: 12
 .eem-loc-cell--occupied { background: #eaf1fe; border-color: #b9d2fb; color: #031b4e; }
 .eem-loc-cell--available { background: #e8f5ee; border-color: #b6e0c7; color: #15803d; }
 .eem-loc-cell--cleaning { background: #f5f3ff; border-color: #ddd6fe; color: #7c3aed; }
-.eem-loc-cell--blocked { background: #fef2f2; border-color: #fecaca; color: #b91c1c; cursor: default; }
+.eem-loc-cell--blocked { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
 /* A tack stall is booked-for-gear — orange, overriding the blue booked tint. */
 .eem-loc-cell--occupied.is-tack { background: #fff7ec; border-color: #f0c98a; color: #9a6a14; }
 .eem-loc-cell:hover:not(.eem-loc-cell--blocked) { filter: brightness(0.97); }
@@ -8897,6 +8897,7 @@ tr.eem-chart-barn-row td { background: #fdf4e7; padding: 9px 22px; font-size: 12
 .eem-loc-status-option[data-target="needs_cleaning"]::before { background: #7c3aed; }
 .eem-loc-status-option[data-target="block"]::before { background: #b91c1c; }
 .eem-loc-status-option[data-target="assign"]::before { background: #1668F2; }
+.eem-loc-status-option[data-target^="unblock"]::before { background: #15803d; }
 /* #3 assign-from-list customer search modal. */
 .eem-assign-search { width: 100%; margin-bottom: 10px; }
 .eem-assign-list { max-height: 260px; overflow: auto; display: flex; flex-direction: column; gap: 2px; }
