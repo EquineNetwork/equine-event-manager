@@ -75,6 +75,12 @@ at the bottom. Session task IDs in brackets.
 - **Behavior note:** since By Customer lists every customer (most unassigned until placed), picking a specific barn shows only customers already assigned there; "Unassigned" shows everyone not yet placed.
 - **Prevention:** when adding a row-level filter to a stall-chart panel, extend `eemApplyStallChartFilter()` (don't add a parallel display-toggling handler — it conflicts with the function's `row.hidden` mechanism), and wire the control's listener in the SAME IIFE as that function.
 
+### Dashboard relative-date wording conflict (v2.7.597) — #10
+- **Symptom:** The same event showed "In 3 days" on the Upcoming Events card and "Opens in 1 day" on the Upcoming Reservations card right below — two different verbs and two different numbers for one event.
+- **Root cause:** Two functions described the same event timing differently. `event_when_label()` (events card) said "Happening now / Today / In N days" using `round()`. `format_opens_in()` (reservations card) said "Open now / Opens today / Opens in N days" using `floor()`. The "Opens in" verb read as a separate registration-open date, and floor vs round drifted the count.
+- **Fix:** `format_opens_in()` now uses the SAME vocabulary ("Happening now / Today / In N days") and the caller uses `round()` to match. Tone unchanged (green ≤7 days, blue beyond). Both cards now phrase the same event identically.
+- **Prevention:** there is ONE canonical relative-date vocabulary for the dashboard. Any new "when" chip must reuse it (Happening now / Today / In N days) and `round()` the day delta — don't introduce a parallel "Opens in"/"Starts in"/etc. phrasing.
+
 ---
 
 ## 🔜 IN THE CURRENT BATCH (not yet shipped — designs locked)

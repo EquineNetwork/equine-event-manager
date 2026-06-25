@@ -424,7 +424,10 @@ class EEM_Dashboard_Repo {
 			$start_str  = (string) get_post_meta( $res_id, '_en_source_event_start_date', true );
 			$end_str    = (string) get_post_meta( $res_id, '_en_nightly_end_date', true );
 			$start_ts   = $start_str ? strtotime( $start_str ) : 0;
-			$days_until = $start_ts ? (int) floor( ( $start_ts - $today_ts ) / DAY_IN_SECONDS ) : 0;
+			// #10 — round (not floor) so this matches event_when_label()'s day count;
+			// floor truncated partial days and made the Upcoming Reservations chip
+			// disagree with the Upcoming Events chip for the same event.
+			$days_until = $start_ts ? (int) round( ( $start_ts - $today_ts ) / DAY_IN_SECONDS ) : 0;
 
 			// Aggregate per-reservation orders.
 			$count   = 0;
@@ -828,29 +831,27 @@ class EEM_Dashboard_Repo {
 	}
 
 	/**
-	 * "Opens in N days" / "Opens today" / "Open now" + tone class.
+	 * Relative "when" chip for an upcoming reservation, derived from the linked
+	 * event's start date. Uses the SAME vocabulary as {@see event_when_label()}
+	 * ("Happening now" / "Today" / "In N days") so the Upcoming Reservations card
+	 * and the Upcoming Events card never disagree on phrasing for the same event
+	 * (#10 — the old "Opens in N days" verb read as a separate, conflicting date).
+	 * Tone stays opens-soon for now/today/≤7 days (green), future beyond (blue).
 	 *
-	 * @param int $days_until
+	 * @param int $days_until Whole days until the event starts (negative = under way).
 	 * @return array{label:string, tone:string}
 	 */
 	public static function format_opens_in( $days_until ) {
 		if ( $days_until < 0 ) {
-			return array( 'label' => __( 'Open now', 'equine-event-manager' ), 'tone' => 'opens-soon' );
+			return array( 'label' => __( 'Happening now', 'equine-event-manager' ), 'tone' => 'opens-soon' );
 		}
 		if ( 0 === $days_until ) {
-			return array( 'label' => __( 'Opens today', 'equine-event-manager' ), 'tone' => 'opens-soon' );
-		}
-		if ( $days_until <= 7 ) {
-			return array(
-				/* translators: %d: days until reservation opens */
-				'label' => sprintf( _n( 'Opens in %d day', 'Opens in %d days', $days_until, 'equine-event-manager' ), $days_until ),
-				'tone'  => 'opens-soon',
-			);
+			return array( 'label' => __( 'Today', 'equine-event-manager' ), 'tone' => 'opens-soon' );
 		}
 		return array(
-			/* translators: %d: days until reservation opens */
+			/* translators: %d: number of days until the event starts */
 			'label' => sprintf( _n( 'In %d day', 'In %d days', $days_until, 'equine-event-manager' ), $days_until ),
-			'tone'  => 'future',
+			'tone'  => $days_until <= 7 ? 'opens-soon' : 'future',
 		);
 	}
 
