@@ -8857,6 +8857,10 @@ tr.eem-chart-barn-row td { background: #fdf4e7; padding: 9px 22px; font-size: 12
 .eem-cust-chart-table tbody td:first-child { padding-left: 22px; }
 .eem-cust-chart-table thead th:last-child,
 .eem-cust-chart-table tbody td:last-child { padding-right: 22px; }
+/* Sortable column headers */
+.eem-sortable-col { cursor: pointer; user-select: none; }
+.eem-sortable-col:hover { color: var(--eem-electric, #1668f2); }
+.eem-sort-icon { font-size: 10px; opacity: 0.7; }
 /* By-Location (matrix) tables share the same DM-matching header + row styling. */
 .eem-stall-chart-table thead tr,
 .eem-rv-chart-table thead tr { background: #f8fafc; border-bottom: 2px solid #dcdcde; }

@@ -4028,11 +4028,14 @@ class EEM_Admin {
 			$eem_name = self::format_customer_last_first( (string) ( isset( $eem_ar['customer_name'] ) ? $eem_ar['customer_name'] : '' ) );
 			$eem_name = '' !== $eem_name ? $eem_name : (string) ( isset( $eem_ar['order_number'] ) ? $eem_ar['order_number'] : '' );
 			$eem_entry = array( 'o' => $eem_okey, 'n' => $eem_name );
-			if ( ! empty( $eem_ar['has_stall'] ) && ! isset( $eem_roster_seen['stall'][ $eem_okey ] ) ) {
+			// Include orders that purchased stalls (has_stall) OR that already have
+			// stall assignments — the latter catches GEMS-imported orders where
+			// stall_qty = 0 but assignments exist in the notes column.
+			if ( ( ! empty( $eem_ar['has_stall'] ) || ! empty( $eem_ar['stall_units'] ) ) && ! isset( $eem_roster_seen['stall'][ $eem_okey ] ) ) {
 				$eem_assign_roster['stall'][] = $eem_entry;
 				$eem_roster_seen['stall'][ $eem_okey ] = true;
 			}
-			if ( ! empty( $eem_ar['has_rv'] ) && ! isset( $eem_roster_seen['rv'][ $eem_okey ] ) ) {
+			if ( ( ! empty( $eem_ar['has_rv'] ) || ! empty( $eem_ar['rv_units'] ) ) && ! isset( $eem_roster_seen['rv'][ $eem_okey ] ) ) {
 				$eem_assign_roster['rv'][] = $eem_entry;
 				$eem_roster_seen['rv'][ $eem_okey ] = true;
 			}
@@ -7183,8 +7186,8 @@ class EEM_Admin {
 				<thead>
 					<tr>
 						<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
-						<th class="eem-chart-date-from-col"><?php esc_html_e( 'Arrival', 'equine-event-manager' ); ?></th>
-						<th class="eem-chart-date-to-col"><?php esc_html_e( 'Departure', 'equine-event-manager' ); ?></th>
+						<th class="eem-chart-date-from-col eem-sortable-col" data-sort-col="arrival" title="<?php esc_attr_e( 'Sort by arrival date', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Arrival', 'equine-event-manager' ); ?> <span class="eem-sort-icon" aria-hidden="true"></span></th>
+						<th class="eem-chart-date-to-col eem-sortable-col" data-sort-col="departure" title="<?php esc_attr_e( 'Sort by departure date', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Departure', 'equine-event-manager' ); ?> <span class="eem-sort-icon" aria-hidden="true"></span></th>
 						<?php // Columns always render; the Show segmented control toggles col-stall / col-rv visibility client-side. ?>
 						<th class="col-stall"<?php echo $show_stall ? '' : ' style="display:none"'; ?>><?php esc_html_e( 'Barn', 'equine-event-manager' ); ?></th>
 						<th class="col-stall"<?php echo $show_stall ? '' : ' style="display:none"'; ?>><?php esc_html_e( 'Stall #', 'equine-event-manager' ); ?></th>
@@ -7221,7 +7224,7 @@ class EEM_Admin {
 							}
 						}
 						?>
-						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="" data-has-stalls="<?php echo ! empty( $row['has_stall'] ) ? '1' : '0'; ?>" data-has-rv="<?php echo ! empty( $row['has_rv'] ) ? '1' : '0'; ?>" data-group="<?php echo esc_attr( $eem_row_group ); ?>" data-has-tack="<?php echo ! empty( $row['tack_units'] ) ? '1' : '0'; ?>" data-barns="<?php echo esc_attr( implode( ' ', $eem_row_barn_slugs ) ); ?>">
+						<tr data-stall-chart-search="<?php echo esc_attr( strtolower( implode( ' ', array_filter( $search_parts ) ) ) ); ?>" data-stall-chart-block="" data-has-stalls="<?php echo ! empty( $row['has_stall'] ) ? '1' : '0'; ?>" data-has-rv="<?php echo ! empty( $row['has_rv'] ) ? '1' : '0'; ?>" data-group="<?php echo esc_attr( $eem_row_group ); ?>" data-has-tack="<?php echo ! empty( $row['tack_units'] ) ? '1' : '0'; ?>" data-barns="<?php echo esc_attr( implode( ' ', $eem_row_barn_slugs ) ); ?>" data-arrival="<?php echo esc_attr( (string) ( '' !== (string) $row['stall_arrival'] ? $row['stall_arrival'] : $row['rv_arrival'] ) ); ?>" data-departure="<?php echo esc_attr( (string) ( '' !== (string) $row['stall_departure'] ? $row['stall_departure'] : $row['rv_departure'] ) ); ?>">
 							<?php $eem_order_url = admin_url( 'admin.php?page=equine-event-manager-order&order_key=' . rawurlencode( $row['order_key'] ) ); ?>
 							<td>
 								<div class="eem-chart-cust-cell">

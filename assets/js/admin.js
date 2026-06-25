@@ -6172,6 +6172,47 @@
 		}
 	});
 
+	// By Customer sortable column headers (Arrival / Departure).
+	// Click toggles asc/desc; a second click on the same column reverses direction.
+	// A ▲/▼ glyph is injected into the clicked <th> via .eem-sort-icon spans.
+	document.addEventListener('click', function (ev) {
+		var th = ev.target && ev.target.closest && ev.target.closest('[data-sort-col]');
+		if (!th) return;
+		var table = th.closest('table');
+		if (!table) return;
+		var tbody = table.querySelector('tbody');
+		if (!tbody) return;
+		var col = th.getAttribute('data-sort-col');
+		var prevCol = table._eemSortCol || '';
+		var prevDir = table._eemSortDir || 'asc';
+		var dir = (col === prevCol && prevDir === 'asc') ? 'desc' : 'asc';
+		table._eemSortCol = col;
+		table._eemSortDir = dir;
+		// Update sort icons on all sortable headers in this table.
+		var allTh = table.querySelectorAll('[data-sort-col]');
+		for (var i = 0; i < allTh.length; i++) {
+			var icon = allTh[i].querySelector('.eem-sort-icon');
+			if (icon) { icon.textContent = allTh[i] === th ? (dir === 'asc' ? ' ▲' : ' ▼') : ''; }
+		}
+		// Sort tbody rows by the chosen column.
+		var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+		rows.sort(function (a, b) {
+			var av = a.getAttribute('data-' + col) || '';
+			var bv = b.getAttribute('data-' + col) || '';
+			// Rows with no date sort to the bottom regardless of direction.
+			if (!av && !bv) return 0;
+			if (!av) return 1;
+			if (!bv) return -1;
+			var cmp = av < bv ? -1 : av > bv ? 1 : 0;
+			return dir === 'asc' ? cmp : -cmp;
+		});
+		// Re-append rows in sorted order (preserves group header rows via selector).
+		var groupHeaders = Array.prototype.slice.call(tbody.querySelectorAll('.eem-chart-group-header-row'));
+		for (var j = 0; j < rows.length; j++) { tbody.appendChild(rows[j]); }
+		// Re-inject any group-header rows at the top (they don't have data-arrival).
+		for (var k = 0; k < groupHeaders.length; k++) { tbody.insertBefore(groupHeaders[k], tbody.firstChild); }
+	});
+
 	// Stall chart filter — search box + barn tabs + "Show by group" (V1 D2).
 	// Shared so the search input and the group toggle apply the same logic.
 	function eemApplyStallChartFilter(panel) {
@@ -9545,7 +9586,7 @@ function duplicateReservationAjax(target) {
 			return '<li><button type="button" class="eem-loc-status-option eem-loc-status-option--unblock" data-target="unblock-this">Unblock this night</button></li>' +
 				'<li><button type="button" class="eem-loc-status-option eem-loc-status-option--unblock" data-target="unblock-all">Unblock all nights</button></li>';
 		}
-		return '<li><button type="button" class="eem-loc-status-option eem-loc-status-option--assign" data-target="assign">Assign…</button></li>' +
+		return '<li><button type="button" class="eem-loc-status-option eem-loc-status-option--assign" data-target="assign">Assign</button></li>' +
 			'<li><button type="button" class="eem-loc-status-option" data-target="available">Available</button></li>' +
 			'<li><button type="button" class="eem-loc-status-option" data-target="needs_cleaning">Cleaning</button></li>' +
 			'<li><button type="button" class="eem-loc-status-option eem-loc-status-option--block" data-target="block">Block</button></li>';
