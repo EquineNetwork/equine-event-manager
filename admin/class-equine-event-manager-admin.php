@@ -4000,6 +4000,9 @@ class EEM_Admin {
 					'departure'     => (string) ( 'rv' === $assign_kind ? $assign_order['rv_departure_date'] : $assign_order['stall_departure_date'] ),
 					'orderNumber'   => $this->format_order_number_display( (string) ( $assign_order['order_number'] ?? '' ) ),
 					'assignedUnits' => $assign_units,
+					'qty'           => 'rv' === $assign_kind
+						? absint( isset( $assign_order['rv_quantity'] ) ? $assign_order['rv_quantity'] : 1 )
+						: absint( isset( $assign_order['stall_quantity'] ) ? $assign_order['stall_quantity'] : 1 ),
 					// Where to send the admin back after they place this order.
 					'returnUrl'     => EEM_Order_Detail_Page::url( $assign_order_key ),
 				);

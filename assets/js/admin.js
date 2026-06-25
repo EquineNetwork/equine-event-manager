@@ -5915,27 +5915,50 @@
 
 	// On load: if we arrived from an order's Assign button, mark assign mode and
 	// drop a banner above the chart so the admin knows to click an open unit.
+	// Pending multi-stall selections for the assign mode (qty > 1).
+	var _eemAssignPending = [];
+
+	function eemAssignBannerText(ctx) {
+		var noun = ctx.kind === 'rv' ? 'RV lot' : 'stall';
+		var nouns = ctx.kind === 'rv' ? 'RV lots' : 'stalls';
+		var qty = ctx.qty || 1;
+		var dates = (ctx.arrival || ctx.departure) ? (' for ' + eemFmtDate(ctx.arrival) + (ctx.departure ? ' – ' + eemFmtDate(ctx.departure) : '')) : '';
+		var assigned = (ctx.assignedUnits || []).filter(Boolean);
+		// Already-placed banner (single-qty or re-assign flow).
+		if (assigned.length && qty <= 1) {
+			return '<strong>' + (ctx.customer || 'This customer') + '</strong> is currently in ' + noun +
+				(assigned.length > 1 ? 's' : '') + ' <strong>' + assigned.map(function (u) { return '#' + u; }).join(', ') +
+				'</strong> (highlighted). Click another available ' + noun + ' to move them, or use “Remove from ' + noun + '” on the highlighted ' + noun + '.';
+		}
+		// Multi-select flow.
+		if (qty <= 1) {
+			return '<strong>Assigning ' + (ctx.customer || 'this customer') + '</strong> — click an available ' + noun + dates + ' to place them.';
+		}
+		var sel = _eemAssignPending.length;
+		if (sel === 0) {
+			return '<strong>Assigning ' + (ctx.customer || 'this customer') + '</strong> — select ' + qty + ' ' + nouns + dates + '. Click each stall to add it.';
+		}
+		if (sel < qty) {
+			return '<strong>' + sel + ' of ' + qty + ' ' + nouns + ' selected</strong> — click ' + (qty - sel) + ' more' + dates + '.';
+		}
+		return '<strong>' + qty + ' of ' + qty + ' ' + nouns + ' selected</strong> — click “Assign” to confirm.';
+	}
+
+	function eemAssignBannerUpdate(ctx) {
+		var banner = document.getElementById('eem-assign-banner');
+		if (banner) { banner.innerHTML = eemAssignBannerText(ctx) + ((_eemAssignPending.length === (ctx.qty || 1)) ? ' <button type="button" class="eem-btn eem-btn-primary eem-assign-banner-confirm" data-eem-action="assign-order-multi-confirm">Assign</button>' : ''); }
+	}
+
 	(function initAssignMode() {
 		var ctx = (window.eemStallChart || {}).assignContext;
 		if (!ctx) { return; }
 		document.body.classList.add('eem-assign-mode');
 		var host = document.querySelector('.eem-stall-chart-tab-panel') || document.querySelector('.eem-stall-chart-dynamic') || document.querySelector('#eem-stall-chart-dynamic');
 		if (!host || document.getElementById('eem-assign-banner')) { return; }
-		var noun = ctx.kind === 'rv' ? 'RV lot' : 'stall';
-		var dates = (ctx.arrival || ctx.departure) ? (' for ' + eemFmtDate(ctx.arrival) + (ctx.departure ? ' – ' + eemFmtDate(ctx.departure) : '')) : '';
-		var assigned = (ctx.assignedUnits || []).filter(Boolean);
 		var banner = document.createElement('div');
 		banner.id = 'eem-assign-banner';
 		banner.className = 'eem-assign-banner';
-		if (assigned.length) {
-			// Already placed — tell the admin WHERE and that the spot is highlighted,
-			// instead of "click an available stall" on a sea of identical cells.
-			banner.innerHTML = '<strong>' + (ctx.customer || 'This customer') + '</strong> is currently in ' + noun +
-				(assigned.length > 1 ? 's' : '') + ' <strong>' + assigned.map(function (u) { return '#' + u; }).join(', ') +
-				'</strong> (highlighted). Click another available ' + noun + ' to move them, or use “Remove from ' + noun + '” on the highlighted ' + noun + '.';
-		} else {
-			banner.innerHTML = '<strong>Assigning ' + (ctx.customer || 'this customer') + '</strong> &mdash; click an available ' + noun + dates + ' to place them.';
-		}
+		banner.innerHTML = eemAssignBannerText(ctx);
 		// Place the banner directly above the "Stall Units" / "RV Lots" divider
 		// (the row of units to click). Falls back to above the chart host when no
 		// divider is present (e.g. the By Customer table view).
@@ -5968,6 +5991,31 @@
 	})();
 
 	function openAssignOrderModal(ctx, unit) {
+		var qty = ctx.qty || 1;
+
+		// Multi-select mode: queue the clicked stall instead of opening modal immediately.
+		if (qty > 1) {
+			if (_eemAssignPending.indexOf(unit) !== -1) {
+				// Already selected — deselect it.
+				_eemAssignPending = _eemAssignPending.filter(function (u) { return u !== unit; });
+				var pill = document.querySelector('[data-eem-action="assign-order-unit"][data-stall="' + unit + '"]');
+				if (pill) { pill.classList.remove('eem-assign-pending'); }
+				eemAssignBannerUpdate(ctx);
+				return;
+			}
+			if (_eemAssignPending.length >= qty) { return; } // already full
+			_eemAssignPending.push(unit);
+			var selPill = document.querySelector('[data-eem-action="assign-order-unit"][data-stall="' + unit + '"]');
+			if (selPill) { selPill.classList.add('eem-assign-pending'); }
+			eemAssignBannerUpdate(ctx);
+			// If we've now selected enough, open the confirm modal.
+			if (_eemAssignPending.length === qty) {
+				openAssignMultiModal(ctx);
+			}
+			return;
+		}
+
+		// Single-stall mode (original behaviour).
 		var existing = document.getElementById('eem-assign-order-modal');
 		if (existing) { existing.parentNode.removeChild(existing); }
 		var noun = ctx.kind === 'rv' ? 'RV Lot' : 'Stall';
@@ -5996,6 +6044,52 @@
 		overlay.classList.add('open');
 	}
 
+	function openAssignMultiModal(ctx) {
+		var existing = document.getElementById('eem-assign-order-modal');
+		if (existing) { existing.parentNode.removeChild(existing); }
+		var noun = ctx.kind === 'rv' ? 'RV Lot' : 'Stall';
+		var nouns = ctx.kind === 'rv' ? 'RV Lots' : 'Stalls';
+		var dates = (ctx.arrival || ctx.departure)
+			? (eemFmtDate(ctx.arrival) + (ctx.departure ? ' – ' + eemFmtDate(ctx.departure) : ''))
+			: 'the reservation period';
+		var unitList = _eemAssignPending.map(function (u) { return noun + ' ' + u; }).join(', ');
+		var overlay = document.createElement('div');
+		overlay.className = 'eem-modal';
+		overlay.id = 'eem-assign-order-modal';
+		overlay.setAttribute('role', 'dialog');
+		overlay.setAttribute('aria-modal', 'true');
+		overlay.innerHTML =
+			'<div class="eem-modal-card">' +
+				'<header class="eem-modal-head"><h2 class="eem-modal-title">Assign ' + nouns + '</h2>' +
+				'<button type="button" class="eem-modal-close" data-eem-action="assign-order-close" aria-label="Close">&times;</button></header>' +
+				'<div class="eem-modal-body">' +
+					'<p class="eem-order-refund-summary">Assign <strong>' + (ctx.customer || 'this customer') + '</strong> to <strong>' + unitList + '</strong> for <strong>' + dates + '</strong>?</p>' +
+					'<div class="eem-order-refund-error" data-eem-assign-order-error hidden></div>' +
+				'</div>' +
+				'<footer class="eem-modal-foot eem-modal-foot--split">' +
+					'<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="assign-order-close">Cancel</button>' +
+					'<button type="button" class="eem-btn eem-btn-primary" data-eem-action="assign-order-multi-confirm">Assign ' + nouns + '</button>' +
+				'</footer>' +
+			'</div>';
+		document.body.appendChild(overlay);
+		overlay.classList.add('open');
+	}
+
+	// Posts a single unit assignment and returns a Promise<bool>.
+	function eemAssignUnit(cfg, ctx, unit) {
+		var body = new URLSearchParams();
+		body.set('action', 'eem_assign_order_to_unit');
+		body.set('_wpnonce', cfg.assignNonce || '');
+		body.set('order_key', ctx.orderKey || '');
+		body.set('unit', unit);
+		body.set('kind', ctx.kind || 'stall');
+		return fetch((cfg.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php'), {
+			method: 'POST', credentials: 'same-origin',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+			body: body.toString()
+		}).then(function (r) { return r.json().catch(function () { return { success: false }; }); });
+	}
+
 	document.addEventListener('click', function (ev) {
 		var t = ev.target;
 		if (!t || !t.closest) { return; }
@@ -6004,6 +6098,45 @@
 			ev.preventDefault();
 			var m = document.getElementById('eem-assign-order-modal');
 			if (m) { m.parentNode.removeChild(m); }
+			return;
+		}
+
+		// Multi-stall confirm (from banner button or modal footer).
+		var multiConfirm = t.closest('[data-eem-action="assign-order-multi-confirm"]');
+		if (multiConfirm) {
+			ev.preventDefault();
+			var ctx2 = (window.eemStallChart || {}).assignContext;
+			var cfg2 = window.eemStallChart || {};
+			if (!ctx2 || !_eemAssignPending.length) { return; }
+			multiConfirm.disabled = true;
+			var errEl2 = document.querySelector('[data-eem-assign-order-error]');
+			if (errEl2) { errEl2.hidden = true; errEl2.textContent = ''; }
+			// Fire assignments sequentially — reuse the existing single-unit endpoint.
+			var units = _eemAssignPending.slice();
+			var failed = [];
+			var chain = Promise.resolve();
+			units.forEach(function (unit) {
+				chain = chain.then(function () {
+					return eemAssignUnit(cfg2, ctx2, unit).then(function (resp) {
+						if (!resp || !resp.success) { failed.push(unit); }
+					});
+				});
+			});
+			chain.then(function () {
+				multiConfirm.disabled = false;
+				if (failed.length === 0) {
+					if (window.EEM && window.EEM.showSaveToast) {
+						window.EEM.showSaveToast('All ' + units.length + ' assigned.', { variant: 'success' });
+					}
+					setTimeout(function () { window.location.reload(); }, 600);
+				} else {
+					var msg = 'Could not assign: ' + failed.join(', ') + '. The others were saved.';
+					if (errEl2) { errEl2.textContent = msg; errEl2.hidden = false; }
+				}
+			}).catch(function () {
+				multiConfirm.disabled = false;
+				if (errEl2) { errEl2.textContent = 'Network error. Please try again.'; errEl2.hidden = false; }
+			});
 			return;
 		}
 
@@ -6017,17 +6150,7 @@
 			var errEl = document.querySelector('[data-eem-assign-order-error]');
 			if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
 			confirmA.disabled = true;
-			var body = new URLSearchParams();
-			body.set('action', 'eem_assign_order_to_unit');
-			body.set('_wpnonce', cfg.assignNonce || '');
-			body.set('order_key', ctx.orderKey || '');
-			body.set('unit', unit);
-			body.set('kind', ctx.kind || 'stall');
-			fetch((cfg.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php'), {
-				method: 'POST', credentials: 'same-origin',
-				headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
-				body: body.toString()
-			}).then(function (r) { return r.json().catch(function () { return { success: false }; }); }).then(function (resp) {
+			eemAssignUnit(cfg, ctx, unit).then(function (resp) {
 				confirmA.disabled = false;
 				if (resp && resp.success) {
 					if (window.EEM && window.EEM.showSaveToast) {

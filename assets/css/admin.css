@@ -8973,6 +8973,18 @@ body.eem-assign-mode .eem-chart-status--available[data-eem-action="assign-order-
 	border-color: var(--eem-electric, #1668F2);
 	outline-color: #c7dafe;
 }
+body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-action="assign-order-unit"] {
+	background: var(--eem-electric, #1668F2);
+	color: #fff;
+	border-color: var(--eem-electric, #1668F2);
+	outline: 2px solid #c7dafe;
+	cursor: pointer;
+}
+.eem-assign-banner-confirm {
+	margin-left: 12px;
+	padding: 6px 16px;
+	font-size: 13px;
+}
 
 /* ── Occupancy pills ── */
 .eem-occ-pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; border: 1px solid; font-family: inherit; }
