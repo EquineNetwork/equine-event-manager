@@ -9171,15 +9171,19 @@ body.eem-assign-mode .eem-chart-status--available[data-eem-action="assign-order-
    picker so every map surface looks identical (was grey/uppercase). */
 .eem-smap-land { display: flex; align-items: center; justify-content: center; text-align: center; width: auto; height: auto; font-size: clamp(7px, calc(var(--eem-smap-chip, 40px) * 0.22), 11px); font-weight: 700; letter-spacing: .02em; color: #b45309; background: #fff7e6; border: 0; border-radius: 0; padding: 2px; line-height: 1.15; overflow: hidden; }
 /* Click-to-manage popover (positioned via JS; rows injected client-side) */
-.eem-smap-pop { position: fixed; z-index: 130; background: #fff; border: 1px solid var(--eem-line, #d9e2ec); border-radius: var(--eem-radius-lg, 6px); box-shadow: 0 18px 44px rgba(8,15,30,.22); width: 240px; display: none; }
+/* #3 — Map popover chrome aligned to the By-Location List popover
+   (.eem-stall-chart-cell-menu / .cell-action-menu) so both look identical:
+   same border, radius, row padding, hover, weight, colors, danger red. */
+.eem-smap-pop { position: fixed; z-index: 130; background: #fff; border: 1px solid #c3c4c7; border-radius: 6px; box-shadow: 0 8px 24px rgba(3,27,78,.18); width: 240px; display: none; font-family: inherit; }
 .eem-smap-pop.open { display: block; }
-.eem-smap-pop-head { padding: 12px 14px; border-bottom: 1px solid var(--eem-line, #d9e2ec); }
-.eem-smap-pop-num { font-size: 15px; font-weight: 800; color: var(--eem-navy, #031B4E); }
-.eem-smap-pop-st { font-size: 12px; color: var(--eem-muted, #5f6f85); margin-top: 2px; }
-.eem-smap-pop-body { padding: 8px; }
-.eem-smap-pop-row { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; padding: 9px 10px; border-radius: var(--eem-radius, 3px); font-size: 13px; font-weight: 600; color: var(--eem-ink, #18212f); cursor: pointer; text-align: left; font-family: inherit; }
-.eem-smap-pop-row:hover { background: #f2f6fb; }
-.eem-smap-pop-row.danger { color: #b93742; }
+.eem-smap-pop-head { padding: 10px 12px 8px; border-bottom: 1px solid #ededed; }
+.eem-smap-pop-num { font-size: 13.5px; font-weight: 700; color: #031B4E; line-height: 1.3; }
+.eem-smap-pop-st { font-size: 11.5px; color: #6B7A99; margin-top: 2px; }
+.eem-smap-pop-body { padding: 6px; }
+.eem-smap-pop-row { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; padding: 9px 12px; border-radius: var(--eem-radius); font-size: 13px; font-weight: 500; color: #1d2327; cursor: pointer; text-align: left; font-family: inherit; }
+.eem-smap-pop-row:hover { background: #f6f7f7; }
+.eem-smap-pop-row.danger { color: #b91c1c; }
+.eem-smap-pop-row.danger:hover { background: #fef2f2; }
 .eem-smap-pop-search { width: 100%; padding: 8px; border: 1px solid var(--eem-line, #d9e2ec); border-radius: var(--eem-radius, 3px); font-size: 13px; margin-bottom: 6px; }
 .eem-smap-pop-list { max-height: 180px; overflow: auto; }
 .eem-smap-pop-empty { padding: 9px 10px; font-size: 12px; color: var(--eem-muted, #5f6f85); }

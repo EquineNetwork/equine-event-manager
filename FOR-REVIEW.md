@@ -37,9 +37,10 @@ or wait a few minutes for the cache to cycle. Each row says where to look and wh
 
 | 3 (Checked-in) | 2.7.604 | **By Location** (List or Map), click an **assigned (blue)** stall | The popover now has **Mark Checked In** (toggles to **Mark Pending Arrival** once checked in). Click it → toast confirms; the order's check-in flips (same status shown in By Customer + Daily Movement). RV pills don't show it. Verified the toggle round-trip on Local. ⚠️ **Please click-test.** |
 
-### #3 status (the full menu unification)
-- **Done tonight:** List available-cell menu can now **Block** (it previously only did Available / Cleaning) — closes the biggest List-vs-Map gap, using the Map's exact `eem_stall_map_action` endpoint + region-swap.
-- **Still to do (needs a live click-test session):** add **Checked-in** + **Unassign** to the List *occupied* popover, and make the List + Map popovers visually identical. These touch more interactive wiring; held so they can be built with live clicking rather than blind. Full plan is in `docs/STAGING-FIXES-LOG.md` under "[#3]".
+| 3 (visual parity) | 2.7.605 | **By Location → List vs Map**, open a cell popover in each | The Map popover now matches the List popover's chrome (same border, radius, row spacing, hover gray, font weight, red for destructive). They should look like the same menu. |
+
+### #3 status — COMPLETE (pending your click-test)
+All five actions are now on both the List and the Map: **Assign · Cleaning · Checked-in · Tack · Block** (+ Remove/Unassign + Move). Per-night block modal works. Colors consistent. Popovers visually aligned. Walk the rows above (Block, per-night modal, Remove, Checked-in, colors, view-flip, highlight, visual parity) to sign off.
 
 ---
 
