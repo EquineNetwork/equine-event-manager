@@ -45,6 +45,10 @@ or wait a few minutes for the cache to cycle. Each row says where to look and wh
 
 | unblock | 2.7.607 | **By Location → List**, click a **Blocked** cell | Blocked cells are now clickable (they were dead before) → menu offers **Unblock this night** / **Unblock all nights**. Per-night aware: unblocking one night of an all-nights block leaves the other nights blocked. ⚠️ **Please click-test.** |
 
+| check-in lifecycle | 2.7.608 | **assigned stall** popover | Button now cycles **Mark Checked In → Mark Checked Out → Mark Pending Arrival** and updates immediately after you click (no more stale "Mark Checked In" on reopen). |
+| check-in indicator | 2.7.608 | **By Location → List**, assigned cells | Each assigned cell shows an inset ring: **red = assigned but not checked in (hasn't arrived)**, green = checked in, slate = checked out. Updates live across all that customer's nights when you toggle. ⚠️ tell me if you want different colors. |
+| assign empty-state | 2.7.608 | Assign… modal | If the customer list is empty it now says "No customers available — try refreshing" (the earlier "No match" for "duhon" was the roster not loaded yet — stale PHP/OPcache; clears on refresh). |
+
 ### #3 status — COMPLETE (pending your click-test)
 All five actions are now on both the List and the Map: **Assign · Cleaning · Checked-in · Tack · Block** (+ Remove/Unassign + Move). Per-night block modal works. Colors consistent. Popovers visually aligned. Walk the rows above (Block, per-night modal, Remove, Checked-in, colors, view-flip, highlight, visual parity) to sign off.
 

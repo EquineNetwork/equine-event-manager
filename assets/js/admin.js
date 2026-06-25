@@ -5459,7 +5459,7 @@
 				checkinBtn.style.display = (window._scActiveKind === 'rv') ? 'none' : '';
 			}
 			if (checkinLabel) {
-				checkinLabel.textContent = (window._scActiveCheckinStatus === 'checked_in') ? 'Mark Pending Arrival' : 'Mark Checked In';
+				checkinLabel.textContent = eemCheckinNextLabel(window._scActiveCheckinStatus);
 			}
 			var titleEl = document.getElementById('eem-stall-chart-menu-title');
 			var subEl = document.getElementById('eem-stall-chart-menu-subtitle');
@@ -5632,7 +5632,8 @@
 				ev.preventDefault();
 				var ciMenu = document.getElementById('eem-stall-chart-cell-menu');
 				if (ciMenu) { ciMenu.classList.remove('open'); }
-				var ciTarget = (window._scActiveCheckinStatus === 'checked_in') ? 'occupied' : 'checked_in';
+				var ciTarget = eemCheckinNextTarget(window._scActiveCheckinStatus || 'occupied');
+				var ciOrderKey = window._scActiveOrderId || '';
 				var ciBody = new URLSearchParams();
 				ciBody.set('action', 'eem_order_checkin_set');
 				ciBody.set('reservation_id', String((window.eemStallChart || {}).reservationId || ''));
@@ -5644,7 +5645,23 @@
 					.then(function (resp) {
 						var data = (resp && resp.data) || {};
 						if (resp && resp.success) {
-							window._scActiveCheckinStatus = data.status || ciTarget;
+							var newStatus = data.status || ciTarget;
+							window._scActiveCheckinStatus = newStatus;
+							// Refresh EVERY cell/pill for this order (one check-in status per
+							// order) so the indicator border + future popovers are correct
+							// without a full reload.
+							if (ciOrderKey) {
+								var sel = '[data-order-key="' + (window.CSS && CSS.escape ? CSS.escape(ciOrderKey) : ciOrderKey) + '"]';
+								document.querySelectorAll(sel).forEach(function (el) {
+									if (el.hasAttribute('data-checkin-status')) { el.setAttribute('data-checkin-status', newStatus); }
+									if (el.classList && el.classList.contains('eem-loc-cell--occupied')) {
+										el.classList.remove('eem-ci-pending', 'eem-ci-in', 'eem-ci-out');
+										el.classList.add(eemCiClass(newStatus));
+									}
+								});
+							}
+							var ciLbl = document.querySelector('#eem-stall-chart-checkin-btn [data-eem-checkin-btn-label]');
+							if (ciLbl) { ciLbl.textContent = eemCheckinNextLabel(newStatus); }
 							if (window.EEM && window.EEM.showSaveToast) {
 								window.EEM.showSaveToast(data.label ? (data.label + '.') : 'Updated.', { variant: 'success' });
 							}
@@ -5825,6 +5842,22 @@
 		var p = String(iso).split('-');
 		if (p.length !== 3) { return iso; }
 		return p[1] + '/' + p[2] + '/' + p[0];
+	}
+
+	// Check-in lifecycle: Pending Arrival → Checked In → Checked Out → (back to
+	// Pending). The popover button shows the NEXT action for the current status.
+	function eemCheckinNextLabel(status) {
+		if (status === 'checked_in') { return 'Mark Checked Out'; }
+		if (status === 'checked_out') { return 'Mark Pending Arrival'; }
+		return 'Mark Checked In';
+	}
+	function eemCheckinNextTarget(status) {
+		if (status === 'checked_in') { return 'checked_out'; }
+		if (status === 'checked_out') { return 'occupied'; }
+		return 'checked_in';
+	}
+	function eemCiClass(status) {
+		return status === 'checked_in' ? 'eem-ci-in' : (status === 'checked_out' ? 'eem-ci-out' : 'eem-ci-pending');
 	}
 
 	// On load: if we arrived from an order's Assign button, mark assign mode and
@@ -9462,6 +9495,10 @@ function duplicateReservationAjax(target) {
 		var searchEl = overlay.querySelector('.eem-assign-search');
 		function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 		function renderList(q) {
+			if (!roster.length) {
+				listEl.innerHTML = '<div class="eem-assign-empty">No customers available to assign. Try refreshing the page.</div>';
+				return;
+			}
 			q = (q || '').toLowerCase();
 			var hits = roster.filter(function (c) { return c.n.toLowerCase().indexOf(q) !== -1; });
 			if (!hits.length) { listEl.innerHTML = '<div class="eem-assign-empty">No match</div>'; return; }
