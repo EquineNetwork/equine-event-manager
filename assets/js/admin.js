@@ -9107,7 +9107,8 @@ function duplicateReservationAjax(target) {
 		menu.hidden = true;
 		menu.innerHTML =
 			'<li><button type="button" class="eem-loc-status-option" data-target="available">Available</button></li>' +
-			'<li><button type="button" class="eem-loc-status-option" data-target="needs_cleaning">Cleaning</button></li>';
+			'<li><button type="button" class="eem-loc-status-option" data-target="needs_cleaning">Cleaning</button></li>' +
+			'<li><button type="button" class="eem-loc-status-option eem-loc-status-option--block" data-target="block">Block</button></li>';
 		document.body.appendChild(menu);
 		return menu;
 	}
@@ -9235,6 +9236,46 @@ function duplicateReservationAjax(target) {
 			var target = opt.getAttribute('data-target');
 			var wrap = activeCell.closest('.eem-loc-readiness');
 			if (!wrap) { closeMenu(); return; }
+
+			// #3 — "Block" routes through the same proven map-action endpoint the
+			// Map popover uses (op=block → whole-stall block), then swaps the
+			// shared dynamic region so the List + Map both reflect it. Available /
+			// Cleaning keep their per-night readiness path below.
+			if (target === 'block') {
+				var cfg = window.eemStallChart || {};
+				var bBody = new URLSearchParams();
+				bBody.append('action', 'eem_stall_map_action');
+				bBody.append('_wpnonce', cfg.moveNonce || '');
+				bBody.append('reservation_id', String(cfg.reservationId || wrap.getAttribute('data-reservation-id') || ''));
+				bBody.append('op', 'block');
+				bBody.append('stall', activeCell.getAttribute('data-stall') || '');
+				bBody.append('kind', activeCell.getAttribute('data-kind') || 'stall');
+				bBody.append('inv', window._eemScInv || 'all');
+				bBody.append('tab', window._eemScTab || 'location');
+				closeMenu();
+				fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: bBody })
+					.then(function (r) { return r.json(); })
+					.then(function (resp) {
+						var data = (resp && resp.data) || {};
+						if (resp && resp.success && data.html) {
+							var region = document.getElementById('eem-stall-chart-dynamic');
+							if (region) {
+								region.innerHTML = data.html;
+								if (typeof eemScApplyState === 'function') { eemScApplyState(window._eemScInv || 'all', window._eemScTab || 'location'); }
+								if (window.EEM && window.EEM.renderStallMaps) { window.EEM.renderStallMaps(); }
+							}
+						}
+						if (window.EEM && window.EEM.showSaveToast) {
+							window.EEM.showSaveToast(data.message || (resp && resp.success ? 'Stall blocked.' : 'Could not block the stall.'),
+								{ variant: (resp && resp.success) ? 'success' : 'error' });
+						}
+					})
+					.catch(function () {
+						if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast('Could not reach the server.', { variant: 'error' }); }
+					});
+				return;
+			}
+
 			var body = new URLSearchParams();
 			body.append('action', 'eem_stall_cell_status_set');
 			body.append('reservation_id', wrap.getAttribute('data-reservation-id') || '');

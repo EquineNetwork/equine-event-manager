@@ -8895,6 +8895,7 @@ tr.eem-chart-barn-row td { background: #fdf4e7; padding: 9px 22px; font-size: 12
 .eem-loc-status-option::before { content: ""; width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .eem-loc-status-option[data-target="available"]::before { background: #15803d; }
 .eem-loc-status-option[data-target="needs_cleaning"]::before { background: #7c3aed; }
+.eem-loc-status-option[data-target="block"]::before { background: #b91c1c; }
 .eem-chart-block-name { color: #50575e; font-size: 13px; white-space: nowrap; }
 .eem-chart-cell-wrap { display: flex; justify-content: center; }
 

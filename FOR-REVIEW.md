@@ -23,4 +23,16 @@ or wait a few minutes for the cache to cycle. Each row says where to look and wh
 
 ---
 
-## 🔨 In progress tonight (will fill in as I go)
+## 🔨 Tonight's work — CLICK-TEST these on Local before the demo
+
+| # | Version | Where to look | What to click-test |
+|---|---------|---------------|--------------------|
+| 3 (slice 1) | 2.7.600 | **Stall & RV Charts → By Location → List** | Click an **available (green)** stall cell → the little menu now has a 3rd option **Block** (red dot) under Available / Cleaning. Click Block → the stall should turn **red (blocked)** in both List and Map. This routes through the same proven endpoint the Map's Block uses. ⚠️ **Please click-test** — interactive, verified structurally on Local but I couldn't auto-click it. |
+
+### #3 status (the full menu unification)
+- **Done tonight:** List available-cell menu can now **Block** (it previously only did Available / Cleaning) — closes the biggest List-vs-Map gap, using the Map's exact `eem_stall_map_action` endpoint + region-swap.
+- **Still to do (needs a live click-test session):** add **Checked-in** + **Unassign** to the List *occupied* popover, and make the List + Map popovers visually identical. These touch more interactive wiring; held so they can be built with live clicking rather than blind. Full plan is in `docs/STAGING-FIXES-LOG.md` under "[#3]".
+
+---
+
+## 🔨 (scratch — earlier note)
