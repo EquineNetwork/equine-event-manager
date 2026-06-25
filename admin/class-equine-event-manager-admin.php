@@ -7710,6 +7710,23 @@ class EEM_Admin {
 			);
 		}
 
+		// Sort: assigned customers first (any stall or RV lot placed), unassigned
+		// last. Within each group, sort alphabetically by last name so the list is
+		// stable and easy to scan as assignments are made.
+		usort(
+			$rows,
+			static function ( $a, $b ) {
+				$a_assigned = ! empty( $a['stall_units'] ) || ! empty( $a['rv_units'] );
+				$b_assigned = ! empty( $b['stall_units'] ) || ! empty( $b['rv_units'] );
+				if ( $a_assigned !== $b_assigned ) {
+					return $a_assigned ? -1 : 1; // assigned first
+				}
+				$a_name = self::format_customer_last_first( (string) $a['customer_name'] );
+				$b_name = self::format_customer_last_first( (string) $b['customer_name'] );
+				return strcasecmp( $a_name, $b_name );
+			}
+		);
+
 		return $rows;
 	}
 
