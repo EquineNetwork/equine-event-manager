@@ -381,19 +381,6 @@ class EEM_Order_Detail_Page {
 			<a class="eem-btn eem-btn-electric" href="#" data-eem-action="order-add-items"><?php esc_html_e( 'Add Items', 'equine-event-manager' ); ?></a>
 		<?php endif; ?>
 		<?php
-		// Open orders have $0 balance so the payment banner never triggers —
-		// surface a Collect button directly in the action bar so the admin can
-		// set a price and charge the customer.
-		if ( 'open' === ( isset( $order['status_slug'] ) ? $order['status_slug'] : '' ) && '' !== $order_key ) :
-			$open_collect_url = EEM_Orders_List_Page::collect_payment_url( $order_key );
-			if ( '' !== $open_collect_url ) :
-		?>
-			<a class="eem-btn eem-btn-collect" href="<?php echo esc_url( $open_collect_url ); ?>"><?php esc_html_e( 'Collect', 'equine-event-manager' ); ?></a>
-		<?php
-			endif;
-		endif;
-		?>
-		<?php
 		// Quick check-in / check-out toggle (replaces Back to Orders — the
 		// breadcrumb still links back). Label + target advance with state:
 		// pending → Check In, checked-in → Check Out, checked-out → Re-Check In.
@@ -459,12 +446,21 @@ class EEM_Order_Detail_Page {
 		// Balance-driven: any real outstanding amount surfaces the banner —
 		// including a fully-"paid" order whose total rose after a stall/RV or
 		// custom line item was added (the delta is genuinely uncollected).
-		$amount = $this->compute_balance_due( $order );
-		if ( $amount <= 0.005 ) {
+		//
+		// Open orders are the exception: they carry a $0 balance (no price set
+		// yet), so the balance check would suppress the banner. Whitney wants the
+		// same Payment Outstanding banner to prompt the admin to set a price and
+		// collect — so render it for 'open' regardless of balance, with
+		// price-not-set messaging and no dollar amount.
+		$is_open = ( 'open' === $status_slug );
+		$amount  = $this->compute_balance_due( $order );
+		if ( ! $is_open && $amount <= 0.005 ) {
 			return;
 		}
 
-		if ( 'invoice-sent' === $status_slug ) {
+		if ( $is_open ) {
+			$msg = __( 'No price has been set yet. Collect payment to set a price and charge the customer.', 'equine-event-manager' );
+		} elseif ( 'invoice-sent' === $status_slug ) {
 			$msg = __( 'Invoice has been sent. Awaiting payment.', 'equine-event-manager' );
 		} elseif ( 'unpaid' === $status_slug ) {
 			$msg = __( 'No payment received yet for this order.', 'equine-event-manager' );
@@ -478,11 +474,15 @@ class EEM_Order_Detail_Page {
 				<div class="eem-order-payment-banner__content">
 					<div class="eem-order-payment-banner__title"><?php esc_html_e( 'Payment Outstanding', 'equine-event-manager' ); ?></div>
 					<div class="eem-order-payment-banner__meta">
-						<span class="eem-order-payment-banner__amount"><?php echo esc_html( '$' . number_format_i18n( $amount, 2 ) ); ?></span>
-						<?php
-						/* translators: %s: human-readable reason */
-						echo ' ' . esc_html( sprintf( __( 'has not been collected for this order. %s', 'equine-event-manager' ), $msg ) );
-						?>
+						<?php if ( $is_open ) : ?>
+							<?php echo esc_html( $msg ); ?>
+						<?php else : ?>
+							<span class="eem-order-payment-banner__amount"><?php echo esc_html( '$' . number_format_i18n( $amount, 2 ) ); ?></span>
+							<?php
+							/* translators: %s: human-readable reason */
+							echo ' ' . esc_html( sprintf( __( 'has not been collected for this order. %s', 'equine-event-manager' ), $msg ) );
+							?>
+						<?php endif; ?>
 					</div>
 				</div>
 			</div>
