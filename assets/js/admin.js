@@ -5135,6 +5135,9 @@
 		var listWrap = document.getElementById('eem-sc-list');
 		if (mapsWrap) mapsWrap.style.display = tab === 'map'  ? '' : 'none';
 		if (listWrap) listWrap.style.display = tab === 'list' ? '' : 'none';
+		// Map search box (top filter row) only applies to the Map view.
+		var mapSearchGroup = document.querySelector('.eem-sc-map-search-group');
+		if (mapSearchGroup) { mapSearchGroup.style.display = tab === 'map' ? '' : 'none'; }
 		// Keep the view <select> in sync (e.g. when state is set programmatically).
 		var viewSelect = document.getElementById('eem-sc-view-select');
 		if (viewSelect && viewSelect.value !== tab) { viewSelect.value = tab; }
@@ -6746,46 +6749,37 @@
 				smapApplyLevel(container._eemSmapLevel || 'fit');
 			}
 			eemSmapBindPan(container.querySelector('[data-eem-smap-scroll]'));
-
-			// Map search bar — highlight cells matching the typed stall number/label
-			// and scroll the first match into view. Bound once per container.
-			var smapSearch = container.querySelector('[data-eem-smap-search]');
-			if (smapSearch && !smapSearch._eemBound) {
-				smapSearch._eemBound = true;
-				var smapCountEl = container.querySelector('[data-eem-smap-search-count]');
-				var smapScroll2 = container.querySelector('[data-eem-smap-scroll]');
-				smapSearch.addEventListener('input', function () {
-					var q = smapSearch.value.trim().toLowerCase();
-					var cells = container.querySelectorAll('[data-eem-smap-stall]');
-					var firstMatch = null, count = 0;
-					for (var i = 0; i < cells.length; i++) {
-						var cellLabel = cells[i].getAttribute('data-eem-smap-stall').toLowerCase();
-						// Match if the cell label ends with the query (handles zone-prefixed labels like "A 150")
-						var isMatch = q && (cellLabel === q || cellLabel.indexOf(' ' + q) !== -1 || cellLabel.indexOf(q) === 0);
-						cells[i].classList.toggle('eem-smap-highlight', !!isMatch);
-						if (isMatch) { count++; if (!firstMatch) firstMatch = cells[i]; }
-					}
-					if (smapCountEl) {
-						smapCountEl.textContent = q ? (count === 0 ? 'No match' : count === 1 ? '1 stall' : count + ' stalls') : '';
-					}
-					if (firstMatch && smapScroll2) {
-						// Scroll so the first highlighted cell is centered in the viewport.
-						var cRect = firstMatch.getBoundingClientRect();
-						var sRect = smapScroll2.getBoundingClientRect();
-						smapScroll2.scrollLeft += cRect.left - sRect.left - (sRect.width / 2) + (cRect.width / 2);
-						smapScroll2.scrollTop  += cRect.top  - sRect.top  - (sRect.height / 2) + (cRect.height / 2);
-					}
-				});
-				// Clear highlights when search is cleared.
-				smapSearch.addEventListener('search', function () {
-					if (!smapSearch.value) {
-						container.querySelectorAll('.eem-smap-highlight').forEach(function (el) { el.classList.remove('eem-smap-highlight'); });
-						if (smapCountEl) smapCountEl.textContent = '';
-					}
-				});
-			}
 		});
 	};
+
+	// Map search — single box in the top filter row (data-eem-smap-search-global)
+	// searches the currently-visible barn map: highlights matching stalls, scrolls
+	// the first into view, shows the count. Bound once (delegated input listener).
+	document.addEventListener('input', function (ev) {
+		var box = ev.target;
+		if (!box || box.getAttribute('data-eem-smap-search-global') === null) { return; }
+		var q = box.value.trim().toLowerCase();
+		var countEl = document.querySelector('[data-eem-smap-search-count-global]');
+		// Only search maps that are actually visible (the active barn tab + inv section).
+		var firstMatch = null, firstScroll = null, count = 0;
+		document.querySelectorAll('[data-eem-smap]').forEach(function (container) {
+			if (container.offsetParent === null) { return; } // hidden barn/section
+			var scroll = container.querySelector('[data-eem-smap-scroll]');
+			container.querySelectorAll('[data-eem-smap-stall]').forEach(function (cell) {
+				var label = (cell.getAttribute('data-eem-smap-stall') || '').toLowerCase();
+				var isMatch = q && (label === q || label.indexOf(' ' + q) !== -1 || label.indexOf(q) === 0);
+				cell.classList.toggle('eem-smap-highlight', !!isMatch);
+				if (isMatch) { count++; if (!firstMatch) { firstMatch = cell; firstScroll = scroll; } }
+			});
+		});
+		if (countEl) { countEl.textContent = q ? (count === 0 ? 'No match' : count === 1 ? '1 stall' : count + ' stalls') : ''; }
+		if (firstMatch && firstScroll) {
+			var cRect = firstMatch.getBoundingClientRect();
+			var sRect = firstScroll.getBoundingClientRect();
+			firstScroll.scrollLeft += cRect.left - sRect.left - (sRect.width / 2) + (cRect.width / 2);
+			firstScroll.scrollTop  += cRect.top  - sRect.top  - (sRect.height / 2) + (cRect.height / 2);
+		}
+	});
 
 	// Drag-to-pan a stall-map scroll viewport so the 2x/3x zoom levels aren't trapped
 	// on scrollbars. A 4px move threshold distinguishes a pan from a click, and the

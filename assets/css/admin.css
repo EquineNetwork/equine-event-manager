@@ -9171,10 +9171,11 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
 .eem-smap, .eem-smap-zoombar { min-width: 0; max-width: 100%; }
 /* Chart zoom bar layout — the shared .eem-zoom handles button chrome. */
 .eem-smap-zoombar { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 2px; gap: 8px; }
-/* Map search reuses the default .eem-search-wrap / .eem-search-input chrome. */
-.eem-smap-search-wrap { display: flex; align-items: center; gap: 8px; }
-.eem-smap-search-wrap .eem-search-wrap { width: 200px; min-width: 0; }
-.eem-smap-search-count { font-size: 12px; color: var(--eem-muted, #6b7280); white-space: nowrap; min-width: 48px; }
+/* Map search lives in the top filter row (right side), reusing the default
+   .eem-search-wrap / .eem-search-input chrome. */
+.eem-sc-map-search-group { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.eem-sc-map-search-group .eem-search-wrap { width: 220px; min-width: 0; }
+.eem-smap-search-count { font-size: 12px; color: var(--eem-muted, #6b7280); white-space: nowrap; }
 /* Admin chart grid mirrors the Stall Map Builder (.eem-mb-grid): a solid gray
    grid where the 1px gaps + empty/aisle cells read gray, square white stall
    cells, hatched aisles, square cream landmarks. Per the stall-grid visual

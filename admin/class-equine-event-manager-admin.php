@@ -2768,6 +2768,16 @@ class EEM_Admin {
 							<?php endif; ?>
 						</select>
 					</div>
+					<?php // Map search lives here (top filter row, right) — only shown on the Map view. ?>
+					<?php if ( $eem_has_any_map ) : ?>
+					<div class="eem-sc-fgroup eem-sc-map-search-group"<?php echo 'map' === $tab ? '' : ' style="display:none"'; ?>>
+						<span class="eem-search-wrap">
+							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+							<input type="search" class="eem-search-input" data-eem-smap-search-global placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Search stalls', 'equine-event-manager' ); ?>">
+						</span>
+						<span class="eem-smap-search-count" data-eem-smap-search-count-global aria-live="polite"></span>
+					</div>
+					<?php endif; ?>
 				</div>
 
 				<?php if ( empty( $grid['stall_rows'] ) && empty( $grid['rv_rows'] ) && ! $has_stall_map ) : ?>
@@ -3282,22 +3292,8 @@ class EEM_Admin {
 		);
 		?>
 		<div class="eem-smap" data-eem-smap data-eem-smap-kind="<?php echo esc_attr( $kind ); ?>">
-			<?php if ( ! empty( $barn_stats ) ) : ?>
-				<div class="eem-smap-barn-stats" data-eem-smap-barn-stats>
-					<?php foreach ( $barn_stats as $bname => $bs ) : ?>
-						<div class="eem-smap-barn-stat">
-							<div class="eem-smap-barn-stat-name"><?php echo esc_html( (string) $bname ); ?></div>
-							<div class="eem-smap-barn-stat-nums">
-								<span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--total" aria-hidden="true"></i><strong><?php echo esc_html( number_format_i18n( (int) $bs['total'] ) ); ?></strong> <?php esc_html_e( 'total', 'equine-event-manager' ); ?></span>
-								<span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--avail" aria-hidden="true"></i><strong><?php echo esc_html( number_format_i18n( (int) $bs['available'] ) ); ?></strong> <?php esc_html_e( 'avail', 'equine-event-manager' ); ?></span>
-								<span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--assigned" aria-hidden="true"></i><strong><?php echo esc_html( number_format_i18n( (int) $bs['reserved'] ) ); ?></strong> <?php esc_html_e( 'assigned', 'equine-event-manager' ); ?></span>
-								<span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--tack" aria-hidden="true"></i><strong><?php echo esc_html( number_format_i18n( (int) $bs['tack'] ) ); ?></strong> <?php esc_html_e( 'tack', 'equine-event-manager' ); ?></span>
-								<span class="eem-smap-stat"><i class="eem-smap-stat-dot eem-smap-stat-dot--blocked" aria-hidden="true"></i><strong><?php echo esc_html( number_format_i18n( (int) $bs['blocked'] ) ); ?></strong> <?php esc_html_e( 'blocked', 'equine-event-manager' ); ?></span>
-							</div>
-						</div>
-					<?php endforeach; ?>
-				</div>
-			<?php endif; ?>
+			<?php // Per-barn stat boxes (total/avail/assigned/tack/blocked) removed per
+			// Whitney 2026-06-25 — took up too much space; the top summary cards cover totals. ?>
 
 			<div class="eem-smap-barn-tabs" data-eem-smap-tabs></div>
 
@@ -3317,13 +3313,6 @@ class EEM_Admin {
 					<button type="button" data-zoom="out" title="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>">&minus;</button>
 					<button type="button" data-zoom="reset" title="<?php esc_attr_e( 'Reset zoom', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Zoom', 'equine-event-manager' ); ?></button>
 					<button type="button" data-zoom="in" title="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>">+</button>
-				</span>
-				<span class="eem-smap-search-wrap">
-					<span class="eem-search-wrap">
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-						<input type="search" class="eem-search-input" data-eem-smap-search placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Search stalls', 'equine-event-manager' ); ?>">
-					</span>
-					<span class="eem-smap-search-count" data-eem-smap-search-count aria-live="polite"></span>
 				</span>
 			</div>
 
