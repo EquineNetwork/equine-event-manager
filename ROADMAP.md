@@ -8,6 +8,23 @@
 
 ---
 
+## 🔖 SESSION HANDOFF — 2026-06-25 (continued — v2.7.623)
+
+**Current state:** `main` at **v2.7.623** — pushed to GitHub. All items below are **verified live on staging** (eqeventmanager.wpenginepowered.com) via browser inspection.
+
+### ✅ Shipped + verified this session (v2.7.619 → 2.7.623)
+
+1. **Chip name order "Last, First"** (v2.7.619) — stall-chart map chips were showing "First Last". Now formatted server-side via `format_customer_last_first()` at chart-data build; JS displays `st.c` directly (no double-inversion).
+2. **Blank/broken "By Location — Map" guard** (v2.7.621) — reservations with no imported barn map were landing on an empty map shell. Order Detail "Manage Stall Assignment" URL now uses `tab=list` when no map; the stall-chart page itself also forces `$tab='list'` when `!$has_any_map`.
+3. **Payment Outstanding banner on Open orders** (v2.7.622) — removed the action-bar "Collect" button (wrong approach) and instead made the full amber Payment Outstanding banner render for Open-status orders. Open orders carry a $0 balance so the balance check suppressed it; now `'open'` renders unconditionally with "No price has been set yet…" messaging (no dollar amount) + Collect Payment link.
+4. **Stall map assign-mode JS crash — THE big one** (v2.7.623) — clicking **Assign Stalls** from an order blanked the ENTIRE map. Root cause: `initAssignMode()` in admin.js referenced an undefined variable `assigned`; the `ReferenceError` threw during init and aborted the barn-grid render. Fixed by defining `assigned` from `ctx.assignedUnits` (the key the server actually sends). Verified live: 453 stalls across 2 barns now render in assign mode.
+5. **Open status badge → amber** (v2.7.623) — was neutral blue; now amber (`--eem-badge-amber-*`) so it reads as "balance owed", matching the Payment Outstanding banner. Verified: `rgb(255,251,235)` bg / `rgb(180,83,9)` text.
+6. **Add-On type badge → teal** (v2.7.623) — moved off orange (`.eem-type-addon` + `.eem-type-badge--addon`) so the warm tone doesn't collide with the now-amber Open status. Verified: `rgb(240,253,250)` bg / `rgb(15,118,110)` text.
+
+**Note on WP Engine deploy:** PHP/JS/CSS changes deploy via WP admin → Plugins → "Check for updates" → Update now. PHP changes need no cache flush; the curl `_eem_oc.php` OPcache trick does NOT work on WP Engine (direct PHP file access returns 404).
+
+---
+
 ## 🔖 SESSION HANDOFF — 2026-06-25 (continued — v2.7.617 target)
 
 **Current state:** `main` at **v2.7.616** — all shipped items below were committed. Pull + activate plugin.
