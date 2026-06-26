@@ -10,21 +10,66 @@
 
 ## 🔖 SESSION HANDOFF — 2026-06-25 (evening — desktop pickup)
 
-**Current state:** `main` at **v2.7.613** — NOT YET PUSHED. Push `main` before switching to desktop.
+**Current state:** `main` at **v2.7.613** — pushed to GitHub. On desktop: `git pull origin main`, update the plugin, and start below.
 
-**Shipped this session (laptop, 2.7.613):**
-1. **Zoom + scroll position persistence on stall chart** — saving view state to `sessionStorage` before any `window.location.reload()` (assign, move, etc.) and restoring it on page load via `requestAnimationFrame`. In-place HTML replace (spatial map action) also snapshots/restores zoom + scroll around the `innerHTML` swap. No more jumping back to the top after assigning a stall on a large map.
-2. **Assign search fixed for GEMS-imported orders** — orders with `stall_qty=0` but existing stall assignments in notes were excluded from the assign roster. Fixed to include any order where `stall_units` is non-empty, even if `has_stall` is false.
-3. **"Assign" label** — removed the trailing "…" from the dropdown context menu. Now just "Assign".
-4. **By Customer table sortable by Arrival + Departure** — column headers are now clickable; click once = asc, again = desc. Sort icon (▲/▼) updates in the header. Data attributes `data-arrival` / `data-departure` on each row drive the client-side sort.
-5. **Spatial map search bar** — "Find stall…" input on the left side of the zoombar. Type a stall number (or partial label); matching cells get an amber highlight ring and the first match scrolls into view. Count shown inline ("3 stalls" / "No match"). Clears on empty.
-6. **"Add new customer" in spatial map assign popover** — when search has text but no match, a "+ Add '[name]' as new customer" button appears. Creates a placeholder order (customer_name, stall_qty=1, payment_status=unpaid, fresh order number) via new AJAX action `eem_stall_create_placeholder`, immediately assigns the stall, refreshes the map in-place. Admin can then open the order and fill in full details.
-7. **ROADMAP items #30 and #31 added** (map search bar + add-new-customer — now done).
+---
 
-**⚠️ NOT YET VISUALLY VERIFIED** — none of #5 or #6 above have been click-tested. Test on NTR 6519 first thing on desktop:
-- Search bar: open spatial map → type a stall number → confirm amber highlight + scroll
-- "Add new customer": click an available stall → search a name that doesn't exist → click "+ Add…" → confirm map refreshes with stall shown as assigned, toast shows, and order appears in By Customer tab
-- Zoom/scroll persistence: zoom in + scroll, assign a stall, confirm map returns to same zoom + scroll position after reload
+### ✅ Shipped today (v2.7.613)
+
+1. **Zoom + scroll position preserved across stall chart reloads** — view state (scroll position, zoom level, spatial map scroll offset) saved to `sessionStorage` before every `window.location.reload()` and restored on page load via `requestAnimationFrame`. In-place HTML replace (spatial map action) also snapshots/restores zoom + scroll around the `innerHTML` swap. No more jumping to the top after assigning a stall on a large map.
+
+2. **Assign search fixed for GEMS-imported orders** — GEMS orders have `stall_qty=0` in the DB so they were excluded from the assign roster even though stall assignments exist in the notes column. Fixed: any order with existing `stall_units` (even if `has_stall` is false) now appears in the customer search.
+
+3. **"Assign" label — removed trailing "…"** — the dropdown context menu on matrix cells now shows "Assign" (not "Assign…").
+
+4. **By Customer table sortable by Arrival + Departure** — column headers are clickable; first click = ascending, second = descending. Sort icon (▲/▼) updates in the header. `data-arrival` / `data-departure` attributes on each row drive the client-side sort.
+
+5. **Spatial map search bar** ⚠️ NOT YET VERIFIED — "Find stall…" input on the left side of the zoombar. Type a stall number or partial label; matching cells get an amber highlight ring and the viewport scrolls to the first match. Match count shown inline ("3 stalls" / "No match"). Clears cleanly on empty.
+
+6. **"Add new customer" in spatial map assign popover** ⚠️ NOT YET VERIFIED — when a search returns no match, a "+ Add '[name]' as new customer" button appears. Creates a placeholder order (customer name, stall_qty=1, payment_status=unpaid, fresh order number) via AJAX, immediately assigns the stall, refreshes the map in-place. Admin opens the order later to fill in full details.
+
+---
+
+### ⚠️ Verify these first on desktop (NTR 6519)
+
+- **Spatial map search bar (#5):** open the By Location Map → type a stall number → confirm amber highlight ring appears on matching cells and the view scrolls to the first one.
+- **"Add new customer" (#6):** click an available stall → type a name with no match → click "+ Add '[name]' as new customer" → confirm the map refreshes, the stall shows as assigned, the toast appears, and the new order appears in the By Customer tab.
+- **Zoom/scroll persistence (#1):** zoom in + scroll right on a large map → assign a stall → confirm the map returns to the same zoom level and scroll position after reload.
+- **Scheduled reservations message field (from prior session):** Edit a reservation → toggle Schedule Stall Reservations → set a future open date → type a message → Save → reload editor and confirm the message persisted → open the customer event page and confirm the message shows instead of the form.
+
+---
+
+### 📋 What's next (full priority order)
+
+**Verify first — shipped but not click-tested**
+- [ ] #5 Spatial map search bar — test on NTR 6519 (see above)
+- [ ] #6 "Add new customer" popover — test on NTR 6519 (see above)
+- [ ] Scheduled reservations message field — test on NTR 6519 (see prior handoff)
+
+**High priority — real usability gaps**
+- [ ] #1 Global mobile polish — per-page pass to match Daily Movement standard (row heights, badge sizing, spacing/density). Scaffolding shipped; per-page work not started.
+- [ ] #5 Full end-to-end customer checkout sweep (needs live NTR 6519 fixture page — also best way to seed test data)
+- [ ] #6 UX: Order Detail "Paid" badge contradicts balance-due banner on edited orders
+- [ ] #19 Order Detail: make "Special Instructions" editable (inline edit + Save Changes bar — currently display-only)
+
+**Charts + map features**
+- [ ] #3 Map Builder search bar — same highlight/scroll concept for the stall row builder (not the chart view — still needed there)
+- [ ] #25 Chip status colors + click-to-set — discuss colors + interaction before building
+- [ ] #26 Metrics bar at top of stall chart page (matching Daily Movement blue bar)
+- [ ] #29 Sticky sidebar for By Location Map view — discuss design before building
+
+**Imports + reports**
+- [ ] #2 Excel stall map import (.xlsx → stall rows + map grid)
+- [ ] #4 Add-On Report (per-day add-on quantities, CSV + PDF)
+- [ ] #7 Pre-Entry Import Tool (GH CSV)
+
+**Bigger builds — discuss before starting**
+- [ ] #8 Vendor System
+- [ ] #24 RV amenities/hookups on reservations (30amp/50amp/water/sewage per lot, shown as icon chips on customer frontend)
+- [ ] #28 Hotel-style 15-min cart hold (UX enhancement — double-booking already prevented at submit)
+- [ ] #18 Full permissions matrix (role-based access)
+
+---
 
 **Standing constraints (do not change these):**
 - Never bump version without explicit Whitney approval each time.
