@@ -404,12 +404,19 @@ class EEM_Reservations_CPT {
 				nameEl = document.getElementById( 'equine_event_manager_tec_flyer_name' ),
 				viewEl = document.getElementById( 'equine_event_manager_tec_flyer_view' );
 
-			if ( ! upBtn || ! window.wp || ! wp.media ) {
+			if ( ! upBtn ) {
 				return;
 			}
 
 			upBtn.addEventListener( 'click', function ( e ) {
 				e.preventDefault();
+				// wp.media is enqueued in the page footer, so it is not defined
+				// when this inline script first runs — check for it at click
+				// time, by which point the footer scripts have loaded.
+				if ( ! window.wp || ! wp.media ) {
+					window.alert( <?php echo wp_json_encode( __( 'The media library is still loading — please try again in a moment.', 'equine-event-manager' ) ); ?> );
+					return;
+				}
 				if ( frame ) {
 					frame.open();
 					return;
