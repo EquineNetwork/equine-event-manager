@@ -4663,9 +4663,9 @@ class EEM_Admin {
 						<thead>
 							<tr>
 								<th><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?> <span class="sort-icon">&#8597;</span></th>
+								<th><?php esc_html_e( 'Event Start', 'equine-event-manager' ); ?></th>
+								<th><?php esc_html_e( 'Event End', 'equine-event-manager' ); ?></th>
 								<th><?php esc_html_e( 'Availability', 'equine-event-manager' ); ?></th>
-								<th><?php esc_html_e( 'Barns', 'equine-event-manager' ); ?></th>
-								<th><?php esc_html_e( 'RV Lots', 'equine-event-manager' ); ?></th>
 							</tr>
 						</thead>
 						<tbody id="eem-sc-list-tbody">
@@ -4679,10 +4679,9 @@ class EEM_Admin {
 									<a class="eem-sc-res-link" href="<?php echo esc_url( $chart_url ); ?>">
 										<?php echo esc_html( $row['title'] ); ?>
 									</a>
-									<?php if ( ! empty( $row['dates'] ) ) : ?>
-										<div class="eem-sc-res-dates"><?php echo wp_kses_post( $row['dates'] ); ?></div>
-									<?php endif; ?>
 								</td>
+								<td><?php echo '' !== $row['event_start'] ? esc_html( $row['event_start'] ) : '<span class="eem-sc-cell-muted">—</span>'; ?></td>
+								<td><?php echo '' !== $row['event_end'] ? esc_html( $row['event_end'] ) : '<span class="eem-sc-cell-muted">—</span>'; ?></td>
 								<td>
 									<?php if ( $not_configured ) : ?>
 										<span class="eem-sc-not-configured">
@@ -4697,28 +4696,6 @@ class EEM_Admin {
 												</span>
 											<?php endforeach; ?>
 										</div>
-									<?php endif; ?>
-								</td>
-								<td>
-									<?php if ( ! empty( $row['barn_names'] ) ) : ?>
-										<div class="eem-sc-tags">
-											<?php foreach ( $row['barn_names'] as $barn ) : ?>
-												<span class="eem-sc-barn-tag"><?php echo esc_html( $barn ); ?></span>
-											<?php endforeach; ?>
-										</div>
-									<?php else : ?>
-										<span class="eem-sc-cell-muted">—</span>
-									<?php endif; ?>
-								</td>
-								<td>
-									<?php if ( ! empty( $row['rv_zone_names'] ) ) : ?>
-										<div class="eem-sc-tags">
-											<?php foreach ( $row['rv_zone_names'] as $zone ) : ?>
-												<span class="eem-sc-rv-tag"><?php echo esc_html( $zone ); ?></span>
-											<?php endforeach; ?>
-										</div>
-									<?php else : ?>
-										<span class="eem-sc-cell-muted">—</span>
 									<?php endif; ?>
 								</td>
 							</tr>
@@ -4740,16 +4717,6 @@ class EEM_Admin {
 							</a>
 							<?php if ( ! empty( $row['dates'] ) ) : ?>
 								<div class="eem-sc-mob-dates"><?php echo esc_html( $row['dates'] ); ?></div>
-							<?php endif; ?>
-							<?php if ( ! empty( $row['barn_names'] ) || ! empty( $row['rv_zone_names'] ) ) : ?>
-								<div class="eem-sc-tags eem-sc-mob-tags">
-									<?php foreach ( $row['barn_names'] as $barn ) : ?>
-										<span class="eem-sc-barn-tag"><?php echo esc_html( $barn ); ?></span>
-									<?php endforeach; ?>
-									<?php foreach ( $row['rv_zone_names'] as $zone ) : ?>
-										<span class="eem-sc-rv-tag"><?php echo esc_html( $zone ); ?></span>
-									<?php endforeach; ?>
-								</div>
 							<?php endif; ?>
 							<?php if ( $not_configured ) : ?>
 								<div class="eem-sc-mob-avail">
@@ -4949,10 +4916,16 @@ class EEM_Admin {
 			}
 			$start_ts = $start_raw ? strtotime( (string) $start_raw ) : 0;
 
+			// Event start/end as their own columns (noon-anchored so the calendar
+			// date can't roll back a day on non-UTC installs).
+			$eem_ev_start_raw = (string) get_post_meta( $rid, '_en_start_date', true );
+			$eem_ev_end_raw   = (string) get_post_meta( $rid, '_en_end_date', true );
 			$rows[] = array(
 				'id'            => $rid,
 				'title'         => get_the_title( $rid ),
 				'dates'         => $this->get_reservation_date_range_label( $rid ),
+				'event_start'   => '' !== $eem_ev_start_raw ? wp_date( 'M j, Y', strtotime( $eem_ev_start_raw . ' 12:00:00' ) ) : '',
+				'event_end'     => '' !== $eem_ev_end_raw ? wp_date( 'M j, Y', strtotime( $eem_ev_end_raw . ' 12:00:00' ) ) : '',
 				'barn_names'    => $barn_names,
 				'rv_zone_names' => $rv_zone_names,
 				'chart_status'  => $chart_status,
