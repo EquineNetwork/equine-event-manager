@@ -1411,32 +1411,45 @@ class EEM_Order_Detail_Page {
 
 	/**
 	 * Special Instructions card — full-width below the 2-col grid.
-	 * Read-only in C6 (editor lands in C7). Reads the reservation's
-	 * `_en_special_instructions` meta directly.
+	 *
+	 * Inline-editable: the reservation's `_en_special_instructions` meta is
+	 * surfaced in a textarea with a Save Changes bar, saved over AJAX via
+	 * `eem_special_instructions_set`. The value is reservation-level (it applies
+	 * to every order on the reservation), so the hint flags that scope. Falls
+	 * back to a read-only em-dash when there is no reservation to key against.
 	 *
 	 * @param int $reservation_id
 	 * @return void
 	 */
 	private function render_special_instructions_card( $reservation_id ) {
-		// C6.A.2: always render — empty-guard removed so the card is
-		// visible even when no instructions are saved (mockup parity:
-		// the section is part of the page chrome, not conditional on
-		// content). Empty state shows an em-dash placeholder.
-		$text = $reservation_id > 0 ? (string) get_post_meta( $reservation_id, '_en_special_instructions', true ) : '';
-		$has  = '' !== trim( $text );
+		$reservation_id = (int) $reservation_id;
+		$text  = $reservation_id > 0 ? (string) get_post_meta( $reservation_id, '_en_special_instructions', true ) : '';
+		$nonce = $reservation_id > 0 ? wp_create_nonce( 'eem_special_instructions_' . $reservation_id ) : '';
 		?>
 		<div class="eem-order-full-width">
-			<div class="eem-card eem-order-card">
+			<div class="eem-card eem-order-card eem-order-instructions"
+				data-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>"
+				data-nonce="<?php echo esc_attr( $nonce ); ?>"
+				data-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>">
 				<div class="eem-order-card__header">
 					<div class="eem-order-card__title"><?php echo EEM_Dashboard_Icons::svg( 'file' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- self-authored inline SVG. ?> <?php esc_html_e( 'Special Instructions', 'equine-event-manager' ); ?></div>
 				</div>
-				<div class="eem-order-instructions__body">
-					<?php if ( $has ) : ?>
-						<p class="eem-order-instructions__text"><?php echo esc_html( $text ); ?></p>
-					<?php else : ?>
+				<?php if ( $reservation_id > 0 ) : ?>
+					<div class="eem-order-notes__body">
+						<div class="eem-order-notes__field">
+							<textarea class="eem-field-input eem-order-notes__input eem-order-instructions__input" rows="4" placeholder="<?php esc_attr_e( 'Add special instructions for this reservation…', 'equine-event-manager' ); ?>"><?php echo esc_textarea( $text ); ?></textarea>
+							<p class="eem-order-notes__hint"><?php esc_html_e( 'Applies to the entire reservation (every order), not just this order.', 'equine-event-manager' ); ?></p>
+							<div class="eem-order-notes__actions">
+								<button type="button" class="eem-btn eem-btn-electric eem-btn-sm" data-eem-action="order-instructions-save"><?php esc_html_e( 'Save Changes', 'equine-event-manager' ); ?></button>
+								<span class="eem-order-notes__status" role="status" aria-live="polite"></span>
+							</div>
+						</div>
+					</div>
+				<?php else : ?>
+					<div class="eem-order-instructions__body">
 						<p class="eem-order-instructions__text eem-order-instructions__text--empty">&mdash;</p>
-					<?php endif; ?>
-				</div>
+					</div>
+				<?php endif; ?>
 			</div>
 		</div>
 		<?php
