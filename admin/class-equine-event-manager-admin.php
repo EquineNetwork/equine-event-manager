@@ -2524,6 +2524,11 @@ class EEM_Admin {
 			$tab = 'list';
 		}
 		$tab               = in_array( $tab, array( 'customer', 'list', 'map' ), true ) ? $tab : 'list';
+		// Force away from map if this reservation has no imported barn map —
+		// the map view renders blank with no barns to draw.
+		if ( 'map' === $tab && ! $has_any_map ) {
+			$tab = 'list';
+		}
 		$reservation_title = get_the_title( $reservation_id );
 		$screen_title      = sprintf(
 			/* translators: %s: reservation title. */
