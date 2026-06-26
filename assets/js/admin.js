@@ -1732,12 +1732,35 @@
 		if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
 
 		// Client-side sanity check — server enforces authoritatively, but
-		// catch obviously bogus inputs without a round-trip.
-		var amtInput = modal.querySelector('#eem-order-refund-amount');
-		var amount = amtInput ? parseFloat(amtInput.value) : 0;
-		if (!amount || amount <= 0) {
-			showOrderRefundError('Refund amount must be greater than zero.');
-			return;
+		// catch obviously bogus inputs without a round-trip. Two shapes: the
+		// per-tender split (name="tenders[...]") or the legacy single amount.
+		var tenderInputs = modal.querySelectorAll('input[name^="tenders["]');
+		if (tenderInputs.length) {
+			var tenderTotal = 0;
+			for (var i = 0; i < tenderInputs.length; i++) {
+				var val = parseFloat(tenderInputs[i].value) || 0;
+				var cap = parseFloat(tenderInputs[i].getAttribute('data-eem-refundable')) || 0;
+				if (val < 0) {
+					showOrderRefundError('Refund amounts cannot be negative.');
+					return;
+				}
+				if (val > cap + 0.009) {
+					showOrderRefundError('A refund amount exceeds what is refundable for that payment method.');
+					return;
+				}
+				tenderTotal += val;
+			}
+			if (tenderTotal <= 0) {
+				showOrderRefundError('Enter a refund amount for at least one payment method.');
+				return;
+			}
+		} else {
+			var amtInput = modal.querySelector('#eem-order-refund-amount');
+			var amount = amtInput ? parseFloat(amtInput.value) : 0;
+			if (!amount || amount <= 0) {
+				showOrderRefundError('Refund amount must be greater than zero.');
+				return;
+			}
 		}
 
 		// Disable the Confirm button while in-flight.

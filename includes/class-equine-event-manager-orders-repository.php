@@ -526,6 +526,7 @@ class EEM_Orders_Repository {
 		$old_status_slug = $current_status;
 
 		$updated_any     = false;
+		$applied_total   = 0.0;
 		$paid_at         = current_time( 'mysql' );
 		$payment_method  = trim( sanitize_text_field( $payment_method ) );
 		$payment_method  = '' !== $payment_method ? $payment_method : 'Cash';
@@ -544,6 +545,11 @@ class EEM_Orders_Repository {
 			$component_charged = ( isset( $component['total'] ) ? (float) $component['total'] : 0.0 )
 				+ ( isset( $component['tax'] ) ? (float) $component['tax'] : 0.0 );
 
+			// Track the newly-applied delta (charged minus what was already paid) so the
+			// ledger records only the money this action collected, not the full charge.
+			$component_prev_paid = isset( $component['amount_paid'] ) ? (float) $component['amount_paid'] : 0.0;
+			$applied_total      += max( 0.0, $component_charged - $component_prev_paid );
+
 			$updated_any = $this->update_component_fields(
 				$component['table'],
 				$component['row_id'],
@@ -556,6 +562,10 @@ class EEM_Orders_Repository {
 				),
 				array( '%s', '%s', '%s', '%s', '%s' )
 			) || $updated_any;
+		}
+
+		if ( $updated_any ) {
+			$this->record_payment_ledger_entry( (string) $order_key, round( $applied_total, 2 ), $payment_method );
 		}
 
 		// C6.D — emit status_change telemetry. Source distinguishes
@@ -628,6 +638,7 @@ class EEM_Orders_Repository {
 		}
 
 		$leftover       = min( $amount, $outstanding );
+		$to_apply       = $leftover; // Captured up-front so we can record the actually-applied total in the ledger.
 		$paid_at        = current_time( 'mysql' );
 		$payment_method = trim( sanitize_text_field( (string) $payment_method ) );
 		$payment_method = '' !== $payment_method ? $payment_method : 'Cash';
@@ -686,6 +697,9 @@ class EEM_Orders_Repository {
 		}
 
 		if ( $updated_any ) {
+			$applied = round( $to_apply - $leftover, 2 );
+			$this->record_payment_ledger_entry( (string) $order_key, $applied, $payment_method );
+
 			$new_balance = round( $outstanding - min( $amount, $outstanding ), 2 );
 			$new_status  = ( $new_balance <= 0.005 ) ? 'paid' : 'partially_paid';
 			if ( $old_status !== $new_status ) {
@@ -707,6 +721,45 @@ class EEM_Orders_Repository {
 		}
 
 		return $updated_any;
+	}
+
+	/**
+	 * Record one manual (offline) payment entry in the order payments ledger.
+	 *
+	 * Shared by mark_order_paid_manually() and record_manual_payment(). Parses a human
+	 * method label like "Check #1042" into a method ("Check") + reference ("1042") so
+	 * the ledger and Payment Details surface the tender cleanly. No-op when the ledger
+	 * repo is unavailable or the amount is non-positive.
+	 *
+	 * @param string $order_key      Order key.
+	 * @param float  $amount         Dollar amount applied.
+	 * @param string $payment_method Human method label (e.g. "Cash", "Check #1042").
+	 * @return void
+	 */
+	private function record_payment_ledger_entry( string $order_key, float $amount, string $payment_method ): void {
+		if ( $amount <= 0 || ! class_exists( 'EEM_Order_Payments_Repo' ) ) {
+			return;
+		}
+
+		$method    = $payment_method;
+		$reference = '';
+		if ( false !== stripos( $payment_method, 'check' ) ) {
+			$method = 'Check';
+			if ( preg_match( '/#?\s*([A-Za-z0-9\-]+)\s*$/', $payment_method, $m ) && strtolower( $m[1] ) !== 'check' ) {
+				$reference = $m[1];
+			}
+		} elseif ( false !== stripos( $payment_method, 'cash' ) ) {
+			$method = 'Cash';
+		}
+
+		EEM_Order_Payments_Repo::record( array(
+			'order_key' => $order_key,
+			'direction' => EEM_Order_Payments_Repo::DIRECTION_PAYMENT,
+			'method'    => $method,
+			'gateway'   => 'manual',
+			'amount'    => $amount,
+			'reference' => $reference,
+		) );
 	}
 
 	/**

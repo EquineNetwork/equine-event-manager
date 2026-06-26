@@ -10538,12 +10538,24 @@ class EEM_Admin {
 			wp_send_json_error( array( 'code' => 'nonce', 'message' => __( 'Security check failed. Please reload and try again.', 'equine-event-manager' ) ), 400 );
 		}
 
-		$amount_raw = isset( $_POST['amount'] ) ? sanitize_text_field( wp_unslash( $_POST['amount'] ) ) : '';
-		$amount     = (float) preg_replace( '/[^0-9.\-]/', '', $amount_raw );
-		$reason     = isset( $_POST['reason'] ) ? sanitize_textarea_field( wp_unslash( $_POST['reason'] ) ) : '';
-		$notify     = ! empty( $_POST['notify'] );
+		$reason = isset( $_POST['reason'] ) ? sanitize_textarea_field( wp_unslash( $_POST['reason'] ) ) : '';
+		$notify = ! empty( $_POST['notify'] );
 
-		$result = $this->process_amount_refund( $order_key, $amount, $reason );
+		// Two payload shapes: the per-tender split (tenders[KEY] => amount, for
+		// orders with a payments ledger) or the legacy single `amount` field.
+		$tenders_in = ( isset( $_POST['tenders'] ) && is_array( $_POST['tenders'] ) ) ? wp_unslash( $_POST['tenders'] ) : array();
+
+		if ( ! empty( $tenders_in ) ) {
+			$tender_amounts = array();
+			foreach ( $tenders_in as $tender_key => $tender_value ) {
+				$tender_amounts[ sanitize_text_field( (string) $tender_key ) ] = sanitize_text_field( (string) $tender_value );
+			}
+			$result = $this->refund_engine()->process_tender_refunds( $order_key, $tender_amounts, $reason );
+		} else {
+			$amount_raw = isset( $_POST['amount'] ) ? sanitize_text_field( wp_unslash( $_POST['amount'] ) ) : '';
+			$amount     = (float) preg_replace( '/[^0-9.\-]/', '', $amount_raw );
+			$result     = $this->process_amount_refund( $order_key, $amount, $reason );
+		}
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array(

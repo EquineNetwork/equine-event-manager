@@ -36,6 +36,7 @@ class EEM_Activator {
 		self::create_activity_log_table();
 		self::create_event_defaults_table();
 		self::create_order_adjustments_table();
+		self::create_order_payments_table();
 		if ( class_exists( 'EEM_Division_Entries' ) ) {
 			EEM_Division_Entries::create_table();
 		}
@@ -149,6 +150,58 @@ class EEM_Activator {
 			PRIMARY KEY  (id),
 			KEY order_key (order_key),
 			KEY kind (kind)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+	}
+
+	/**
+	 * Create the order payments ledger table.
+	 *
+	 * Records every individual payment AND refund event against an order so a single
+	 * order settled by more than one tender (e.g. part card, part cash) is represented
+	 * faithfully — the component rows only carry one payment_gateway/transaction_id
+	 * each. Owned by EEM_Order_Payments_Repo. Additive: existing orders get their
+	 * ledger backfilled from the component columns by eem-mig-041, so no data is lost;
+	 * dbDelta on the post-version-change upgrade pass creates the table on existing
+	 * installs.
+	 *
+	 * Columns:
+	 *  - direction    — 'payment' (collected) | 'refund' (returned).
+	 *  - method       — human tender ('Cash', 'Check', 'card', ...).
+	 *  - gateway      — 'stripe' | 'authorize_net' | 'manual' | ''.
+	 *  - amount       — always positive; direction carries the sign meaning.
+	 *  - transaction_id / reference — processor id / check number / card last4.
+	 *  - reason       — refund reason (refund rows).
+	 *
+	 * @return void
+	 */
+	private static function create_order_payments_table() {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+		$charset_collate = $wpdb->get_charset_collate();
+		$table_name      = $wpdb->prefix . 'eem_order_payments';
+
+		// order_key holds the order's submission token (a 32-char hash), matching the
+		// key the component rows + adjustments table group by.
+		$sql = "CREATE TABLE {$table_name} (
+			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+			order_key varchar(191) NOT NULL DEFAULT '',
+			direction varchar(10) NOT NULL DEFAULT 'payment',
+			method varchar(50) NOT NULL DEFAULT '',
+			gateway varchar(50) NOT NULL DEFAULT '',
+			amount decimal(10,2) NOT NULL DEFAULT 0.00,
+			transaction_id varchar(191) NOT NULL DEFAULT '',
+			reference varchar(191) NOT NULL DEFAULT '',
+			reason varchar(255) NOT NULL DEFAULT '',
+			note varchar(255) NOT NULL DEFAULT '',
+			created_by bigint(20) unsigned NOT NULL DEFAULT 0,
+			created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY  (id),
+			KEY order_key (order_key),
+			KEY direction (direction)
 		) {$charset_collate};";
 
 		dbDelta( $sql );
@@ -355,6 +408,11 @@ class EEM_Activator {
 		if ( ! get_option( 'eem_mig_040_section_enabled_postmeta_mirror_complete' ) ) {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-040-section-enabled-postmeta-mirror.php';
 			eem_mig_040_section_enabled_postmeta_mirror();
+		}
+
+		if ( ! get_option( 'eem_mig_041_payments_ledger_backfill_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-041-payments-ledger-backfill.php';
+			eem_mig_041_payments_ledger_backfill();
 		}
 	}
 

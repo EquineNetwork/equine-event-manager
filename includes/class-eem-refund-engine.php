@@ -255,6 +255,238 @@ class EEM_Refund_Engine {
 		);
 	}
 
+	/**
+	 * Split-refund entry point: refund explicit per-tender amounts against an
+	 * order whose money came in as more than one tender (e.g. part on the card,
+	 * part as cash). Card tenders are reversed through the processor; cash/check
+	 * tenders are recorded as a manual refund with no gateway call. The keys of
+	 * $tender_amounts are the ledger tender keys from
+	 * {@see EEM_Order_Payments_Repo::summary_by_method()} ('gw:authorize_net',
+	 * 'm:cash', etc.); values are dollar amounts.
+	 *
+	 * Serialized behind the same per-order advisory lock as
+	 * {@see self::process_amount_refund()} so it can't race a concurrent refund.
+	 *
+	 * @param string               $order_key      Order identifier.
+	 * @param array<string, mixed> $tender_amounts Map of ledger tender key => dollar amount.
+	 * @param string               $reason         Optional admin-supplied reason (logged).
+	 * @return array|WP_Error Refund result array (same shape as process_amount_refund), or WP_Error.
+	 */
+	public function process_tender_refunds( $order_key, array $tender_amounts, $reason = '' ) {
+		global $wpdb;
+
+		$lock_name = 'eem_refund_' . md5( (string) $order_key );
+
+		$got_lock = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', $lock_name, 15 ) );
+		if ( 1 !== $got_lock ) {
+			return new WP_Error(
+				'refund_locked',
+				__( 'Another refund for this order is still processing. Please wait a moment and try again.', 'equine-event-manager' )
+			);
+		}
+
+		try {
+			return $this->process_tender_refunds_locked( $order_key, $tender_amounts, $reason );
+		} finally {
+			$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock_name ) );
+		}
+	}
+
+	/**
+	 * Worker for {@see self::process_tender_refunds()}. MUST hold that method's
+	 * per-order advisory lock. Validates each requested tender amount against the
+	 * ledger's authoritative per-tender refundable, routes card tenders through
+	 * the gateway and manual tenders persist-only, records a 'refund' ledger
+	 * entry per tender, and writes the activity-log telemetry.
+	 *
+	 * @param string               $order_key      Order identifier.
+	 * @param array<string, mixed> $tender_amounts Map of ledger tender key => dollar amount.
+	 * @param string               $reason         Optional admin-supplied reason (logged).
+	 * @return array|WP_Error Refund result array, or WP_Error.
+	 */
+	private function process_tender_refunds_locked( $order_key, array $tender_amounts, $reason = '' ) {
+		if ( ! class_exists( 'EEM_Order_Payments_Repo' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-order-payments-repo.php';
+		}
+
+		$order = $this->orders_repository->get_order( $order_key );
+		if ( ! $order ) {
+			return new WP_Error( 'order_not_found', __( 'Order not found.', 'equine-event-manager' ) );
+		}
+
+		$components = isset( $order['components'] ) && is_array( $order['components'] ) ? $order['components'] : array();
+
+		// Authoritative per-tender refundable comes from the ledger summary.
+		$summary = EEM_Order_Payments_Repo::summary_by_method( $order_key );
+		$by_key  = array();
+		foreach ( $summary as $tender ) {
+			$by_key[ $tender['key'] ] = $tender;
+		}
+
+		// Validate + collect the requested amounts.
+		$requests    = array();
+		$grand_total = 0.0;
+		foreach ( $tender_amounts as $key => $raw ) {
+			$key    = (string) $key;
+			$amount = round( (float) preg_replace( '/[^0-9.\-]/', '', (string) $raw ), 2 );
+			if ( $amount <= 0.009 ) {
+				continue;
+			}
+			if ( ! isset( $by_key[ $key ] ) ) {
+				return new WP_Error( 'unknown_tender', __( 'One of the selected payment methods is no longer valid. Please reload and try again.', 'equine-event-manager' ) );
+			}
+			$tender = $by_key[ $key ];
+			if ( $amount > (float) $tender['refundable'] + 0.009 ) {
+				return new WP_Error(
+					'exceeds_tender',
+					sprintf(
+						/* translators: 1: requested amount, 2: refundable amount, 3: tender label */
+						__( 'Refund amount $%1$s exceeds the $%2$s refundable to %3$s.', 'equine-event-manager' ),
+						number_format( $amount, 2 ),
+						number_format( (float) $tender['refundable'], 2 ),
+						$tender['label']
+					)
+				);
+			}
+			$requests[ $key ] = array( 'amount' => $amount, 'tender' => $tender );
+			$grand_total     += $amount;
+		}
+
+		if ( $grand_total <= 0.009 ) {
+			return new WP_Error( 'invalid_amount', __( 'Enter a refund amount for at least one payment method.', 'equine-event-manager' ) );
+		}
+
+		$refunded_components = array();
+		$total_refunded      = 0.0;
+
+		foreach ( $requests as $request ) {
+			$amount     = (float) $request['amount'];
+			$tender     = $request['tender'];
+			$is_gateway = ! empty( $tender['is_gateway'] );
+			$gateway    = (string) $tender['gateway'];
+
+			$remaining_for_tender = $amount;
+			$tender_txn           = '';
+
+			foreach ( $components as $idx => $component ) {
+				if ( $remaining_for_tender <= 0.009 ) {
+					break;
+				}
+
+				$comp_gateway = isset( $component['payment_gateway'] ) ? (string) $component['payment_gateway'] : '';
+				$comp_is_gw   = EEM_Order_Payments_Repo::is_gateway( $comp_gateway );
+
+				// Card tenders draw only from same-gateway components; manual
+				// (cash/check) tenders draw from any non-gateway component.
+				if ( $is_gateway ) {
+					if ( $comp_gateway !== $gateway ) {
+						continue;
+					}
+				} elseif ( $comp_is_gw ) {
+					continue;
+				}
+
+				$available = $this->get_component_remaining_refundable_amount( $component );
+				if ( $available <= 0.009 ) {
+					continue;
+				}
+
+				$draw = min( $remaining_for_tender, $available );
+
+				if ( $is_gateway ) {
+					$refund_result = $this->refund_order_component( $component, $draw );
+					if ( is_wp_error( $refund_result ) ) {
+						return $refund_result;
+					}
+					$ref_txn = (string) $refund_result;
+					if ( '' === $tender_txn ) {
+						$tender_txn = $ref_txn;
+					}
+				} else {
+					// Manual refund: no money leaves a gateway, just bookkeeping.
+					$ref_txn = 'manual-refund';
+				}
+
+				$persisted = $this->persist_component_refund( $component, $draw, $ref_txn, array() );
+				if ( ! $persisted ) {
+					return new WP_Error(
+						'persist_failed',
+						__( 'The refund was processed, but the order record could not be updated afterward.', 'equine-event-manager' )
+					);
+				}
+
+				// Keep the in-memory component's refunded ledger current so a
+				// later draw (same or another tender) sees the depleted balance.
+				$prev_refunded                       = isset( $component['refunded_amount'] ) ? (float) $component['refunded_amount'] : 0.0;
+				$components[ $idx ]['refunded_amount'] = $prev_refunded + $draw;
+
+				$refunded_components[] = array(
+					'transaction_id' => $ref_txn,
+					'amount'         => $draw,
+					'table'          => isset( $component['table'] ) ? (string) $component['table'] : '',
+					'row_id'         => isset( $component['row_id'] ) ? (int) $component['row_id'] : 0,
+				);
+
+				$remaining_for_tender -= $draw;
+				$total_refunded       += $draw;
+			}
+
+			if ( $remaining_for_tender > 0.009 ) {
+				return new WP_Error(
+					'tender_unplaceable',
+					sprintf(
+						/* translators: 1: requested amount, 2: tender label */
+						__( 'Could not apply the full $%1$s refund to %2$s. The underlying charge records do not have that much left to refund.', 'equine-event-manager' ),
+						number_format( $amount, 2 ),
+						$tender['label']
+					)
+				);
+			}
+
+			// One ledger 'refund' entry per tender (faithful per-method record).
+			EEM_Order_Payments_Repo::record(
+				array(
+					'order_key'      => $order_key,
+					'direction'      => EEM_Order_Payments_Repo::DIRECTION_REFUND,
+					'method'         => (string) $tender['method'],
+					'gateway'        => $is_gateway ? $gateway : 'manual',
+					'amount'         => $amount,
+					'transaction_id' => $tender_txn,
+					'reason'         => $reason,
+				)
+			);
+		}
+
+		$updated_order = $this->orders_repository->get_order( $order_key );
+
+		if ( class_exists( 'EEM_Activity_Log' ) ) {
+			$current_user = wp_get_current_user();
+			EEM_Activity_Log::write(
+				'order_refund',
+				array(
+					'order_key'       => $order_key,
+					'amount'          => $total_refunded,
+					'reason'          => $reason,
+					'components'      => $refunded_components,
+					'new_status_slug' => isset( $updated_order['status_slug'] ) ? (string) $updated_order['status_slug'] : 'partially-refunded',
+				),
+				array(
+					'actor_type'  => 'user',
+					'actor_id'    => (int) get_current_user_id(),
+					'actor_label' => $current_user ? (string) $current_user->display_name : '',
+				)
+			);
+		}
+
+		return array(
+			'refunded_amount'  => $total_refunded,
+			'components'       => $refunded_components,
+			'new_status_slug'  => isset( $updated_order['status_slug'] ) ? (string) $updated_order['status_slug'] : 'partially-refunded',
+			'new_status_label' => isset( $updated_order['status_label'] ) ? (string) $updated_order['status_label'] : __( 'Partially Refunded', 'equine-event-manager' ),
+			'reason'           => $reason,
+		);
+	}
+
 	public function refund_order_component( $component, $amount = 0.0 ) {
 		if ( 'stripe' === $component['payment_gateway'] ) {
 			return $this->refund_with_stripe( $component, $amount );

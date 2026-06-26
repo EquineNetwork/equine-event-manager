@@ -6181,6 +6181,21 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
 	border-bottom: 1px solid var(--eem-border-soft);
 }
 
+/* Mixed-tender payment lines (per-tender ledger breakdown in Payment Details). */
+.eem-order-payment__tender-line {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 8px;
+	padding: 4px 0;
+	font-size: 13px;
+	color: var(--eem-text);
+}
+
+.eem-order-payment__tender-line:not(:last-child) {
+	border-bottom: 1px solid var(--eem-border-soft);
+}
+
 /* ═════════════════════════════════════════════════════════════════════════
    C6.C — Bulk refund engine (3-state modal: intro / processing / summary)
    Single .eem-bulk-refund-modal has three body sections, only one visible

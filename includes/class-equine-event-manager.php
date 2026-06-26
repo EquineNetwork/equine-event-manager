@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-orders-repository.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-order-adjustments-repo.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-order-payments-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-reports-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-report-exporter.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-customer-profile-repo.php';

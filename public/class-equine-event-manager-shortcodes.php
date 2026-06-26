@@ -5280,6 +5280,20 @@ RV Lot: " . $rv_lot['name'] );
 			if ( $saved_order && ! empty( $saved_order['order_key'] ) ) {
 				$order_repository->auto_assign_units_for_order( $saved_order['order_key'] );
 
+					if ( 'paid' === $payment_status && class_exists( 'EEM_Order_Payments_Repo' ) ) {
+						// Payment ledger: record the gateway charge that settled this
+						// order at customer checkout (Stripe/Authorize.net). Cash /
+						// unpaid checkouts record nothing here (no tender moved).
+						EEM_Order_Payments_Repo::record( array(
+							'order_key'      => (string) $saved_order['order_key'],
+							'direction'      => EEM_Order_Payments_Repo::DIRECTION_PAYMENT,
+							'method'         => 'Card',
+							'gateway'        => $payment_gateway,
+							'amount'         => isset( $saved_order['total'] ) ? (float) $saved_order['total'] : 0.0,
+							'transaction_id' => (string) $transaction_id,
+						) );
+					}
+
 				// Required Documents — move any files the customer staged on the
 				// reservation form (keyed by a pre-order session token) onto the
 				// real order so they appear on the order + hosted page. The token
@@ -8514,6 +8528,19 @@ RV Lot: " . $rv_lot['name'] );
 
 			$repo->update_order_payment_details( $order_key, 'paid', $intent_id, 'stripe' );
 
+			if ( class_exists( 'EEM_Order_Payments_Repo' ) ) {
+				$card_ref = trim( trim( $brand ) . ( '' !== $last4 ? ' ••••' . $last4 : '' ) );
+				EEM_Order_Payments_Repo::record( array(
+					'order_key'      => $order_key,
+					'direction'      => EEM_Order_Payments_Repo::DIRECTION_PAYMENT,
+					'method'         => 'Card',
+					'gateway'        => 'stripe',
+					'amount'         => $amount_due,
+					'transaction_id' => $intent_id,
+					'reference'      => $card_ref,
+				) );
+			}
+
 			if ( '' !== $brand || '' !== $last4 ) {
 				foreach ( $order['components'] as $component ) {
 					$notes = isset( $component['notes'] ) ? (string) $component['notes'] : '';
@@ -8615,6 +8642,17 @@ RV Lot: " . $rv_lot['name'] );
 
 			$transaction_id = isset( $result['transaction_id'] ) ? (string) $result['transaction_id'] : '';
 			$repo->update_order_payment_details( $order_key, 'paid', $transaction_id, 'authorize_net' );
+
+			if ( class_exists( 'EEM_Order_Payments_Repo' ) ) {
+				EEM_Order_Payments_Repo::record( array(
+					'order_key'      => $order_key,
+					'direction'      => EEM_Order_Payments_Repo::DIRECTION_PAYMENT,
+					'method'         => 'Card',
+					'gateway'        => 'authorize_net',
+					'amount'         => $amount_due,
+					'transaction_id' => $transaction_id,
+				) );
+			}
 
 			if ( class_exists( 'EEM_Activity_Log' ) ) {
 				EEM_Activity_Log::write(
@@ -8779,6 +8817,17 @@ RV Lot: " . $rv_lot['name'] );
 			}
 
 			$repo->update_order_payment_details( $order_key, 'paid', $intent_id, 'stripe' );
+			if ( class_exists( 'EEM_Order_Payments_Repo' ) ) {
+				$paid_amount = $paid_cents > 0 ? round( $paid_cents / 100, 2 ) : ( isset( $order['total'] ) ? (float) $order['total'] : 0.0 );
+				EEM_Order_Payments_Repo::record( array(
+					'order_key'      => $order_key,
+					'direction'      => EEM_Order_Payments_Repo::DIRECTION_PAYMENT,
+					'method'         => 'Card',
+					'gateway'        => 'stripe',
+					'amount'         => $paid_amount,
+					'transaction_id' => $intent_id,
+				) );
+			}
 			if ( class_exists( 'EEM_Activity_Log' ) ) {
 				EEM_Activity_Log::write(
 					'order_payment_collected',

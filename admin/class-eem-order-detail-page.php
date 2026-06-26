@@ -1389,6 +1389,37 @@ class EEM_Order_Detail_Page {
 			$gateway = sprintf( __( 'Manual — %s', 'equine-event-manager' ), $manual_method );
 		}
 
+		// Payments ledger — the authoritative per-tender record. When present it
+		// drives the Tenders breakdown + Refund History so a mixed card+cash order
+		// shows each method separately instead of collapsing to one Processor label.
+		// Orders created before the ledger shipped (and not yet backfilled) fall back
+		// to the legacy single-gateway display below.
+		$order_key   = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		$ledger      = ( '' !== $order_key && class_exists( 'EEM_Order_Payments_Repo' ) )
+			? EEM_Order_Payments_Repo::get_for_order( $order_key )
+			: array();
+		$has_ledger  = ! empty( $ledger );
+		$led_payments = array();
+		$led_refunds  = array();
+		foreach ( $ledger as $led_entry ) {
+			$led_label = EEM_Order_Payments_Repo::tender_label( $led_entry['gateway'], $led_entry['method'] );
+			if ( EEM_Order_Payments_Repo::DIRECTION_REFUND === $led_entry['direction'] ) {
+				$led_refunds[] = array(
+					'amount' => (float) $led_entry['amount'],
+					'label'  => $led_label,
+					'txn'    => (string) $led_entry['transaction_id'],
+					'when'   => (string) $led_entry['created_at'],
+				);
+			} else {
+				$led_payments[] = array(
+					'amount' => (float) $led_entry['amount'],
+					'label'  => $led_label,
+					'txn'    => (string) $led_entry['transaction_id'],
+					'when'   => (string) $led_entry['created_at'],
+				);
+			}
+		}
+
 		?>
 		<div class="eem-card eem-order-card">
 			<div class="eem-order-card__header">
@@ -1414,19 +1445,40 @@ class EEM_Order_Detail_Page {
 					</div>
 				<?php endif; ?>
 
-				<?php if ( '' !== $gateway ) : ?>
-					<div class="eem-order-payment__label"><?php esc_html_e( 'Processor', 'equine-event-manager' ); ?></div>
-					<div class="eem-order-payment__val"><?php echo esc_html( $gateway ); ?></div>
-				<?php endif; ?>
+				<?php if ( $has_ledger ) : ?>
+					<div class="eem-order-payment__label"><?php esc_html_e( 'Tenders', 'equine-event-manager' ); ?></div>
+					<div class="eem-order-payment__val">
+						<?php foreach ( $led_payments as $led_p ) : ?>
+							<div class="eem-order-payment__tender-line">
+								<strong><?php echo esc_html( $led_p['label'] ); ?></strong>
+								&mdash; $<?php echo esc_html( number_format( $led_p['amount'], 2 ) ); ?>
+								<?php if ( '' !== $led_p['txn'] ) : ?>
+									<span class="eem-order-payment__mono"><?php echo esc_html( $led_p['txn'] ); ?></span>
+								<?php endif; ?>
+								<?php if ( '' !== $led_p['when'] ) : ?>
+									<span class="eem-order-payment__hint"><?php echo esc_html( $led_p['when'] ); ?></span>
+								<?php endif; ?>
+							</div>
+						<?php endforeach; ?>
+						<?php if ( empty( $led_payments ) ) : ?>
+							<span class="eem-order-payment__hint"><?php esc_html_e( 'No payments recorded', 'equine-event-manager' ); ?></span>
+						<?php endif; ?>
+					</div>
+				<?php else : ?>
+					<?php if ( '' !== $gateway ) : ?>
+						<div class="eem-order-payment__label"><?php esc_html_e( 'Processor', 'equine-event-manager' ); ?></div>
+						<div class="eem-order-payment__val"><?php echo esc_html( $gateway ); ?></div>
+					<?php endif; ?>
 
-				<?php if ( '' !== $transaction_id ) : ?>
-					<div class="eem-order-payment__label"><?php esc_html_e( 'Transaction ID', 'equine-event-manager' ); ?></div>
-					<div class="eem-order-payment__val eem-order-payment__mono"><?php echo esc_html( $transaction_id ); ?></div>
-				<?php endif; ?>
+					<?php if ( '' !== $transaction_id ) : ?>
+						<div class="eem-order-payment__label"><?php esc_html_e( 'Transaction ID', 'equine-event-manager' ); ?></div>
+						<div class="eem-order-payment__val eem-order-payment__mono"><?php echo esc_html( $transaction_id ); ?></div>
+					<?php endif; ?>
 
-				<?php if ( '' !== $card_brand || '' !== $card_last4 ) : ?>
-					<div class="eem-order-payment__label"><?php esc_html_e( 'Card', 'equine-event-manager' ); ?></div>
-					<div class="eem-order-payment__val"><?php echo esc_html( trim( ucfirst( $card_brand ) . ( '' !== $card_last4 ? ' •••• ' . $card_last4 : '' ) ) ); ?></div>
+					<?php if ( '' !== $card_brand || '' !== $card_last4 ) : ?>
+						<div class="eem-order-payment__label"><?php esc_html_e( 'Card', 'equine-event-manager' ); ?></div>
+						<div class="eem-order-payment__val"><?php echo esc_html( trim( ucfirst( $card_brand ) . ( '' !== $card_last4 ? ' •••• ' . $card_last4 : '' ) ) ); ?></div>
+					<?php endif; ?>
 				<?php endif; ?>
 
 				<div class="eem-order-payment__label"><?php esc_html_e( 'Captured', 'equine-event-manager' ); ?></div>
@@ -1445,20 +1497,37 @@ class EEM_Order_Detail_Page {
 				// order is refunded. Each refunded component records "Refunded
 				// Amount" / "Last Refund Transaction" / "Last Refunded At" in notes.
 				$eem_refund_lines = array();
-				foreach ( (array) ( $order['components'] ?? array() ) as $eem_rc ) {
-					$eem_rc_notes = isset( $eem_rc['notes'] ) ? (string) $eem_rc['notes'] : '';
-					if ( '' === $eem_rc_notes || ! preg_match( '/Refunded Amount:\s*([0-9]+(?:\.[0-9]+)?)/i', $eem_rc_notes, $eem_ra ) ) {
-						continue;
+				if ( $has_ledger ) {
+					// Ledger is authoritative — each refund entry already carries its
+					// tender label, amount, transaction id, and timestamp.
+					foreach ( $led_refunds as $led_r ) {
+						if ( $led_r['amount'] <= 0.009 ) {
+							continue;
+						}
+						$eem_refund_lines[] = array(
+							'amount' => $led_r['amount'],
+							'label'  => $led_r['label'],
+							'txn'    => $led_r['txn'],
+							'when'   => $led_r['when'],
+						);
 					}
-					$eem_amt = (float) $eem_ra[1];
-					if ( $eem_amt <= 0.009 ) {
-						continue;
+				} else {
+					foreach ( (array) ( $order['components'] ?? array() ) as $eem_rc ) {
+						$eem_rc_notes = isset( $eem_rc['notes'] ) ? (string) $eem_rc['notes'] : '';
+						if ( '' === $eem_rc_notes || ! preg_match( '/Refunded Amount:\s*([0-9]+(?:\.[0-9]+)?)/i', $eem_rc_notes, $eem_ra ) ) {
+							continue;
+						}
+						$eem_amt = (float) $eem_ra[1];
+						if ( $eem_amt <= 0.009 ) {
+							continue;
+						}
+						$eem_refund_lines[] = array(
+							'amount' => $eem_amt,
+							'label'  => '',
+							'txn'    => preg_match( '/Last Refund Transaction:\s*(.+)/i', $eem_rc_notes, $eem_rt ) ? trim( $eem_rt[1] ) : '',
+							'when'   => preg_match( '/Last Refunded At:\s*(.+)/i', $eem_rc_notes, $eem_rw ) ? trim( $eem_rw[1] ) : '',
+						);
 					}
-					$eem_refund_lines[] = array(
-						'amount' => $eem_amt,
-						'txn'    => preg_match( '/Last Refund Transaction:\s*(.+)/i', $eem_rc_notes, $eem_rt ) ? trim( $eem_rt[1] ) : '',
-						'when'   => preg_match( '/Last Refunded At:\s*(.+)/i', $eem_rc_notes, $eem_rw ) ? trim( $eem_rw[1] ) : '',
-					);
 				}
 				?>
 				<div class="eem-order-payment__label eem-order-payment__label--sep"><?php esc_html_e( 'Refund History', 'equine-event-manager' ); ?></div>
@@ -1469,6 +1538,7 @@ class EEM_Order_Detail_Page {
 						<?php foreach ( $eem_refund_lines as $eem_line ) : ?>
 							<div class="eem-order-payment__refund-line">
 								<strong>$<?php echo esc_html( number_format( $eem_line['amount'], 2 ) ); ?></strong>
+								<?php if ( ! empty( $eem_line['label'] ) ) : ?> <span class="eem-order-payment__hint"><?php echo esc_html( $eem_line['label'] ); ?></span><?php endif; ?>
 								<?php if ( '' !== $eem_line['when'] ) : ?> <span class="eem-order-payment__hint"><?php echo esc_html( $eem_line['when'] ); ?></span><?php endif; ?>
 								<?php if ( '' !== $eem_line['txn'] ) : ?> <span class="eem-order-payment__mono"><?php echo esc_html( $eem_line['txn'] ); ?></span><?php endif; ?>
 							</div>
@@ -1775,6 +1845,21 @@ class EEM_Order_Detail_Page {
 		$total           = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
 		$default_amount  = number_format( $total, 2, '.', '' );
 
+		// Per-tender breakdown from the payments ledger. When the order has a
+		// ledger we let the admin choose how much to refund to each tender (the
+		// card portion routes to the gateway; cash/check is recorded as a manual
+		// refund). Orders without a ledger fall back to the single-amount field.
+		$tenders = ( '' !== $order_key && class_exists( 'EEM_Order_Payments_Repo' ) )
+			? EEM_Order_Payments_Repo::summary_by_method( $order_key )
+			: array();
+		$refundable_tenders = array();
+		foreach ( $tenders as $eem_t ) {
+			if ( $eem_t['refundable'] > 0.009 ) {
+				$refundable_tenders[] = $eem_t;
+			}
+		}
+		$has_tenders = ! empty( $refundable_tenders );
+
 		?>
 		<div class="eem-modal" id="eem-order-refund-modal" role="dialog" aria-modal="true" aria-labelledby="eem-order-refund-title" aria-hidden="true">
 			<div class="eem-modal-card">
@@ -1787,32 +1872,75 @@ class EEM_Order_Detail_Page {
 					<input type="hidden" name="action" value="eem_order_refund_single" />
 					<input type="hidden" name="order_key" value="<?php echo esc_attr( $order_key ); ?>" />
 
-					<p class="eem-order-refund-summary">
-						<?php
-						printf(
-							/* translators: 1: customer name */
-							esc_html__( 'Refund this order for %1$s. The amount will be reversed to the original payment method via the order\'s configured processor.', 'equine-event-manager' ),
-							'<strong>' . esc_html( $customer_name ) . '</strong>'
-						);
-						?>
-					</p>
-
-					<div class="eem-field-row eem-order-refund-amount-row">
-						<label class="eem-field-label" for="eem-order-refund-amount"><?php esc_html_e( 'Refund amount', 'equine-event-manager' ); ?></label>
-						<div class="eem-order-refund-amount-input">
-							<span class="eem-order-refund-amount-prefix">$</span>
-							<input type="number" id="eem-order-refund-amount" name="amount" step="0.01" min="0.01" value="<?php echo esc_attr( $default_amount ); ?>" required />
-						</div>
-						<p class="eem-field-hint">
+					<?php if ( $has_tenders ) : ?>
+						<p class="eem-order-refund-summary">
 							<?php
 							printf(
-								/* translators: %s: order total */
-								esc_html__( 'Defaults to the full order total ($%s). Lower this for a partial refund.', 'equine-event-manager' ),
-								esc_html( number_format( $total, 2 ) )
+								/* translators: 1: customer name */
+								esc_html__( 'Refund this order for %1$s. Choose how much to return to each payment method. The card portion is reversed through the processor; cash / check is recorded as a manual refund.', 'equine-event-manager' ),
+								'<strong>' . esc_html( $customer_name ) . '</strong>'
 							);
 							?>
 						</p>
-					</div>
+
+						<?php foreach ( $refundable_tenders as $eem_t ) : ?>
+							<div class="eem-field-row eem-order-refund-amount-row">
+								<label class="eem-field-label" for="eem-order-refund-tender-<?php echo esc_attr( $eem_t['key'] ); ?>">
+									<?php
+									printf(
+										/* translators: 1: tender label (e.g. Authorize.net / Cash), 2: refundable amount */
+										esc_html__( '%1$s — up to $%2$s', 'equine-event-manager' ),
+										esc_html( $eem_t['label'] ),
+										esc_html( number_format( $eem_t['refundable'], 2 ) )
+									);
+									?>
+									<?php if ( ! $eem_t['is_gateway'] ) : ?>
+										<span class="eem-order-payment__hint"><?php esc_html_e( '(manual)', 'equine-event-manager' ); ?></span>
+									<?php endif; ?>
+								</label>
+								<div class="eem-order-refund-amount-input">
+									<span class="eem-order-refund-amount-prefix">$</span>
+									<input
+										type="number"
+										id="eem-order-refund-tender-<?php echo esc_attr( $eem_t['key'] ); ?>"
+										name="tenders[<?php echo esc_attr( $eem_t['key'] ); ?>]"
+										step="0.01"
+										min="0"
+										max="<?php echo esc_attr( number_format( $eem_t['refundable'], 2, '.', '' ) ); ?>"
+										value="0.00"
+										data-eem-refundable="<?php echo esc_attr( number_format( $eem_t['refundable'], 2, '.', '' ) ); ?>"
+									/>
+								</div>
+							</div>
+						<?php endforeach; ?>
+					<?php else : ?>
+						<p class="eem-order-refund-summary">
+							<?php
+							printf(
+								/* translators: 1: customer name */
+								esc_html__( 'Refund this order for %1$s. The amount will be reversed to the original payment method via the order\'s configured processor.', 'equine-event-manager' ),
+								'<strong>' . esc_html( $customer_name ) . '</strong>'
+							);
+							?>
+						</p>
+
+						<div class="eem-field-row eem-order-refund-amount-row">
+							<label class="eem-field-label" for="eem-order-refund-amount"><?php esc_html_e( 'Refund amount', 'equine-event-manager' ); ?></label>
+							<div class="eem-order-refund-amount-input">
+								<span class="eem-order-refund-amount-prefix">$</span>
+								<input type="number" id="eem-order-refund-amount" name="amount" step="0.01" min="0.01" value="<?php echo esc_attr( $default_amount ); ?>" required />
+							</div>
+							<p class="eem-field-hint">
+								<?php
+								printf(
+									/* translators: %s: order total */
+									esc_html__( 'Defaults to the full order total ($%s). Lower this for a partial refund.', 'equine-event-manager' ),
+									esc_html( number_format( $total, 2 ) )
+								);
+								?>
+							</p>
+						</div>
+					<?php endif; ?>
 
 					<div class="eem-field-row">
 						<label class="eem-field-label" for="eem-order-refund-reason"><?php esc_html_e( 'Reason (optional)', 'equine-event-manager' ); ?></label>
@@ -1957,7 +2085,7 @@ class EEM_Order_Detail_Page {
 				</form>
 				<footer class="eem-modal-foot eem-modal-foot--split">
 					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="order-cancel-single-close"><?php esc_html_e( 'Keep order', 'equine-event-manager' ); ?></button>
-					<button type="button" class="eem-btn eem-btn-delete" data-eem-action="order-cancel-single-confirm"><?php esc_html_e( 'Cancel order', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-danger" data-eem-action="order-cancel-single-confirm"><?php esc_html_e( 'Cancel order', 'equine-event-manager' ); ?></button>
 				</footer>
 			</div>
 		</div>
