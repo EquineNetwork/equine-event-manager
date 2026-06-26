@@ -5166,6 +5166,79 @@
 	// menu's Block action) can re-apply inv/tab visibility after a region swap.
 	window.EEM = window.EEM || {};
 	window.EEM.scApplyState = function (inv, tab) { return eemScApplyState(inv, tab); };
+	/**
+	 * Apply the current AND-logic search + filter set to the roster sidebar
+	 * cards, hiding non-matching cards and the now-empty section headers.
+	 */
+	function eemSbFilter() {
+		var sidebar = document.querySelector('[data-eem-sb]');
+		if (!sidebar) { return; }
+		var f = window._eemSbFilters || {};
+		var search = (window._eemSbSearch || '').toLowerCase().trim();
+		var anyUnassigned = false, anyAssigned = false;
+		sidebar.querySelectorAll('[data-eem-sb-customer]').forEach(function (card) {
+			var isAssigned = card.getAttribute('data-assigned') === 'true';
+			var show = true;
+			if (f.assign === 'assigned' && !isAssigned) { show = false; }
+			if (f.assign === 'unassigned' && isAssigned) { show = false; }
+			if (show && f.arrival && card.getAttribute('data-arrival') !== f.arrival) { show = false; }
+			if (show && f.departure && card.getAttribute('data-departure') !== f.departure) { show = false; }
+			if (show && f.nights) {
+				var n = parseInt(card.getAttribute('data-nights') || '0', 10) || 0;
+				show = (f.nights === '4+') ? (n >= 4) : (String(n) === f.nights);
+			}
+			if (show && f.stalls) {
+				var s = parseInt(card.getAttribute('data-stalls') || '0', 10) || 0;
+				show = (f.stalls === '4+') ? (s >= 4) : (String(s) === f.stalls);
+			}
+			if (show && search && (card.getAttribute('data-name') || '').indexOf(search) === -1) { show = false; }
+			card.style.display = show ? '' : 'none';
+			if (show) { if (isAssigned) { anyAssigned = true; } else { anyUnassigned = true; } }
+		});
+		var unLabel = sidebar.querySelector('[data-eem-sb-unassigned-label]');
+		if (unLabel) { unLabel.style.display = anyUnassigned ? '' : 'none'; }
+		var asgToggle = sidebar.querySelector('[data-eem-action="sb-toggle-assigned"]');
+		if (asgToggle) { asgToggle.style.display = anyAssigned ? '' : 'none'; }
+	}
+
+	/**
+	 * Re-apply the persisted roster-sidebar UI state after an in-place region
+	 * re-render: collapse, assigned-section open/closed, search text, the five
+	 * filter selections, and the armed (selected) customer card.
+	 */
+	function eemSbApply() {
+		var sidebar = document.querySelector('[data-eem-sb]');
+		if (!sidebar) { return; }
+		// Collapse.
+		sidebar.classList.toggle('collapsed', !!window._eemSbCollapsed);
+		// Assigned section open/closed. Defaults to OPEN — only collapses when the
+		// user deliberately toggles it (which sets the flag to an explicit false).
+		if (typeof window._eemSbAssignedOpen === 'undefined') { window._eemSbAssignedOpen = true; }
+		var asgList = sidebar.querySelector('[data-eem-sb-assigned-list]');
+		var asgToggle = sidebar.querySelector('[data-eem-action="sb-toggle-assigned"]');
+		var asgOpen = !!window._eemSbAssignedOpen;
+		if (asgList) { asgList.classList.toggle('open', asgOpen); }
+		if (asgToggle) {
+			asgToggle.classList.toggle('open', asgOpen);
+			asgToggle.setAttribute('aria-expanded', asgOpen ? 'true' : 'false');
+		}
+		// Restore search text.
+		var searchEl = sidebar.querySelector('[data-eem-sb-search]');
+		if (searchEl) { searchEl.value = window._eemSbSearch || ''; }
+		// Restore filter selections.
+		var filters = window._eemSbFilters || {};
+		sidebar.querySelectorAll('[data-eem-sb-filter]').forEach(function (sel) {
+			var key = sel.getAttribute('data-eem-sb-filter');
+			sel.value = filters[key] || '';
+		});
+		// Re-mark the armed customer card.
+		var armed = window._eemSbSelectedOrder || '';
+		sidebar.querySelectorAll('[data-eem-sb-customer]').forEach(function (card) {
+			card.classList.toggle('eem-sb-selected', !!armed && card.getAttribute('data-order-key') === armed);
+		});
+		eemSbFilter();
+	}
+
 	function eemScApplyState(inv, tab) {
 		// 1. Inventory toggle buttons active state (legacy) + sync the Show select.
 		document.querySelectorAll('[data-eem-action="sc-inv-switch"]').forEach(function (btn) {
@@ -5280,6 +5353,12 @@
 		// 9. Store current state.
 		window._eemScInv = inv;
 		window._eemScTab = tab;
+
+		// 10. Re-apply roster-sidebar UI state. The sidebar markup lives inside
+		//     the dynamic region, so it is rebuilt fresh on every in-place swap;
+		//     this restores collapse / assigned-open / search / filters / the
+		//     selected order from the persisted window-scoped state.
+		eemSbApply();
 	}
 
 	/**
@@ -5448,6 +5527,35 @@
 		if (viewTab) {
 			ev.preventDefault();
 			eemScApplyState(window._eemScInv || 'all', viewTab.getAttribute('data-view') || 'location');
+			return;
+		}
+
+		// Roster sidebar: collapse / expand the rail.
+		var sbCollapse = t.closest('[data-eem-action="sb-collapse"]');
+		if (sbCollapse) {
+			ev.preventDefault();
+			window._eemSbCollapsed = !window._eemSbCollapsed;
+			eemSbApply();
+			return;
+		}
+
+		// Roster sidebar: toggle the collapsed "Assigned" section open/closed.
+		var sbAsgToggle = t.closest('[data-eem-action="sb-toggle-assigned"]');
+		if (sbAsgToggle) {
+			ev.preventDefault();
+			window._eemSbAssignedOpen = !window._eemSbAssignedOpen;
+			eemSbApply();
+			return;
+		}
+
+		// Roster sidebar: select / deselect a customer card (click-to-assign arms
+		// the next available-stall click; clicking the same card again disarms).
+		var sbCard = t.closest('[data-eem-sb-customer]');
+		if (sbCard) {
+			ev.preventDefault();
+			var sbKey = sbCard.getAttribute('data-order-key') || '';
+			window._eemSbSelectedOrder = (window._eemSbSelectedOrder === sbKey) ? '' : sbKey;
+			eemSbApply();
 			return;
 		}
 
@@ -7140,6 +7248,20 @@
 					ev.stopPropagation();
 					var pEl = container.querySelector('[data-eem-smap-payload]');
 					var p; try { p = JSON.parse(pEl.textContent); } catch (e) { return; }
+					// Roster sidebar click-to-assign: when a customer card is
+					// selected in the rail, clicking an AVAILABLE stall places that
+					// order directly via the shipped assign action and re-renders the
+					// region in place (selection persists so qty>1 can add more).
+					if (window._eemSbSelectedOrder) {
+						var sbLabel = cell.getAttribute('data-eem-smap-stall');
+						var sbState = (p.state && p.state[sbLabel]) ? p.state[sbLabel] : { s: 'available' };
+						if ((sbState.s || 'available') === 'available') {
+							eemSmapAction(container, 'assign', sbLabel, window._eemSbSelectedOrder);
+						} else if (window.EEM && window.EEM.showSaveToast) {
+							window.EEM.showSaveToast('That stall is not available.', { variant: 'error', sub: '' });
+						}
+						return;
+					}
 					var aCtx = (window.eemStallChart || {}).assignContext;
 					var inAssignMode = !!(aCtx && aCtx.orderKey && aCtx.kind !== 'rv');
 					// Ad-hoc multi-select (outside assign-mode): Ctrl/Cmd+click toggles
@@ -7265,10 +7387,13 @@
 					var rows = grid.length, cols = rows ? grid[0].length : 0;
 					var scroll = container.querySelector('[data-eem-smap-scroll]');
 					if (!cols || !scroll) { return SMAP_BASE; }
+					// WIDTH-fit: size chips to consume the FULL available width and let the
+					// grid scroll vertically. No SMAP_BASE cap — the chips grow to fill the
+					// width (bounded only by the 80px zoom-in ceiling). Height is NOT a
+					// constraint; fitting to height on a tall facility shrinks chips below
+					// the 24px dot-mode threshold and hides the stall numbers.
 					var pxW = Math.floor((scroll.clientWidth - 28) / cols) - 4;
-					var availH = scroll.clientHeight;
-					var pxH = availH > 0 ? Math.floor((availH - 12) / rows) - 4 : pxW;
-					return Math.max(SMAP_MIN, Math.min(SMAP_BASE, pxW, pxH));
+					return Math.max(SMAP_MIN, Math.min(80, pxW));
 				};
 				var smapSetActive = function (level) {
 					var btns = smapZoomBar.querySelectorAll('[data-zoom]');
@@ -7279,11 +7404,12 @@
 					level = level || container._eemSmapLevel || 'fit';
 					container._eemSmapLevel = level;
 					// +/− step the chip px around a fixed default; no-arg (barn switch)
-					// keeps the current px; first load lands on SMAP_BASE (fixed size).
-					var px = container._eemSmapChip || SMAP_BASE;
+					// keeps the current px; first load lands on the computed fit size so
+					// the whole facility shows within the available area.
+					var px = container._eemSmapChip || smapFitPx();
 					if ( level === 'in' ) { px = Math.min( 80, Math.round( px * 1.2 ) ); }
 					else if ( level === 'out' ) { px = Math.max( SMAP_MIN, Math.round( px / 1.2 ) ); }
-					else if ( level === 'reset' ) { px = SMAP_BASE; }
+					else if ( level === 'fit' || level === 'reset' ) { px = smapFitPx(); }
 					container._eemSmapChip = px;
 					applySmapZoom(px);
 					smapSetActive(level);
@@ -7500,6 +7626,23 @@
 			}
 		});
 	}
+
+	// Roster sidebar: live search (persists to window state + re-filters).
+	document.addEventListener('input', function (ev) {
+		var el = ev.target;
+		if (!el || !el.matches || !el.matches('[data-eem-sb-search]')) { return; }
+		window._eemSbSearch = el.value || '';
+		eemSbFilter();
+	});
+
+	// Roster sidebar: filter selects (assign / arrival / departure / nights / stalls).
+	document.addEventListener('change', function (ev) {
+		var el = ev.target;
+		if (!el || !el.matches || !el.matches('[data-eem-sb-filter]')) { return; }
+		if (!window._eemSbFilters) { window._eemSbFilters = {}; }
+		window._eemSbFilters[el.getAttribute('data-eem-sb-filter')] = el.value || '';
+		eemSbFilter();
+	});
 
 	// Initialise stall chart inv/tab state from URL params on page load.
 	document.addEventListener('DOMContentLoaded', function () {

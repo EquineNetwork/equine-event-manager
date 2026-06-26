@@ -2625,6 +2625,266 @@ class EEM_Admin {
 	}
 
 	/**
+	 * Short, locale-aware "Mon D" label for a Y-m-d date (roster meta + filters).
+	 *
+	 * @param string $ymd Date string (typically Y-m-d).
+	 * @return string e.g. "Jun 26", or '' when unparseable/empty.
+	 */
+	private function eem_sb_short_date( string $ymd ): string {
+		$ymd = trim( $ymd );
+		if ( '' === $ymd ) {
+			return '';
+		}
+		$ts = strtotime( $ymd );
+		if ( false === $ts ) {
+			return '';
+		}
+		return date_i18n( 'M j', $ts );
+	}
+
+	/**
+	 * Whole-night count between two Y-m-d dates (departure − arrival).
+	 *
+	 * @param string $arrival   Arrival date.
+	 * @param string $departure Departure date.
+	 * @return int Nights (>= 0); 0 when either date is missing/unparseable.
+	 */
+	private function eem_sb_nights( string $arrival, string $departure ): int {
+		$a = strtotime( trim( $arrival ) );
+		$d = strtotime( trim( $departure ) );
+		if ( false === $a || false === $d || $d <= $a ) {
+			return 0;
+		}
+		return (int) floor( ( $d - $a ) / DAY_IN_SECONDS );
+	}
+
+	/**
+	 * Render the collapsible customer-roster sidebar for the Stall Chart.
+	 *
+	 * Phase 1 (stalls only): a 300px sticky left rail listing every stall
+	 * customer — unassigned-first, then A–Z by last name — with search and
+	 * five AND-combined filters (assignment status / arrival / departure /
+	 * # nights / # stalls). Selecting a card arms click-to-assign: the next
+	 * click on an available map stall places that order via the shipped
+	 * in-place assign path (no page reload). Rendered inside the dynamic
+	 * region so it rebuilds with fresh assignment state after every assign.
+	 *
+	 * @param array $rows Order rows from build_stall_chart_rows().
+	 * @return void
+	 */
+	private function render_stall_chart_sidebar( array $rows ): void {
+		// Stalls-only roster for Phase 1 (RV mirrors in Phase 3).
+		$stall_rows = array_values( array_filter( $rows, static function ( $r ) {
+			return ! empty( $r['has_stall'] );
+		} ) );
+		if ( empty( $stall_rows ) ) {
+			return;
+		}
+
+		// Distinct option sets for the four date/count filters.
+		$arrivals   = array();
+		$departures = array();
+		$nights_set = array();
+		$stalls_set = array();
+		$has_4plus_nights = false;
+		$has_4plus_stalls = false;
+		foreach ( $stall_rows as $r ) {
+			$a = $this->eem_sb_short_date( (string) $r['stall_arrival'] );
+			$d = $this->eem_sb_short_date( (string) $r['stall_departure'] );
+			if ( '' !== $a ) {
+				$arrivals[ (string) $r['stall_arrival'] ] = $a;
+			}
+			if ( '' !== $d ) {
+				$departures[ (string) $r['stall_departure'] ] = $d;
+			}
+			$n = $this->eem_sb_nights( (string) $r['stall_arrival'], (string) $r['stall_departure'] );
+			if ( $n >= 4 ) {
+				$has_4plus_nights = true;
+			} elseif ( $n > 0 ) {
+				$nights_set[ $n ] = true;
+			}
+			$s = (int) ( isset( $r['stall_total'] ) ? $r['stall_total'] : count( (array) $r['stall_units'] ) );
+			if ( $s >= 4 ) {
+				$has_4plus_stalls = true;
+			} elseif ( $s > 0 ) {
+				$stalls_set[ $s ] = true;
+			}
+		}
+		ksort( $arrivals );
+		ksort( $departures );
+		ksort( $nights_set );
+		ksort( $stalls_set );
+
+		// Partition rows into unassigned (any stall remaining) and assigned.
+		$unassigned = array();
+		$assigned   = array();
+		foreach ( $stall_rows as $r ) {
+			if ( ! empty( $r['stall_units'] ) ) {
+				$assigned[] = $r;
+			} else {
+				$unassigned[] = $r;
+			}
+		}
+		?>
+		<aside class="eem-sc-sidebar" id="eem-sc-sidebar" data-eem-sb>
+			<div class="eem-sb-topbar">
+				<span class="eem-sb-title"><?php esc_html_e( 'Customers', 'equine-event-manager' ); ?></span>
+				<button type="button" class="eem-sb-collapse-btn" data-eem-action="sb-collapse" title="<?php esc_attr_e( 'Collapse', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Collapse customer sidebar', 'equine-event-manager' ); ?>">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+				</button>
+			</div>
+
+			<div class="eem-sb-search">
+				<div class="eem-sb-search-inner">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+					<input type="search" class="eem-sb-search-input" data-eem-sb-search placeholder="<?php esc_attr_e( 'Search customers…', 'equine-event-manager' ); ?>" />
+				</div>
+			</div>
+
+			<div class="eem-sb-filters">
+				<div>
+					<div class="eem-sb-filter-label"><?php esc_html_e( 'Assignment', 'equine-event-manager' ); ?></div>
+					<select class="eem-sb-filter-select" data-eem-sb-filter="assign">
+						<option value=""><?php esc_html_e( 'All', 'equine-event-manager' ); ?></option>
+						<option value="unassigned"><?php esc_html_e( 'Unassigned', 'equine-event-manager' ); ?></option>
+						<option value="assigned"><?php esc_html_e( 'Assigned', 'equine-event-manager' ); ?></option>
+					</select>
+				</div>
+				<div class="eem-sb-filter-row">
+					<div>
+						<div class="eem-sb-filter-label"><?php esc_html_e( 'Arrival', 'equine-event-manager' ); ?></div>
+						<select class="eem-sb-filter-select" data-eem-sb-filter="arrival">
+							<option value=""><?php esc_html_e( 'Any', 'equine-event-manager' ); ?></option>
+							<?php foreach ( $arrivals as $arr_label ) : ?>
+								<option value="<?php echo esc_attr( $arr_label ); ?>"><?php echo esc_html( $arr_label ); ?></option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+					<div>
+						<div class="eem-sb-filter-label"><?php esc_html_e( 'Departure', 'equine-event-manager' ); ?></div>
+						<select class="eem-sb-filter-select" data-eem-sb-filter="departure">
+							<option value=""><?php esc_html_e( 'Any', 'equine-event-manager' ); ?></option>
+							<?php foreach ( $departures as $dep_label ) : ?>
+								<option value="<?php echo esc_attr( $dep_label ); ?>"><?php echo esc_html( $dep_label ); ?></option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+				</div>
+				<div class="eem-sb-filter-row">
+					<div>
+						<div class="eem-sb-filter-label"><?php esc_html_e( '# Nights', 'equine-event-manager' ); ?></div>
+						<select class="eem-sb-filter-select" data-eem-sb-filter="nights">
+							<option value=""><?php esc_html_e( 'Any', 'equine-event-manager' ); ?></option>
+							<?php foreach ( array_keys( $nights_set ) as $n_opt ) : ?>
+								<option value="<?php echo esc_attr( (string) $n_opt ); ?>"><?php echo esc_html( (string) $n_opt ); ?></option>
+							<?php endforeach; ?>
+							<?php if ( $has_4plus_nights ) : ?>
+								<option value="4+"><?php esc_html_e( '4+', 'equine-event-manager' ); ?></option>
+							<?php endif; ?>
+						</select>
+					</div>
+					<div>
+						<div class="eem-sb-filter-label"><?php esc_html_e( '# Stalls', 'equine-event-manager' ); ?></div>
+						<select class="eem-sb-filter-select" data-eem-sb-filter="stalls">
+							<option value=""><?php esc_html_e( 'Any', 'equine-event-manager' ); ?></option>
+							<?php foreach ( array_keys( $stalls_set ) as $s_opt ) : ?>
+								<option value="<?php echo esc_attr( (string) $s_opt ); ?>"><?php echo esc_html( (string) $s_opt ); ?></option>
+							<?php endforeach; ?>
+							<?php if ( $has_4plus_stalls ) : ?>
+								<option value="4+"><?php esc_html_e( '4+', 'equine-event-manager' ); ?></option>
+							<?php endif; ?>
+						</select>
+					</div>
+				</div>
+			</div>
+
+			<div class="eem-sb-list" data-eem-sb-list>
+				<div class="eem-sb-section-label" data-eem-sb-unassigned-label>
+					<?php esc_html_e( 'Unassigned', 'equine-event-manager' ); ?> <span></span>
+				</div>
+				<?php foreach ( $unassigned as $r ) : ?>
+					<?php $this->render_stall_chart_sidebar_card( $r, false ); ?>
+				<?php endforeach; ?>
+
+				<?php if ( ! empty( $assigned ) ) : ?>
+					<button type="button" class="eem-sb-assigned-toggle" data-eem-action="sb-toggle-assigned" aria-expanded="false">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+						<?php echo esc_html( sprintf( /* translators: %d: assigned customer count */ __( 'Assigned (%d)', 'equine-event-manager' ), count( $assigned ) ) ); ?>
+					</button>
+					<div class="eem-sb-assigned-list" data-eem-sb-assigned-list>
+						<?php foreach ( $assigned as $r ) : ?>
+							<?php $this->render_stall_chart_sidebar_card( $r, true ); ?>
+						<?php endforeach; ?>
+					</div>
+				<?php endif; ?>
+			</div>
+		</aside>
+		<?php
+	}
+
+	/**
+	 * Render one customer card for the Stall Chart roster sidebar.
+	 *
+	 * @param array $r        Order row from build_stall_chart_rows().
+	 * @param bool  $assigned Whether the order has at least one saved stall.
+	 * @return void
+	 */
+	private function render_stall_chart_sidebar_card( array $r, bool $assigned ): void {
+		$name_lf = self::format_customer_last_first( (string) $r['customer_name'] );
+		$arr     = $this->eem_sb_short_date( (string) $r['stall_arrival'] );
+		$dep     = $this->eem_sb_short_date( (string) $r['stall_departure'] );
+		$nights  = $this->eem_sb_nights( (string) $r['stall_arrival'], (string) $r['stall_departure'] );
+		$stalls  = (int) ( isset( $r['stall_total'] ) ? $r['stall_total'] : count( (array) $r['stall_units'] ) );
+
+		// Avatar initials: first letter of the first two name tokens.
+		$tokens   = preg_split( '/[^A-Za-z]+/', $name_lf, -1, PREG_SPLIT_NO_EMPTY );
+		$initials = '';
+		foreach ( array_slice( (array) $tokens, 0, 2 ) as $tok ) {
+			$initials .= strtoupper( substr( $tok, 0, 1 ) );
+		}
+		if ( '' === $initials ) {
+			$initials = '?';
+		}
+
+		// Meta line: "Jun 26–28 · 2 nights · 3 stalls".
+		$meta_parts = array();
+		if ( '' !== $arr && '' !== $dep ) {
+			$meta_parts[] = $arr . '–' . $dep;
+		} elseif ( '' !== $arr ) {
+			$meta_parts[] = $arr;
+		}
+		if ( $nights > 0 ) {
+			$meta_parts[] = sprintf( /* translators: %d: night count */ _n( '%d night', '%d nights', $nights, 'equine-event-manager' ), $nights );
+		}
+		$meta_parts[] = sprintf( /* translators: %d: stall count */ _n( '%d stall', '%d stalls', $stalls, 'equine-event-manager' ), $stalls );
+		$meta = implode( ' · ', $meta_parts );
+		?>
+		<div class="eem-sb-customer<?php echo $assigned ? ' assigned' : ''; ?>"
+			data-eem-sb-customer
+			data-order-key="<?php echo esc_attr( (string) $r['order_key'] ); ?>"
+			data-assigned="<?php echo $assigned ? 'true' : 'false'; ?>"
+			data-name="<?php echo esc_attr( strtolower( $name_lf ) ); ?>"
+			data-arrival="<?php echo esc_attr( $arr ); ?>"
+			data-departure="<?php echo esc_attr( $dep ); ?>"
+			data-nights="<?php echo esc_attr( (string) $nights ); ?>"
+			data-stalls="<?php echo esc_attr( (string) $stalls ); ?>">
+			<div class="eem-sb-cust-avatar<?php echo $assigned ? ' assigned' : ''; ?>"><?php echo esc_html( $initials ); ?></div>
+			<div class="eem-sb-cust-info">
+				<span class="eem-sb-cust-name"><?php echo esc_html( $name_lf ); ?></span>
+				<span class="eem-sb-cust-meta"><?php echo esc_html( $meta ); ?></span>
+			</div>
+			<div class="eem-sb-cust-badges">
+				<?php if ( $assigned ) : ?>
+					<span class="eem-sb-badge eem-sb-badge-assigned">✓</span>
+				<?php else : ?>
+					<span class="eem-sb-badge eem-sb-badge-unassigned">!</span>
+				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
 	 * Render the data-driven region of the stall chart detail page.
 	 *
 	 * Contains the stats bar, action bar, tabbed occupancy chart, and the
@@ -2698,6 +2958,9 @@ class EEM_Admin {
 			? $this->build_stall_map_overlay_state( $order_rows, $rv_blocked, 'rv_units', false )
 			: array();
 		?>
+				<div class="eem-sc-body" data-eem-sc-body>
+				<?php $this->render_stall_chart_sidebar( $order_rows ); ?>
+				<div class="eem-sc-main">
 				<?php $eem_unsaved = isset( $grid['unsaved_order_count'] ) ? (int) $grid['unsaved_order_count'] : 0; ?>
 				<?php if ( false ) : // Suggestion banner removed (Whitney 2026-06-24): stalls stay Available until manually assigned; no auto-suggest push. ?>
 					<!-- Global amber banner: full-bleed, flush under the page header. -->
@@ -3063,6 +3326,8 @@ class EEM_Admin {
 						</div>
 					</div>
 				<?php endif; ?>
+				</div><!-- /.eem-sc-main -->
+				</div><!-- /.eem-sc-body -->
 		<?php
 	}
 
@@ -7792,6 +8057,11 @@ class EEM_Admin {
 				// roster (Available) before any assignment is made.
 				'has_stall'        => $stall_needed > 0,
 				'has_rv'           => $rv_needed > 0,
+				// Total purchased quantity per component (assigned + unassigned) —
+				// drives the roster sidebar's "N stalls" meta + the # Stalls filter,
+				// which must read what was bought, not what's currently placed.
+				'stall_total'      => $stall_needed,
+				'rv_total'         => $rv_needed,
 				'unassigned'       => implode( ' | ', $unassigned ),
 				// V1 Scenario F: special requests shown under the customer name.
 				'special_requests' => trim( (string) $this->get_special_requests_from_order_notes( $order['notes'] ) ),

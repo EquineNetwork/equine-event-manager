@@ -10196,8 +10196,83 @@ a.eem-sc-mob-edit-btn:focus { background: #e8eef8; color: #0d1b3e; text-decorati
 
 /* Content area: #F7F9FC field, 24px gutters, cards stacked. */
 .eem-shell-page--stall-charts .eem-sc-content {
-	padding: 20px 24px 48px;
+	padding: 0;
 	background: #F7F9FC;
+}
+
+/* ──────────────────────────────────────────────────────────────
+   Customer Roster Sidebar (Phase 1 — stalls only)
+   A 300px sticky left rail beside the chart's main column. Lets the
+   admin assign stalls without leaving the chart: select a card →
+   click an available map stall → the order is placed in-place.
+   Two-column layout lives inside #eem-stall-chart-dynamic so the rail
+   rebuilds with fresh assignment state after every assign.
+   ────────────────────────────────────────────────────────────── */
+/* Full-bleed rail: negative margins cancel the .eem-sc-content padding so the
+   sidebar sits flush to the panel's top / left / bottom; the main column takes
+   the gutter back as its own padding. */
+.eem-shell-page--stall-charts .eem-sc-body { display: flex; align-items: stretch; gap: 0; margin: 0; }
+.eem-shell-page--stall-charts .eem-sc-main { flex: 1; min-width: 0; padding: 0; }
+.eem-shell-page--stall-charts .eem-sc-sidebar {
+	width: 300px; min-width: 300px; flex-shrink: 0;
+	background: #fff; border: 0; border-right: 1px solid #e2e8f4; border-radius: 0;
+	display: flex; flex-direction: column; overflow: hidden;
+	position: sticky; top: 0; align-self: stretch;
+	max-height: 100vh;
+	transition: width .2s, min-width .2s;
+}
+.eem-shell-page--stall-charts .eem-sc-sidebar.collapsed { width: 48px; min-width: 48px; }
+.eem-shell-page--stall-charts .eem-sc-sidebar.collapsed .eem-sb-title,
+.eem-shell-page--stall-charts .eem-sc-sidebar.collapsed .eem-sb-search,
+.eem-shell-page--stall-charts .eem-sc-sidebar.collapsed .eem-sb-filters,
+.eem-shell-page--stall-charts .eem-sc-sidebar.collapsed .eem-sb-list { display: none; }
+
+.eem-shell-page--stall-charts .eem-sb-topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #e2e8f4; flex-shrink: 0; }
+.eem-shell-page--stall-charts .eem-sb-title { font-size: 13px; font-weight: 700; color: #0d1b3e; white-space: nowrap; overflow: hidden; }
+.eem-shell-page--stall-charts .eem-sb-collapse-btn { width: 28px; height: 28px; border: 1px solid #e2e8f4; border-radius: 7px; background: #fff; display: flex; align-items: center; justify-content: center; color: #64748b; flex-shrink: 0; cursor: pointer; }
+.eem-shell-page--stall-charts .eem-sb-collapse-btn:hover { border-color: #1668F2; color: #1668F2; background: #eff6ff; }
+.eem-shell-page--stall-charts .eem-sb-collapse-btn svg { width: 14px; height: 14px; transition: transform .2s; }
+.eem-shell-page--stall-charts .eem-sc-sidebar.collapsed .eem-sb-collapse-btn svg { transform: rotate(180deg); }
+
+.eem-shell-page--stall-charts .eem-sb-search { padding: 10px 12px; border-bottom: 1px solid #f0f4fb; flex-shrink: 0; }
+.eem-shell-page--stall-charts .eem-sb-search-inner { position: relative; }
+.eem-shell-page--stall-charts .eem-sb-search-inner svg { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; color: #94a3b8; pointer-events: none; }
+.eem-shell-page--stall-charts input.eem-sb-search-input { width: 100%; padding: 7px 10px 7px 28px; border: 1px solid #d0daea; border-radius: 8px; font-size: 12.5px; color: #0d1b3e; background: #F7F9FC; outline: none; min-height: 0; margin: 0; box-shadow: none; }
+.eem-shell-page--stall-charts input.eem-sb-search-input:focus { border-color: #1668F2; box-shadow: 0 0 0 3px rgba(22,104,242,.1); }
+
+.eem-shell-page--stall-charts .eem-sb-filters { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #f0f4fb; flex-shrink: 0; }
+.eem-shell-page--stall-charts .eem-sb-filter-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #94a3b8; margin-bottom: 4px; }
+.eem-shell-page--stall-charts select.eem-sb-filter-select { width: 100%; padding: 6px 24px 6px 8px; border: 1px solid #d0daea; border-radius: 7px; font-size: 12px; color: #0d1b3e; background-color: #fff; min-height: 0; margin: 0; box-shadow: none; }
+.eem-shell-page--stall-charts select.eem-sb-filter-select:focus { border-color: #1668F2; }
+.eem-shell-page--stall-charts .eem-sb-filter-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.eem-shell-page--stall-charts .eem-sb-list { flex: 1; overflow-y: auto; padding: 6px 0; }
+.eem-shell-page--stall-charts .eem-sb-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #94a3b8; padding: 8px 14px 4px; display: flex; align-items: center; gap: 6px; }
+.eem-shell-page--stall-charts .eem-sb-section-label span { flex: 1; height: 1px; background: #f0f4fb; }
+.eem-shell-page--stall-charts .eem-sb-customer { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; border-left: 3px solid transparent; user-select: none; transition: background .1s; }
+.eem-shell-page--stall-charts .eem-sb-customer:hover { background: #f5f8ff; border-left-color: #1668F2; }
+.eem-shell-page--stall-charts .eem-sb-customer.eem-sb-selected { background: #eff6ff; border-left-color: #1668F2; }
+.eem-shell-page--stall-charts .eem-sb-customer.assigned { opacity: .65; }
+.eem-shell-page--stall-charts .eem-sb-cust-avatar { width: 28px; height: 28px; border-radius: 50%; background: #e2e8f4; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #0d1b3e; flex-shrink: 0; }
+.eem-shell-page--stall-charts .eem-sb-cust-avatar.assigned { background: #e8f5ee; color: #15803d; }
+.eem-shell-page--stall-charts .eem-sb-cust-info { flex: 1; min-width: 0; }
+.eem-shell-page--stall-charts .eem-sb-cust-name { font-size: 12.5px; font-weight: 600; color: #0d1b3e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.eem-shell-page--stall-charts .eem-sb-customer.assigned .eem-sb-cust-name { color: #94a3b8; }
+.eem-shell-page--stall-charts .eem-sb-cust-meta { font-size: 11px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.eem-shell-page--stall-charts .eem-sb-cust-badges { display: flex; gap: 3px; flex-shrink: 0; }
+.eem-shell-page--stall-charts .eem-sb-badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; white-space: nowrap; line-height: 1.4; }
+.eem-shell-page--stall-charts .eem-sb-badge-unassigned { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.eem-shell-page--stall-charts .eem-sb-badge-assigned { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+
+.eem-shell-page--stall-charts .eem-sb-assigned-toggle { display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 12px; font-size: 11px; font-weight: 600; color: #64748b; background: #F7F9FC; border: 0; border-top: 1px solid #f0f4fb; border-bottom: 1px solid #f0f4fb; cursor: pointer; text-align: left; }
+.eem-shell-page--stall-charts .eem-sb-assigned-toggle svg { width: 12px; height: 12px; transition: transform .2s; }
+.eem-shell-page--stall-charts .eem-sb-assigned-toggle.open svg { transform: rotate(180deg); }
+.eem-shell-page--stall-charts .eem-sb-assigned-list { display: none; }
+.eem-shell-page--stall-charts .eem-sb-assigned-list.open { display: block; }
+
+/* Phase 1: rail hidden under tablet (mobile overlay arrives in Phase 2). */
+@media (max-width: 900px) {
+	.eem-shell-page--stall-charts .eem-sc-sidebar { display: none; }
 }
 
 /* KPI bar */
@@ -10234,10 +10309,11 @@ a.eem-sc-mob-edit-btn:focus { background: #e8eef8; color: #0d1b3e; text-decorati
 /* Filter bar */
 .eem-shell-page--stall-charts .eem-sc-filterbar {
 	background: #fff;
-	border: 1px solid #e2e8f4;
-	border-radius: 10px;
+	border: 0;
+	border-bottom: 1px solid #e2e8f4;
+	border-radius: 0;
 	padding: 14px 18px;
-	margin-bottom: 16px;
+	margin-bottom: 0;
 	display: flex;
 	flex-wrap: wrap;
 	align-items: flex-end;
@@ -10300,8 +10376,8 @@ a.eem-sc-mob-edit-btn:focus { background: #e8eef8; color: #0d1b3e; text-decorati
 /* Main content card + blue assign banner */
 .eem-shell-page--stall-charts .eem-sc-content-card {
 	background: #fff;
-	border: 1px solid #e2e8f4;
-	border-radius: 10px;
+	border: 0;
+	border-radius: 0;
 	overflow: hidden;
 }
 .eem-shell-page--stall-charts .eem-sc-banner-blue {
