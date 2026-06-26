@@ -385,21 +385,94 @@ class EEM_Reservations_CPT {
 			<span class="description"><?php esc_html_e( 'Optional direct PDF URL. If provided, this will be used for the frontend flyer button.', 'equine-event-manager' ); ?></span>
 		</p>
 		<p><strong><?php esc_html_e( 'Event Flyer PDF', 'equine-event-manager' ); ?></strong></p>
-		<div>
+		<div class="eem-tec-flyer">
 			<input type="hidden" id="equine_event_manager_tec_flyer_file_id" name="equine_event_manager_tec_flyer_file_id" value="<?php echo esc_attr( $flyer_file_id ); ?>" />
-			<input type="text" class="widefat" value="<?php echo esc_attr( $flyer_label ); ?>" readonly="readonly" placeholder="<?php esc_attr_e( 'No file selected', 'equine-event-manager' ); ?>" />
+			<input type="text" id="equine_event_manager_tec_flyer_name" class="widefat" value="<?php echo esc_attr( $flyer_label ); ?>" readonly="readonly" placeholder="<?php esc_attr_e( 'No file selected', 'equine-event-manager' ); ?>" />
 			<p>
-				<button type="button" class="button"><?php esc_html_e( 'Upload File', 'equine-event-manager' ); ?></button>
-				<button type="button" class="eem-icon-delete-button" aria-label="<?php esc_attr_e( 'Remove flyer file', 'equine-event-manager' ); ?>" title="<?php esc_attr_e( 'Remove flyer file', 'equine-event-manager' ); ?>"><span class="dashicons dashicons-trash" aria-hidden="true"></span></button>
-				<?php if ( $flyer_url ) : ?>
-					<a href="<?php echo esc_url( $flyer_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View file', 'equine-event-manager' ); ?></a>
-				<?php else : ?>
-					<a href="#" target="_blank" rel="noopener noreferrer" hidden><?php esc_html_e( 'View file', 'equine-event-manager' ); ?></a>
-				<?php endif; ?>
+				<button type="button" class="button" id="equine_event_manager_tec_flyer_upload"><?php esc_html_e( 'Upload File', 'equine-event-manager' ); ?></button>
+				<button type="button" class="button" id="equine_event_manager_tec_flyer_remove"<?php echo $flyer_file_id ? '' : ' style="display:none;"'; ?>><?php esc_html_e( 'Remove', 'equine-event-manager' ); ?></button>
+				<a id="equine_event_manager_tec_flyer_view" href="<?php echo $flyer_url ? esc_url( $flyer_url ) : '#'; ?>" target="_blank" rel="noopener noreferrer"<?php echo $flyer_url ? '' : ' hidden'; ?>><?php esc_html_e( 'View file', 'equine-event-manager' ); ?></a>
 			</p>
 			<p class="description"><?php esc_html_e( 'Upload the PDF flyer customers should be able to open from the event page.', 'equine-event-manager' ); ?></p>
 		</div>
+		<script>
+		( function () {
+			var frame,
+				upBtn  = document.getElementById( 'equine_event_manager_tec_flyer_upload' ),
+				rmBtn  = document.getElementById( 'equine_event_manager_tec_flyer_remove' ),
+				idEl   = document.getElementById( 'equine_event_manager_tec_flyer_file_id' ),
+				nameEl = document.getElementById( 'equine_event_manager_tec_flyer_name' ),
+				viewEl = document.getElementById( 'equine_event_manager_tec_flyer_view' );
+
+			if ( ! upBtn || ! window.wp || ! wp.media ) {
+				return;
+			}
+
+			upBtn.addEventListener( 'click', function ( e ) {
+				e.preventDefault();
+				if ( frame ) {
+					frame.open();
+					return;
+				}
+				frame = wp.media( {
+					title: <?php echo wp_json_encode( __( 'Select event flyer', 'equine-event-manager' ) ); ?>,
+					button: { text: <?php echo wp_json_encode( __( 'Use this file', 'equine-event-manager' ) ); ?> },
+					library: { type: [ 'application/pdf', 'image' ] },
+					multiple: false
+				} );
+				frame.on( 'select', function () {
+					var att = frame.state().get( 'selection' ).first().toJSON();
+					idEl.value = att.id;
+					nameEl.value = att.filename || att.title || '';
+					if ( viewEl ) {
+						viewEl.href = att.url;
+						viewEl.hidden = false;
+					}
+					if ( rmBtn ) {
+						rmBtn.style.display = '';
+					}
+				} );
+				frame.open();
+			} );
+
+			if ( rmBtn ) {
+				rmBtn.addEventListener( 'click', function ( e ) {
+					e.preventDefault();
+					idEl.value = '0';
+					nameEl.value = '';
+					if ( viewEl ) {
+						viewEl.hidden = true;
+						viewEl.href = '#';
+					}
+					rmBtn.style.display = 'none';
+				} );
+			}
+		} )();
+		</script>
 		<?php
+	}
+
+	/**
+	 * Ensure the WordPress media library scripts are available on the TEC event
+	 * editor so the Link Reservation flyer "Upload File" button can open the
+	 * media frame. Without wp_enqueue_media() the wp.media uploader is undefined
+	 * and the button does nothing.
+	 *
+	 * @param string $hook Current admin page hook suffix.
+	 * @return void
+	 */
+	public function enqueue_tec_event_assets( $hook ) {
+		if ( 'post.php' !== $hook && 'post-new.php' !== $hook ) {
+			return;
+		}
+
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+
+		if ( ! $screen || 'tribe_events' !== $screen->post_type ) {
+			return;
+		}
+
+		wp_enqueue_media();
 	}
 
 	/**

@@ -2750,6 +2750,45 @@
 .eem-reservation-notice--error {
 	border-left-color: #d35d4e;
 }
+/* Centered empty-state for the "no reservation yet" case. Constrained + padded
+   so it never renders as a full-bleed bar when injected into a theme's event
+   single page (e.g. TEC "Reserve Now" target). */
+.eem-reservation-empty {
+	padding: 36px 16px 52px;
+	font-family: "IBM Plex Sans", system-ui, sans-serif;
+}
+.eem-reservation-empty__inner {
+	max-width: 520px;
+	margin: 0 auto;
+	display: grid;
+	justify-items: center;
+	gap: 16px;
+	padding: 44px 28px;
+	text-align: center;
+	border: 1px solid #D9E2F2;
+	border-radius: 12px;
+	background: #F7F9FC;
+}
+.eem-reservation-empty__icon {
+	display: grid;
+	place-items: center;
+	width: 60px;
+	height: 60px;
+	border-radius: 50%;
+	background: #eaf0fb;
+	color: #4C6FB1;
+}
+.eem-reservation-empty__icon svg {
+	width: 30px;
+	height: 30px;
+}
+.eem-reservation-empty__title {
+	margin: 0;
+	color: #172033;
+	font-size: 1.2rem;
+	font-weight: 700;
+	line-height: 1.4;
+}
 [data-eem-invoice-billing-block][hidden] {
 	display: none !important;
 }

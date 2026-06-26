@@ -198,7 +198,7 @@ class EEM_Shortcodes {
 			// Explicit id="" pointing at a missing/unpublished reservation keeps
 			// the visible admin notice; an auto-resolved bare tag stays silent.
 			if ( $explicit_id ) {
-				return $this->render_notice( __( 'Reservations are not available for this event yet.', 'equine-event-manager' ) );
+				return $this->render_unavailable_empty_state( __( 'Reservations are not available for this event yet.', 'equine-event-manager' ) );
 			}
 			return '<!-- eem: no reservation linked to this event -->';
 		}
@@ -450,6 +450,7 @@ class EEM_Shortcodes {
 				if ( ! empty( $normalized_event_data['venue']['map_query'] ) ) {
 					$hero_directions = 'https://maps.google.com/?q=' . rawurlencode( $normalized_event_data['venue']['map_query'] );
 				}
+				$hero_flyer = ! empty( $normalized_event_data['flyer_url'] ) ? (string) $normalized_event_data['flyer_url'] : '';
 			?>
 				<div class="hero">
 					<div class="hero-inner">
@@ -506,6 +507,9 @@ class EEM_Shortcodes {
 								<a class="btn-reserve" href="#reservation-form"><?php esc_html_e( 'Reserve Now', 'equine-event-manager' ); ?></a>
 								<?php if ( $hero_directions ) : ?>
 									<a class="btn-directions" href="<?php echo esc_url( $hero_directions ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Directions', 'equine-event-manager' ); ?></a>
+								<?php endif; ?>
+								<?php if ( $hero_flyer ) : ?>
+									<a class="btn-directions btn-flyer" href="<?php echo esc_url( $hero_flyer ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View Flyer', 'equine-event-manager' ); ?></a>
 								<?php endif; ?>
 							</div>
 						</div>
@@ -1761,7 +1765,7 @@ class EEM_Shortcodes {
 		$reservation_id = $this->find_reservation_by_event_id( $event_id, $type );
 
 		if ( ! $reservation_id ) {
-			return $this->render_notice( __( 'Reservations are not available for this event yet.', 'equine-event-manager' ) );
+			return $this->render_unavailable_empty_state( __( 'Reservations are not available for this event yet.', 'equine-event-manager' ) );
 		}
 
 		return $this->render_reservation( array( 'id' => $reservation_id ) );
@@ -12076,6 +12080,28 @@ RV Lot: " . $rv_lot['name'] );
 			esc_attr( $type ),
 			esc_html( $message ),
 			'error' === $type ? 'alert' : 'status'
+		);
+	}
+
+	/**
+	 * Render a centered empty-state for the "no reservation yet" case.
+	 *
+	 * Used when a customer reaches an event's reservation area before booking
+	 * has been set up. Unlike render_notice() (an inline, left-aligned info
+	 * strip for in-form messages), this is a constrained, padded, centered card
+	 * with an icon so it reads as a deliberate empty state rather than a
+	 * full-bleed bar.
+	 *
+	 * @param string $message The empty-state message.
+	 * @return string
+	 */
+	private function render_unavailable_empty_state( $message ) {
+		$icon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4.5" width="18" height="16" rx="2"></rect><path d="M3 9.5h18M8 3v3M16 3v3"></path></svg>';
+
+		return sprintf(
+			'<div class="eem-reservation-empty" role="status"><div class="eem-reservation-empty__inner"><span class="eem-reservation-empty__icon">%1$s</span><p class="eem-reservation-empty__title">%2$s</p></div></div>',
+			$icon,
+			esc_html( $message )
 		);
 	}
 

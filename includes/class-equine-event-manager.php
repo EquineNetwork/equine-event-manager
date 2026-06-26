@@ -472,6 +472,7 @@ class EEM_Plugin {
 
 		if ( EEM_Events::is_tec_integration_configured() ) {
 			add_action( 'add_meta_boxes_tribe_events', array( $this->reservations_cpt, 'register_tec_event_meta_box' ) );
+			add_action( 'admin_enqueue_scripts', array( $this->reservations_cpt, 'enqueue_tec_event_assets' ) );
 			add_action( 'save_post_tribe_events', array( $this->reservations_cpt, 'save_tec_event_meta' ), 10, 2 );
 			add_action( 'wp_ajax_equine_event_manager_search_tec_events', array( $this->reservations_cpt, 'ajax_search_tec_events' ) );
 			add_action( 'admin_post_equine_event_manager_import_tec_events', array( $this->admin, 'handle_import_tec_events' ) );

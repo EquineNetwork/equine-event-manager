@@ -1397,6 +1397,12 @@ class EEM_Events {
 				$wp_query->set_404();
 			}
 
+			// Send no-cache headers on the virtual-route 404 so page caches (notably
+			// WP Engine) don't store a transient 404 — e.g. when rewrite rules aren't
+			// flushed yet or a reservation was just published — and keep serving it
+			// after the underlying cause clears. The success path below already does
+			// this; without it here a momentary 404 sticks for the full cache TTL.
+			nocache_headers();
 			status_header( 404 );
 			return;
 		}
