@@ -3319,7 +3319,10 @@ class EEM_Admin {
 					<button type="button" data-zoom="in" title="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>">+</button>
 				</span>
 				<span class="eem-smap-search-wrap">
-					<input type="search" class="eem-smap-search" data-eem-smap-search placeholder="<?php esc_attr_e( 'Find stall…', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Find stall by number', 'equine-event-manager' ); ?>">
+					<span class="eem-search-wrap">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+						<input type="search" class="eem-search-input" data-eem-smap-search placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Search stalls', 'equine-event-manager' ); ?>">
+					</span>
 					<span class="eem-smap-search-count" data-eem-smap-search-count aria-live="polite"></span>
 				</span>
 			</div>
