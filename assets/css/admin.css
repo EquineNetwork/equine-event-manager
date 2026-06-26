@@ -9170,7 +9170,11 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
    grows. min-width:0 stops the grid's intrinsic width from stretching the card. */
 .eem-smap, .eem-smap-zoombar { min-width: 0; max-width: 100%; }
 /* Chart zoom bar layout — the shared .eem-zoom handles button chrome. */
-.eem-smap-zoombar { display: flex; justify-content: flex-end; padding: 8px 0 2px; }
+.eem-smap-zoombar { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 2px; gap: 8px; }
+.eem-smap-search-wrap { display: flex; align-items: center; gap: 6px; flex: 1; max-width: 220px; }
+input.eem-smap-search { flex: 1; min-width: 0; height: 30px; padding: 0 8px; border: 1px solid var(--eem-line, #d9e2ec); border-radius: var(--eem-radius, 3px); font-size: 13px; background: #fff; color: var(--eem-text, #1a1a2e); }
+input.eem-smap-search:focus { outline: none; border-color: var(--eem-electric, #1668F2); }
+.eem-smap-search-count { font-size: 12px; color: var(--eem-muted, #6b7280); white-space: nowrap; min-width: 48px; }
 /* Admin chart grid mirrors the Stall Map Builder (.eem-mb-grid): a solid gray
    grid where the 1px gaps + empty/aisle cells read gray, square white stall
    cells, hatched aisles, square cream landmarks. Per the stall-grid visual
@@ -9198,6 +9202,10 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
    indicator stays proportional ("same size as the box") at every zoom level
    instead of a fixed 4px sliver. */
 .eem-smap-stall.is-grouped { border-left: max(2px, calc(var(--eem-smap-chip, 40px) * 0.14)) solid var(--eem-grp, transparent); }
+/* Search-highlight ring — amber outline so highlighted cells stand out from all states. */
+.eem-smap-stall.eem-smap-highlight { outline: 2px solid var(--eem-amber, #E8A33D); outline-offset: -1px; z-index: 2; }
+/* "Add new customer" option in the assign popover. */
+.eem-smap-pop-row--add-new { color: var(--eem-electric, #1668F2); font-style: italic; border-top: 1px solid var(--eem-line, #d9e2ec); margin-top: 4px; padding-top: 6px; }
 /* Status/group dot — hidden until the grid enters dot mode (very small zoom). */
 .eem-smap-dot { display: none; width: 46%; height: 46%; border-radius: 50%; background: var(--eem-dot, #9fb2cc); }
 /* Dot mode: when chips get too small to read a 4-digit number, admin.js adds

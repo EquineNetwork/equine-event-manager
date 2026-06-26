@@ -8,6 +8,33 @@
 
 ---
 
+## 🔖 SESSION HANDOFF — 2026-06-25 (evening — desktop pickup)
+
+**Current state:** `main` at **v2.7.613** — NOT YET PUSHED. Push `main` before switching to desktop.
+
+**Shipped this session (laptop, 2.7.613):**
+1. **Zoom + scroll position persistence on stall chart** — saving view state to `sessionStorage` before any `window.location.reload()` (assign, move, etc.) and restoring it on page load via `requestAnimationFrame`. In-place HTML replace (spatial map action) also snapshots/restores zoom + scroll around the `innerHTML` swap. No more jumping back to the top after assigning a stall on a large map.
+2. **Assign search fixed for GEMS-imported orders** — orders with `stall_qty=0` but existing stall assignments in notes were excluded from the assign roster. Fixed to include any order where `stall_units` is non-empty, even if `has_stall` is false.
+3. **"Assign" label** — removed the trailing "…" from the dropdown context menu. Now just "Assign".
+4. **By Customer table sortable by Arrival + Departure** — column headers are now clickable; click once = asc, again = desc. Sort icon (▲/▼) updates in the header. Data attributes `data-arrival` / `data-departure` on each row drive the client-side sort.
+5. **Spatial map search bar** — "Find stall…" input on the left side of the zoombar. Type a stall number (or partial label); matching cells get an amber highlight ring and the first match scrolls into view. Count shown inline ("3 stalls" / "No match"). Clears on empty.
+6. **"Add new customer" in spatial map assign popover** — when search has text but no match, a "+ Add '[name]' as new customer" button appears. Creates a placeholder order (customer_name, stall_qty=1, payment_status=unpaid, fresh order number) via new AJAX action `eem_stall_create_placeholder`, immediately assigns the stall, refreshes the map in-place. Admin can then open the order and fill in full details.
+7. **ROADMAP items #30 and #31 added** (map search bar + add-new-customer — now done).
+
+**⚠️ NOT YET VISUALLY VERIFIED** — none of #5 or #6 above have been click-tested. Test on NTR 6519 first thing on desktop:
+- Search bar: open spatial map → type a stall number → confirm amber highlight + scroll
+- "Add new customer": click an available stall → search a name that doesn't exist → click "+ Add…" → confirm map refreshes with stall shown as assigned, toast shows, and order appears in By Customer tab
+- Zoom/scroll persistence: zoom in + scroll, assign a stall, confirm map returns to same zoom + scroll position after reload
+
+**Standing constraints (do not change these):**
+- Never bump version without explicit Whitney approval each time.
+- Reservation 5990 RV map is corrupted — test stall/RV maps on **NTR 6519**.
+- One Bash command per call, no chaining, no heredocs (see CLAUDE.md command hygiene).
+- Desktop, tablet, AND mobile are all equally important.
+- Working cadence: one item at a time, Whitney verifies before marking done.
+
+---
+
 ## 🔖 SESSION HANDOFF — 2026-06-25 (laptop pickup)
 
 **Current state:** `main` at **v2.7.611** (all pushed to GitHub). Big push fixing the staging stall-chart shake-out + new features. **On the laptop: pull `main`, update the plugin, CLEAR OPCACHE on WP Engine** (in-WP cache clear does NOT clear PHP OPcache — this caused most "it didn't change" confusion). Full clickable change list is in **`FOR-REVIEW.md`** at repo root.
@@ -88,6 +115,8 @@
 26. [ ] Stall & RV Charts — add a blue metrics bar (matching the Daily Movement metrics bar) at the top of the page showing important metrics.
 27. [ ] Print view style verification — resolve discrepancy between existing standard (navy title + "Printed:" meta) and alternate spec (white 56px topbar, no Printed label, no EEM branding). Visual verify then lock one style.
 28. [ ] Hotel-style 15-min cart hold
+30. [ ] Stall Chart — spatial map search bar: input above the map, type a stall number, highlight matching cells and scroll to the first match. Client-side only against `[data-eem-smap-stall]` cells. (requested 2026-06-25)
+31. [ ] Stall Chart — spatial map assign popover "Add new customer": when the search has text but zero matches, show an "Add '[name]' as new customer" option. Creates a placeholder open order (customer_name, stall_qty=1, payment_status=unpaid, reservation dates as arrival/departure, generated order_number + order_key) via new AJAX action `eem_stall_create_placeholder`, then immediately assigns the stall to the new order and refreshes the map region. Admin fills out full order details later. (requested 2026-06-25)
 29. [ ] Stall Chart — sticky sidebar panel for the By Location Map view. Reference: Stall Logic screenshots (screenshots sent 2026-06-25). The spatial map (661-stall view) needs a persistent right-side panel that stays in view while scrolling/panning the map, showing quick actions, assignment info for the selected stall, and summary metrics. Design TBD — discuss before implementing. (NOT implemented today). When a customer selects a stall/RV lot it should be held for a time window (~15 min) and shown as taken to other customers during that window, then auto-released if checkout isn't completed. NOTE: actual double-booking is already prevented at submit via the per-reservation advisory lock (the race loser is told the unit is taken and is NOT charged) — this item is the UX hold-while-in-cart enhancement, not a correctness fix. Needs: hold/expiry state on stall+RV tables, session-tied claim, availability query counting active holds, and a cron/cleanup to expire abandoned holds. Discuss design before implementing.
 
 ---

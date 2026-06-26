@@ -133,6 +133,7 @@ class EEM_Admin {
 		add_action( 'wp_ajax_eem_toggle_tack_stall', array( $this, 'ajax_toggle_tack_stall' ) );
 		add_action( 'wp_ajax_eem_toggle_order_vip', array( $this, 'ajax_toggle_order_vip' ) );
 		add_action( 'wp_ajax_eem_stall_map_action', array( $this, 'ajax_stall_map_action' ) );
+		add_action( 'wp_ajax_eem_stall_create_placeholder', array( $this, 'ajax_stall_create_placeholder' ) );
 		add_action( 'wp_ajax_eem_group_rename', array( $this, 'ajax_group_rename' ) );
 		add_action( 'wp_ajax_eem_auto_assign', array( $this, 'ajax_auto_assign' ) );
 		add_action( 'wp_ajax_eem_create_order_customer_search', array( 'EEM_Create_Order_Page', 'ajax_customer_search' ) );
@@ -3316,6 +3317,10 @@ class EEM_Admin {
 					<button type="button" data-zoom="out" title="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>">&minus;</button>
 					<button type="button" data-zoom="reset" title="<?php esc_attr_e( 'Reset zoom', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Zoom', 'equine-event-manager' ); ?></button>
 					<button type="button" data-zoom="in" title="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>">+</button>
+				</span>
+				<span class="eem-smap-search-wrap">
+					<input type="search" class="eem-smap-search" data-eem-smap-search placeholder="<?php esc_attr_e( 'Find stall…', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Find stall by number', 'equine-event-manager' ); ?>">
+					<span class="eem-smap-search-count" data-eem-smap-search-count aria-live="polite"></span>
 				</span>
 			</div>
 
@@ -6802,6 +6807,122 @@ class EEM_Admin {
 			return array( 'key' => 'blocked', 'label' => __( 'Blocked', 'equine-event-manager' ) );
 		}
 		return array( 'key' => 'available', 'label' => __( 'Available', 'equine-event-manager' ) );
+	}
+
+	/**
+	 * AJAX: create a placeholder stall order for a named customer, then immediately
+	 * assign the chosen stall to that new order.
+	 *
+	 * Called from the spatial map assign popover when the admin types a name that
+	 * doesn't match any existing customer. Creates a minimal row in the canonical
+	 * stall table (stall_qty=1, payment_status='unpaid') keyed by a fresh submission
+	 * token, then delegates to the standard assign path and returns the refreshed
+	 * dynamic-region HTML so the map updates in-place.
+	 *
+	 * @return void
+	 */
+	public function ajax_stall_create_placeholder(): void {
+		check_ajax_referer( 'eem_stall_chart_move', '_wpnonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		$stall          = isset( $_POST['stall'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['stall'] ) ) : '';
+		$customer_name  = isset( $_POST['customer_name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['customer_name'] ) ) : '';
+		$kind           = ( isset( $_POST['kind'] ) && 'rv' === sanitize_key( wp_unslash( $_POST['kind'] ) ) ) ? 'rv' : 'stall';
+		$inv            = isset( $_POST['inv'] ) ? sanitize_key( wp_unslash( $_POST['inv'] ) ) : 'all';
+		$inv            = in_array( $inv, array( 'all', 'stalls', 'rv' ), true ) ? $inv : 'all';
+		$tab            = isset( $_POST['tab'] ) ? sanitize_key( wp_unslash( $_POST['tab'] ) ) : 'location';
+		$tab            = in_array( $tab, array( 'location', 'customer' ), true ) ? $tab : 'location';
+
+		if ( $reservation_id < 1 || 'en_reservation' !== get_post_type( $reservation_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		if ( '' === $customer_name || '' === $stall ) {
+			wp_send_json_error( array( 'message' => __( 'Customer name and stall are required.', 'equine-event-manager' ) ), 400 );
+		}
+
+		global $wpdb;
+
+		// Canonical table for the component kind — use the known table name directly.
+		$is_rv   = 'rv' === $kind;
+		$table   = $wpdb->prefix . ( $is_rv ? 'en_rv_reservations' : 'en_stall_reservations' );
+
+		// Generate a unique submission token — this becomes the stable order_key
+		// (build_group_key extracts it from the notes column and MD5-hashes it).
+		$token        = wp_generate_uuid4();
+		$order_number = $this->orders_repository->reserve_order_number();
+
+		// Build notes in the same label: value format used by upsert_note_line().
+		$notes  = 'Submission token: ' . $token . "\n";
+		$notes .= 'Reservation setup ID: ' . $reservation_id . "\n";
+		$notes .= 'Placeholder: Yes';
+
+		$qty_col = $is_rv ? 'rv_qty' : 'stall_qty';
+
+		$inserted = $wpdb->insert(
+			$table,
+			array(
+				'event_source'   => 'placeholder',
+				'event_id'       => null,
+				'reservation_id' => $reservation_id,
+				'customer_name'  => $customer_name,
+				'email'          => '',
+				'phone'          => '',
+				$qty_col         => 1,
+				'stay_type'      => '',
+				'unit_price'     => '0.00',
+				'subtotal'       => '0.00',
+				'convenience_fee' => '0.00',
+				'tax'            => '0.00',
+				'tax_rate'       => '0.0000',
+				'total'          => '0.00',
+				'amount_paid'    => 0,
+				'payment_status' => 'unpaid',
+				'payment_gateway' => '',
+				'order_number'   => $order_number,
+				'transaction_id' => '',
+				'notes'          => trim( $notes ),
+				'created_at'     => current_time( 'mysql' ),
+			)
+		);
+
+		if ( ! $inserted ) {
+			wp_send_json_error( array( 'message' => __( 'Could not create placeholder order.', 'equine-event-manager' ) ), 500 );
+		}
+
+		// order_key = md5(submission token) — same derivation as build_group_key().
+		$order_key  = md5( $token );
+		$note_label = $is_rv ? 'Assigned RV Lots' : 'Assigned Stall Units';
+
+		// Assign the stall to the new placeholder order via the standard notes path.
+		$assign_ok = $this->orders_repository->update_order_unit_assignments(
+			$order_key,
+			$is_rv ? '' : $stall,
+			$is_rv ? $stall : ''
+		);
+
+		if ( ! $assign_ok ) {
+			wp_send_json_error( array( 'message' => __( 'Order created but stall assignment failed.', 'equine-event-manager' ) ), 500 );
+		}
+
+		// Return the refreshed chart region so the map updates in-place.
+		ob_start();
+		$this->render_stall_chart_dynamic_region( $reservation_id, $inv, $tab );
+		$html = ob_get_clean();
+
+		wp_send_json_success( array(
+			'html'    => $html,
+			'message' => sprintf(
+				/* translators: 1: customer name, 2: stall/lot label */
+				__( 'Order created for %1$s and %2$s assigned.', 'equine-event-manager' ),
+				esc_html( $customer_name ),
+				esc_html( $stall )
+			),
+		) );
 	}
 
 	/**

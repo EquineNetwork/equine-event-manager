@@ -6437,6 +6437,59 @@
 		if (pop) pop.classList.remove('open');
 	}
 
+	function eemSmapCreatePlaceholder(container, stall, customerName) {
+		var cfg = window.eemStallChart || {};
+		var body = new URLSearchParams();
+		body.set('action', 'eem_stall_create_placeholder');
+		body.set('_wpnonce', cfg.moveNonce || '');
+		body.set('reservation_id', String(cfg.reservationId || ''));
+		body.set('stall', stall);
+		body.set('customer_name', customerName);
+		body.set('kind', (container && container.getAttribute && container.getAttribute('data-eem-smap-kind')) || 'stall');
+		body.set('inv', window._eemScInv || 'all');
+		body.set('tab', window._eemScTab || 'location');
+		eemSmapClosePop(container);
+		fetch((cfg.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php'), {
+			method: 'POST', credentials: 'same-origin',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+			body: body.toString()
+		}).then(function (r) { return r.json(); }).then(function (resp) {
+			var data = (resp && resp.data) || {};
+			if (resp && resp.success && data.html) {
+				var region = document.getElementById('eem-stall-chart-dynamic');
+				if (region) {
+					var _prevSmapChip = 0, _prevSmapSL = 0, _prevSmapST = 0;
+					var _prevSmapContainer = region.querySelector('[data-eem-smap-kind]');
+					if (_prevSmapContainer) {
+						_prevSmapChip = _prevSmapContainer._eemSmapChip || 0;
+						var _prevSmapScroll = _prevSmapContainer.querySelector('[data-eem-smap-scroll]');
+						if (_prevSmapScroll) { _prevSmapSL = _prevSmapScroll.scrollLeft; _prevSmapST = _prevSmapScroll.scrollTop; }
+					}
+					region.innerHTML = data.html;
+					eemScApplyState(window._eemScInv || 'all', window._eemScTab || 'location');
+					EEM.renderStallMaps();
+					if (_prevSmapChip) {
+						var _newSmapContainer = region.querySelector('[data-eem-smap-kind]');
+						if (_newSmapContainer && _newSmapContainer._eemSmapApplyChip) {
+							_newSmapContainer._eemSmapChip = _prevSmapChip;
+							_newSmapContainer._eemSmapApplyChip(_prevSmapChip);
+							var _newSmapScroll = _newSmapContainer.querySelector('[data-eem-smap-scroll]');
+							if (_newSmapScroll) { _newSmapScroll.scrollLeft = _prevSmapSL; _newSmapScroll.scrollTop = _prevSmapST; }
+						}
+					}
+				}
+			}
+			if (window.EEM && window.EEM.showSaveToast) {
+				window.EEM.showSaveToast(data.message || (resp && resp.success ? 'Order created and stall assigned.' : 'Could not create order.'),
+					{ variant: (resp && resp.success) ? 'success' : 'error', sub: '' });
+			}
+		}).catch(function () {
+			if (window.EEM && window.EEM.showSaveToast) {
+				window.EEM.showSaveToast('Network error. Please try again.', { variant: 'error', sub: '' });
+			}
+		});
+	}
+
 	function eemSmapAction(container, op, stall, orderKey) {
 		var cfg = window.eemStallChart || {};
 		var body = new URLSearchParams();
@@ -6531,8 +6584,25 @@
 			function renderList(q) {
 				list.innerHTML = '';
 				q = (q || '').toLowerCase();
+				var rawQ = search.value.trim();
 				var hits = (payload.customers || []).filter(function (cu) { return cu.n.toLowerCase().indexOf(q) !== -1; });
-				if (!hits.length) { list.innerHTML = '<div class="eem-smap-pop-empty">No match</div>'; return; }
+				if (!hits.length) {
+					var emptyMsg = document.createElement('div');
+					emptyMsg.className = 'eem-smap-pop-empty';
+					emptyMsg.textContent = rawQ ? 'No match' : 'No customers available';
+					list.appendChild(emptyMsg);
+					if (rawQ) {
+						var addBtn = document.createElement('button');
+						addBtn.type = 'button';
+						addBtn.className = 'eem-smap-pop-row eem-smap-pop-row--add-new';
+						addBtn.textContent = '+ Add "' + rawQ + '" as new customer';
+						addBtn.addEventListener('click', function () {
+							eemSmapCreatePlaceholder(container, label, rawQ);
+						});
+						list.appendChild(addBtn);
+					}
+					return;
+				}
 				hits.forEach(function (cu) {
 					var b = document.createElement('button');
 					b.type = 'button';
@@ -6676,6 +6746,44 @@
 				smapApplyLevel(container._eemSmapLevel || 'fit');
 			}
 			eemSmapBindPan(container.querySelector('[data-eem-smap-scroll]'));
+
+			// Map search bar — highlight cells matching the typed stall number/label
+			// and scroll the first match into view. Bound once per container.
+			var smapSearch = container.querySelector('[data-eem-smap-search]');
+			if (smapSearch && !smapSearch._eemBound) {
+				smapSearch._eemBound = true;
+				var smapCountEl = container.querySelector('[data-eem-smap-search-count]');
+				var smapScroll2 = container.querySelector('[data-eem-smap-scroll]');
+				smapSearch.addEventListener('input', function () {
+					var q = smapSearch.value.trim().toLowerCase();
+					var cells = container.querySelectorAll('[data-eem-smap-stall]');
+					var firstMatch = null, count = 0;
+					for (var i = 0; i < cells.length; i++) {
+						var cellLabel = cells[i].getAttribute('data-eem-smap-stall').toLowerCase();
+						// Match if the cell label ends with the query (handles zone-prefixed labels like "A 150")
+						var isMatch = q && (cellLabel === q || cellLabel.indexOf(' ' + q) !== -1 || cellLabel.indexOf(q) === 0);
+						cells[i].classList.toggle('eem-smap-highlight', !!isMatch);
+						if (isMatch) { count++; if (!firstMatch) firstMatch = cells[i]; }
+					}
+					if (smapCountEl) {
+						smapCountEl.textContent = q ? (count === 0 ? 'No match' : count === 1 ? '1 stall' : count + ' stalls') : '';
+					}
+					if (firstMatch && smapScroll2) {
+						// Scroll so the first highlighted cell is centered in the viewport.
+						var cRect = firstMatch.getBoundingClientRect();
+						var sRect = smapScroll2.getBoundingClientRect();
+						smapScroll2.scrollLeft += cRect.left - sRect.left - (sRect.width / 2) + (cRect.width / 2);
+						smapScroll2.scrollTop  += cRect.top  - sRect.top  - (sRect.height / 2) + (cRect.height / 2);
+					}
+				});
+				// Clear highlights when search is cleared.
+				smapSearch.addEventListener('search', function () {
+					if (!smapSearch.value) {
+						container.querySelectorAll('.eem-smap-highlight').forEach(function (el) { el.classList.remove('eem-smap-highlight'); });
+						if (smapCountEl) smapCountEl.textContent = '';
+					}
+				});
+			}
 		});
 	};
 
