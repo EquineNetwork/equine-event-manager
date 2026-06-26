@@ -1515,7 +1515,9 @@ input.eem-price-input:focus {
 .eem-status-unpaid              { background: var(--eem-badge-amber-bg); color: var(--eem-badge-amber-text); border: 1px solid var(--eem-badge-amber-border); }
 .eem-status-partial             { background: #fef2f2; color: #9a3412; border: 1px solid #fca5a5; }
 .eem-status-invoice             { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
-.eem-status-open                 { background: var(--eem-badge-blue-bg, #eaf1fe); color: var(--eem-badge-blue-text, #1668F2); border: 1px solid var(--eem-badge-blue-border, #b9d2fb); }
+/* Open = amber: an Open order has no price set / balance still owed, so it reads
+   as outstanding (matches the Payment Outstanding banner) rather than neutral blue. */
+.eem-status-open                 { background: var(--eem-badge-amber-bg); color: var(--eem-badge-amber-text); border: 1px solid var(--eem-badge-amber-border); }
 .eem-status-refunded            { background: var(--eem-badge-red-bg);   color: var(--eem-badge-red-text);   border: 1px solid var(--eem-badge-red-border); }
 .eem-status-oversold            { background: var(--eem-badge-red-bg);   color: var(--eem-badge-red-text);   border: 1px solid var(--eem-badge-red-border); }
 .eem-status-cancelled           { background: var(--eem-badge-gray-bg);  color: var(--eem-badge-gray-text);  border: 1px solid var(--eem-badge-gray-border); }
@@ -1542,7 +1544,9 @@ input.eem-price-input:focus {
 
 .eem-type-stall  { background: var(--eem-type-stall-bg);  color: var(--eem-type-stall-text);  border: 1px solid var(--eem-type-stall-border); }
 .eem-type-rv     { background: var(--eem-type-rv-bg);     color: var(--eem-type-rv-text);     border: 1px solid var(--eem-type-rv-border); }
-.eem-type-addon  { background: var(--eem-type-addon-bg);  color: var(--eem-type-addon-text);  border: 1px solid var(--eem-type-addon-border); }
+/* Add-On = teal: kept distinct from the now-amber Open status so the warm
+   amber/orange tones don't read as the same thing across Type and Status columns. */
+.eem-type-addon  { background: #F0FDFA;  color: #0f766e;  border: 1px solid #99f6e4; }
 .eem-type-group  { background: var(--eem-type-group-bg);  color: var(--eem-type-group-text);  border: 1px solid var(--eem-type-group-border); }
 /* Division entry badge (Entries → Divisions rework) — violet, distinct from
    the stall/rv/addon/group palette. */
@@ -4176,9 +4180,9 @@ a.eem-res-name:focus {
 }
 
 .eem-type-badge--addon {
-	background: #FFF7ED;
-	color: #c2410c;
-	border: 1px solid #fed7aa;
+	background: #F0FDFA;
+	color: #0f766e;
+	border: 1px solid #99f6e4;
 }
 
 .eem-type-badge--group {

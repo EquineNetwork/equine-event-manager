@@ -6034,6 +6034,7 @@
 
 		// Highlight (and scroll to) the order's currently-assigned unit(s) in both the
 		// List and the Map. The Map grid renders async, so re-run on a short delay.
+		var assigned = (ctx.assignedUnits || []);
 		if (assigned.length) {
 			var highlightAssigned = function () {
 				var first = null;
