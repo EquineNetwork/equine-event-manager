@@ -3848,10 +3848,61 @@ class EEM_Shortcodes {
 			}
 		}
 
+		// Map-configured reservations: the customer picks from the stall MAP, whose
+		// cell labels (e.g. "295", "296", "A-01") are NOT reproduced by the legacy
+		// start/end stall_chart_stall_blocks ranges above. Without merging the map's
+		// own labels into the allowed pool, sanitize_preferred_stall_units() would
+		// intersect the picked units against the wrong source, drop every valid pick,
+		// and the order would silently fall back to auto-assignment. Merge them in.
+		foreach ( $this->get_stall_map_unit_labels() as $map_unit ) {
+			if ( in_array( $map_unit, $blocked_units, true ) ) {
+				continue;
+			}
+			$units[] = $map_unit;
+		}
+
 		$units = array_values( array_unique( $units ) );
 		sort( $units, SORT_NATURAL );
 
 		return $units;
+	}
+
+	/**
+	 * Collect the stall-map cell labels for the active reservation.
+	 *
+	 * Mirrors the source the map picker renders from (the _en_stall_map snapshot,
+	 * stall kind), so submitted picks validate against exactly what the customer
+	 * could tap. Returns bare labels ("295", "A-01"); empty when no map exists.
+	 *
+	 * @return array<int, string>
+	 */
+	private function get_stall_map_unit_labels(): array {
+		$labels         = array();
+		$reservation_id = (int) $this->active_reservation_id;
+
+		if ( $reservation_id <= 0 || ! class_exists( 'EEM_Stall_Map_Importer' ) ) {
+			return $labels;
+		}
+
+		$snapshot = EEM_Stall_Map_Importer::get_for_reservation( $reservation_id );
+
+		if ( empty( $snapshot['barns'] ) ) {
+			return $labels;
+		}
+
+		$snapshot = EEM_Stall_Map_Importer::snapshot_of_kind( $snapshot, 'stall' );
+
+		foreach ( ( $snapshot['barns'] ?? array() ) as $barn ) {
+			foreach ( (array) ( $barn['grid'] ?? array() ) as $row ) {
+				foreach ( (array) $row as $cell ) {
+					if ( is_array( $cell ) && 'stall' === ( $cell['type'] ?? '' ) && '' !== (string) ( $cell['label'] ?? '' ) ) {
+						$labels[] = (string) $cell['label'];
+					}
+				}
+			}
+		}
+
+		return array_values( array_unique( $labels ) );
 	}
 
 	/**
@@ -5375,17 +5426,41 @@ RV Lot: " . $rv_lot['name'] );
 		}
 
 		if ( ! empty( $receipt_settings['admin_receipt_email'] ) && is_email( $receipt_settings['admin_receipt_email'] ) ) {
+			// The admin notification reuses the same mockup-faithful white-styled
+			// confirmation template as the customer email and attaches the same PDF
+			// receipt, so the office copy matches what the customer received. The PDF
+			// is written to a temp file (wp_mail attachments are file paths) and
+			// removed after the send; if generation fails the email still goes out
+			// without it and the "PDF Receipt Attached" note is suppressed.
+			$admin_attachments = array();
+			$admin_pdf_path    = '';
+			$admin_pdf_bytes   = $this->generate_receipt_pdf( $order );
+			if ( '' !== $admin_pdf_bytes ) {
+				$admin_pdf_name = 'receipt-' . sprintf( '%05d', absint( $order['order_number'] ) ) . '.pdf';
+				$admin_pdf_path = trailingslashit( get_temp_dir() ) . wp_unique_filename( get_temp_dir(), $admin_pdf_name );
+				if ( false !== file_put_contents( $admin_pdf_path, $admin_pdf_bytes ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_put_contents
+					$admin_attachments[] = $admin_pdf_path;
+				} else {
+					$admin_pdf_path = '';
+				}
+			}
+
 			EEM_Mailer::send_html_email(
 				$receipt_settings['admin_receipt_email'],
 				$this->replace_receipt_tokens( $receipt_settings['admin_subject'], $order ),
-				$this->build_receipt_email_html( $order, $receipt_settings['admin_body'] ),
+				$this->build_confirmation_email_html( $order, ! empty( $admin_attachments ) ),
 				$headers,
 				// C6.D telemetry — admin BCC receipt at checkout time.
 				array(
 					'type'      => 'admin_receipt',
 					'order_key' => isset( $order['order_key'] ) ? (string) $order['order_key'] : '',
-				)
+				),
+				$admin_attachments
 			);
+
+			if ( '' !== $admin_pdf_path && file_exists( $admin_pdf_path ) ) {
+				wp_delete_file( $admin_pdf_path );
+			}
 		}
 	}
 
@@ -12496,7 +12571,20 @@ RV Lot: " . $rv_lot['name'] );
 					if (stallQty <= 0) {
 						return;
 					}
-					var pickedCount = form.querySelectorAll('input[name="preferred_stall_units[]"]:checked').length;
+					// Count the picks the customer actually made. The MAP picker writes
+					// non-empty hidden inputs (never ":checked"); the checkbox/grid picker
+					// uses checkboxes. A ":checked"-only count silently ignored every map
+					// pick, so the confirm fired even when stalls WERE chosen — then the
+					// server validated them fine. Count hidden inputs by value, checkboxes
+					// by checked state.
+					var pickedCount = 0;
+					pickInputs.forEach(function(el) {
+						if (el.type === 'checkbox' || el.type === 'radio') {
+							if (el.checked && el.value !== '') { pickedCount++; }
+						} else if (el.value !== '') {
+							pickedCount++;
+						}
+					});
 					if (pickedCount > 0) {
 						return;
 					}

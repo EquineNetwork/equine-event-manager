@@ -5464,6 +5464,26 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
 .eem-order-summary__grand-total--due .eem-order-summary__grand-val {
 	color: #c2410c;
 }
+/* Refund-owed variant — green panel signalling money is owed BACK to the
+   customer (overpaid order, e.g. after a shortened stay). */
+.eem-order-summary__grand-total--refund {
+	background: #ecfdf5;
+	border-color: #6ee7b7;
+}
+.eem-order-summary__grand-total--refund .eem-order-summary__grand-val {
+	color: #047857;
+}
+.eem-order-summary__refund-action {
+	margin-top: 10px;
+	text-align: right;
+}
+.eem-order-summary__refund-note {
+	margin: 8px 0 0;
+	font-size: 12px;
+	line-height: 1.5;
+	color: var(--eem-text-secondary);
+	text-align: left;
+}
 
 /* C6.A.2: per-section type badge + Section Total row inside summary. */
 /* Badge sweep 2026-06-19: shape normalized to the canonical badge (normal case,

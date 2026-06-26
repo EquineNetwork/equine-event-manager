@@ -1786,7 +1786,7 @@
 	   per-night cost). Live-recomputes the night delta + $ impact as the dates
 	   change and surfaces a refund (shorter) / charge-to-balance (longer)
 	   choice. Reloads on success so every total + badge re-renders. */
-	var _eemEditDatesCtx = { perNight: 0 };
+	var _eemEditDatesCtx = { perNight: 0, feeType: 'none', feeValue: 0, taxRate: 0 };
 
 	function eemEditDatesModal() { return document.getElementById('eem-order-edit-dates-modal'); }
 
@@ -1794,6 +1794,9 @@
 		var modal = eemEditDatesModal();
 		if (!modal || !btn) return;
 		_eemEditDatesCtx.perNight = parseFloat(btn.getAttribute('data-per-night')) || 0;
+		_eemEditDatesCtx.feeType = btn.getAttribute('data-fee-type') || 'none';
+		_eemEditDatesCtx.feeValue = parseFloat(btn.getAttribute('data-fee-value')) || 0;
+		_eemEditDatesCtx.taxRate = parseFloat(btn.getAttribute('data-tax-rate')) || 0;
 		var component = btn.getAttribute('data-component') || '';
 		var arrival = btn.getAttribute('data-arrival') || '';
 		var departure = btn.getAttribute('data-departure') || '';
@@ -1877,7 +1880,17 @@
 			return;
 		}
 
-		var amt = (Math.abs(delta) * perNight);
+		// Base = added/removed nights × per-night subtotal. Layer the convenience
+		// fee + tax on top so the displayed amount matches what the server actually
+		// charges/refunds (a percentage fee scales with the subtotal delta; a flat
+		// fee does not change with nights, so it adds nothing here).
+		var base = Math.abs(delta) * perNight;
+		var feeAdd = 0;
+		if (_eemEditDatesCtx.feeType === 'percentage') {
+			feeAdd = base * (_eemEditDatesCtx.feeValue / 100);
+		}
+		var taxAdd = _eemEditDatesCtx.taxRate > 0 ? base * (_eemEditDatesCtx.taxRate / 100) : 0;
+		var amt = base + feeAdd + taxAdd;
 		var amtStr = '$' + amt.toFixed(2);
 		if (delta < 0) {
 			if (textEl) textEl.textContent = 'This shortens the stay by ' + Math.abs(delta) + ' night(s).';
@@ -3122,6 +3135,17 @@
 		},
 		/* C6.B — Single-order Refund modal (Order Detail page). */
 		'order-refund-single': function () {
+			openOrderRefundModal();
+		},
+		/* Refund Owed — overpaid order: prefill the refund amount with the owed
+		   figure, then reuse the single-order refund modal + dispatch. */
+		'order-refund-owed': function (target) {
+			var owed = target ? (parseFloat(target.getAttribute('data-refund-amount')) || 0) : 0;
+			var modal = document.getElementById('eem-order-refund-modal');
+			if (modal && owed > 0) {
+				var amt = modal.querySelector('#eem-order-refund-amount');
+				if (amt) amt.value = owed.toFixed(2);
+			}
 			openOrderRefundModal();
 		},
 		'order-refund-single-close': function () {
@@ -9754,16 +9778,28 @@ function duplicateReservationAjax(target) {
 		}
 	});
 
-	/* Append check_number to the Record Payment link before navigation. */
+	/* Append the typed Amount Received (and check_number) to the Record Payment
+	   link before navigation, so the server records the actual amount the admin
+	   entered against the order's outstanding balance. */
 	document.addEventListener('click', function (ev) {
 		var btn = ev.target.closest('#eem-cp-cash-btn');
 		if (!btn) { return; }
 		var method = document.getElementById('eem-cp-cash-method');
 		var checkInput = document.getElementById('eem-cp-check-number');
-		if (method && method.value === 'check' && checkInput && checkInput.value.trim()) {
-			var href = btn.getAttribute('href').replace(/([&?])check_number=[^&]*/, '');
-			btn.setAttribute('href', href + '&check_number=' + encodeURIComponent(checkInput.value.trim()));
+		var amountInput = document.getElementById('eem-cp-cash-amount');
+		var href = btn.getAttribute('href')
+			.replace(/([&?])check_number=[^&]*/, '')
+			.replace(/([&?])amount=[^&]*/, '');
+		if (amountInput) {
+			var amt = parseFloat(String(amountInput.value).replace(/[^0-9.]/g, ''));
+			if (!isNaN(amt) && amt > 0) {
+				href += '&amount=' + encodeURIComponent(amt.toFixed(2));
+			}
 		}
+		if (method && method.value === 'check' && checkInput && checkInput.value.trim()) {
+			href += '&check_number=' + encodeURIComponent(checkInput.value.trim());
+		}
+		btn.setAttribute('href', href);
 	});
 })();
 

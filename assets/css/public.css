@@ -4508,6 +4508,11 @@
 	border-radius: 6px;
 	font-size: 14px;
 	color: #031B4E;
+	/* Mockup (event_page.html .field-input) fills inputs white. The RSNC host
+	   theme otherwise bleeds a pale-blue fill into form inputs, leaving them
+	   inconsistent with the phone-field wrapper (which forces #fff). Force white
+	   so every field matches the mockup + each other. */
+	background-color: #fff;
 }
 .eem-event-page .eem-reservation-form select {
 	-webkit-appearance: none;

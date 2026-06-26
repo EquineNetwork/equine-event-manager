@@ -641,6 +641,10 @@ class EEM_Order_Detail_Page {
 							data-arrival="<?php echo esc_attr( $arrival ); ?>"
 							data-departure="<?php echo esc_attr( $departure ); ?>"
 							data-per-night="<?php echo esc_attr( $nights > 0 ? number_format( $subtotal / $nights, 2, '.', '' ) : '0.00' ); ?>"
+							<?php $eem_fee = $this->edit_dates_fee_data( $res_id, 'stall', $stay_type ); ?>
+							data-fee-type="<?php echo esc_attr( $eem_fee['fee_type'] ); ?>"
+							data-fee-value="<?php echo esc_attr( number_format( $eem_fee['fee_value'], 4, '.', '' ) ); ?>"
+							data-tax-rate="<?php echo esc_attr( number_format( $eem_fee['tax_rate'], 4, '.', '' ) ); ?>"
 							data-section-label="<?php esc_attr_e( 'stall', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Edit Dates', 'equine-event-manager' ); ?></button>
 					<?php endif; ?>
 				</div>
@@ -825,6 +829,10 @@ class EEM_Order_Detail_Page {
 							data-arrival="<?php echo esc_attr( $arrival ); ?>"
 							data-departure="<?php echo esc_attr( $departure ); ?>"
 							data-per-night="<?php echo esc_attr( $nights > 0 ? number_format( $subtotal / $nights, 2, '.', '' ) : '0.00' ); ?>"
+							<?php $eem_fee = $this->edit_dates_fee_data( $rv_res_id, 'rv', $stay_type ); ?>
+							data-fee-type="<?php echo esc_attr( $eem_fee['fee_type'] ); ?>"
+							data-fee-value="<?php echo esc_attr( number_format( $eem_fee['fee_value'], 4, '.', '' ) ); ?>"
+							data-tax-rate="<?php echo esc_attr( number_format( $eem_fee['tax_rate'], 4, '.', '' ) ); ?>"
 							data-section-label="<?php esc_attr_e( 'RV', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Edit Dates', 'equine-event-manager' ); ?></button>
 					<?php endif; ?>
 				</div>
@@ -1161,7 +1169,19 @@ class EEM_Order_Detail_Page {
 				$summary_status = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
 				$amount_paid    = $this->compute_amount_paid( $order );
 				$balance_due    = round( max( 0.0, $total - $amount_paid ), 2 );
+				// Overpaid (e.g. after shortening a stay): the customer is owed money
+				// back. Surfaced as "Refund Owed" with a one-click refund button.
+				$refund_owed    = round( max( 0.0, $amount_paid - $total ), 2 );
 				$is_refunded    = ( 'refunded' === $summary_status || 'partially-refunded' === $summary_status );
+				// Auth.net can only refund a full charged component, not an arbitrary
+				// partial — flag it so the Refund Owed UI can warn before the click.
+				$owed_gateway   = '';
+				foreach ( (array) ( isset( $order['components'] ) ? $order['components'] : array() ) as $oc ) {
+					if ( ! empty( $oc['payment_gateway'] ) ) {
+						$owed_gateway = (string) $oc['payment_gateway'];
+						break;
+					}
+				}
 				?>
 				<div class="eem-order-summary__totals">
 					<?php if ( $is_refunded ) : ?>
@@ -1181,6 +1201,27 @@ class EEM_Order_Detail_Page {
 						<div class="eem-order-summary__grand-total eem-order-summary__grand-total--due">
 							<span class="eem-order-summary__grand-label"><?php esc_html_e( 'Balance Due', 'equine-event-manager' ); ?></span>
 							<span class="eem-order-summary__grand-val"><?php echo esc_html( '$' . number_format_i18n( $balance_due, 2 ) ); ?></span>
+						</div>
+					<?php elseif ( $refund_owed > 0.005 && ! $is_refunded ) : ?>
+						<div class="eem-order-summary__pay-line">
+							<span><?php esc_html_e( 'Order Total', 'equine-event-manager' ); ?></span>
+							<span><?php echo esc_html( '$' . number_format_i18n( $total, 2 ) ); ?></span>
+						</div>
+						<div class="eem-order-summary__pay-line eem-order-summary__pay-line--paid">
+							<span><?php esc_html_e( 'Amount Paid', 'equine-event-manager' ); ?></span>
+							<span><?php echo esc_html( '−$' . number_format_i18n( $amount_paid, 2 ) ); ?></span>
+						</div>
+						<div class="eem-order-summary__grand-total eem-order-summary__grand-total--refund">
+							<span class="eem-order-summary__grand-label"><?php esc_html_e( 'Refund Owed', 'equine-event-manager' ); ?></span>
+							<span class="eem-order-summary__grand-val"><?php echo esc_html( '$' . number_format_i18n( $refund_owed, 2 ) ); ?></span>
+						</div>
+						<div class="eem-order-summary__refund-action">
+							<button type="button" class="eem-btn eem-btn-primary eem-btn-sm" data-eem-action="order-refund-owed" data-refund-amount="<?php echo esc_attr( number_format( $refund_owed, 2, '.', '' ) ); ?>">
+								<?php echo esc_html( sprintf( /* translators: %s: refund amount */ __( 'Refund $%s to customer', 'equine-event-manager' ), number_format_i18n( $refund_owed, 2 ) ) ); ?>
+							</button>
+							<?php if ( 'authorize_net' === $owed_gateway ) : ?>
+								<p class="eem-order-summary__refund-note"><?php esc_html_e( 'Authorize.net can only refund a full charged component. If this partial refund is declined, refund the full stall/RV charge from the More → Refund Order panel instead.', 'equine-event-manager' ); ?></p>
+							<?php endif; ?>
 						</div>
 					<?php else : ?>
 						<div class="eem-order-summary__grand-total">
@@ -1214,6 +1255,35 @@ class EEM_Order_Detail_Page {
 			}
 		}
 		return 0.0;
+	}
+
+	/**
+	 * Resolve the reservation's convenience-fee + tax config so the Edit Dates
+	 * modal can show (and the server can charge) the per-night delta WITH the fee
+	 * and tax, matching customer checkout. Returns fee_type ('none'|'flat'|
+	 * 'percentage'), fee_value, and tax_rate (percent). Falls back to a no-fee /
+	 * no-tax shape when the reservation or pricer is unavailable.
+	 *
+	 * @param int    $reservation_id Reservation post ID.
+	 * @param string $section        'stall' | 'rv'.
+	 * @param string $stay_type      Component stay type.
+	 * @return array{fee_type:string,fee_value:float,tax_rate:float}
+	 */
+	private function edit_dates_fee_data( int $reservation_id, string $section, string $stay_type ): array {
+		$out = array( 'fee_type' => 'none', 'fee_value' => 0.0, 'tax_rate' => 0.0 );
+		if ( $reservation_id < 1 || ! class_exists( 'EEM_Shortcodes' ) ) {
+			return $out;
+		}
+		if ( null === $this->shortcodes_helper ) {
+			$this->shortcodes_helper = new EEM_Shortcodes();
+		}
+		$priced = $this->shortcodes_helper->price_base_rate_addition( $reservation_id, $section, 1, $stay_type, '', '' );
+		if ( ! empty( $priced['fee_enabled'] ) ) {
+			$out['fee_type']  = (string) ( $priced['fee_type'] ?? 'none' );
+			$out['fee_value'] = (float) ( $priced['fee_value'] ?? 0.0 );
+		}
+		$out['tax_rate'] = (float) ( $priced['tax_rate'] ?? 0.0 );
+		return $out;
 	}
 
 	/**

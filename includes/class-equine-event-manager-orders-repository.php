@@ -582,6 +582,134 @@ class EEM_Orders_Repository {
 	}
 
 	/**
+	 * Record a manual (cash / check / other offline) payment of a specific
+	 * amount against an order, applying it toward the outstanding balance.
+	 *
+	 * Unlike mark_order_paid_manually() — which marks the WHOLE order paid and
+	 * always sets every component's amount_paid to its full charged amount — this
+	 * applies a caller-supplied dollar amount across the order's components that
+	 * still carry a balance, raising each component's amount_paid up to (but never
+	 * past) its charged total (total + tax). This makes it correct for:
+	 *   - orders that already took a partial payment (card paid one component,
+	 *     cash settles the rest);
+	 *   - "Open" tab orders started from the stall chart;
+	 *   - balances created by adding items / editing dates after an order was paid.
+	 *
+	 * The amount is capped to the order's outstanding balance so an over-tender
+	 * never inflates amount_paid. A component that already carries a payment keeps
+	 * its original gateway + transaction_id (so a card-paid component stays
+	 * refundable through its processor); only previously-unpaid components are
+	 * stamped with the 'manual' gateway.
+	 *
+	 * @param string $order_key      Order key.
+	 * @param float  $amount         Amount received (dollars).
+	 * @param string $payment_method Human label, e.g. "Cash" or "Check #1042".
+	 * @return bool True if at least one component row was updated.
+	 */
+	public function record_manual_payment( $order_key, $amount, $payment_method = 'Cash' ) {
+		$order = $this->get_order( $order_key );
+		if ( ! $order ) {
+			return false;
+		}
+
+		$status = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
+		if ( in_array( $status, array( 'cancelled', 'refunded', 'partially-refunded' ), true ) ) {
+			return false;
+		}
+
+		$amount = round( max( 0.0, (float) $amount ), 2 );
+		if ( $amount <= 0 ) {
+			return false;
+		}
+
+		$outstanding = isset( $order['amount_due'] ) ? round( max( 0.0, (float) $order['amount_due'] ), 2 ) : 0.0;
+		if ( $outstanding <= 0 ) {
+			return false; // Nothing due.
+		}
+
+		$leftover       = min( $amount, $outstanding );
+		$paid_at        = current_time( 'mysql' );
+		$payment_method = trim( sanitize_text_field( (string) $payment_method ) );
+		$payment_method = '' !== $payment_method ? $payment_method : 'Cash';
+		$old_status     = $status;
+		$updated_any    = false;
+
+		foreach ( $order['components'] as $component ) {
+			if ( $leftover <= 0.005 ) {
+				break;
+			}
+
+			$charged   = ( isset( $component['total'] ) ? (float) $component['total'] : 0.0 )
+				+ ( isset( $component['tax'] ) ? (float) $component['tax'] : 0.0 );
+			$prev_paid = isset( $component['amount_paid'] ) ? (float) $component['amount_paid'] : 0.0;
+			$remaining = round( $charged - $prev_paid, 2 );
+			if ( $remaining <= 0.005 ) {
+				continue; // Component already settled.
+			}
+
+			$apply    = round( min( $remaining, $leftover ), 2 );
+			$new_paid = round( $prev_paid + $apply, 2 );
+			$leftover = round( $leftover - $apply, 2 );
+			$fully    = ( $new_paid + 0.005 ) >= $charged;
+
+			$notes = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+			if ( $fully ) {
+				$notes = $this->upsert_note_line( $notes, 'Invoice Status', 'Paid' );
+				$notes = $this->upsert_note_line( $notes, 'Invoice Paid At', $paid_at );
+			}
+			$notes = $this->upsert_note_line( $notes, 'Manual Payment Method', $payment_method );
+			$notes = $this->upsert_note_line( $notes, 'Manual Payment Recorded At', $paid_at );
+
+			$fields  = array(
+				'payment_status' => $fully ? 'paid' : 'partially_paid',
+				'amount_paid'    => number_format( max( 0.0, $new_paid ), 2, '.', '' ),
+				'notes'          => $notes,
+			);
+			$formats = array( '%s', '%s', '%s' );
+
+			// Only stamp the manual gateway when this component had no prior
+			// payment — preserve an existing gateway + transaction_id so a
+			// card-paid component stays refundable through its original processor.
+			if ( $prev_paid <= 0.005 ) {
+				$fields['payment_gateway'] = 'manual';
+				$fields['transaction_id']  = '';
+				$formats[]                 = '%s';
+				$formats[]                 = '%s';
+			}
+
+			$updated_any = $this->update_component_fields(
+				$component['table'],
+				$component['row_id'],
+				$fields,
+				$formats
+			) || $updated_any;
+		}
+
+		if ( $updated_any ) {
+			$new_balance = round( $outstanding - min( $amount, $outstanding ), 2 );
+			$new_status  = ( $new_balance <= 0.005 ) ? 'paid' : 'partially_paid';
+			if ( $old_status !== $new_status ) {
+				/**
+				 * @since 2.7.x
+				 */
+				do_action( 'eem_order_payment_status_changed', array(
+					'order_key'      => (string) $order_key,
+					'old_status'     => $old_status,
+					'new_status'     => $new_status,
+					'gateway'        => 'manual',
+					'transaction_id' => '',
+					'source'         => 'record_manual_payment',
+					'actor_type'     => 'admin',
+					'actor_id'       => get_current_user_id() ?: null,
+					'payment_method' => $payment_method,
+				) );
+			}
+		}
+
+		return $updated_any;
+	}
+
+	/**
 	 * Order Edit: add base-rate quantity to an order's section component (extra
 	 * stalls / RV), creating the component row if the order doesn't have that
 	 * section yet. The addition raises the order total without touching

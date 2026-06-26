@@ -10735,9 +10735,52 @@ class EEM_Admin {
 			);
 		}
 
+		// Resolve the reservation's convenience-fee + tax config once so BOTH the
+		// charge and refund branches move the fee/tax with the per-night delta,
+		// exactly like customer checkout and the Add-Items path. Without this the
+		// extra/removed nights' fee (e.g. the 4% convenience fee) was silently
+		// dropped, so the order under-billed (lengthen) or under-refunded (shorten).
+		$fee_enabled  = false;
+		$fee_type     = 'none';
+		$fee_value    = 0.0;
+		$res_tax_rate = 0.0;
+		if ( $lock_rid > 0 && class_exists( 'EEM_Shortcodes' ) ) {
+			$pricer = new EEM_Shortcodes();
+			$priced = $pricer->price_base_rate_addition(
+				$lock_rid,
+				$component,
+				1,
+				isset( $first['stay_type'] ) ? (string) $first['stay_type'] : '',
+				$arrival,
+				$departure
+			);
+			$fee_enabled  = ! empty( $priced['fee_enabled'] );
+			$fee_type     = (string) ( $priced['fee_type'] ?? 'none' );
+			$fee_value    = (float) ( $priced['fee_value'] ?? 0.0 );
+			$res_tax_rate = (float) ( $priced['tax_rate'] ?? 0.0 );
+		}
+		$calc_fee = static function ( $subtotal ) use ( $fee_enabled, $fee_type, $fee_value ) {
+			if ( ! $fee_enabled ) {
+				return 0.0;
+			}
+			if ( 'flat' === $fee_type ) {
+				return (float) $fee_value;
+			}
+			if ( 'percentage' === $fee_type ) {
+				return round( $subtotal * ( $fee_value / 100 ), 2 );
+			}
+			return 0.0;
+		};
+
 		// 2) Money handling, only when nights changed AND the admin opted in.
 		if ( $delta < 0 && 'refund' === $money_action ) {
-			$refund_amt = round( $per_night * abs( $delta ), 2 );
+			// Base = removed nights × per-night subtotal; layer the percentage fee +
+			// tax on top (a flat fee doesn't scale with nights, so it's not refunded
+			// for a partial-night shorten). Mirrors the modal's displayed amount.
+			$base_refund = round( $per_night * abs( $delta ), 2 );
+			$fee_refund  = 'percentage' === $fee_type ? round( $base_refund * ( $fee_value / 100 ), 2 ) : 0.0;
+			$tax_refund  = $res_tax_rate > 0 ? round( $base_refund * ( $res_tax_rate / 100 ), 2 ) : 0.0;
+			$refund_amt  = round( $base_refund + $fee_refund + $tax_refund, 2 );
 			if ( $refund_amt > 0 ) {
 				$reason = sprintf(
 					/* translators: 1: night count, 2: section label */
@@ -10759,7 +10802,7 @@ class EEM_Admin {
 				$refunded_amount = (float) $result['refunded_amount'];
 			}
 		} elseif ( $delta > 0 && 'charge' === $money_action ) {
-			// Raise each row's subtotal/total/tax by its share of the per-night
+			// Raise each row's subtotal/fee/tax/total by its share of the per-night
 			// delta so the difference becomes Balance Due. amount_paid is left
 			// untouched; a fully-paid row drops to partially_paid.
 			foreach ( $rows as $r ) {
@@ -10770,18 +10813,24 @@ class EEM_Admin {
 					continue;
 				}
 				$tax_rate   = isset( $r['tax_rate'] ) ? (float) $r['tax_rate'] : 0.0;
-				$new_sub    = round( (float) $r['subtotal'] + $row_add, 2 );
-				$new_total  = round( (float) $r['total'] + $row_add, 2 );
-				$new_tax    = $tax_rate > 0 ? round( (float) $r['tax'] + ( $row_add * $tax_rate ), 2 ) : ( isset( $r['tax'] ) ? (float) $r['tax'] : 0.0 );
-				$fields     = array( 'subtotal' => $new_sub, 'total' => $new_total, 'tax' => $new_tax );
-				$formats    = array( '%f', '%f', '%f' );
+				$old_sub    = (float) $r['subtotal'];
+				$new_sub    = round( $old_sub + $row_add, 2 );
+				$old_fee    = isset( $r['convenience_fee'] ) ? (float) $r['convenience_fee'] : 0.0;
+				$new_fee    = round( $calc_fee( $new_sub ), 2 );
+				$fee_add    = round( $new_fee - $old_fee, 2 );
+				// tax_rate is stored as a percent (e.g. 7 for 7%), so divide by 100.
+				$tax_add    = $tax_rate > 0 ? round( $row_add * ( $tax_rate / 100 ), 2 ) : 0.0;
+				$new_tax    = round( ( isset( $r['tax'] ) ? (float) $r['tax'] : 0.0 ) + $tax_add, 2 );
+				$new_total  = round( (float) $r['total'] + $row_add + $fee_add + $tax_add, 2 );
+				$fields     = array( 'subtotal' => $new_sub, 'convenience_fee' => $new_fee, 'total' => $new_total, 'tax' => $new_tax );
+				$formats    = array( '%f', '%f', '%f', '%f' );
 				// Re-open payment status if the row was fully settled.
 				if ( isset( $r['payment_status'] ) && 'paid' === $r['payment_status'] ) {
 					$fields['payment_status'] = 'partially_paid';
 					$formats[]                = '%s';
 				}
 				$this->orders_repository->update_component_fields( $component, (int) $r['id'], $fields, $formats );
-				$balance_added += $row_add;
+				$balance_added += round( $row_add + $fee_add + $tax_add, 2 );
 			}
 		}
 
@@ -12448,8 +12497,14 @@ class EEM_Admin {
 			$this->redirect_to_order_notice( $order_key, 'manual_payment_failed', __( 'Order not found.', 'equine-event-manager' ) );
 		}
 
-		if ( ! in_array( $order['status_slug'], array( 'unpaid', 'invoice-sent' ), true ) ) {
-			$this->redirect_to_order_notice( $order_key, 'manual_payment_failed', __( 'Only unpaid orders can be marked paid manually.', 'equine-event-manager' ) );
+		$status = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
+		if ( in_array( $status, array( 'cancelled', 'refunded', 'partially-refunded' ), true ) ) {
+			$this->redirect_to_order_notice( $order_key, 'manual_payment_failed', __( 'A cash or check payment can’t be recorded against a cancelled or refunded order.', 'equine-event-manager' ) );
+		}
+
+		$outstanding = isset( $order['amount_due'] ) ? round( max( 0.0, (float) $order['amount_due'] ), 2 ) : 0.0;
+		if ( $outstanding <= 0 ) {
+			$this->redirect_to_order_notice( $order_key, 'manual_payment_failed', __( 'This order has no outstanding balance to collect.', 'equine-event-manager' ) );
 		}
 
 		$method_map = array(
@@ -12469,10 +12524,24 @@ class EEM_Admin {
 			}
 		}
 
-		$updated = $this->orders_repository->mark_order_paid_manually( $order_key, $payment_label );
+		// Amount received (optional). Parse from the Collect Payment field; default
+		// to the full outstanding balance when omitted. The repo caps it to the
+		// outstanding balance so an over-tender never inflates amount_paid.
+		$amount = $outstanding;
+		if ( isset( $_GET['amount'] ) ) {
+			$raw = preg_replace( '/[^0-9.]/', '', (string) wp_unslash( $_GET['amount'] ) );
+			if ( '' !== $raw ) {
+				$amount = round( (float) $raw, 2 );
+			}
+		}
+		if ( $amount <= 0 ) {
+			$this->redirect_to_order_notice( $order_key, 'manual_payment_failed', __( 'Enter an amount greater than zero to record a payment.', 'equine-event-manager' ) );
+		}
+
+		$updated = $this->orders_repository->record_manual_payment( $order_key, $amount, $payment_label );
 
 		if ( ! $updated ) {
-			$this->redirect_to_order_notice( $order_key, 'manual_payment_failed', __( 'The order could not be marked paid.', 'equine-event-manager' ) );
+			$this->redirect_to_order_notice( $order_key, 'manual_payment_failed', __( 'The payment could not be recorded.', 'equine-event-manager' ) );
 		}
 
 		$this->redirect_to_order_notice( $order_key, 'manual_payment_recorded' );
