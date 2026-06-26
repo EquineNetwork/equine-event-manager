@@ -2385,6 +2385,58 @@
 		modal.setAttribute('aria-hidden', 'true');
 	}
 
+	var _bulkTrashKeys = [];
+	function openOrdersBulkTrashModal() {
+		var checked = document.querySelectorAll('input.eem-orders-row-cb:checked');
+		if (!checked.length) { window.alert('Select at least one order before clicking Apply.'); return; }
+		_bulkTrashKeys = Array.prototype.map.call(checked, function (cb) { return cb.value; });
+		var modal = document.getElementById('eem-orders-bulk-trash-modal');
+		if (!modal) return;
+		var summary = modal.querySelector('[data-eem-bulk-trash-summary]');
+		if (summary) summary.textContent = 'Move ' + _bulkTrashKeys.length + ' selected order' + (_bulkTrashKeys.length === 1 ? '' : 's') + ' to Trash?';
+		var confirmBtn = modal.querySelector('[data-eem-bulk-trash-confirm]');
+		if (confirmBtn) confirmBtn.disabled = false;
+		modal.classList.add('open');
+		modal.setAttribute('aria-hidden', 'false');
+		closeAllDropdowns();
+	}
+
+	function closeOrdersBulkTrashModal() {
+		var modal = document.getElementById('eem-orders-bulk-trash-modal');
+		if (!modal) return;
+		modal.classList.remove('open');
+		modal.setAttribute('aria-hidden', 'true');
+	}
+
+	function submitBulkTrash() {
+		if (!_bulkTrashKeys.length) return;
+		var nonce = (window.eemOrderRowActions && window.eemOrderRowActions.nonces && window.eemOrderRowActions.nonces.eem_bulk_trash) || '';
+		var confirmBtn = document.querySelector('[data-eem-bulk-trash-confirm]');
+		if (confirmBtn) confirmBtn.disabled = true;
+		var body = new URLSearchParams();
+		body.append('action', 'eem_order_bulk_trash');
+		body.append('_eem_bulk_trash_nonce', nonce);
+		_bulkTrashKeys.forEach(function (k) { body.append('order_keys[]', k); });
+		fetch((window.ajaxurl || '/wp-admin/admin-ajax.php'), {
+			method: 'POST', credentials: 'same-origin',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+			body: body.toString()
+		}).then(function (r) { return r.json(); }).then(function (resp) {
+			closeOrdersBulkTrashModal();
+			if (window.EEM && window.EEM.showSaveToast) {
+				var msg = (resp && resp.data && resp.data.message) || (resp && resp.success ? 'Orders moved to Trash.' : 'Could not trash orders.');
+				window.EEM.showSaveToast(msg, { variant: resp && resp.success ? 'success' : 'error', sub: '' });
+			}
+			if (resp && resp.success) { setTimeout(function () { window.location.reload(); }, 900); }
+			else if (confirmBtn) { confirmBtn.disabled = false; }
+		}).catch(function () {
+			closeOrdersBulkTrashModal();
+			if (window.EEM && window.EEM.showSaveToast) {
+				window.EEM.showSaveToast('Network error. Please try again.', { variant: 'error', sub: '' });
+			}
+		});
+	}
+
 	function startBulkCancelQueue() {
 		var modal = document.getElementById('eem-orders-bulk-cancel-modal');
 		if (!modal || !_bulkCancelKeys.length) return;
@@ -3028,7 +3080,14 @@
 			var sel = document.querySelector('[data-eem-orders-bulk-action]');
 			if (sel && sel.value === 'cancel') { openOrdersBulkCancelModal(); return; }
 			if (sel && sel.value === 'send_link') { openOrdersBulkSendLinkModal(); return; }
+			if (sel && sel.value === 'trash') { openOrdersBulkTrashModal(); return; }
 			openOrdersBulkRefundModal();
+		},
+		'orders-bulk-trash-close': function () {
+			closeOrdersBulkTrashModal();
+		},
+		'orders-bulk-trash-confirm': function () {
+			submitBulkTrash();
 		},
 		'orders-bulk-cancel-close': function () {
 			closeOrdersBulkCancelModal();

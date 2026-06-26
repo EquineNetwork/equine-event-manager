@@ -141,6 +141,7 @@ class EEM_Orders_List_Page {
 		<?php $this->render_bulk_refund_modal(); ?>
 		<?php $this->render_bulk_cancel_modal(); ?>
 		<?php $this->render_bulk_send_link_modal(); ?>
+		<?php $this->render_bulk_trash_modal(); ?>
 		<?php /* C5.F-toolbar: toolbar restructured to mirror the C4
 		         Reservations pattern — two stacked .eem-list-toolbar rows
 		         using shared C1.3 primitives. Row 1 = event filter + billing
@@ -282,6 +283,7 @@ class EEM_Orders_List_Page {
 						<option value="refund"><?php esc_html_e( 'Refund Selected', 'equine-event-manager' ); ?></option>
 						<option value="cancel"><?php esc_html_e( 'Cancel Selected', 'equine-event-manager' ); ?></option>
 						<option value="send_link"><?php esc_html_e( 'Send Payment Link', 'equine-event-manager' ); ?></option>
+						<option value="trash"><?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?></option>
 					</select>
 					<button type="button" class="eem-toolbar-btn" data-eem-action="orders-bulk-apply"><?php esc_html_e( 'Apply', 'equine-event-manager' ); ?></button>
 				</form>
@@ -944,6 +946,7 @@ class EEM_Orders_List_Page {
 				'eem_order_print_receipt'       => wp_create_nonce( 'eem_order_print_receipt' ),
 				'eem_bulk_cancel'               => wp_create_nonce( 'eem_bulk_cancel' ),
 				'eem_bulk_send_link'            => wp_create_nonce( 'eem_bulk_send_link' ),
+				'eem_bulk_trash'               => wp_create_nonce( 'eem_bulk_trash' ),
 			),
 		) );
 	}
@@ -998,7 +1001,37 @@ class EEM_Orders_List_Page {
 				</div>
 				<footer class="eem-modal-foot eem-modal-foot--split">
 					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="orders-bulk-cancel-close"><?php esc_html_e( 'Keep orders', 'equine-event-manager' ); ?></button>
-					<button type="button" class="eem-btn eem-btn-delete" data-eem-action="orders-bulk-cancel-confirm" data-eem-bulk-cancel-confirm><?php esc_html_e( 'Cancel orders', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-danger" data-eem-action="orders-bulk-cancel-confirm" data-eem-bulk-cancel-confirm><?php esc_html_e( 'Cancel orders', 'equine-event-manager' ); ?></button>
+				</footer>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Bulk "Move to Trash" modal — simple one-shot confirmation (no queue, trash
+	 * is reversible so no per-order progress needed). JS fires one AJAX request
+	 * with all selected keys; on success the page reloads.
+	 *
+	 * @return void
+	 */
+	private function render_bulk_trash_modal(): void {
+		?>
+		<div class="eem-modal" id="eem-orders-bulk-trash-modal" role="dialog" aria-modal="true" aria-labelledby="eem-bulk-trash-title" aria-hidden="true">
+			<div class="eem-modal-card">
+				<header class="eem-modal-head">
+					<h2 class="eem-modal-title" id="eem-bulk-trash-title"><?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?></h2>
+					<button type="button" class="eem-modal-close" data-eem-action="orders-bulk-trash-close" aria-label="<?php esc_attr_e( 'Close', 'equine-event-manager' ); ?>">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+					</button>
+				</header>
+				<div class="eem-modal-body">
+					<p data-eem-bulk-trash-summary class="eem-modal-desc"></p>
+					<p class="eem-modal-desc" style="color:var(--color-text-secondary,#666);font-size:13px;"><?php esc_html_e( 'Trashed orders can be restored from the Trash tab.', 'equine-event-manager' ); ?></p>
+				</div>
+				<footer class="eem-modal-foot eem-modal-foot--split">
+					<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="orders-bulk-trash-close"><?php esc_html_e( 'Keep orders', 'equine-event-manager' ); ?></button>
+					<button type="button" class="eem-btn eem-btn-danger" data-eem-action="orders-bulk-trash-confirm" data-eem-bulk-trash-confirm><?php esc_html_e( 'Move to Trash', 'equine-event-manager' ); ?></button>
 				</footer>
 			</div>
 		</div>

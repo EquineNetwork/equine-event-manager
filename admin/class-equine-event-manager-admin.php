@@ -6849,8 +6849,9 @@ class EEM_Admin {
 		}
 
 		// Return the refreshed chart region so the map updates in-place.
+		$config = $this->get_stall_chart_config( $reservation_id );
 		ob_start();
-		$this->render_stall_chart_dynamic_region( $reservation_id, $inv, $tab );
+		$this->render_stall_chart_dynamic_region( $reservation_id, $config, $inv, $tab );
 		$html = ob_get_clean();
 
 		wp_send_json_success( array(
@@ -10597,6 +10598,40 @@ class EEM_Admin {
 			'new_status_css'    => $status_css,
 			'status_badge_html' => $status_badge_html,
 			'payment_label'     => $payment_label,
+		) );
+	}
+
+	/**
+	 * AJAX endpoint: bulk Move to Trash. Receives all selected order keys in a
+	 * single request and trashes each one via the repo. Returns a success count
+	 * so the JS can surface a summary toast.
+	 *
+	 * @return void
+	 */
+	public function handle_ajax_bulk_trash(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+		check_ajax_referer( 'eem_bulk_trash', '_eem_bulk_trash_nonce' );
+
+		$raw_keys = isset( $_POST['order_keys'] ) ? wp_unslash( $_POST['order_keys'] ) : array();
+		if ( ! is_array( $raw_keys ) ) {
+			wp_send_json_error( array( 'message' => __( 'No orders selected.', 'equine-event-manager' ) ), 400 );
+		}
+		$keys    = array_filter( array_map( 'sanitize_text_field', $raw_keys ) );
+		$trashed = 0;
+		foreach ( $keys as $key ) {
+			if ( $this->orders_repository->trash_order( $key ) ) {
+				$trashed++;
+			}
+		}
+		wp_send_json_success( array(
+			'trashed' => $trashed,
+			'message' => sprintf(
+				/* translators: %d: number of orders moved to trash */
+				_n( '%d order moved to Trash.', '%d orders moved to Trash.', $trashed, 'equine-event-manager' ),
+				$trashed
+			),
 		) );
 	}
 
