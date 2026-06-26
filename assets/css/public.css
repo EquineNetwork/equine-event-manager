@@ -4124,9 +4124,9 @@
 .eem-event-page .btn-reserve {
 	background: #1668F2;
 	color: #fff;
-	padding: 14px 26px;
+	padding: 9px 18px;
 	border-radius: 8px;
-	font-size: 16px;
+	font-size: 14px;
 	font-weight: 700;
 	cursor: pointer;
 	border: none;
@@ -4138,9 +4138,9 @@
 	background: #fff;
 	color: #031B4E;
 	border: 1.5px solid #e2e8f4;
-	padding: 14px 20px;
+	padding: 9px 16px;
 	border-radius: 8px;
-	font-size: 16px;
+	font-size: 14px;
 	font-weight: 500;
 	cursor: pointer;
 	text-decoration: none;
