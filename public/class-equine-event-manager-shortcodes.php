@@ -1680,7 +1680,7 @@ class EEM_Shortcodes {
 					</div><!-- /.eem-payment-summary -->
 						<div class="order-info-box">
 							<span class="order-info-box__icon" aria-hidden="true">&#8505;</span>
-							<span><?php esc_html_e( 'Your reservation will be confirmed by email after checkout. Changes can be requested through your account.', 'equine-event-manager' ); ?></span>
+							<span><?php esc_html_e( 'Your reservation will be confirmed by email after checkout.', 'equine-event-manager' ); ?></span>
 						</div>
 						<a class="order-reserve-btn" href="#eem-billing-payment"><?php esc_html_e( 'Reserve Now', 'equine-event-manager' ); ?></a>
 						<div class="order-secure">&#128274; <?php esc_html_e( 'Secured Checkout &middot; SSL Encrypted', 'equine-event-manager' ); ?></div>
@@ -2147,7 +2147,7 @@ class EEM_Shortcodes {
 			<?php endif; ?>
 		<?php endif; ?>
 		<div class="eem-section-subtotal" aria-live="polite">
-			<span><?php esc_html_e( 'Stall Subtotal', 'equine-event-manager' ); ?></span>
+			<span><?php esc_html_e( 'Stall Section Subtotal', 'equine-event-manager' ); ?></span>
 			<strong data-eem-total="stall_section_subtotal">$0.00</strong>
 		</div>
 		<?php
@@ -2512,6 +2512,7 @@ class EEM_Shortcodes {
 				var chip = 'var(--eem-map-chip, 40px)', aisle = '12px';
 				gridEl.style.gridTemplateColumns = colCov.map(function(v){ return v ? chip : aisle; }).join(' ');
 				gridEl.style.gridTemplateRows = rowCov.map(function(v){ return v ? chip : aisle; }).join(' ');
+					markTackChip();
 			}
 
 			function renderTabs(){
@@ -2595,6 +2596,7 @@ class EEM_Shortcodes {
 				if (summary) summary.textContent = txt;
 				if (footEl) footEl.innerHTML = '<strong>' + units.length + '</strong> ' + <?php echo wp_json_encode( esc_html__( 'selected', 'equine-event-manager' ) ); ?>;
 				syncTack(units);
+				markTackChip();
 				syncSurcharge(units);
 				filterAddonsByZone(units);
 				updateAssignUI();
@@ -2663,6 +2665,20 @@ class EEM_Shortcodes {
 				tackWrap.hidden = units.length === 0;
 			}
 
+			// Recolor the map chip the customer designated as their tack stall (amber
+			// via .is-tack) and clear it from any other chip. Called after every
+			// grid render / selection change / tack-dropdown change so the highlight
+			// always tracks the current choice.
+			function markTackChip(){
+				if (!gridEl) return;
+				gridEl.querySelectorAll('.eem-map-stall.is-tack').forEach(function(el){ el.classList.remove('is-tack'); });
+				var tackVal = tackSel ? tackSel.value : '';
+				if (!tackVal) return;
+				var safe = (window.CSS && CSS.escape) ? CSS.escape(tackVal) : tackVal.replace(/"/g, '\\"');
+				var chip = gridEl.querySelector('.eem-map-stall[data-unit="' + safe + '"]');
+				if (chip) { chip.classList.add('is-tack'); }
+			}
+
 			gridEl.addEventListener('click', function(ev){
 				if (didPan) { return; }   // a drag-to-pan just happened; don't select
 				var s = ev.target.closest('.eem-map-stall'); if (!s) return;
@@ -2713,7 +2729,7 @@ class EEM_Shortcodes {
 			// Tack designation change → nudge the qty field so the live total recomputes
 			// (countTackStalls() reads [data-eem-tack-select]; the qty event is what the
 			// existing total listeners are bound to).
-			if (tackSel){ tackSel.addEventListener('change', function(){ var q = form.querySelector('[name="'+P.qtyField+'"]'); if (q){ q.dispatchEvent(new Event('input',{bubbles:true})); q.dispatchEvent(new Event('change',{bubbles:true})); } }); }
+			if (tackSel){ tackSel.addEventListener('change', function(){ markTackChip(); var q = form.querySelector('[name="'+P.qtyField+'"]'); if (q){ q.dispatchEvent(new Event('input',{bubbles:true})); q.dispatchEvent(new Event('change',{bubbles:true})); } }); }
 
 			// Re-render the tab surcharges + re-sum the picked-lot surcharge when the
 			// RV stay type flips — a Nightly stay uses the per-night figure, a Stay

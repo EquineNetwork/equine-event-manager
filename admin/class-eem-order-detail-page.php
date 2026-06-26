@@ -443,6 +443,16 @@ class EEM_Order_Detail_Page {
 			return;
 		}
 
+		// Overpaid (e.g. after shortening a paid stay): the customer is owed money
+		// back. Surface a "Refund Due" banner with a Refund button instead of the
+		// Payment Outstanding banner — they're mutually exclusive (a single order is
+		// either owed-to or owing, never both).
+		$refund_owed = round( max( 0.0, $this->compute_amount_paid( $order ) - $this->compute_grand_total( $order ) ), 2 );
+		if ( $refund_owed > 0.005 ) {
+			$this->render_refund_due_banner( $order, $refund_owed );
+			return;
+		}
+
 		// Balance-driven: any real outstanding amount surfaces the banner —
 		// including a fully-"paid" order whose total rose after a stall/RV or
 		// custom line item was added (the delta is genuinely uncollected).
@@ -505,6 +515,39 @@ class EEM_Order_Detail_Page {
 				<?php if ( in_array( $status_slug, array( 'unpaid', 'invoice-sent' ), true ) ) : ?>
 					<a class="eem-btn eem-btn-ghost eem-btn-mark-paid" href="#" data-eem-action="order-mark-paid"><?php esc_html_e( 'Mark as Paid', 'equine-event-manager' ); ?></a>
 				<?php endif; ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Refund Due banner — the blue mirror of the Payment Outstanding banner.
+	 * Renders when the order is overpaid (amount collected exceeds the current
+	 * total, e.g. after an Edit Dates shorten on a paid order). Carries a Refund
+	 * button that opens the existing single-order refund modal pre-filled with
+	 * the owed amount.
+	 *
+	 * @param array<string, mixed> $order
+	 * @param float                $refund_owed Amount the customer is owed back.
+	 * @return void
+	 */
+	private function render_refund_due_banner( array $order, float $refund_owed ): void {
+		?>
+		<div class="eem-order-payment-banner eem-order-payment-banner--refund" role="status">
+			<div class="eem-order-payment-banner__left">
+				<div class="eem-order-payment-banner__icon" aria-hidden="true">!</div>
+				<div class="eem-order-payment-banner__content">
+					<div class="eem-order-payment-banner__title"><?php esc_html_e( 'Refund Due', 'equine-event-manager' ); ?></div>
+					<div class="eem-order-payment-banner__meta">
+						<span class="eem-order-payment-banner__amount"><?php echo esc_html( '$' . number_format_i18n( $refund_owed, 2 ) ); ?></span>
+						<?php esc_html_e( 'is owed back to the customer after the order was updated. Refund to settle the order.', 'equine-event-manager' ); ?>
+					</div>
+				</div>
+			</div>
+			<div class="eem-order-payment-banner__actions">
+				<button type="button" class="eem-btn eem-btn-primary" data-eem-action="order-refund-owed" data-refund-amount="<?php echo esc_attr( number_format( $refund_owed, 2, '.', '' ) ); ?>">
+					<?php echo esc_html( sprintf( /* translators: %s: refund amount */ __( 'Refund $%s', 'equine-event-manager' ), number_format_i18n( $refund_owed, 2 ) ) ); ?>
+				</button>
 			</div>
 		</div>
 		<?php
@@ -666,11 +709,20 @@ class EEM_Order_Detail_Page {
 						<span class="eem-order-card__nights"><?php echo esc_html( sprintf( _n( '%d Night', '%d Nights', $nights, 'equine-event-manager' ), $nights ) ); ?></span>
 					<?php endif; ?>
 					<?php if ( '' !== $arrival && '' !== $departure ) : ?>
+						<?php
+						// Subset date-extension: the assigned stall units (so the modal can
+						// offer per-stall checkboxes) + the per-unit nightly price (so the
+						// money preview can scale to the chosen subset count).
+						$eem_assigned_units = array_values( array_filter( array_map( 'trim', explode( ',', (string) $assigned ) ) ) );
+						?>
 						<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="order-edit-dates-open"
 							data-component="stall"
 							data-arrival="<?php echo esc_attr( $arrival ); ?>"
 							data-departure="<?php echo esc_attr( $departure ); ?>"
 							data-per-night="<?php echo esc_attr( number_format( $unit_price * $qty, 2, '.', '' ) ); ?>"
+							data-unit-price="<?php echo esc_attr( number_format( $unit_price, 2, '.', '' ) ); ?>"
+							data-section-qty="<?php echo esc_attr( (string) $qty ); ?>"
+							data-assigned-units="<?php echo esc_attr( wp_json_encode( $eem_assigned_units ) ); ?>"
 							<?php $eem_fee = $this->edit_dates_fee_data( $res_id, 'stall', $stay_type ); ?>
 							data-fee-type="<?php echo esc_attr( $eem_fee['fee_type'] ); ?>"
 							data-fee-value="<?php echo esc_attr( number_format( $eem_fee['fee_value'], 4, '.', '' ) ); ?>"
@@ -2078,6 +2130,17 @@ class EEM_Order_Detail_Page {
 					<div class="eem-field-row">
 						<label class="eem-field-label" for="eem-edit-dates-departure"><?php esc_html_e( 'Departure date', 'equine-event-manager' ); ?></label>
 						<input type="date" class="eem-field-input" id="eem-edit-dates-departure" name="departure" required />
+					</div>
+
+					<?php // Subset extension (stall only): pick which assigned stalls get the
+					// new dates. Populated client-side from the button's data-assigned-units.
+					// Leaving every box checked moves the whole reservation (original
+					// behavior); unchecking some splits the line so the rest keep their
+					// original dates. ?>
+					<div class="eem-edit-dates-subset" data-eem-edit-dates-subset hidden>
+						<p class="eem-edit-dates-subset__label"><?php esc_html_e( 'Apply new dates to which stalls?', 'equine-event-manager' ); ?></p>
+						<div class="eem-edit-dates-subset__list" data-eem-edit-dates-subset-list></div>
+						<p class="eem-edit-dates-subset__hint"><?php esc_html_e( 'Leave all checked to move the whole reservation. Uncheck stalls that should keep their current dates — the order will be split into two date lines.', 'equine-event-manager' ); ?></p>
 					</div>
 
 					<div class="eem-edit-dates-impact" data-eem-edit-dates-impact hidden>
