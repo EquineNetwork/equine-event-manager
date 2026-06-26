@@ -14110,34 +14110,39 @@ RV Lot: " . $rv_lot['name'] );
 				cleaned = String(phone.value).replace(/[^\d+]/g, '');
 				digitsOnly = cleaned.replace(/\D+/g, '');
 
+				// Render a US 10-digit number as "+1 (XXX) XXX-XXXX" (2.7.639).
+				var formatLocal = function (ten) {
+					return '+1 (' + ten.slice(0, 3) + ') ' + ten.slice(3, 6) + '-' + ten.slice(6);
+				};
+
 				if (digitsOnly.length >= 10) {
 					var localDigits = digitsOnly.slice(-10);
 					var countryDigits = digitsOnly.slice(0, -10);
 
 					if (!countryDigits || /^1+$/.test(countryDigits)) {
-						phone.value = '+1 ' + localDigits;
+						phone.value = formatLocal(localDigits);
 						return;
 					}
 				}
 
 				if (digitsOnly.length === 11 && digitsOnly.charAt(0) === '1') {
-					phone.value = '+1 ' + digitsOnly.substring(1);
+					phone.value = formatLocal(digitsOnly.substring(1));
 					return;
 				}
 
 				if (digitsOnly.length === 10) {
-					phone.value = '+1 ' + digitsOnly;
+					phone.value = formatLocal(digitsOnly);
 					return;
 				}
 
 				if (cleaned.charAt(0) !== '+') {
 					if (cleaned.length === 10) {
-						phone.value = '+1 ' + cleaned;
+						phone.value = formatLocal(cleaned);
 						return;
 					}
 
 					if (cleaned.length === 11 && cleaned.charAt(0) === '1') {
-						phone.value = '+1 ' + cleaned.substring(1);
+						phone.value = formatLocal(cleaned.substring(1));
 						return;
 					}
 				}

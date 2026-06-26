@@ -4384,7 +4384,8 @@
 .eem-event-page .eem-phone-field {
 	border: 1.5px solid #D9E2F2;
 	border-radius: 6px;
-	padding: 0 13px;
+	/* Extra left padding so the flag isn't crammed against the border (2.7.639). */
+	padding: 0 13px 0 16px;
 	min-height: 44px;
 	background: #fff;
 }
