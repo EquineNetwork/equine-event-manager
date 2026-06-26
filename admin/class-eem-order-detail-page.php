@@ -381,6 +381,19 @@ class EEM_Order_Detail_Page {
 			<a class="eem-btn eem-btn-electric" href="#" data-eem-action="order-add-items"><?php esc_html_e( 'Add Items', 'equine-event-manager' ); ?></a>
 		<?php endif; ?>
 		<?php
+		// Open orders have $0 balance so the payment banner never triggers —
+		// surface a Collect button directly in the action bar so the admin can
+		// set a price and charge the customer.
+		if ( 'open' === ( isset( $order['status_slug'] ) ? $order['status_slug'] : '' ) && '' !== $order_key ) :
+			$open_collect_url = EEM_Orders_List_Page::collect_payment_url( $order_key );
+			if ( '' !== $open_collect_url ) :
+		?>
+			<a class="eem-btn eem-btn-collect" href="<?php echo esc_url( $open_collect_url ); ?>"><?php esc_html_e( 'Collect', 'equine-event-manager' ); ?></a>
+		<?php
+			endif;
+		endif;
+		?>
+		<?php
 		// Quick check-in / check-out toggle (replaces Back to Orders — the
 		// breadcrumb still links back). Label + target advance with state:
 		// pending → Check In, checked-in → Check Out, checked-out → Re-Check In.
@@ -583,6 +596,12 @@ class EEM_Order_Detail_Page {
 		// Deep-link to this reservation's Stall & RV Charts page, where stalls are
 		// assigned / auto-assigned. (The page accepts ?reservation_id=N.)
 		$res_id     = isset( $order['reservation_id'] ) ? (int) $order['reservation_id'] : 0;
+		// Use the spatial Map view only when the reservation has an imported barn map.
+		// Reservations in Numbered+Quantity mode have no barn_map, so force the List
+		// view instead — otherwise the map area renders blank (no barns to draw).
+		$res_has_stall_map = $res_id > 0
+			&& class_exists( 'EEM_Stall_Map_Importer' )
+			&& ! empty( EEM_Stall_Map_Importer::get_for_reservation( $res_id )['barns'] );
 		$charts_url = $res_id > 0
 			? add_query_arg(
 				array(
@@ -591,10 +610,9 @@ class EEM_Order_Detail_Page {
 					// Stall assignment is a stalls-only flow — open the Stalls
 					// inventory, not Both (Whitney 2026-06-20).
 					'inv'            => 'stalls',
-					// Land in the By Location – Map view (Whitney 2026-06-20), the
-					// spatial assign surface where clicking an available stall places
-					// the pending order directly.
-					'tab'            => 'map',
+					// Land in the By Location – Map view when a spatial map exists;
+					// otherwise fall back to List so the page is never blank.
+					'tab'            => $res_has_stall_map ? 'map' : 'list',
 					// Order-context assign flow (#219): carries this order so the
 					// chart shows the assign banner + click-to-assign modal.
 					'assign_order'   => isset( $order['order_key'] ) ? (string) $order['order_key'] : '',
