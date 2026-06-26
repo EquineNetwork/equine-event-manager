@@ -1515,6 +1515,7 @@ input.eem-price-input:focus {
 .eem-status-unpaid              { background: var(--eem-badge-amber-bg); color: var(--eem-badge-amber-text); border: 1px solid var(--eem-badge-amber-border); }
 .eem-status-partial             { background: #fef2f2; color: #9a3412; border: 1px solid #fca5a5; }
 .eem-status-invoice             { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
+.eem-status-open                 { background: var(--eem-badge-blue-bg, #eaf1fe); color: var(--eem-badge-blue-text, #1668F2); border: 1px solid var(--eem-badge-blue-border, #b9d2fb); }
 .eem-status-refunded            { background: var(--eem-badge-red-bg);   color: var(--eem-badge-red-text);   border: 1px solid var(--eem-badge-red-border); }
 .eem-status-oversold            { background: var(--eem-badge-red-bg);   color: var(--eem-badge-red-text);   border: 1px solid var(--eem-badge-red-border); }
 .eem-status-cancelled           { background: var(--eem-badge-gray-bg);  color: var(--eem-badge-gray-text);  border: 1px solid var(--eem-badge-gray-border); }
@@ -9241,6 +9242,10 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
 .eem-smap-pop-row.danger:hover { background: #fef2f2; }
 .eem-smap-pop-search { width: 100%; padding: 8px; border: 1px solid var(--eem-line, #d9e2ec); border-radius: var(--eem-radius, 3px); font-size: 13px; margin-bottom: 6px; }
 .eem-smap-pop-list { max-height: 180px; overflow: auto; }
+/* "Add New Customer" first/last form inside the assign popover. */
+.eem-smap-pop-addform { display: flex; flex-direction: column; gap: 8px; padding: 4px 2px 2px; }
+.eem-smap-pop-addform .eem-smap-pop-search { margin-bottom: 0; }
+.eem-smap-pop-addform-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 2px; }
 .eem-smap-pop-empty { padding: 9px 10px; font-size: 12px; color: var(--eem-muted, #5f6f85); }
 
 /* v4 Slice 6 — group reconciliation (Manage Groups) */

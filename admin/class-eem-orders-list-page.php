@@ -750,6 +750,7 @@ class EEM_Orders_List_Page {
 			case 'invoice-sent':        return 'invoice';
 			case 'refunded':            return 'refunded';
 			case 'cancelled':           return 'cancelled';
+			case 'open':                return 'open';
 			case 'unpaid':
 			default:                    return 'unpaid';
 		}

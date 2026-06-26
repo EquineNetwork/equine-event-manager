@@ -6764,7 +6764,15 @@ class EEM_Admin {
 
 		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
 		$stall          = isset( $_POST['stall'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['stall'] ) ) : '';
-		$customer_name  = isset( $_POST['customer_name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['customer_name'] ) ) : '';
+		// New flow: first + last name. Store as "First Last"; the By Customer view
+		// formats it to "Last, First" for display. (Legacy customer_name accepted
+		// as a fallback for older callers.)
+		$first_name     = isset( $_POST['first_name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['first_name'] ) ) : '';
+		$last_name      = isset( $_POST['last_name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['last_name'] ) ) : '';
+		$customer_name  = trim( $first_name . ' ' . $last_name );
+		if ( '' === $customer_name ) {
+			$customer_name = isset( $_POST['customer_name'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['customer_name'] ) ) : '';
+		}
 		$kind           = ( isset( $_POST['kind'] ) && 'rv' === sanitize_key( wp_unslash( $_POST['kind'] ) ) ) ? 'rv' : 'stall';
 		$inv            = isset( $_POST['inv'] ) ? sanitize_key( wp_unslash( $_POST['inv'] ) ) : 'all';
 		$inv            = in_array( $inv, array( 'all', 'stalls', 'rv' ), true ) ? $inv : 'all';
@@ -6815,7 +6823,7 @@ class EEM_Admin {
 				'tax_rate'       => '0.0000',
 				'total'          => '0.00',
 				'amount_paid'    => 0,
-				'payment_status' => 'unpaid',
+				'payment_status' => 'open',
 				'payment_gateway' => '',
 				'order_number'   => $order_number,
 				'transaction_id' => '',

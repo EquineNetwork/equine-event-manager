@@ -6440,14 +6440,15 @@
 		if (pop) pop.classList.remove('open');
 	}
 
-	function eemSmapCreatePlaceholder(container, stall, customerName) {
+	function eemSmapCreatePlaceholder(container, stall, firstName, lastName) {
 		var cfg = window.eemStallChart || {};
 		var body = new URLSearchParams();
 		body.set('action', 'eem_stall_create_placeholder');
 		body.set('_wpnonce', cfg.moveNonce || '');
 		body.set('reservation_id', String(cfg.reservationId || ''));
 		body.set('stall', stall);
-		body.set('customer_name', customerName);
+		body.set('first_name', firstName || '');
+		body.set('last_name', lastName || '');
 		body.set('kind', (container && container.getAttribute && container.getAttribute('data-eem-smap-kind')) || 'stall');
 		body.set('inv', window._eemScInv || 'all');
 		body.set('tab', window._eemScTab || 'location');
@@ -6587,23 +6588,12 @@
 			function renderList(q) {
 				list.innerHTML = '';
 				q = (q || '').toLowerCase();
-				var rawQ = search.value.trim();
 				var hits = (payload.customers || []).filter(function (cu) { return cu.n.toLowerCase().indexOf(q) !== -1; });
 				if (!hits.length) {
 					var emptyMsg = document.createElement('div');
 					emptyMsg.className = 'eem-smap-pop-empty';
-					emptyMsg.textContent = rawQ ? 'No match' : 'No customers available';
+					emptyMsg.textContent = search.value.trim() ? 'No match' : 'No customers yet';
 					list.appendChild(emptyMsg);
-					if (rawQ) {
-						var addBtn = document.createElement('button');
-						addBtn.type = 'button';
-						addBtn.className = 'eem-smap-pop-row eem-smap-pop-row--add-new';
-						addBtn.textContent = '+ Add "' + rawQ + '" as new customer';
-						addBtn.addEventListener('click', function () {
-							eemSmapCreatePlaceholder(container, label, rawQ);
-						});
-						list.appendChild(addBtn);
-					}
 					return;
 				}
 				hits.forEach(function (cu) {
@@ -6615,11 +6605,39 @@
 					list.appendChild(b);
 				});
 			}
+			// Swap the popover body for a "new customer" first/last form. Saving
+			// creates an OPEN order with that name and assigns it to this stall.
+			function showAddCustomerForm() {
+				bodyEl.innerHTML = '';
+				var form = document.createElement('div');
+				form.className = 'eem-smap-pop-addform';
+				var fn = document.createElement('input');
+				fn.type = 'text'; fn.className = 'eem-smap-pop-search'; fn.placeholder = 'First name';
+				var ln = document.createElement('input');
+				ln.type = 'text'; ln.className = 'eem-smap-pop-search'; ln.placeholder = 'Last name';
+				var btns = document.createElement('div');
+				btns.className = 'eem-smap-pop-addform-btns';
+				var saveBtn = document.createElement('button');
+				saveBtn.type = 'button'; saveBtn.className = 'eem-btn eem-btn-electric eem-btn-sm'; saveBtn.textContent = 'Save & Assign';
+				var cancelBtn = document.createElement('button');
+				cancelBtn.type = 'button'; cancelBtn.className = 'eem-btn eem-btn-secondary eem-btn-sm'; cancelBtn.textContent = 'Cancel';
+				saveBtn.addEventListener('click', function () {
+					var f = fn.value.trim(), l = ln.value.trim();
+					if (!f && !l) { fn.focus(); return; }
+					eemSmapCreatePlaceholder(container, label, f, l);
+				});
+				cancelBtn.addEventListener('click', function () { eemSmapClosePop(container); });
+				btns.appendChild(cancelBtn); btns.appendChild(saveBtn);
+				form.appendChild(fn); form.appendChild(ln); form.appendChild(btns);
+				bodyEl.appendChild(form);
+				setTimeout(function () { fn.focus(); }, 0);
+			}
 			search.addEventListener('input', function () { renderList(search.value); });
 			bodyEl.appendChild(search);
 			bodyEl.appendChild(list);
 			renderList('');
 			setTimeout(function () { search.focus(); }, 0);
+			row('+ Add New Customer', 'eem-smap-pop-row--add-new', function () { showAddCustomerForm(); });
 			row(zq ? 'Block lot' : 'Block stall', 'danger', function () { eemSmapAction(container, 'block', label, ''); });
 		} else if (status === 'reserved') {
 			if (!zq) { row('Mark as Tack stall', '', function () { eemSmapAction(container, 'tack', label, st.o || ''); }); }

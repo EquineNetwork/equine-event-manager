@@ -2713,6 +2713,15 @@ class EEM_Orders_Repository {
 			);
 		}
 
+		// "Open" — an open tab/placeholder order an admin started (e.g. "Add new
+		// customer" on the stall chart); awaiting line items / payment.
+		if ( 'open' === $status ) {
+			return array(
+				'label' => __( 'Open', 'equine-event-manager' ),
+				'slug'  => 'open',
+			);
+		}
+
 		if ( 'partially_refunded' === $status ) {
 			return array(
 				'label' => __( 'Partially Refunded', 'equine-event-manager' ),
