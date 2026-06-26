@@ -3,7 +3,7 @@
  * Plugin Name:       Equine Event Manager
  * Plugin URI:        https://github.com/EquineNetwork/equine-event-manager
  * Description:       Event reservation management for stalls, RV spaces, and add-on bookings — multi-event with stall-chart visualization, payment processor support (Stripe + Authorize.net), and CSV / receipt export.
- * Version:           2.7.640
+ * Version:           2.7.641
  * Requires at least: 6.0
  * Tested up to:      6.8
  * Requires PHP:      7.4
@@ -27,7 +27,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'EQUINE_EVENT_MANAGER_VERSION', '2.7.640' );
+define( 'EQUINE_EVENT_MANAGER_VERSION', '2.7.641' );
 
 define( 'EQUINE_EVENT_MANAGER_FILE', __FILE__ );
 
@@ -67,3 +67,42 @@ function equine_event_manager_run() {
 }
 
 equine_event_manager_run();
+
+// ============================================================================
+// TEMPORARY READ-ONLY DIAGNOSTIC — order line-item dump. REMOVE after debugging
+// the #00002 balance-due discrepancy. Admin-only; changes nothing in the DB.
+// Usage: /wp-admin/?eem_diag_order=<order_key>
+// ============================================================================
+add_action( 'admin_init', function () {
+	if ( empty( $_GET['eem_diag_order'] ) || ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	$key  = sanitize_text_field( wp_unslash( $_GET['eem_diag_order'] ) );
+	$repo = new EEM_Orders_Repository();
+	$order = $repo->get_order( $key );
+	header( 'Content-Type: text/plain; charset=utf-8' );
+	if ( ! is_array( $order ) ) {
+		echo "ORDER NOT FOUND for key: {$key}\n";
+		exit;
+	}
+	echo "=== ORDER ROLLUP ===\n";
+	foreach ( array( 'stall_subtotal', 'rv_subtotal', 'fees', 'tax', 'tax_rate', 'total', 'amount_paid', 'required_shavings_qty', 'additional_shavings_qty', 'stall_quantity', 'rv_quantity', 'payment_status' ) as $k ) {
+		echo str_pad( $k, 26 ) . ': ' . ( isset( $order[ $k ] ) ? $order[ $k ] : '(unset)' ) . "\n";
+	}
+	echo "\n=== COMPONENT ROWS ===\n";
+	foreach ( (array) ( isset( $order['components'] ) ? $order['components'] : array() ) as $c ) {
+		$raw = $repo->get_component_row( (string) $c['table'], (int) $c['row_id'] );
+		echo "\n--- {$c['table']} row id={$c['row_id']} ---\n";
+		if ( ! is_array( $raw ) ) {
+			echo "(missing)\n";
+			continue;
+		}
+		foreach ( array( 'id', 'stall_qty', 'tack_stall_qty', 'rv_qty', 'required_shavings_qty', 'additional_shavings_qty', 'unit_price', 'subtotal', 'convenience_fee', 'tax', 'tax_rate', 'total', 'amount_paid', 'payment_status', 'arrival_date', 'departure_date', 'stay_type', 'notes' ) as $k ) {
+			if ( array_key_exists( $k, $raw ) ) {
+				$v = is_scalar( $raw[ $k ] ) ? $raw[ $k ] : wp_json_encode( $raw[ $k ] );
+				echo str_pad( $k, 26 ) . ': ' . $v . "\n";
+			}
+		}
+	}
+	exit;
+} );
