@@ -2708,6 +2708,45 @@ class EEM_Shortcodes {
 				if (stayField) { stayField.addEventListener('change', function(){ renderTabs(); syncSurcharge(Object.keys(selected)); }); }
 			}
 
+			// Stepper-driven decrease wipes the map selection. The map is the source
+			// of truth for WHICH specific stalls are picked, so when the customer
+			// lowers the quantity stepper below what they've already selected on the
+			// map, clear the picks and let them re-choose (per Whitney: "going down
+			// on the stepper should just wipe out their stall selection"). The map's
+			// own syncForm() always sets the qty field equal to the selected count,
+			// so a qty value BELOW the selected count can only come from the stepper —
+			// no self-triggered loop (equal value never trips the < check).
+			function clearAllSelected(){
+				Object.keys(selected).forEach(function(u){ delete selected[u]; delete selZone[u]; });
+				if (rateTypes.length){ rateTypes.forEach(function(rt){ perRateSelected[rt] = {}; perRateZone[rt] = {}; }); }
+				renderGrid(); syncForm();
+			}
+			var mainQty = form.querySelector('[name="'+P.qtyField+'"]');
+			if (mainQty){
+				mainQty.addEventListener('change', function(){
+					if (perRateMode) { return; } // per-rate steppers handled below
+					var v = parseInt(mainQty.value, 10);
+					if (!isNaN(v) && v < selCount()){ clearAllSelected(); }
+				});
+			}
+			rateTypes.forEach(function(rt){
+				var f = form.querySelector('[name="stall_qty_' + rt + '"]');
+				if (!f) { return; }
+				f.addEventListener('change', function(){
+					var v = parseInt(f.value, 10); if (isNaN(v)) { return; }
+					if (!perRateMode){
+						// Shared mode: every per-rate stepper mirrors the shared count.
+						if (v < selCount()){ clearAllSelected(); }
+					} else if (v < Object.keys(perRateSelected[rt] || {}).length){
+						// Per-rate mode: wipe just this rate type's picks.
+						if (perRateZone[rt]) { perRateZone[rt] = {}; }
+						perRateSelected[rt] = {};
+						if (rt === activeRateType){ selected = perRateSelected[rt]; selZone = perRateZone[rt]; }
+						renderGrid(); syncForm();
+					}
+				});
+			});
+
 			// Inline init — the map is always visible (no modal).
 			renderTabs(); renderGrid(); applyZoom(); syncForm();
 
