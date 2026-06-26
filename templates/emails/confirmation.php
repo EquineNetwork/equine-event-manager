@@ -170,10 +170,6 @@ a:hover{text-decoration:none}
 
   <div class="confirm-bar">
     <div class="confirm-bar-left">
-      <div class="confirm-check">
-        <?php // Email-safe glyph (HTML entity). Inline SVG does not render in Outlook. ?>
-        <span style="font-size:20px;line-height:1;">&#10003;</span>
-      </div>
       <div>
         <div class="confirm-text"><?php echo esc_html( sprintf( /* translators: %s: order number, e.g. #00020. */ __( 'Order %s confirmed', 'equine-event-manager' ), $c( 'order_number' ) ) ); ?></div>
         <?php if ( $c( 'payment_date' ) ) : ?>
@@ -201,7 +197,7 @@ a:hover{text-decoration:none}
         printf(
           /* translators: %s: hosted order link (anchor). */
           wp_kses( __( 'You can %s anytime.', 'equine-event-manager' ), array( 'a' => array( 'href' => array() ) ) ),
-          '<a href="' . esc_url( $c( 'hosted_url' ) ) . '">' . esc_html__( 'view your order online ↗', 'equine-event-manager' ) . '</a>'
+          '<a href="' . esc_url( $c( 'hosted_url' ) ) . '">' . esc_html__( 'view your order online', 'equine-event-manager' ) . '</a>'
         );
       }
       ?>
@@ -233,7 +229,7 @@ a:hover{text-decoration:none}
           </tbody>
         </table>
         <?php if ( $c( 'hosted_url' ) ) : ?>
-          <a href="<?php echo esc_url( $c( 'hosted_url' ) ); ?>" class="hosted-link"><?php esc_html_e( 'View or print your order online ↗', 'equine-event-manager' ); ?></a>
+          <a href="<?php echo esc_url( $c( 'hosted_url' ) ); ?>" class="hosted-link"><?php esc_html_e( 'View or print your order online', 'equine-event-manager' ); ?></a>
         <?php endif; ?>
       </div>
     <?php endif; ?>
@@ -287,7 +283,6 @@ a:hover{text-decoration:none}
     <?php if ( array_filter( $event_day ) ) : ?>
       <div class="whats-next">
         <div class="whats-next-head">
-          <span style="font-size:18px;line-height:1;">&#9733;</span>
           <span><?php esc_html_e( "What's Next — Event Day Info", 'equine-event-manager' ); ?></span>
         </div>
         <div class="whats-next-body">
@@ -310,9 +305,6 @@ a:hover{text-decoration:none}
     <?php // C12: shown only when a PDF receipt is actually attached to this email. ?>
     <?php if ( $c( 'show_pdf_note' ) ) : ?>
       <div class="attachment-note">
-        <div class="attach-icon">
-          <span style="font-size:18px;line-height:1;font-weight:700;">&#8595;</span>
-        </div>
         <div>
           <span class="attach-text-title"><?php esc_html_e( 'PDF Receipt Attached', 'equine-event-manager' ); ?></span>
           <span class="attach-text-body"><?php esc_html_e( 'A full copy of this receipt is attached to this email as a PDF for your records.', 'equine-event-manager' ); ?></span>
@@ -329,13 +321,11 @@ a:hover{text-decoration:none}
         <div class="support-contact">
           <?php if ( $c( 'support_phone' ) ) : ?>
             <div class="support-contact-row">
-              <span style="font-size:16px;line-height:1;">&#9742;</span>
               <a href="tel:<?php echo esc_attr( preg_replace( '/[^0-9+]/', '', (string) $c( 'support_phone' ) ) ); ?>"><?php echo esc_html( $c( 'support_phone' ) ); ?></a>
             </div>
           <?php endif; ?>
           <?php if ( $c( 'support_email' ) ) : ?>
             <div class="support-contact-row">
-              <span style="font-size:16px;line-height:1;">&#9993;</span>
               <a href="mailto:<?php echo esc_attr( $c( 'support_email' ) ); ?>"><?php echo esc_html( $c( 'support_email' ) ); ?></a>
             </div>
           <?php endif; ?>
