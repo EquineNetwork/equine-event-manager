@@ -5164,6 +5164,9 @@ a.eem-event-list-row__btn--results:focus {
 	background: #f0f6fc;
 	color: #135e96;
 }
+.eem-tec-list-reserve {
+	margin: 12px 0 4px;
+}
 @media (max-width: 600px) {
 	.eem-event-cards {
 		grid-template-columns: 1fr;

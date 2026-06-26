@@ -103,12 +103,10 @@ eem_render_editor_toggle_label_row( array(
 	'name'       => 'rv_early_bird_enabled',
 	'subsection' => 'rv-eb',
 	'label'      => __( 'Enable Early Bird Pricing', 'equine-event-manager' ),
-	'is_enabled' => $eb_on && $schedule_on,
+	'is_enabled' => $eb_on,
 	'controls'   => array( 'row-rv-eb-fields', 'eem-rv-eb-nightly-row' ),
-	'requires'   => 'rv-schedule',
 ) );
 echo '<p class="eem-field-hint eem-sched-group__hint">' . esc_html__( 'Set a cutoff date; discounted Early Bird amounts appear next to the nightly rate and each package below.', 'equine-event-manager' ) . '</p>';
-echo '<p class="eem-field-hint eem-requires-hint"' . ( $schedule_on ? ' hidden' : '' ) . '>' . esc_html__( 'Turn on Schedule RV Reservations and set a reservation window to use Early Bird pricing.', 'equine-event-manager' ) . '</p>';
 echo '<div class="eem-sched-fields' . ( $eb_on ? '' : ' eem-row--hidden' ) . '" id="row-rv-eb-fields">';
 printf(
 	'<div class="eem-sched-field"><span class="eem-sched-field__label">%s</span><input class="eem-field-input" type="datetime-local" name="en_reservation[rv_early_bird_cutoff]" value="%s" data-eem-eb-cutoff="rv"%s%s /></div>',

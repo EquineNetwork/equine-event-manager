@@ -4752,6 +4752,66 @@ class EEM_Events {
 	}
 
 	/**
+	 * Inject a "Reserve Now" button into each TEC List-view event row when that
+	 * event has an available (published) linked reservation.
+	 *
+	 * Hooked on `tribe_template_after_include:events/v2/list/event/description`,
+	 * which fires once per event in the TEC v2 List view. The button links to the
+	 * event's single page, anchored at the reservation form card (#reservation-form,
+	 * the booking-form mount injected into the event hero).
+	 *
+	 * @param string $file     Absolute path of the included template part (unused).
+	 * @param string $name     Template name (unused).
+	 * @param object $template TEC template engine instance exposing the current event.
+	 * @return void
+	 */
+	public function render_tec_list_reserve_button( $file, $name, $template ) {
+		unset( $file, $name );
+
+		if ( ! is_object( $template ) || ! method_exists( $template, 'get' ) ) {
+			return;
+		}
+
+		$event = $template->get( 'event' );
+
+		if ( ! $event || empty( $event->ID ) ) {
+			return;
+		}
+
+		$event_id = absint( $event->ID );
+
+		$reservation_id = self::get_linked_reservation_id_for_event( $event_id );
+
+		if ( ! $reservation_id || 'publish' !== get_post_status( $reservation_id ) ) {
+			return;
+		}
+
+		$reserve_url = get_permalink( $event_id );
+
+		if ( ! $reserve_url ) {
+			return;
+		}
+
+		$reserve_url = $reserve_url . '#reservation-form';
+
+		// The frontend stylesheet isn't enqueued on the TEC archive list page by
+		// default; pull it in (idempotent) so the injected button is styled.
+		self::render_frontend_styles();
+
+		$cta_label = (string) get_post_meta( $event_id, 'equine_event_manager_event_cta_label', true );
+
+		if ( '' === $cta_label ) {
+			$cta_label = __( 'Reserve Now', 'equine-event-manager' );
+		}
+
+		printf(
+			'<div class="eem-tec-list-reserve"><a class="eem-event-card__btn eem-event-card__btn--reserve" href="%1$s">%2$s</a></div>',
+			esc_url( $reserve_url ),
+			esc_html( $cta_label )
+		);
+	}
+
+	/**
 	 * Get a readable venue location label.
 	 *
 	 * @param int $venue_id Venue post ID.

@@ -476,6 +476,7 @@ class EEM_Plugin {
 			add_action( 'save_post_tribe_events', array( $this->reservations_cpt, 'save_tec_event_meta' ), 10, 2 );
 			add_action( 'wp_ajax_equine_event_manager_search_tec_events', array( $this->reservations_cpt, 'ajax_search_tec_events' ) );
 			add_action( 'admin_post_equine_event_manager_import_tec_events', array( $this->admin, 'handle_import_tec_events' ) );
+			add_action( 'tribe_template_after_include:events/v2/list/event/description', array( $this->events, 'render_tec_list_reserve_button' ), 10, 3 );
 		}
 	}
 }
