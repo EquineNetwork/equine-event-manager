@@ -6054,6 +6054,15 @@
 		}
 	})();
 
+	// Toggle the "pending" highlight for a unit across BOTH the List pills and the
+	// Map cells, so multi-select feedback shows regardless of which view the admin
+	// is assigning from. Used by the qty>1 assign-mode queue.
+	function eemAssignMarkPending(unit, on) {
+		var esc = (window.CSS && CSS.escape) ? CSS.escape(unit) : unit;
+		var sel = '[data-eem-action="assign-order-unit"][data-stall="' + esc + '"], .eem-smap-stall[data-eem-smap-stall="' + esc + '"]';
+		document.querySelectorAll(sel).forEach(function (el) { el.classList.toggle('eem-assign-pending', !!on); });
+	}
+
 	function openAssignOrderModal(ctx, unit) {
 		var qty = ctx.qty || 1;
 
@@ -6062,15 +6071,13 @@
 			if (_eemAssignPending.indexOf(unit) !== -1) {
 				// Already selected — deselect it.
 				_eemAssignPending = _eemAssignPending.filter(function (u) { return u !== unit; });
-				var pill = document.querySelector('[data-eem-action="assign-order-unit"][data-stall="' + unit + '"]');
-				if (pill) { pill.classList.remove('eem-assign-pending'); }
+				eemAssignMarkPending(unit, false);
 				eemAssignBannerUpdate(ctx);
 				return;
 			}
 			if (_eemAssignPending.length >= qty) { return; } // already full
 			_eemAssignPending.push(unit);
-			var selPill = document.querySelector('[data-eem-action="assign-order-unit"][data-stall="' + unit + '"]');
-			if (selPill) { selPill.classList.add('eem-assign-pending'); }
+			eemAssignMarkPending(unit, true);
 			eemAssignBannerUpdate(ctx);
 			// If we've now selected enough, open the confirm modal.
 			if (_eemAssignPending.length === qty) {
@@ -6632,10 +6639,15 @@
 		var zq = !!payload.zoneQualified;
 		var st = payload.state[label] || { s: 'available' };
 		var status = st.s || 'available';
-		pop.querySelector('[data-eem-smap-pop-num]').textContent = zq ? label : ('Stall ' + label);
+		var isAssigned = (status === 'reserved' || status === 'tack');
+		// Head: for an assigned/tack unit, lead with the CUSTOMER name (matches the
+		// List popover, whose title is the customer); otherwise the stall/lot label.
+		pop.querySelector('[data-eem-smap-pop-num]').textContent = isAssigned
+			? (st.c || (zq ? label : ('Stall ' + label)))
+			: (zq ? label : ('Stall ' + label));
 		pop.querySelector('[data-eem-smap-pop-st]').textContent =
-			status === 'reserved' ? ('Assigned — ' + (st.c || '') + (st.g ? ' · ' + st.g : '')) :
-			status === 'tack' ? ('Tack stall — ' + (st.c || '') + (st.g ? ' · ' + st.g : '')) :
+			status === 'reserved' ? ((zq ? label : ('Stall ' + label)) + (st.g ? ' · ' + st.g : '')) :
+			status === 'tack' ? ('Tack stall — ' + (zq ? label : ('Stall ' + label)) + (st.g ? ' · ' + st.g : '')) :
 			status === 'blocked' ? 'Blocked' : 'Available';
 		var bodyEl = pop.querySelector('[data-eem-smap-pop-body]');
 		bodyEl.innerHTML = '';
@@ -6709,12 +6721,52 @@
 			setTimeout(function () { search.focus(); }, 0);
 			row('+ Add New Customer', 'eem-smap-pop-row--add-new', function (ev) { ev.stopPropagation(); showAddCustomerForm(); });
 			row(zq ? 'Block lot' : 'Block stall', 'danger', function () { eemSmapAction(container, 'block', label, ''); });
-		} else if (status === 'reserved') {
-			if (!zq) { row('Mark as Tack stall', '', function () { eemSmapAction(container, 'tack', label, st.o || ''); }); }
-			row('Unassign', 'danger', function () { eemSmapAction(container, 'unassign', label, st.o || ''); });
-		} else if (status === 'tack') {
-			row('Unmark Tack (keep assigned)', '', function () { eemSmapAction(container, 'untack', label, st.o || ''); });
-			row('Unassign', 'danger', function () { eemSmapAction(container, 'unassign', label, st.o || ''); });
+		} else if (status === 'reserved' || status === 'tack') {
+			// Assigned/tack popover — MUST mirror the By Location LIST popover's
+			// option set (Move / View order / Tack / VIP / Remove). The two popovers
+			// are built by different code paths (List = server menu; Map = here) so
+			// any option added to one MUST be added to the other. See ROADMAP
+			// "Stall popover canonical option set".
+			//
+			// Order # + Shavings meta line (matches the List popover subtitle).
+			var meta = document.createElement('div');
+			meta.className = 'eem-smap-pop-meta';
+			var metaHtml = '';
+			if (st.n) { metaHtml += '<span class="eem-smap-pop-meta-order"><strong>Order:</strong> #' + String(st.n).replace(/[&<>"]/g, '') + '</span>'; }
+			var shav = parseInt(st.sh || 0, 10) || 0;
+			if (shav > 0) { metaHtml += '<span class="eem-smap-pop-meta-shav"><strong>Shavings:</strong> ' + shav + (shav === 1 ? ' bag' : ' bags') + '</span>'; }
+			if (metaHtml) { meta.innerHTML = metaHtml; bodyEl.appendChild(meta); }
+
+			// Move to a different stall — reuse the destination-mode flow that the
+			// List popover uses; clicking an Available map cell completes the move.
+			row('Move to different stall', '', function () {
+				window._scActiveOrderId = st.o || '';
+				window._scActiveStall   = label;
+				window._scActiveDate    = '';
+				window._scCustomerName  = st.c || '';
+				window._scActiveKind    = (container && container.getAttribute && container.getAttribute('data-eem-smap-kind')) || 'stall';
+				eemSmapClosePop(container);
+				document.body.classList.add('destination-mode');
+				document.body.classList.add('eem-has-destination-banner');
+				var banner = document.getElementById('eem-destination-banner');
+				if (banner) banner.style.display = '';
+				var nameEl = document.getElementById('eem-destination-customer-name');
+				if (nameEl) nameEl.textContent = window._scCustomerName || '—';
+			});
+			// View order — open the order detail page in a new tab.
+			if (st.o) {
+				row('View order', '', function () {
+					var u = (window.ajaxurl || '/wp-admin/admin-ajax.php').replace('admin-ajax.php', '') + 'admin.php?page=equine-event-manager-order&order_key=' + encodeURIComponent(st.o);
+					window.open(u, '_blank');
+					eemSmapClosePop(container);
+				});
+			}
+			if (!zq && status === 'reserved') { row('Mark as Tack stall', '', function () { eemSmapAction(container, 'tack', label, st.o || ''); }); }
+			if (!zq && status === 'tack') { row('Unmark Tack (keep assigned)', '', function () { eemSmapAction(container, 'untack', label, st.o || ''); }); }
+			// Mark as VIP / Remove VIP — routes through the map handler's 'vip' op so
+			// the grid re-renders in place (zoom/scroll preserved).
+			row(st.vip ? 'Remove VIP' : 'Mark as VIP', '', function () { eemSmapAction(container, 'vip', label, st.o || ''); });
+			row('Remove from stall', 'danger', function () { eemSmapAction(container, 'unassign', label, st.o || ''); });
 		} else if (status === 'blocked') {
 			row(zq ? 'Unblock lot' : 'Unblock stall', '', function () { eemSmapAction(container, 'unblock', label, ''); });
 		}
@@ -6771,12 +6823,76 @@
 						var aLabel = cell.getAttribute('data-eem-smap-stall');
 						var aState = (p.state && p.state[aLabel]) ? p.state[aLabel] : { s: 'available' };
 						if ((aState.s || 'available') === 'available') {
-							eemSmapAction(container, 'assign', aLabel, aCtx.orderKey);
+							// Route through the SAME queue the List view uses so a
+							// multi-stall order (qty>1) can select up to N stalls and
+							// confirm — not assign one-at-a-time. qty===1 → confirm modal.
+							openAssignOrderModal(aCtx, aLabel);
 							return;
 						}
 					}
 					eemSmapOpenPop(container, cell, p);
 				});
+			}
+			// Drag-to-paint multi-select in assign-mode (qty>1): press on an
+			// available stall and drag across more available stalls to queue them,
+			// up to the order's quantity. Reuses the same queue as click-select
+			// (openAssignOrderModal) so the banner + confirm modal behave identically.
+			// Suppresses map pan while painting, and swallows the drag-ending click so
+			// the first cell isn't toggled back off.
+			if (host && !host._eemSmapPaintBound) {
+				host._eemSmapPaintBound = true;
+				var painting = false, paintMoved = false;
+				var paintState = function () {
+					var pEl = container.querySelector('[data-eem-smap-payload]');
+					try { return JSON.parse(pEl.textContent).state || {}; } catch (e) { return {}; }
+				};
+				var paintCtx = function () {
+					var c = (window.eemStallChart || {}).assignContext;
+					return (c && c.orderKey && c.kind !== 'rv' && (c.qty || 1) > 1) ? c : null;
+				};
+				var paintCellAt = function (x, y) {
+					var el = document.elementFromPoint(x, y);
+					return el && el.closest ? el.closest('[data-eem-smap-stall]') : null;
+				};
+				var paintAdd = function (cell, ctx, state) {
+					if (!cell) { return; }
+					var label = cell.getAttribute('data-eem-smap-stall');
+					var s = (state[label] && state[label].s) ? state[label].s : 'available';
+					if (s !== 'available') { return; }
+					if (_eemAssignPending.indexOf(label) !== -1) { return; }
+					if (_eemAssignPending.length >= (ctx.qty || 1)) { return; }
+					openAssignOrderModal(ctx, label); // queues + highlights + opens modal at qty
+				};
+				host.addEventListener('mousedown', function (ev) {
+					if (ev.button !== 0) { return; }
+					var ctx = paintCtx();
+					if (!ctx) { return; }
+					var cell = ev.target.closest('[data-eem-smap-stall]');
+					if (!cell) { return; }
+					var state = paintState();
+					var label = cell.getAttribute('data-eem-smap-stall');
+					var s = (state[label] && state[label].s) ? state[label].s : 'available';
+					if (s !== 'available') { return; }
+					painting = true; paintMoved = false;
+					ev.stopPropagation();
+					host._eemPaintCtx = ctx; host._eemPaintState = state;
+				});
+				window.addEventListener('mousemove', function (ev) {
+					if (!painting) { return; }
+					paintMoved = true;
+					paintAdd(paintCellAt(ev.clientX, ev.clientY), host._eemPaintCtx, host._eemPaintState);
+				});
+				window.addEventListener('mouseup', function () {
+					if (!painting) { return; }
+					painting = false;
+					if (paintMoved) {
+						host._eemPainted = true;
+						setTimeout(function () { host._eemPainted = false; }, 0);
+					}
+				});
+				host.addEventListener('click', function (ev) {
+					if (host._eemPainted) { ev.stopPropagation(); ev.preventDefault(); }
+				}, true);
 			}
 			// Zoom control — drives --eem-smap-chip cell size so the grid reflows and
 			// pans within the capped scroll viewport (same pattern as the customer
@@ -9978,6 +10094,45 @@ function duplicateReservationAjax(target) {
 			});
 	}
 
+	// POST a new OPEN-order placeholder (first/last name) then assign it to this
+	// cell. Mirrors the Map popover's eemSmapCreatePlaceholder — same endpoint —
+	// so the List's "+ Add New Customer" matches the Map's. Re-renders the shared
+	// dynamic region. The List + Map popovers MUST keep the same option set; see
+	// ROADMAP "Stall popover canonical option set".
+	function postCreatePlaceholder(stall, kind, firstName, lastName) {
+		var cfg = window.eemStallChart || {};
+		var b = new URLSearchParams();
+		b.append('action', 'eem_stall_create_placeholder');
+		b.append('_wpnonce', cfg.moveNonce || '');
+		b.append('reservation_id', String(cfg.reservationId || ''));
+		b.append('stall', stall);
+		b.append('kind', kind || 'stall');
+		b.append('first_name', firstName || '');
+		b.append('last_name', lastName || '');
+		b.append('inv', window._eemScInv || 'all');
+		b.append('tab', window._eemScTab || 'location');
+		fetch(ajaxUrl, { method: 'POST', credentials: 'same-origin', body: b })
+			.then(function (r) { return r.json(); })
+			.then(function (resp) {
+				var data = (resp && resp.data) || {};
+				if (resp && resp.success && data.html) {
+					var region = document.getElementById('eem-stall-chart-dynamic');
+					if (region) {
+						region.innerHTML = data.html;
+						if (window.EEM && window.EEM.scApplyState) { window.EEM.scApplyState(window._eemScInv || 'all', window._eemScTab || 'location'); }
+						if (window.EEM && window.EEM.renderStallMaps) { window.EEM.renderStallMaps(); }
+					}
+				}
+				if (window.EEM && window.EEM.showSaveToast) {
+					window.EEM.showSaveToast(data.message || (resp && resp.success ? 'Order created and stall assigned.' : 'Could not create order.'),
+						{ variant: (resp && resp.success) ? 'success' : 'error' });
+				}
+			})
+			.catch(function () {
+				if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast('Could not reach the server.', { variant: 'error' }); }
+			});
+	}
+
 	// Assign modal: search the per-kind customer roster and pick who goes in this
 	// stall/lot — mirrors the Map popover's assign search, for the List menu.
 	function openAssignPickModal(stall, kind) {
@@ -9992,11 +10147,13 @@ function duplicateReservationAjax(target) {
 				'<div class="eem-modal-body">' +
 					'<input type="text" class="eem-field-input eem-assign-search" placeholder="Search customer…">' +
 					'<div class="eem-assign-list"></div>' +
+					'<button type="button" class="eem-assign-row eem-assign-row--add-new" data-assign-add-new>+ Add New Customer</button>' +
 				'</div>' +
 				'<div class="eem-modal-foot"><button type="button" class="eem-btn eem-btn-secondary" data-assign-cancel>Cancel</button></div>' +
 			'</div>';
 		document.body.appendChild(overlay);
 		overlay.classList.add('open');
+		var bodyEl = overlay.querySelector('.eem-modal-body');
 		var listEl = overlay.querySelector('.eem-assign-list');
 		var searchEl = overlay.querySelector('.eem-assign-search');
 		function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -10014,12 +10171,38 @@ function duplicateReservationAjax(target) {
 		}
 		renderList('');
 		function close() { overlay.classList.remove('open'); if (overlay.parentNode) { overlay.parentNode.removeChild(overlay); } }
+		// Swap the modal body for a first/last name form. Saving creates an OPEN
+		// order with that name and assigns it to this cell — mirrors the Map
+		// popover's "+ Add New Customer" inline form.
+		function showAddCustomerForm() {
+			bodyEl.innerHTML =
+				'<div class="eem-smap-pop-addform">' +
+					'<input type="text" class="eem-field-input eem-assign-fn" placeholder="First name">' +
+					'<input type="text" class="eem-field-input eem-assign-ln" placeholder="Last name">' +
+					'<div class="eem-smap-pop-addform-btns">' +
+						'<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-assign-add-cancel>Cancel</button>' +
+						'<button type="button" class="eem-btn eem-btn-electric eem-btn-sm" data-assign-add-save>Save &amp; Assign</button>' +
+					'</div>' +
+				'</div>';
+			var fn = bodyEl.querySelector('.eem-assign-fn');
+			if (fn && fn.focus) { setTimeout(function () { fn.focus(); }, 0); }
+		}
 		searchEl.addEventListener('input', function () { renderList(searchEl.value); });
 		overlay.addEventListener('click', function (ev) {
 			if (ev.target === overlay) { close(); return; }
 			if (ev.target.closest && ev.target.closest('[data-assign-cancel]')) { close(); return; }
+			if (ev.target.closest && ev.target.closest('[data-assign-add-new]')) { showAddCustomerForm(); return; }
+			if (ev.target.closest && ev.target.closest('[data-assign-add-cancel]')) { close(); return; }
+			if (ev.target.closest && ev.target.closest('[data-assign-add-save]')) {
+				var f = (bodyEl.querySelector('.eem-assign-fn') || {}).value || '';
+				var l = (bodyEl.querySelector('.eem-assign-ln') || {}).value || '';
+				f = f.trim(); l = l.trim();
+				if (!f && !l) { var fnEl = bodyEl.querySelector('.eem-assign-fn'); if (fnEl) { fnEl.focus(); } return; }
+				close(); postCreatePlaceholder(stall, kind, f, l);
+				return;
+			}
 			var row = ev.target.closest && ev.target.closest('.eem-assign-row');
-			if (row) { var ok = row.getAttribute('data-order-key'); close(); postAssign(stall, kind, ok); }
+			if (row && !row.hasAttribute('data-assign-add-new')) { var ok = row.getAttribute('data-order-key'); close(); postAssign(stall, kind, ok); }
 		});
 		if (searchEl.focus) { searchEl.focus(); }
 	}

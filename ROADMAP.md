@@ -8,6 +8,27 @@
 
 ---
 
+## 🔖 SESSION HANDOFF — 2026-06-25 (continued — v2.7.624 target)
+
+### ✅ Code written this session — AWAITING VERIFICATION (v2.7.624)
+
+**Stall popover unification (3rd drift fix — see canonical option set below).** The By Location **List** popover and **Map** popover are built by two different code paths (List = server-rendered static menu + `openAssignPickModal`; Map = JS-built `eemSmapOpenPop` in admin.js). They kept drifting out of sync. This session made them match:
+
+1. **Map assigned/tack popover enriched** — now shows customer name in the header, an Order # + Shavings meta line, and rows for: Move to different stall (reuses destination-mode flow), View order, Mark as Tack stall / Unmark Tack, Mark as VIP / Remove VIP, Remove from stall. PHP: added `sh` (shavings) to `build_stall_map_overlay_state()` payload + a new `vip` op in `ajax_stall_map_action()` (in-place re-render, zoom/scroll preserved). **Explicitly NO check-in/checkout on the map** (Whitney: "map is more for assigning").
+2. **List assign modal gained "+ Add New Customer"** — `openAssignPickModal` now has an add-new affordance that swaps the modal body for a First/Last name → "Save & Assign" form, posting to the same `eem_stall_create_placeholder` endpoint the Map uses (new `postCreatePlaceholder` helper).
+
+### ⚠️ CANONICAL STALL POPOVER OPTION SET (anti-drift guard — DO NOT let these diverge again)
+
+Both the By Location **List** popover and **Map** popover MUST expose the SAME options. This is the 3rd time they've drifted (prior: task #3). When editing either, mirror the change in the other.
+
+- **Available cell:** assign customer (search) · **+ Add New Customer** (inline First/Last → Save & Assign) · Block.
+- **Assigned/tack cell:** header = customer name · meta = Order # + Shavings · Move to different stall · View order · Mark as Tack / Unmark Tack · Mark as VIP / Remove VIP · Remove from stall.
+- **Map-only exclusion:** NO check-in / checkout on the map (assignment-focused). Check-in/out lives on the List / Daily Movement.
+
+Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin.js`; Map = `eemSmapOpenPop()` in `assets/js/admin.js` + `ajax_stall_map_action()` ops in `admin/class-equine-event-manager-admin.php`.
+
+---
+
 ## 🔖 SESSION HANDOFF — 2026-06-25 (continued — v2.7.623)
 
 **Current state:** `main` at **v2.7.623** — pushed to GitHub. All items below are **verified live on staging** (eqeventmanager.wpenginepowered.com) via browser inspection.

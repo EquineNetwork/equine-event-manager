@@ -3131,6 +3131,7 @@ class EEM_Admin {
 			$onum  = (string) ( isset( $row['order_number'] ) ? $row['order_number'] : '' );
 			$tack  = $with_tack ? array_map( 'strval', (array) ( isset( $row['tack_units'] ) ? $row['tack_units'] : array() ) ) : array();
 			$vip   = ! empty( $row['is_vip'] );
+			$shav  = (int) ( isset( $row['shavings'] ) ? $row['shavings'] : 0 );
 
 			if ( '' !== $group ) {
 				$group_set[ $group ] = true;
@@ -3153,6 +3154,7 @@ class EEM_Admin {
 					'o' => $okey,
 					'n' => $onum,
 					'vip' => $vip ? 1 : 0,
+					'sh' => $shav,
 				);
 			}
 		}
@@ -3649,6 +3651,36 @@ class EEM_Admin {
 					wp_send_json_error( array( 'message' => __( 'Could not update tack designation.', 'equine-event-manager' ) ), 500 );
 				}
 			}
+		} elseif ( 'vip' === $op ) {
+			// Customer-level VIP toggle from the map popover. Mirrors the List view's
+			// "Mark as VIP" (which posts to eem_toggle_order_vip) but routes through
+			// this handler so the map gets the same in-place re-render (zoom/scroll
+			// preserved) as assign/tack/unassign. The List + Map popovers MUST stay
+			// in sync — see the canonical option set in CLAUDE/ROADMAP.
+			if ( '' === $order_key ) {
+				// Resolve the owning order from the clicked unit if no key was posted.
+				foreach ( $this->get_reservation_orders( $reservation_id ) as $o ) {
+					$units = array_map( 'strval', (array) $this->parse_assigned_units_string(
+						$this->get_order_component_note_value( $o, $note_comp, $note_label )
+					) );
+					if ( in_array( $stall, $units, true ) ) {
+						$order_key = (string) $o['order_key'];
+						break;
+					}
+				}
+			}
+			$vip_order = '' !== $order_key ? $this->orders_repository->get_order( $order_key ) : null;
+			if ( ! $vip_order ) {
+				wp_send_json_error( array( 'message' => sprintf( /* translators: %s: stall/lot */ __( 'No order owns that %s.', 'equine-event-manager' ), $unit_noun ) ), 404 );
+			}
+			$currently_vip = 'Yes' === $this->get_order_note_value( (string) ( $vip_order['notes'] ?? '' ), 'VIP' );
+			$ok = $this->orders_repository->update_order_vip( $order_key, ! $currently_vip );
+			if ( ! $ok ) {
+				wp_send_json_error( array( 'message' => __( 'Could not update VIP.', 'equine-event-manager' ) ), 500 );
+			}
+			$message = $currently_vip
+				? __( 'VIP removed.', 'equine-event-manager' )
+				: __( 'Marked as VIP.', 'equine-event-manager' );
 		} else {
 			wp_send_json_error( array( 'message' => __( 'Unknown action.', 'equine-event-manager' ) ), 400 );
 		}

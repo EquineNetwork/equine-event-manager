@@ -8929,6 +8929,8 @@ tr.eem-chart-barn-row td { background: #fdf4e7; padding: 9px 22px; font-size: 12
 .eem-assign-row { display: block; width: 100%; text-align: left; padding: 9px 12px; border: 0; background: none; border-radius: var(--eem-radius); font-size: 13.5px; color: var(--eem-text-primary); cursor: pointer; font-family: inherit; }
 .eem-assign-row:hover { background: #f6f7f7; }
 .eem-assign-empty { padding: 12px; font-size: 13px; color: var(--eem-text-secondary); text-align: center; }
+/* "+ Add New Customer" affordance in the List assign modal — mirrors the Map popover's add-new row. */
+.eem-assign-row--add-new { color: var(--eem-electric, #1668F2); font-weight: 700; border-top: 1px solid var(--eem-line, #d9e2ec); margin-top: 4px; padding-top: 10px; }
 /* #3 per-night block modal. */
 .eem-block-hint { font-size: 13px; color: var(--eem-text-secondary); margin: 0 0 10px; }
 .eem-block-presets { display: flex; gap: 8px; margin-bottom: 10px; }
@@ -9204,6 +9206,11 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
    ring so the admin can immediately see where this customer currently is. */
 .eem-smap-stall.eem-assign-current { outline: 3px solid var(--eem-electric, #1668F2); outline-offset: -2px; z-index: 2; box-shadow: 0 0 0 3px rgba(22,104,242,.25); }
 .eem-loc-cell.eem-assign-current { outline: 3px solid var(--eem-electric, #1668F2); outline-offset: 1px; box-shadow: 0 0 0 3px rgba(22,104,242,.20); }
+/* Pending multi-select highlight while choosing stalls for a qty>1 order on the
+   map (click or drag to paint). Filled blue tint + ring so queued cells stand
+   out from plain Available before the admin confirms the batch. */
+.eem-smap-grid .eem-smap-stall.eem-assign-pending { background: var(--eem-electric, #1668F2); color: #fff; outline: 2px solid var(--eem-electric, #1668F2); outline-offset: -1px; z-index: 2; }
+.eem-smap-grid .eem-smap-stall.eem-assign-pending .eem-smap-cname { color: rgba(255,255,255,.92); }
 /* Group membership: a left accent bar whose width scales WITH the cell, so the
    indicator stays proportional ("same size as the box") at every zoom level
    instead of a fixed 4px sliver. */
@@ -9212,6 +9219,9 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
 .eem-smap-stall.eem-smap-highlight { outline: 2px solid var(--eem-amber, #E8A33D); outline-offset: -1px; z-index: 2; }
 /* "Add new customer" option in the assign popover. */
 .eem-smap-pop-row--add-new { color: var(--eem-electric, #1668F2); font-weight: 700; border-top: 1px solid var(--eem-line, #d9e2ec); margin-top: 4px; padding-top: 6px; }
+/* Order # + Shavings meta line on the assigned/tack map popover. */
+.eem-smap-pop-meta { display: flex; flex-direction: column; gap: 2px; padding: 6px 4px 8px; font-size: 12.5px; color: var(--eem-text-secondary, #50575e); border-bottom: 1px solid var(--eem-line, #d9e2ec); margin-bottom: 4px; }
+.eem-smap-pop-meta strong { color: var(--eem-text-primary, #1d2327); font-weight: 600; }
 /* Status/group dot — hidden until the grid enters dot mode (very small zoom). */
 .eem-smap-dot { display: none; width: 46%; height: 46%; border-radius: 50%; background: var(--eem-dot, #9fb2cc); }
 /* Dot mode: when chips get too small to read a 4-digit number, admin.js adds
