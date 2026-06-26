@@ -1197,6 +1197,11 @@
 .eem-map-stall.is-reserved { background: #cbd5e1; border-color: #cbd5e1; color: #7c8ba0; cursor: not-allowed; }
 .eem-map-stall.is-blocked { background: repeating-linear-gradient(45deg,#9aa6b6,#9aa6b6 3px,#8593a5 3px,#8593a5 6px); border-color: #9aa6b6; color: transparent; cursor: not-allowed; }
 .eem-map-stall.is-sel { background: #1668F2; border-color: #1668F2; color: #fff; }
+/* Tack stall — the picked stall the customer designated for tack/storage via the
+   "Using one for tack?" dropdown. Amber so it reads distinctly from a normal
+   selected (blue) stall. The tack stall is also selected, so this follows
+   .is-sel to win the equal-specificity tie. */
+.eem-map-stall.is-tack { background: #F59E0B; border-color: #D97706; color: #fff; }
 /* Match the builder Preview's landmark styling (amber) so "what the customer sees"
    and the admin Preview look identical. */
 /* width/height:auto so a merged landmark fills its full grid span (e.g. 5x3)
@@ -4527,6 +4532,19 @@
 	   inconsistent with the phone-field wrapper (which forces #fff). Force white
 	   so every field matches the mockup + each other. */
 	background-color: #fff;
+}
+/* Chrome/Safari paint a pale-blue (or yellow) highlight on autofilled inputs —
+   First/Last/Email/Phone in Contact Information get it from the browser's saved
+   data, and a plain background-color can't override it. The inset box-shadow
+   trick repaints the field white; -webkit-text-fill-color keeps the text navy. */
+.eem-event-page .eem-reservation-form input:-webkit-autofill,
+.eem-event-page .eem-reservation-form input:-webkit-autofill:hover,
+.eem-event-page .eem-reservation-form input:-webkit-autofill:focus,
+.eem-event-page .eem-reservation-form input:-webkit-autofill:active {
+	-webkit-box-shadow: 0 0 0 1000px #fff inset;
+	box-shadow: 0 0 0 1000px #fff inset;
+	-webkit-text-fill-color: #031B4E;
+	caret-color: #031B4E;
 }
 .eem-event-page .eem-reservation-form select {
 	-webkit-appearance: none;

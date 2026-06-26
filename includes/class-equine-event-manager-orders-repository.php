@@ -918,6 +918,75 @@ class EEM_Orders_Repository {
 	}
 
 	/**
+	 * Split a stall component row for a subset date-extension.
+	 *
+	 * Reduces the source row to the "keep" stalls (which retain the original
+	 * dates) and inserts a new sibling row for the "moved" stalls (the new
+	 * dates), so part of an order can sit on one date range and part on another.
+	 * Assignment + tack note lines are partitioned across the two rows. Numeric
+	 * column values (qtys, subtotal, fee, tax, total, dates) are computed by the
+	 * caller and passed in via the override arrays. Used by the Edit Dates subset
+	 * flow (EEM_Admin::apply_subset_date_split).
+	 *
+	 * @param int    $row_id      Source stall component row id.
+	 * @param array  $keep_fields Column overrides for the reduced source row.
+	 * @param array  $new_fields  Column overrides for the new sibling row.
+	 * @param string $keep_units  CSV of stall units kept on the source row ('' clears the line).
+	 * @param string $keep_tack   CSV of tack units kept on the source row ('' clears).
+	 * @param string $new_units   CSV of stall units for the new row.
+	 * @param string $new_tack    CSV of tack units for the new row ('' clears).
+	 * @return int|false New row id on success, false on failure.
+	 */
+	public function split_stall_row( int $row_id, array $keep_fields, array $new_fields, string $keep_units, string $keep_tack, string $new_units, string $new_tack ) {
+		global $wpdb;
+		$table  = $wpdb->prefix . 'en_stall_reservations';
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table name.
+		$source = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$table}` WHERE id = %d", $row_id ), ARRAY_A );
+		if ( ! $source ) {
+			return false;
+		}
+
+		// Reduced source row: numeric overrides + rewritten assignment/tack notes.
+		$keep_notes = (string) ( $source['notes'] ?? '' );
+		$keep_notes = ( '' !== $keep_units )
+			? $this->upsert_note_line( $keep_notes, 'Assigned Stall Units', $keep_units )
+			: $this->remove_note_line( $keep_notes, 'Assigned Stall Units' );
+		$keep_notes = ( '' !== $keep_tack )
+			? $this->upsert_note_line( $keep_notes, 'Tack Stalls', $keep_tack )
+			: $this->remove_note_line( $keep_notes, 'Tack Stalls' );
+		$keep_fields['notes'] = $keep_notes;
+		$wpdb->update( $table, $keep_fields, array( 'id' => $row_id ) );
+
+		// New sibling row: clone the source columns, drop id, apply overrides,
+		// rewrite its notes, and reset payment fields (the moved stalls are a
+		// fresh, uncollected charge — the order settles via Balance Due / Refund Due).
+		$new_row = $source;
+		unset( $new_row['id'] );
+		foreach ( $new_fields as $k => $v ) {
+			$new_row[ $k ] = $v;
+		}
+		$new_notes = (string) ( $source['notes'] ?? '' );
+		$new_notes = ( '' !== $new_units )
+			? $this->upsert_note_line( $new_notes, 'Assigned Stall Units', $new_units )
+			: $this->remove_note_line( $new_notes, 'Assigned Stall Units' );
+		$new_notes = ( '' !== $new_tack )
+			? $this->upsert_note_line( $new_notes, 'Tack Stalls', $new_tack )
+			: $this->remove_note_line( $new_notes, 'Tack Stalls' );
+		$new_row['notes']          = $new_notes;
+		$new_row['amount_paid']    = 0;
+		$new_row['payment_status'] = 'unpaid';
+		$new_row['transaction_id'] = '';
+		$new_row['created_at']     = current_time( 'mysql' );
+
+		$inserted = $wpdb->insert( $table, $new_row );
+		if ( ! $inserted ) {
+			return false;
+		}
+		$this->cached_orders = null;
+		return (int) $wpdb->insert_id;
+	}
+
+	/**
 	 * Cancel an order: set every component's payment_status to 'cancelled',
 	 * record the cancellation reason + timestamp in the notes, and emit the
 	 * status-change telemetry/activity-log event. Cancellation is terminal and

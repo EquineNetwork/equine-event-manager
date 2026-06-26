@@ -1208,6 +1208,15 @@ a.eem-btn-add:hover {
 	border-bottom: 1px solid var(--eem-border-soft);
 }
 
+/* The `display: grid` above is an author rule, so it beats the browser's
+   default `[hidden] { display: none }` (author wins over UA at equal
+   specificity). Without this, JS that toggles `hidden` on a field row — e.g.
+   the Add-Items modal hiding Stay type / dates for flat-rate products — has no
+   visible effect. Specificity (0,2,0) restores the hide. */
+.eem-field-row[hidden] {
+	display: none;
+}
+
 /* v2 #5 — shaded panel grouping the interdependent stall/RV layout cluster
    (Inventory Type/Mode -> Available -> Max -> Rows/Zones -> Blocked -> Map), echoing
    the front-end "Pick Your Stalls" card so the dependent fields read as one unit. */
@@ -4942,6 +4951,29 @@ a.eem-btn-ghost:hover {
 	flex-shrink: 0;
 }
 
+/* Refund Due variant — blue mirror of the amber Payment Outstanding banner.
+   Overpaid orders (e.g. after an Edit Dates shorten on a paid order) surface
+   this with a Refund button. Modifier specificity (0,2,0) wins over the base
+   (0,1,0) rules, so no !important is needed. */
+.eem-order-payment-banner--refund {
+	background: #EFF6FF;
+	border-top: 1px solid #bfdbfe;
+}
+
+.eem-order-payment-banner--refund .eem-order-payment-banner__icon {
+	background: #bfdbfe;
+	color: #1d4ed8;
+}
+
+.eem-order-payment-banner--refund .eem-order-payment-banner__title,
+.eem-order-payment-banner--refund .eem-order-payment-banner__amount {
+	color: #1e3a8a;
+}
+
+.eem-order-payment-banner--refund .eem-order-payment-banner__meta {
+	color: #1d4ed8;
+}
+
 /* Mark-as-Paid modal — Cash/Check method radios sit inline. */
 .eem-order-mark-paid-method {
 	display: inline-flex;
@@ -5175,6 +5207,39 @@ body.eem-shell-page--order-detail .eem-page-body {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
+}
+
+/* Subset stall picker (Edit Dates) — checkbox list of the order's assigned
+   stalls so the admin can move only some of them to the new dates. */
+.eem-edit-dates-subset {
+	margin-top: 4px;
+	padding: 12px;
+	border: 1px solid var(--eem-border);
+	border-radius: var(--eem-radius);
+	background: var(--eem-gray-50, #f8fafc);
+}
+.eem-edit-dates-subset__label {
+	margin: 0 0 8px;
+	font-weight: 600;
+	color: var(--eem-navy);
+}
+.eem-edit-dates-subset__list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 16px;
+}
+.eem-edit-dates-subset__item {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13.5px;
+	color: var(--eem-navy);
+	cursor: pointer;
+}
+.eem-edit-dates-subset__hint {
+	margin: 8px 0 0;
+	font-size: 12px;
+	color: var(--eem-text-soft, #6b7280);
 }
 
 /* Detail table (label/value pairs). VIS-1 token applied to label-column bg. */

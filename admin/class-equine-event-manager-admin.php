@@ -6919,8 +6919,8 @@ class EEM_Admin {
 					$noun = $is_rv ? __( 'RV lots', 'equine-event-manager' ) : __( 'stalls', 'equine-event-manager' );
 				}
 				wp_send_json_error( array( 'message' => sprintf(
-					/* translators: 1: paid quantity, 2: stall/lot noun (singular or plural) */
-					__( 'This order is paid for %1$d %2$s, which are all assigned. Remove one first, or use Move to relocate.', 'equine-event-manager' ),
+					/* translators: 1: assigned quantity, 2: stall/lot noun (singular or plural) */
+					__( 'This order has %1$d %2$s, which are all assigned. Remove one first, or use Move to relocate.', 'equine-event-manager' ),
 					$paid_cap,
 					$noun
 				) ), 409 );
@@ -10861,6 +10861,18 @@ class EEM_Admin {
 			wp_send_json_error( array( 'code' => 'no_rows', 'message' => __( 'This order has no editable dates for that section.', 'equine-event-manager' ) ), 400 );
 		}
 
+		// Subset stall date-extension: when the modal sends a strict subset of the
+		// assigned stalls, move only those stalls to the new dates (the rest keep
+		// their current dates) by splitting the line. Stall-only; an absent/empty
+		// subset falls through to the whole-section path below. Exits via
+		// wp_send_json_* when it handles the split.
+		$subset_units = ( isset( $_POST['subset_units'] ) && is_array( $_POST['subset_units'] ) )
+			? array_values( array_filter( array_map( 'sanitize_text_field', array_map( 'wp_unslash', (array) $_POST['subset_units'] ) ) ) )
+			: array();
+		if ( 'stall' === $component && ! empty( $subset_units ) ) {
+			$this->apply_subset_date_split( $order_key, $rows, $subset_units, $arrival, $departure, $lock_rid, $a_ts, $d_ts );
+		}
+
 		// Old nights from the first row's stored dates (all rows in a section
 		// share the order's dates); new nights from the requested dates.
 		$first      = $rows[0];
@@ -10891,6 +10903,7 @@ class EEM_Admin {
 
 		$refunded_amount = 0.0;
 		$balance_added   = 0.0;
+		$balance_reduced = 0.0;
 
 		// 1) Always update the dates on every row in the section.
 		foreach ( $rows as $r ) {
@@ -10940,33 +10953,41 @@ class EEM_Admin {
 		};
 
 		// 2) Money handling, only when nights changed AND the admin opted in.
-		if ( $delta < 0 && 'refund' === $money_action ) {
-			// Base = removed nights × per-night subtotal; layer the percentage fee +
-			// tax on top (a flat fee doesn't scale with nights, so it's not refunded
-			// for a partial-night shorten). Mirrors the modal's displayed amount.
-			$base_refund = round( $per_night * abs( $delta ), 2 );
-			$fee_refund  = 'percentage' === $fee_type ? round( $base_refund * ( $fee_value / 100 ), 2 ) : 0.0;
-			$tax_refund  = $res_tax_rate > 0 ? round( $base_refund * ( $res_tax_rate / 100 ), 2 ) : 0.0;
-			$refund_amt  = round( $base_refund + $fee_refund + $tax_refund, 2 );
-			if ( $refund_amt > 0 ) {
-				$reason = sprintf(
-					/* translators: 1: night count, 2: section label */
-					__( 'Stay shortened by %1$d night(s) — %2$s date edit.', 'equine-event-manager' ),
-					abs( $delta ),
-					'rv' === $component ? __( 'RV', 'equine-event-manager' ) : __( 'stall', 'equine-event-manager' )
-				);
-				$result = $this->process_amount_refund( $order_key, $refund_amt, $reason );
-				if ( is_wp_error( $result ) ) {
-					wp_send_json_error( array(
-						'code'    => $result->get_error_code(),
-						'message' => sprintf(
-							/* translators: %s: refund engine error */
-							__( 'Dates were updated, but the refund failed: %s', 'equine-event-manager' ),
-							$result->get_error_message()
-						),
-					), 400 );
+		if ( $delta < 0 && 'reduce' === $money_action ) {
+			// Shortening the stay only lowers the order's PRICE — it never moves
+			// money inline. This is the mirror of the lengthen/charge branch below:
+			// drop each row's subtotal/fee/tax/total by its share of the removed
+			// nights. The order then settles itself on its own surfaces —
+			//   * unpaid order → the Balance Due simply shrinks (Collect Payment
+			//     later charges the smaller amount);
+			//   * paid order   → amount_paid now exceeds the reduced total, so the
+			//     Order Detail flips to "Refund Due" with a Refund button and the
+			//     admin processes the actual gateway refund there, on demand.
+			// Because we never auto-refund here, an unpaid / no-gateway order no
+			// longer errors on a shorten — there's nothing to refund, just a
+			// smaller balance. (Flat fees and the per-stall shavings charge don't
+			// scale with nights, so they're left untouched.)
+			foreach ( $rows as $r ) {
+				$unit       = isset( $r['unit_price'] ) ? (float) $r['unit_price'] : 0.0;
+				$qty        = $row_qty( $r );
+				$row_cut    = round( $unit * $qty * abs( $delta ), 2 );
+				if ( $row_cut <= 0 ) {
+					continue;
 				}
-				$refunded_amount = (float) $result['refunded_amount'];
+				$tax_rate   = isset( $r['tax_rate'] ) ? (float) $r['tax_rate'] : 0.0;
+				$old_sub    = (float) $r['subtotal'];
+				$new_sub    = max( 0.0, round( $old_sub - $row_cut, 2 ) );
+				$old_fee    = isset( $r['convenience_fee'] ) ? (float) $r['convenience_fee'] : 0.0;
+				$new_fee    = round( $calc_fee( $new_sub ), 2 );
+				$fee_cut    = round( $old_fee - $new_fee, 2 );
+				// tax_rate is stored as a percent (e.g. 7 for 7%), so divide by 100.
+				$tax_cut    = $tax_rate > 0 ? round( $row_cut * ( $tax_rate / 100 ), 2 ) : 0.0;
+				$new_tax    = max( 0.0, round( ( isset( $r['tax'] ) ? (float) $r['tax'] : 0.0 ) - $tax_cut, 2 ) );
+				$new_total  = max( 0.0, round( (float) $r['total'] - $row_cut - $fee_cut - $tax_cut, 2 ) );
+				$fields     = array( 'subtotal' => $new_sub, 'convenience_fee' => $new_fee, 'total' => $new_total, 'tax' => $new_tax );
+				$formats    = array( '%f', '%f', '%f', '%f' );
+				$this->orders_repository->update_component_fields( $component, (int) $r['id'], $fields, $formats );
+				$balance_reduced += round( $row_cut + $fee_cut + $tax_cut, 2 );
 			}
 		} elseif ( $delta > 0 && 'charge' === $money_action ) {
 			// Raise each row's subtotal/fee/tax/total by its share of the per-night
@@ -11017,6 +11038,7 @@ class EEM_Admin {
 					'new_nights'     => $new_nights,
 					'refunded'       => $refunded_amount,
 					'balance_added'  => $balance_added,
+					'balance_reduced' => $balance_reduced,
 				),
 				array(
 					'actor_type'  => 'user',
@@ -11033,6 +11055,9 @@ class EEM_Admin {
 		} elseif ( $balance_added > 0 ) {
 			/* translators: %s: amount added to balance due */
 			$msg = sprintf( __( 'Dates updated; $%s added to balance due.', 'equine-event-manager' ), number_format( $balance_added, 2 ) );
+		} elseif ( $balance_reduced > 0 ) {
+			/* translators: %s: amount the order total was reduced by */
+			$msg = sprintf( __( 'Dates updated; order reduced by $%s.', 'equine-event-manager' ), number_format( $balance_reduced, 2 ) );
 		}
 
 		$this->release_assignment_lock( $lock_rid );
@@ -11040,6 +11065,229 @@ class EEM_Admin {
 		wp_send_json_success( array(
 			'requires_reload' => true,
 			'message'         => $msg,
+		) );
+	}
+
+	/**
+	 * Parse a comma-separated unit list out of an order component's notes line
+	 * (e.g. "Assigned Stall Units: 295, 296" → ['295','296']). Returns the units
+	 * verbatim so they round-trip in the exact stored format.
+	 *
+	 * @param string $notes Raw component notes.
+	 * @param string $label Note label to read (e.g. 'Assigned Stall Units').
+	 * @return array<int,string>
+	 */
+	private function parse_note_units( string $notes, string $label ): array {
+		if ( '' === $notes ) {
+			return array();
+		}
+		foreach ( preg_split( '/\r\n|\r|\n/', $notes ) as $line ) {
+			$line = trim( (string) $line );
+			if ( 0 === stripos( $line, $label . ':' ) ) {
+				$val = trim( substr( $line, strlen( $label ) + 1 ) );
+				return array_values( array_filter( array_map( 'trim', explode( ',', $val ) ) ) );
+			}
+		}
+		return array();
+	}
+
+	/**
+	 * Subset date-extension: move a chosen subset of an order's stalls to new
+	 * dates, splitting the stall line so the unselected stalls keep their original
+	 * dates. The moved stalls become a new sibling row (uncollected — settles via
+	 * Balance Due / Refund Due); the source row is reduced. Required shavings are
+	 * re-allocated by stall count (flat per non-tack stall, so the order total is
+	 * unchanged aside from the night delta on the moved stalls).
+	 *
+	 * Conservative guards (fail safe rather than mis-price): only a single stall
+	 * row, only a strict valid subset, and only when the row's stored subtotal
+	 * reconciles to plain qty×price×nights + shavings (no premium surcharge or
+	 * discount). Exits via wp_send_json_*.
+	 *
+	 * @param string $order_key    Order key.
+	 * @param array  $rows         The section's component rows (must be exactly one).
+	 * @param array  $subset_units Stall units to move (subset of assigned units).
+	 * @param string $arrival      New arrival date (Y-m-d).
+	 * @param string $departure    New departure date (Y-m-d).
+	 * @param int    $lock_rid     Reservation id holding the assignment lock.
+	 * @param int    $a_ts         New arrival timestamp.
+	 * @param int    $d_ts         New departure timestamp.
+	 * @return void
+	 */
+	private function apply_subset_date_split( string $order_key, array $rows, array $subset_units, string $arrival, string $departure, int $lock_rid, int $a_ts, int $d_ts ): void {
+		$fail = function ( $code, $msg ) use ( $lock_rid ) {
+			$this->release_assignment_lock( $lock_rid );
+			wp_send_json_error( array( 'code' => $code, 'message' => $msg ), 400 );
+		};
+
+		if ( 1 !== count( $rows ) ) {
+			$fail( 'subset_unsupported', __( 'Splitting dates for only some stalls isn\'t supported on this order\'s layout yet — edit the whole reservation instead.', 'equine-event-manager' ) );
+		}
+		$row        = $rows[0];
+		$row_id     = (int) $row['id'];
+		$unit_price = (float) ( $row['unit_price'] ?? 0 );
+		$stall_qty  = (int) ( $row['stall_qty'] ?? 0 );
+		$tack_qty   = (int) ( $row['tack_stall_qty'] ?? 0 );
+		$total_qty  = $stall_qty + $tack_qty;
+
+		$assigned = $this->parse_note_units( (string) ( $row['notes'] ?? '' ), 'Assigned Stall Units' );
+		$tack     = $this->parse_note_units( (string) ( $row['notes'] ?? '' ), 'Tack Stalls' );
+
+		$subset_units = array_values( array_unique( $subset_units ) );
+		foreach ( $subset_units as $u ) {
+			if ( ! in_array( $u, $assigned, true ) ) {
+				$fail( 'subset_unknown', __( 'One or more selected stalls aren\'t assigned to this order. Reload and try again.', 'equine-event-manager' ) );
+			}
+		}
+		$n = count( $subset_units );
+		if ( $n < 1 || $n >= $total_qty || count( $assigned ) !== $total_qty ) {
+			$fail( 'subset_count', __( 'Pick at least one stall but fewer than all of them to split the dates.', 'equine-event-manager' ) );
+		}
+
+		// Reservation config: shavings per-stall + prices for repricing + the
+		// surcharge/discount reconciliation guard below.
+		$per_stall = 0;
+		$shav_price = 0.0;
+		$add_price = 0.0;
+		$req_enabled = false;
+		if ( $lock_rid > 0 && class_exists( 'EEM_Reservation_Config' ) ) {
+			$cfg         = EEM_Reservation_Config::for( $lock_rid );
+			$per_stall   = (int) $cfg->get( 'required_shavings_per_stall' );
+			$shav_price  = (float) $cfg->get( 'required_shavings_price' );
+			$add_price   = (float) $cfg->get( 'additional_shavings_price' );
+			$req_enabled = ! empty( $cfg->get( 'required_shavings_enabled' ) );
+		}
+
+		$old_nights = max( 1, (int) round( ( strtotime( (string) $row['departure_date'] ) - strtotime( (string) $row['arrival_date'] ) ) / DAY_IN_SECONDS ) );
+		$new_nights = max( 1, (int) round( ( $d_ts - $a_ts ) / DAY_IN_SECONDS ) );
+
+		// Surcharge/discount guard: only split when the stored subtotal reconciles
+		// to plain (qty × price × nights) + shavings. A premium/zone surcharge or a
+		// discount would misprice the split, so bail safely instead.
+		$existing_req_sub = (int) ( $row['required_shavings_qty'] ?? 0 ) * $shav_price;
+		$existing_add_sub = (int) ( $row['additional_shavings_qty'] ?? 0 ) * $add_price;
+		$expected_subtotal = $total_qty * $unit_price * $old_nights + $existing_req_sub + $existing_add_sub;
+		if ( abs( $expected_subtotal - (float) ( $row['subtotal'] ?? 0 ) ) > 0.01 ) {
+			$fail( 'subset_surcharge', __( 'This order has a surcharge or discount on its stalls, so its dates can\'t be split automatically yet. Edit the whole reservation instead.', 'equine-event-manager' ) );
+		}
+
+		// Partition tack + non-tack across the split.
+		$subset_tack   = array_values( array_intersect( $subset_units, $tack ) );
+		$keep_units    = array_values( array_diff( $assigned, $subset_units ) );
+		$keep_tack     = array_values( array_diff( $tack, $subset_tack ) );
+		$new_tack_qty  = count( $subset_tack );
+		$keep_tack_qty = $tack_qty - $new_tack_qty;
+		$new_nontack   = $n - $new_tack_qty;
+		$keep_nontack  = $stall_qty - $new_nontack;
+		if ( $new_nontack < 0 || $keep_nontack < 0 || $keep_tack_qty < 0 ) {
+			$fail( 'subset_count', __( 'Tack stall selection is inconsistent. Reload and try again.', 'equine-event-manager' ) );
+		}
+
+		// Fee/tax config (mirror the whole-section path).
+		$fee_enabled = false;
+		$fee_type    = 'none';
+		$fee_value   = 0.0;
+		$tax_rate    = 0.0;
+		if ( $lock_rid > 0 && class_exists( 'EEM_Shortcodes' ) ) {
+			$priced      = ( new EEM_Shortcodes() )->price_base_rate_addition( $lock_rid, 'stall', 1, (string) ( $row['stay_type'] ?? '' ), $arrival, $departure );
+			$fee_enabled = ! empty( $priced['fee_enabled'] );
+			$fee_type    = (string) ( $priced['fee_type'] ?? 'none' );
+			$fee_value   = (float) ( $priced['fee_value'] ?? 0.0 );
+			$tax_rate    = (float) ( $priced['tax_rate'] ?? 0.0 );
+		}
+		$calc_fee = static function ( $sub ) use ( $fee_enabled, $fee_type, $fee_value ) {
+			if ( ! $fee_enabled ) {
+				return 0.0;
+			}
+			if ( 'flat' === $fee_type ) {
+				return (float) $fee_value;
+			}
+			if ( 'percentage' === $fee_type ) {
+				return round( $sub * ( $fee_value / 100 ), 2 );
+			}
+			return 0.0;
+		};
+
+		// Shavings allocation by stall count (flat per non-tack stall; total unchanged).
+		$new_req_qty  = $req_enabled ? $new_nontack * $per_stall : 0;
+		$keep_req_qty = $req_enabled ? $keep_nontack * $per_stall : 0;
+		$new_req_sub  = $new_req_qty * $shav_price;
+		$keep_req_sub = $keep_req_qty * $shav_price;
+
+		// Moved (new) row — stalls at the new dates; required shavings only (the
+		// additional-shavings charge stays on the original row).
+		$new_subtotal = round( $n * $unit_price * $new_nights + $new_req_sub, 2 );
+		$new_fee      = round( $calc_fee( $new_subtotal ), 2 );
+		$new_tax      = $tax_rate > 0 ? round( $new_subtotal * ( $tax_rate / 100 ), 2 ) : 0.0;
+		$new_total    = round( $new_subtotal + $new_fee + $new_tax, 2 );
+
+		// Reduced original row — remaining stalls at the original dates; keeps the
+		// additional-shavings charge.
+		$keep_qty      = $total_qty - $n;
+		$keep_subtotal = round( $keep_qty * $unit_price * $old_nights + $keep_req_sub + $existing_add_sub, 2 );
+		$keep_fee      = round( $calc_fee( $keep_subtotal ), 2 );
+		$keep_tax      = $tax_rate > 0 ? round( $keep_subtotal * ( $tax_rate / 100 ), 2 ) : 0.0;
+		$keep_total    = round( $keep_subtotal + $keep_fee + $keep_tax, 2 );
+
+		$keep_fields = array(
+			'stall_qty'             => $keep_nontack,
+			'tack_stall_qty'        => $keep_tack_qty,
+			'required_shavings_qty' => $keep_req_qty,
+			'subtotal'              => number_format( $keep_subtotal, 2, '.', '' ),
+			'convenience_fee'       => number_format( $keep_fee, 2, '.', '' ),
+			'tax'                   => number_format( $keep_tax, 2, '.', '' ),
+			'total'                 => number_format( $keep_total, 2, '.', '' ),
+		);
+		$new_fields = array(
+			'stall_qty'               => $new_nontack,
+			'tack_stall_qty'          => $new_tack_qty,
+			'arrival_date'            => $arrival,
+			'departure_date'          => $departure,
+			'required_shavings_qty'   => $new_req_qty,
+			'additional_shavings_qty' => 0,
+			'subtotal'                => number_format( $new_subtotal, 2, '.', '' ),
+			'convenience_fee'         => number_format( $new_fee, 2, '.', '' ),
+			'tax'                     => number_format( $new_tax, 2, '.', '' ),
+			'total'                   => number_format( $new_total, 2, '.', '' ),
+		);
+
+		$new_id = $this->orders_repository->split_stall_row(
+			$row_id,
+			$keep_fields,
+			$new_fields,
+			implode( ', ', $keep_units ),
+			implode( ', ', $keep_tack ),
+			implode( ', ', $subset_units ),
+			implode( ', ', $subset_tack )
+		);
+		if ( ! $new_id ) {
+			$fail( 'subset_failed', __( 'Could not split the reservation dates. Please try again.', 'equine-event-manager' ) );
+		}
+
+		if ( class_exists( 'EEM_Activity_Log' ) ) {
+			$current_user = wp_get_current_user();
+			EEM_Activity_Log::write(
+				'order_dates_split',
+				array(
+					'order_key'     => $order_key,
+					'moved_units'   => implode( ', ', $subset_units ),
+					'moved_qty'     => $n,
+					'new_arrival'   => $arrival,
+					'new_departure' => $departure,
+				),
+				array(
+					'actor_type'  => 'user',
+					'actor_id'    => (int) get_current_user_id(),
+					'actor_label' => $current_user ? $current_user->display_name : '',
+				)
+			);
+		}
+
+		$this->release_assignment_lock( $lock_rid );
+		wp_send_json_success( array(
+			'requires_reload' => true,
+			/* translators: %d: number of stalls moved to the new dates */
+			'message'         => sprintf( _n( 'Dates split: %d stall moved to the new dates.', 'Dates split: %d stalls moved to the new dates.', $n, 'equine-event-manager' ), $n ),
 		) );
 	}
 

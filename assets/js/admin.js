@@ -363,6 +363,22 @@
 		var variant = opts.variant === 'error' ? 'eem-toast--error' : '';
 		var duration = typeof opts.duration === 'number' ? opts.duration : 3200;
 
+		// Dedupe: if an identical toast (same title text) is already on screen,
+		// just refresh its auto-dismiss timer instead of stacking a duplicate.
+		// Prevents toast spam when a user repeatedly triggers the same disallowed
+		// action — e.g. clicking stalls past an order's assigned capacity, which
+		// otherwise piled up dozens of identical "all assigned" errors.
+		var existingToasts = wrap.querySelectorAll('.eem-toast');
+		for (var ei = 0; ei < existingToasts.length; ei++) {
+			var existingTitle = existingToasts[ei].querySelector('.eem-toast-title');
+			if (existingTitle && existingTitle.textContent === message) {
+				var dup = existingToasts[ei];
+				if (dup._eemDismissTimer) { clearTimeout(dup._eemDismissTimer); }
+				dup._eemDismissTimer = setTimeout(dup._eemDismiss, duration);
+				return dup;
+			}
+		}
+
 		var toast = document.createElement('div');
 		toast.className = 'eem-toast ' + variant;
 		toast.innerHTML =
@@ -384,8 +400,8 @@
 			setTimeout(function () { toast.remove(); }, 300);
 		};
 
-		setTimeout(dismiss, duration);
 		toast._eemDismiss = dismiss;
+		toast._eemDismissTimer = setTimeout(dismiss, duration);
 		return toast;
 	};
 
@@ -1809,7 +1825,7 @@
 	   per-night cost). Live-recomputes the night delta + $ impact as the dates
 	   change and surfaces a refund (shorter) / charge-to-balance (longer)
 	   choice. Reloads on success so every total + badge re-renders. */
-	var _eemEditDatesCtx = { perNight: 0, feeType: 'none', feeValue: 0, taxRate: 0 };
+	var _eemEditDatesCtx = { perNight: 0, feeType: 'none', feeValue: 0, taxRate: 0, unitPrice: 0, sectionQty: 0, component: '' };
 
 	function eemEditDatesModal() { return document.getElementById('eem-order-edit-dates-modal'); }
 
@@ -1820,7 +1836,41 @@
 		_eemEditDatesCtx.feeType = btn.getAttribute('data-fee-type') || 'none';
 		_eemEditDatesCtx.feeValue = parseFloat(btn.getAttribute('data-fee-value')) || 0;
 		_eemEditDatesCtx.taxRate = parseFloat(btn.getAttribute('data-tax-rate')) || 0;
+		_eemEditDatesCtx.unitPrice = parseFloat(btn.getAttribute('data-unit-price')) || 0;
+		_eemEditDatesCtx.sectionQty = parseInt(btn.getAttribute('data-section-qty'), 10) || 0;
 		var component = btn.getAttribute('data-component') || '';
+		_eemEditDatesCtx.component = component;
+
+		// Subset picker (stall only): build a checkbox per assigned stall so the
+		// admin can move just some stalls to the new dates. Hidden unless there are
+		// 2+ assigned stalls to split between.
+		var subsetWrap = modal.querySelector('[data-eem-edit-dates-subset]');
+		var subsetList = modal.querySelector('[data-eem-edit-dates-subset-list]');
+		var assignedUnits = [];
+		try { assignedUnits = JSON.parse(btn.getAttribute('data-assigned-units') || '[]') || []; } catch (e) { assignedUnits = []; }
+		if (subsetWrap && subsetList) {
+			subsetList.innerHTML = '';
+			if (component === 'stall' && assignedUnits.length > 1) {
+				assignedUnits.forEach(function (u) {
+					var lbl = document.createElement('label');
+					lbl.className = 'eem-edit-dates-subset__item';
+					var cb = document.createElement('input');
+					cb.type = 'checkbox';
+					cb.checked = true;
+					cb.value = u;
+					cb.setAttribute('data-eem-edit-dates-subset-cb', '');
+					cb.addEventListener('change', recomputeEditDatesImpact);
+					var span = document.createElement('span');
+					span.textContent = (String(u).charAt(0) === '#') ? u : ('#' + u);
+					lbl.appendChild(cb);
+					lbl.appendChild(span);
+					subsetList.appendChild(lbl);
+				});
+				subsetWrap.hidden = false;
+			} else {
+				subsetWrap.hidden = true;
+			}
+		}
 		var arrival = btn.getAttribute('data-arrival') || '';
 		var departure = btn.getAttribute('data-departure') || '';
 		var label = btn.getAttribute('data-section-label') || '';
@@ -1892,7 +1942,22 @@
 		var oldN = _eemNights(origArrival, origDeparture);
 		var newN = _eemNights(arrival, departure);
 		var delta = newN - oldN;
+
+		// When a subset of stalls is chosen, only those stalls move to the new
+		// dates — so the money basis is (chosen count × per-unit price), not the
+		// whole section's per-night cost. All boxes checked (or no subset UI) →
+		// use the full section per-night figure.
+		var subsetCbs = modal.querySelectorAll('[data-eem-edit-dates-subset-cb]');
 		var perNight = _eemEditDatesCtx.perNight;
+		var subsetActive = false;
+		if (subsetCbs.length) {
+			var checkedCount = 0;
+			subsetCbs.forEach(function (cb) { if (cb.checked) { checkedCount++; } });
+			if (checkedCount > 0 && checkedCount < subsetCbs.length) {
+				perNight = checkedCount * _eemEditDatesCtx.unitPrice;
+				subsetActive = true;
+			}
+		}
 
 		// Reset money choice to "none" whenever the impact changes.
 		var noneRadio = modal.querySelector('input[name="money_choice"][value="none"]');
@@ -1915,11 +1980,15 @@
 		var taxAdd = _eemEditDatesCtx.taxRate > 0 ? base * (_eemEditDatesCtx.taxRate / 100) : 0;
 		var amt = base + feeAdd + taxAdd;
 		var amtStr = '$' + amt.toFixed(2);
+		var scope = subsetActive ? (' for ' + (perNight / (_eemEditDatesCtx.unitPrice || 1)) + ' stall(s); the rest keep their dates') : '';
 		if (delta < 0) {
-			if (textEl) textEl.textContent = 'This shortens the stay by ' + Math.abs(delta) + ' night(s).';
-			if (applyLabel) applyLabel.textContent = 'Refund the customer ' + amtStr + ' (' + Math.abs(delta) + ' night(s))';
+			if (textEl) textEl.textContent = 'This shortens the stay by ' + Math.abs(delta) + ' night(s)' + scope + '.';
+			// Shortening only lowers the order's price — it never refunds inline. An
+			// unpaid order's balance just shrinks; a paid order flips to "Refund Due"
+			// with a Refund button on the order page.
+			if (applyLabel) applyLabel.textContent = 'Reduce the order by ' + amtStr + ' (' + Math.abs(delta) + ' night(s))';
 		} else {
-			if (textEl) textEl.textContent = 'This lengthens the stay by ' + delta + ' night(s).';
+			if (textEl) textEl.textContent = 'This lengthens the stay by ' + delta + ' night(s)' + scope + '.';
 			if (applyLabel) applyLabel.textContent = 'Charge ' + amtStr + ' more — added to balance due (' + delta + ' night(s))';
 		}
 		if (applyRadio) applyRadio.value = 'apply';
@@ -1948,15 +2017,28 @@
 		var delta = _eemNights(arrival, departure) - _eemNights(origArrival, origDeparture);
 		var applyChosen = !!(modal.querySelector('input[name="money_choice"][value="apply"]') && modal.querySelector('input[name="money_choice"][value="apply"]').checked);
 		var moneyAction = 'none';
-		if (applyChosen && delta < 0) moneyAction = 'refund';
+		if (applyChosen && delta < 0) moneyAction = 'reduce';
 		else if (applyChosen && delta > 0) moneyAction = 'charge';
 		modal.querySelector('[data-eem-edit-dates-money]').value = moneyAction;
 
 		var confirmBtn = modal.querySelector('[data-eem-action="order-edit-dates-confirm"]');
 		if (confirmBtn) confirmBtn.disabled = true;
 
+		var payload = new FormData(form);
+		// Subset extension: only send subset_units when a real subset is chosen
+		// (some but not all stalls). All checked → whole-section edit (omit it, so
+		// the server takes its existing all-rows path).
+		var subsetCbs = modal.querySelectorAll('[data-eem-edit-dates-subset-cb]');
+		if (subsetCbs.length) {
+			var picked = [];
+			subsetCbs.forEach(function (cb) { if (cb.checked) { picked.push(cb.value); } });
+			if (picked.length > 0 && picked.length < subsetCbs.length) {
+				picked.forEach(function (u) { payload.append('subset_units[]', u); });
+			}
+		}
+
 		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
-			method: 'POST', credentials: 'same-origin', body: new FormData(form)
+			method: 'POST', credentials: 'same-origin', body: payload
 		}).then(function (r) {
 			return r.json().catch(function () { return { success: false, data: { message: 'Unexpected server response.' } }; });
 		}).then(function (json) {
@@ -6345,7 +6427,7 @@
 			if (remaining <= 0) {
 				var nounsFull = ctx.kind === 'rv' ? 'RV lots' : 'stalls';
 				if (window.EEM && window.EEM.showSaveToast) {
-					window.EEM.showSaveToast('This order is paid for ' + qty + ' ' + nounsFull + ', which are all assigned. Remove one first, or use Move to relocate.', { variant: 'error' });
+					window.EEM.showSaveToast('This order has ' + qty + ' ' + nounsFull + ', which are all assigned. Remove one first, or use Move to relocate.', { variant: 'error' });
 				}
 				return;
 			}
