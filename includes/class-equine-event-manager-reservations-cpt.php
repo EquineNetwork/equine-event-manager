@@ -1340,7 +1340,19 @@ class EEM_Reservations_CPT {
 		$use_global_event_source = ! empty( $source['use_global_event_source'] ) ? 1 : 0;
 		$configured_primary_sources = $this->get_configured_primary_event_sources();
 
-		if ( count( $configured_primary_sources ) <= 1 && empty( $existing['use_global_event_source'] ) ) {
+		// Single-source sites have no per-reservation source picker, so by default a
+		// reservation just follows the global source. BUT never coerce a reservation
+		// that already carries a concrete, still-supported event source of its own
+		// (e.g. a GEMS/feed reservation living on a TEC-default site). Flipping such a
+		// reservation to the global source drops its event linkage and 404s the public
+		// page — exactly the source-switch-resilience contract: a reservation's own
+		// event_source drives its frontend, regardless of the site's global setting.
+		$existing_raw_source  = sanitize_key( (string) ( $existing['event_source'] ?? '' ) );
+		$existing_is_concrete = empty( $existing['use_global_event_source'] )
+			&& '' !== $existing_raw_source
+			&& $existing_raw_source === $this->sanitize_reservation_event_source( $existing_raw_source );
+
+		if ( count( $configured_primary_sources ) <= 1 && empty( $existing['use_global_event_source'] ) && ! $existing_is_concrete ) {
 			$use_global_event_source = 1;
 		}
 
