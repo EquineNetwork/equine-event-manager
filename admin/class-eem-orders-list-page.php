@@ -434,6 +434,13 @@ class EEM_Orders_List_Page {
 		$status_slug  = isset( $order['status_slug'] )  ? (string) $order['status_slug']  : '';
 		$status_label = isset( $order['status_label'] ) ? (string) $order['status_label'] : '';
 		$status_css   = self::status_slug_to_css_class( $status_slug );
+		// Mirror the Order Detail badge override: a "paid" order whose total grew
+		// after line-item edits has a real uncollected balance, so the list reads
+		// amber "Balance Due" instead of green "Paid" — keeping list + detail in sync.
+		if ( 'paid' === $status_slug && isset( $order['amount_due'] ) && (float) $order['amount_due'] > 0.005 ) {
+			$status_css   = 'unpaid';
+			$status_label = __( 'Balance Due', 'equine-event-manager' );
+		}
 		$created_at   = isset( $order['created_at'] )   ? (string) $order['created_at']   : '';
 		$date_label   = self::format_date_label( $created_at );
 		$billing_tab  = EEM_Orders_List_Repo::map_status_slug_to_tab( $status_slug );
@@ -598,6 +605,12 @@ class EEM_Orders_List_Page {
 				$status_slug  = isset( $order['status_slug'] )  ? (string) $order['status_slug']  : '';
 				$status_label = isset( $order['status_label'] ) ? (string) $order['status_label'] : '';
 				$status_css   = self::status_slug_to_css_class( $status_slug );
+				// Mirror the Order Detail badge override (see desktop row): a "paid"
+				// order with an uncollected balance reads amber "Balance Due".
+				if ( 'paid' === $status_slug && isset( $order['amount_due'] ) && (float) $order['amount_due'] > 0.005 ) {
+					$status_css   = 'unpaid';
+					$status_label = __( 'Balance Due', 'equine-event-manager' );
+				}
 				$created_at   = isset( $order['created_at'] )   ? (string) $order['created_at']   : '';
 				$date_label   = self::format_date_label( $created_at );
 				$type_labels  = array(

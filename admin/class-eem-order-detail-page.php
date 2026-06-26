@@ -1269,7 +1269,8 @@ class EEM_Order_Detail_Page {
 	 * @param string $stay_type      Component stay type.
 	 * @return array{fee_type:string,fee_value:float,tax_rate:float}
 	 */
-	private function edit_dates_fee_data( int $reservation_id, string $section, string $stay_type ): array {
+	private function edit_dates_fee_data( ?int $reservation_id, string $section, string $stay_type ): array {
+		$reservation_id = (int) $reservation_id;
 		$out = array( 'fee_type' => 'none', 'fee_value' => 0.0, 'tax_rate' => 0.0 );
 		if ( $reservation_id < 1 || ! class_exists( 'EEM_Shortcodes' ) ) {
 			return $out;
