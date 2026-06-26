@@ -10016,7 +10016,15 @@ RV Lot: " . $rv_lot['name'] );
 
 		foreach ( $open_times as $open_at ) {
 			if ( strtotime( $open_at ) > $current_time ) {
-				return $this->replace_reservation_message_tokens( $settings['preopen_message'], $event_name, $open_at, ! empty( $close_times ) ? end( $close_times ) : '', $settings['support_phone'], $settings['support_email'] );
+				// Prefer the per-reservation custom message when the admin typed one.
+				// Check whichever section's open_at matches this scheduled time.
+				$stall_msg = ( ! empty( $data['stalls_enabled'] ) && isset( $data['stalls_open_at'] ) && $data['stalls_open_at'] === $open_at )
+					? trim( (string) ( $data['stalls_schedule_message'] ?? '' ) ) : '';
+				$rv_msg    = ( ! empty( $data['rv_enabled'] ) && isset( $data['rv_open_at'] ) && $data['rv_open_at'] === $open_at )
+					? trim( (string) ( $data['rv_schedule_message'] ?? '' ) ) : '';
+				$custom   = '' !== $stall_msg ? $stall_msg : $rv_msg;
+				$template = '' !== $custom ? $custom : $settings['preopen_message'];
+				return $this->replace_reservation_message_tokens( $template, $event_name, $open_at, ! empty( $close_times ) ? end( $close_times ) : '', $settings['support_phone'], $settings['support_email'] );
 			}
 		}
 

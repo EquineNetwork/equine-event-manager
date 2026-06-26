@@ -6442,6 +6442,7 @@
 					el.className = 'eem-smap-cell eem-smap-stall' + (status === 'available' ? '' : ' is-' + status);
 					el.textContent = cell.l;             // display the bare label
 					el.setAttribute('data-eem-smap-stall', unit);  // store the zone-qualified unit key
+					el.setAttribute('data-eem-smap-customer', st.c ? st.c.toLowerCase() : ''); // for search
 					el.style.gridColumn = (c + 1);
 					el.style.gridRow = (r + 1);
 					// Group membership → a left accent bar that scales with the cell
@@ -6468,6 +6469,18 @@
 						vb.textContent = '★';
 						vb.title = 'VIP';
 						el.appendChild(vb);
+					}
+					// Customer name — small text at bottom-left; readable when zoomed in.
+					// Format: "Last, First" by splitting on the last space.
+					if (st.c) {
+						var cnParts = st.c.trim().split(' ');
+						var cnDisplay = cnParts.length > 1
+							? cnParts[cnParts.length - 1] + ', ' + cnParts.slice(0, -1).join(' ')
+							: st.c;
+						var cnEl = document.createElement('span');
+						cnEl.className = 'eem-smap-cname';
+						cnEl.textContent = cnDisplay;
+						el.appendChild(cnEl);
 					}
 					host.appendChild(el);
 					continue;
@@ -6844,8 +6857,12 @@
 			if (container.offsetParent === null) { return; } // hidden barn/section
 			var scroll = container.querySelector('[data-eem-smap-scroll]');
 			container.querySelectorAll('[data-eem-smap-stall]').forEach(function (cell) {
-				var label = (cell.getAttribute('data-eem-smap-stall') || '').toLowerCase();
-				var isMatch = q && (label === q || label.indexOf(' ' + q) !== -1 || label.indexOf(q) === 0);
+				var label    = (cell.getAttribute('data-eem-smap-stall') || '').toLowerCase();
+				var customer = (cell.getAttribute('data-eem-smap-customer') || '').toLowerCase();
+				var isMatch = q && (
+					label === q || label.indexOf(' ' + q) !== -1 || label.indexOf(q) === 0 ||
+					(customer && customer.indexOf(q) !== -1)
+				);
 				cell.classList.toggle('eem-smap-highlight', !!isMatch);
 				if (isMatch) { count++; if (!firstMatch) { firstMatch = cell; firstScroll = scroll; } }
 			});

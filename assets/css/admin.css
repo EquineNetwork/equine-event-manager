@@ -9223,6 +9223,9 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
 .eem-smap-grid--dots .eem-smap-vipbadge { display: none; }
 .eem-smap-vipbadge { position: absolute; top: -6px; left: -4px; font-size: 11px; color: #E0A800; text-shadow: 0 0 2px rgba(0,0,0,.35); line-height: 1; pointer-events: none; }
 .eem-smap-stall.is-vip { box-shadow: inset 0 0 0 2px #E0A800; }
+/* Assignee name — bottom-left of chip, scales with chip size, readable when zoomed in. */
+.eem-smap-cname { position: absolute; bottom: 2px; left: 3px; font-size: clamp(6px, calc(var(--eem-smap-chip, 40px) * 0.16), 10px); font-weight: 400; line-height: 1; white-space: nowrap; overflow: hidden; max-width: calc(100% - 6px); text-overflow: ellipsis; pointer-events: none; color: inherit; opacity: 0.78; }
+.eem-smap-grid--dots .eem-smap-cname { display: none; }
 /* Match the amber landmark styling used by the builder, Preview, and customer
    picker so every map surface looks identical (was grey/uppercase). */
 .eem-smap-land { display: flex; align-items: center; justify-content: center; text-align: center; width: auto; height: auto; font-size: clamp(7px, calc(var(--eem-smap-chip, 40px) * 0.22), 11px); font-weight: 700; letter-spacing: .02em; color: #b45309; background: #fff7e6; border: 0; border-radius: 0; padding: 2px; line-height: 1.15; overflow: hidden; }
