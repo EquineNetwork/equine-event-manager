@@ -108,10 +108,17 @@ eem_render_editor_toggle_label_row( array(
 ) );
 echo '<p class="eem-field-hint eem-sched-group__hint">' . esc_html__( 'Set a cutoff date; discounted Early Bird amounts appear next to the nightly rate and each package below.', 'equine-event-manager' ) . '</p>';
 echo '<div class="eem-sched-fields' . ( $eb_on ? '' : ' eem-row--hidden' ) . '" id="row-rv-eb-fields">';
+// Default the RV cutoff to the Stall Early Bird cutoff when RV's own cutoff is
+// empty but a Stall cutoff is set (2.7.x). Mirrors the common case where RV and
+// Stall share the same Early Bird deadline; the admin can still override.
+$rv_eb_cutoff_value = $fmt_dt( $data['rv_early_bird_cutoff'] );
+if ( '' === $rv_eb_cutoff_value && ! empty( $data['stall_early_bird_cutoff'] ) ) {
+	$rv_eb_cutoff_value = $fmt_dt( $data['stall_early_bird_cutoff'] );
+}
 printf(
 	'<div class="eem-sched-field"><span class="eem-sched-field__label">%s</span><input class="eem-field-input" type="datetime-local" name="en_reservation[rv_early_bird_cutoff]" value="%s" data-eem-eb-cutoff="rv"%s%s /></div>',
 	esc_html__( 'Early Bird Cutoff', 'equine-event-manager' ),
-	esc_attr( $fmt_dt( $data['rv_early_bird_cutoff'] ) ),
+	esc_attr( $rv_eb_cutoff_value ),
 	'' !== $fmt_dt( $data['rv_open_at'] ) ? ' min="' . esc_attr( $fmt_dt( $data['rv_open_at'] ) ) . '"' : '',
 	'' !== $fmt_dt( $data['rv_close_at'] ) ? ' max="' . esc_attr( $fmt_dt( $data['rv_close_at'] ) ) . '"' : ''
 );

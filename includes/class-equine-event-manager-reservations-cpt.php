@@ -1872,20 +1872,14 @@ class EEM_Reservations_CPT {
 			$values['rv_schedule_enabled'] = 1;
 		}
 
-		// Early Bird pricing requires a reservation schedule window — the cutoff
-		// only makes sense inside an open→close window. Force it off when the
-		// matching schedule toggle is off (mirrors the JS gate so the rule holds
-		// even if the request bypasses the UI).
-		if ( empty( $values['stall_schedule_enabled'] ) ) {
-			$values['stall_early_bird_enabled'] = 0;
-		}
-		if ( empty( $values['rv_schedule_enabled'] ) ) {
-			$values['rv_early_bird_enabled'] = 0;
-		}
+		// Early Bird pricing is independent of the reservation schedule — it can be
+		// used with scheduling off (2.7.x). Do NOT force the toggle off based on the
+		// schedule state; the cutoff alone governs whether the discount is active.
 
-		// Early Bird cutoff must fall inside the open→close schedule window — clamp
-		// it in (mirrors the JS min/max gate; guards against UI bypass / a window
-		// edited narrower than an existing cutoff).
+		// When an Early Bird cutoff IS set alongside an open→close schedule window,
+		// clamp the cutoff inside that window (guards against UI bypass / a window
+		// edited narrower than an existing cutoff). With scheduling off, the window
+		// fields are empty and the clamp is a no-op, leaving the cutoff untouched.
 		foreach ( array(
 			array( 'cut' => 'stall_early_bird_cutoff', 'open' => 'stalls_open_at', 'close' => 'stalls_close_at' ),
 			array( 'cut' => 'rv_early_bird_cutoff',    'open' => 'rv_open_at',     'close' => 'rv_close_at' ),

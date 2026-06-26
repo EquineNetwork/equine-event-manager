@@ -8065,7 +8065,7 @@ input.eem-repeat-input { margin: 0; padding: 0 10px; height: var(--eem-select-he
 input.eem-repeat-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
 .eem-repeat-price-wrap { display: flex; align-items: center; height: var(--eem-select-height); box-sizing: border-box; border: 1px solid var(--eem-control-border); border-radius: var(--eem-radius); overflow: hidden; background: #fff; }
 .eem-repeat-price-wrap:focus-within { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
-.eem-repeat-price-sym { padding: 0 11px; background: #f0f4fb; border: none; border-right: 1px solid var(--eem-control-border); font-size: 13px; color: var(--eem-navy); font-weight: 600; display: flex; align-items: center; }
+.eem-repeat-price-sym { padding: 0 11px; height: 100%; background: #f0f4fb; border: none; border-right: 1px solid var(--eem-control-border); font-size: 13px; color: var(--eem-navy); font-weight: 600; display: flex; align-items: center; box-sizing: border-box; }
 input.eem-repeat-price-in { margin: 0; padding: 0 10px; height: 100%; border: none; font-size: 13px; font-family: inherit; color: var(--eem-text); background: transparent; width: 90px; outline: none; }
 input.eem-repeat-price-in:focus { box-shadow: none; }
 /* Borderless red icon button (matches .eem-row-card-delete). */
