@@ -25,9 +25,9 @@
 
 ### ✅ Code written this session — AWAITING YOUR VERIFICATION
 
-7. **Scheduling custom message fix** — root cause: `get_reservation_status_message()` (the top-level "all sections closed" banner) used the global preopen template and ignored the per-reservation `stalls_schedule_message`. Fixed: when stalls (or RV) are pre-open at a matching `open_at` time, the custom message is preferred over the global template. **Test:** open the Northeast Circuit Final customer event page — should now show "Reservations coming soon" (or whatever you typed) instead of the generic "will open on…" message.
-8. **Map search by customer name** — spatial map search (`data-eem-smap-search-global`) now matches against `data-eem-smap-customer` attribute (set from `st.c` during chip render) in addition to stall labels. Searching "Mitchell" or a partial name highlights assigned stalls for that customer. **Test on NTR 6519** (seed orders with names via a real checkout or assign flow).
-9. **Assignee name on stall chips** — assigned chips now show "Last, First" in small text at the bottom-left corner. Scales with chip size (readable at 2×/3× zoom; too small to read at default zoom — that's by design). Hidden in dot mode. **Test:** zoom in on a stall chart with assigned stalls.
+7. ✅ **Scheduling custom message fix** — verified by Whitney 2026-06-25. Custom message now shows on the customer event page instead of the generic "will open on…" template.
+8. ✅ **Map search by customer name** — verified by Whitney 2026-06-25. Partial last name search highlights matching assigned stalls.
+9. ✅ **Assignee name on stall chips** — verified by Whitney 2026-06-25. "Last, First" shows at bottom-left of assigned chips when zoomed in.
 
 ---
 
@@ -36,7 +36,7 @@
 - **#7 Scheduling message:** Go to the Northeast Circuit Final customer event page while the open date is in the future. Should show your custom message, not the generic "will open on…" template.
 - **#8 Map search by name:** Stall Charts → NTR 6519 → By Location Map → type a partial customer last name → stalls for that customer should highlight.
 - **#9 Assignee name on chips:** Stall Charts → any reservation with assigned stalls → zoom in to 2× or 3× → confirm "Last, First" text appears at the bottom-left of assigned chips.
-- **#3 (prior) Spatial map search bar:** also confirm stall number search still works after the customer-name search change.
+- ✅ **#3 (prior) Spatial map search bar — stall number search:** verified still works by Whitney 2026-06-25.
 - **#6 (prior) Add new customer:** click an unassigned stall → type a name with no match → click "+ Add…" → confirm it doesn't immediately close, creates the order, refreshes map.
 
 ---
