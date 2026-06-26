@@ -1621,6 +1621,10 @@ class EEM_Shortcodes {
 							<span><?php esc_html_e( 'Required Shavings Subtotal', 'equine-event-manager' ); ?></span>
 							<strong data-eem-total="required_shavings_subtotal">$0.00</strong>
 						</div>
+						<div class="eem-payment-summary-row" data-eem-summary-row="additional_shavings_subtotal" hidden>
+							<span><?php esc_html_e( 'Additional Shavings Subtotal', 'equine-event-manager' ); ?></span>
+							<strong data-eem-total="additional_shavings_subtotal">$0.00</strong>
+						</div>
 						<div class="eem-payment-summary-row" data-eem-summary-row="rv_subtotal" hidden>
 							<span><?php esc_html_e( 'RV Reservations Subtotal', 'equine-event-manager' ); ?></span>
 							<strong data-eem-total="rv_subtotal">$0.00</strong>
@@ -13649,6 +13653,19 @@ RV Lot: " . $rv_lot['name'] );
 				var shavingsStallQty = Math.max(0, stallQty - tackCount);
 				var requiredShavingsQty = requiredShavingsEnabled ? shavingsStallQty * (parseInt(form.dataset.requiredShavingsPerStall || '0', 10) || 0) : 0;
 				var requiredShavingsSubtotal = requiredShavingsQty * requiredShavingsPrice;
+				/* Additional (optional) shavings: each product line is a qty stepper
+				   (additional_shavings[idx][qty]) paired with a hidden [price]. Flat
+				   per-bag price — no night multiplier — matching the server calc in
+				   build_stall_submission(). Was previously omitted from the live total,
+				   so the Order Summary line and the section-card subtotal both read
+				   $0.00 while the server still charged it on submit. */
+				var additionalShavingsSubtotal = 0;
+				form.querySelectorAll('input[name^="additional_shavings["][name$="[qty]"]').forEach(function(qtyInput){
+					var aqv = parseInt(qtyInput.value, 10) || 0;
+					if (aqv <= 0) { return; }
+					var priceInput = form.querySelector('[name="' + qtyInput.name.replace('[qty]', '[price]') + '"]');
+					additionalShavingsSubtotal += aqv * (priceInput ? parseCurrency(priceInput.value) : 0);
+				});
 				/* v4 RV map picker: add each picked lot's per-night zone surcharge
 				   (the map picker writes the summed nightly/weekend surcharge to the
 				   hidden inputs). Server recomputes the same sum authoritatively. */
@@ -13685,7 +13702,7 @@ RV Lot: " . $rv_lot['name'] );
 					preEntriesSubtotal += entrySubtotal;
 				});
 
-				subtotal = stallSubtotal + requiredShavingsSubtotal + rvSubtotal + generalAddonsSubtotal + preEntriesSubtotal + groupSubtotal;
+				subtotal = stallSubtotal + requiredShavingsSubtotal + additionalShavingsSubtotal + rvSubtotal + generalAddonsSubtotal + preEntriesSubtotal + groupSubtotal;
 				fees = calculateReservationFee(subtotal, feeType, feeValue);
 				// Tax (SET-6 / C3.D.1). Rate is the effective rate (post-override) from PHP.
 				var taxRate = parseFloat(form.dataset.taxRate || '0') || 0;
@@ -13698,6 +13715,7 @@ RV Lot: " . $rv_lot['name'] );
 				setTotal(form, 'stall_surcharge', stallSurchargeTotal);
 				setTotal(form, 'stall_section_subtotal', stallSectionSubtotal);
 				setTotal(form, 'required_shavings_subtotal', requiredShavingsSubtotal);
+				setTotal(form, 'additional_shavings_subtotal', additionalShavingsSubtotal);
 				// Premium-lots portion gets its own summary line; the RV subtotal row
 				// shows the base. The two add back to rvSubtotal so the grand total is
 				// unchanged.
@@ -13727,6 +13745,7 @@ RV Lot: " . $rv_lot['name'] );
 				toggleSummaryRow(form, 'stall_subtotal', (stallSubtotal - stallSurchargeTotal) > 0);
 				toggleSummaryRow(form, 'stall_surcharge', stallSurchargeTotal > 0);
 				toggleSummaryRow(form, 'required_shavings_subtotal', requiredShavingsEnabled && stallQty > 0 && requiredShavingsQty > 0);
+				toggleSummaryRow(form, 'additional_shavings_subtotal', additionalShavingsSubtotal > 0);
 				toggleSummaryRow(form, 'rv_subtotal', (rvSubtotal - rvSurchargeTotal) > 0);
 				toggleSummaryRow(form, 'rv_surcharge', rvSurchargeTotal > 0);
 				toggleSummaryRow(form, 'group_rider_grounds_fee_subtotal', groupGroundsFeeSubtotal > 0);
@@ -14346,11 +14365,14 @@ RV Lot: " . $rv_lot['name'] );
 			}
 
 			function setTotal(form, key, value) {
-				var output = form.querySelector('[data-eem-total="' + key + '"]');
+				// A key can appear on more than one element (e.g. a section-card
+				// subtotal AND its Order Summary row both carry
+				// data-eem-total="additional_shavings_subtotal"). Update every match.
+				var outputs = form.querySelectorAll('[data-eem-total="' + key + '"]');
 
-				if (output) {
+				outputs.forEach(function(output) {
 					output.textContent = formatReservationMoney(value);
-				}
+				});
 			}
 
 			function toggleSummaryRow(form, key, shouldShow) {
