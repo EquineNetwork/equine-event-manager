@@ -715,15 +715,17 @@ class EEM_Reservation_Config {
 			// Stall descriptions / schedule.
 			'stall_description'              => 'text',
 			'stall_schedule_enabled'         => 'tinyint(1)',
-			'stalls_open_at'                 => 'varchar(10)',
-			'stalls_close_at'                => 'varchar(10)',
+			// 19 chars holds 'Y-m-d H:i:s' — varchar(10) truncated the time so
+			// scheduled opens fired at midnight instead of the chosen hour (fixed 2026-06-25).
+			'stalls_open_at'                 => 'varchar(19)',
+			'stalls_close_at'                => 'varchar(19)',
 			'stalls_schedule_message'        => 'text',
 			'stall_inventory'                => 'varchar(20)',
 			// RV descriptions / schedule.
 			'rv_description'                 => 'text',
 			'rv_schedule_enabled'            => 'tinyint(1)',
-			'rv_open_at'                     => 'varchar(10)',
-			'rv_close_at'                    => 'varchar(10)',
+			'rv_open_at'                     => 'varchar(19)',
+			'rv_close_at'                    => 'varchar(19)',
 			'rv_schedule_message'            => 'text',
 			'rv_inventory'                   => 'varchar(20)',
 			// Pricing — stall.
