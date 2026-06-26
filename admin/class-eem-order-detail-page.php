@@ -640,7 +640,7 @@ class EEM_Order_Detail_Page {
 							data-component="stall"
 							data-arrival="<?php echo esc_attr( $arrival ); ?>"
 							data-departure="<?php echo esc_attr( $departure ); ?>"
-							data-per-night="<?php echo esc_attr( $nights > 0 ? number_format( $subtotal / $nights, 2, '.', '' ) : '0.00' ); ?>"
+							data-per-night="<?php echo esc_attr( number_format( $unit_price * $qty, 2, '.', '' ) ); ?>"
 							<?php $eem_fee = $this->edit_dates_fee_data( $res_id, 'stall', $stay_type ); ?>
 							data-fee-type="<?php echo esc_attr( $eem_fee['fee_type'] ); ?>"
 							data-fee-value="<?php echo esc_attr( number_format( $eem_fee['fee_value'], 4, '.', '' ) ); ?>"
@@ -828,7 +828,7 @@ class EEM_Order_Detail_Page {
 							data-component="rv"
 							data-arrival="<?php echo esc_attr( $arrival ); ?>"
 							data-departure="<?php echo esc_attr( $departure ); ?>"
-							data-per-night="<?php echo esc_attr( $nights > 0 ? number_format( $subtotal / $nights, 2, '.', '' ) : '0.00' ); ?>"
+							data-per-night="<?php echo esc_attr( number_format( $unit_price * $qty, 2, '.', '' ) ); ?>"
 							<?php $eem_fee = $this->edit_dates_fee_data( $rv_res_id, 'rv', $stay_type ); ?>
 							data-fee-type="<?php echo esc_attr( $eem_fee['fee_type'] ); ?>"
 							data-fee-value="<?php echo esc_attr( number_format( $eem_fee['fee_value'], 4, '.', '' ) ); ?>"

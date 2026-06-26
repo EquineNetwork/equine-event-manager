@@ -2031,6 +2031,9 @@ class EEM_Shortcodes {
 		$eem_stall_mode = $this->get_resolved_stall_selection_mode( $reservation_id, $data );
 		?>
 		<?php if ( 'exact_map' === $eem_stall_mode ) : ?>
+			<p class="eem-pick-stall-hint">
+				<?php esc_html_e( 'Select your stall number(s) below on the map to complete your reservation.', 'equine-event-manager' ); ?>
+			</p>
 			<?php
 			// v4 Stall Mapping (Option A): when an imported facility-map snapshot
 			// exists, customers pick on the real map. Otherwise fall back to the
