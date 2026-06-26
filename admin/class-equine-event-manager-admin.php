@@ -2598,10 +2598,7 @@ class EEM_Admin {
 		<header class="eem-sc-pagehead">
 			<h1 class="eem-sc-pagehead-title" id="eem-header-event-name"><?php echo esc_html( $screen_title ); ?></h1>
 			<div class="eem-sc-pagehead-actions">
-				<a class="eem-sc-btn-secondary" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=equine_event_manager_clear_stall_assignments&reservation_id=' . $reservation_id ), 'equine_event_manager_clear_stall_assignments_' . $reservation_id ) ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Clear ALL stall & RV assignments for this reservation? Every unit returns to Available.', 'equine-event-manager' ) ); ?>');">
-					<?php esc_html_e( 'Clear All Assignments', 'equine-event-manager' ); ?>
-				</a>
-				<button class="eem-sc-btn-primary" type="button" data-eem-action="stall-chart-auto-assign-all" data-eem-confirm="<?php echo esc_attr__( 'Auto-assign every order to a stall/RV lot now? You can Clear All Assignments to undo.', 'equine-event-manager' ); ?>">
+				<button class="eem-sc-btn-primary" type="button" data-eem-action="stall-chart-auto-assign-all" data-eem-confirm="<?php echo esc_attr__( 'Auto-assign every order to a stall/RV lot now?', 'equine-event-manager' ); ?>">
 					<?php esc_html_e( 'Generate Assignments', 'equine-event-manager' ); ?>
 				</button>
 			</div>
