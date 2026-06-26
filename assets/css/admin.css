@@ -799,15 +799,18 @@ a.eem-btn:focus {
    `.eem-btn-primary` callers; grep at DS-1.A time confirmed no
    non-Settings call sites in shipped PHP/JS, so this is a safe
    in-place rule change. */
+/* Primary buttons are bright Electric Blue at rest site-wide (Whitney directive,
+   2026-06-25 — "make sure buttons are bright blue always"). Hover deepens to the
+   electric-hover token for affordance. */
 .eem-btn-primary,
 a.eem-btn-primary {
-	background: var(--eem-navy);
+	background: var(--eem-electric);
 	color: var(--eem-text-on-navy);
 }
 
 .eem-btn-primary:hover,
 a.eem-btn-primary:hover {
-	background: var(--eem-electric);
+	background: var(--eem-electric-hover);
 	color: var(--eem-text-on-navy);
 }
 
@@ -9250,6 +9253,9 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
 .eem-smap-pop { position: fixed; z-index: 130; background: #fff; border: 1px solid #c3c4c7; border-radius: 6px; box-shadow: 0 8px 24px rgba(3,27,78,.18); width: 240px; display: none; font-family: inherit; }
 .eem-smap-pop.open { display: block; }
 .eem-smap-pop-head { padding: 10px 12px 8px; border-bottom: 1px solid #ededed; }
+.eem-smap-pop-head--draggable { position: relative; padding-right: 34px; cursor: move; user-select: none; }
+.eem-smap-pop-close { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border: 0; background: none; border-radius: var(--eem-radius, 3px); font-size: 18px; line-height: 1; color: #6B7A99; cursor: pointer; }
+.eem-smap-pop-close:hover { background: #f0f0f1; color: #1d2327; }
 .eem-smap-pop-num { font-size: 13.5px; font-weight: 700; color: #031B4E; line-height: 1.3; }
 .eem-smap-pop-st { font-size: 11.5px; color: #6B7A99; margin-top: 2px; }
 .eem-smap-pop-body { padding: 6px; }

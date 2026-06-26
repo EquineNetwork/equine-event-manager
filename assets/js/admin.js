@@ -6108,7 +6108,7 @@
 				'</div>' +
 				'<footer class="eem-modal-foot eem-modal-foot--split">' +
 					'<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="assign-order-close">Cancel</button>' +
-					'<button type="button" class="eem-btn eem-btn-primary" data-eem-action="assign-order-confirm" data-unit="' + unit + '">Assign ' + noun + '</button>' +
+					'<button type="button" class="eem-btn eem-btn-electric" data-eem-action="assign-order-confirm" data-unit="' + unit + '">Assign ' + noun + '</button>' +
 				'</footer>' +
 			'</div>';
 		document.body.appendChild(overlay);
@@ -6139,7 +6139,7 @@
 				'</div>' +
 				'<footer class="eem-modal-foot eem-modal-foot--split">' +
 					'<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="assign-order-close">Cancel</button>' +
-					'<button type="button" class="eem-btn eem-btn-primary" data-eem-action="assign-order-multi-confirm">Assign ' + nouns + '</button>' +
+					'<button type="button" class="eem-btn eem-btn-electric" data-eem-action="assign-order-multi-confirm">Assign ' + nouns + '</button>' +
 				'</footer>' +
 			'</div>';
 		document.body.appendChild(overlay);
@@ -6770,10 +6770,62 @@
 		} else if (status === 'blocked') {
 			row(zq ? 'Unblock lot' : 'Unblock stall', '', function () { eemSmapAction(container, 'unblock', label, ''); });
 		}
-		var rect = cellEl.getBoundingClientRect();
-		pop.style.left = Math.min(rect.right + 8, window.innerWidth - 256) + 'px';
-		pop.style.top = Math.min(rect.top, window.innerHeight - 280) + 'px';
+		// Add drag handle + close (×) once, then position by MEASURING the rendered
+		// popover (its height varies: the available-cell variant with search list is
+		// much taller than a blocked-cell variant). The old hardcoded 280px guess
+		// under-measured, so the bottom rows (e.g. "Block stall") clipped off-screen.
+		eemSmapEnsurePopChrome(pop, container);
 		pop.classList.add('open');
+		var rect = cellEl.getBoundingClientRect();
+		var margin = 8;
+		var pw = pop.offsetWidth || 240;
+		var ph = pop.offsetHeight || 280;
+		var left = rect.right + margin;
+		if (left + pw > window.innerWidth - margin) {
+			left = rect.left - margin - pw; // flip to the left of the cell
+			if (left < margin) left = window.innerWidth - margin - pw; // last-resort clamp
+		}
+		if (left < margin) left = margin;
+		var top = rect.top;
+		if (top + ph > window.innerHeight - margin) { top = window.innerHeight - margin - ph; } // pull up so the bottom fits
+		if (top < margin) top = margin;
+		pop.style.left = left + 'px';
+		pop.style.top = top + 'px';
+	}
+
+	// Adds a one-time close (×) button + drag-to-move behavior to the map popover.
+	// The popover element is reused across opens, so guard with a flag.
+	function eemSmapEnsurePopChrome(pop, container) {
+		if (pop._eemChromeReady) return;
+		pop._eemChromeReady = true;
+		var head = pop.querySelector('.eem-smap-pop-head');
+		if (!head) return;
+		head.classList.add('eem-smap-pop-head--draggable');
+		var x = document.createElement('button');
+		x.type = 'button';
+		x.className = 'eem-smap-pop-close';
+		x.setAttribute('aria-label', 'Close');
+		x.textContent = '×';
+		x.addEventListener('click', function (ev) { ev.stopPropagation(); eemSmapClosePop(container); });
+		head.appendChild(x);
+		var dragging = false, sx = 0, sy = 0, ox = 0, oy = 0;
+		head.addEventListener('mousedown', function (ev) {
+			if (ev.target === x) return;
+			dragging = true;
+			sx = ev.clientX; sy = ev.clientY;
+			var r = pop.getBoundingClientRect();
+			ox = r.left; oy = r.top;
+			ev.preventDefault();
+		});
+		document.addEventListener('mousemove', function (ev) {
+			if (!dragging) return;
+			var m = 4;
+			var nx = Math.max(m, Math.min(ox + (ev.clientX - sx), window.innerWidth - pop.offsetWidth - m));
+			var ny = Math.max(m, Math.min(oy + (ev.clientY - sy), window.innerHeight - pop.offsetHeight - m));
+			pop.style.left = nx + 'px';
+			pop.style.top = ny + 'px';
+		});
+		document.addEventListener('mouseup', function () { dragging = false; });
 	}
 
 	EEM.renderStallMaps = function (root) {
