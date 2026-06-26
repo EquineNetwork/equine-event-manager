@@ -9154,7 +9154,9 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
 .eem-smap-stat-resv strong { color: #2b4a78; }
 .eem-smap-stat-tack strong { color: #B5790F; }
 .eem-smap-stat-block strong { color: #6b7280; }
-.eem-smap-barn-tabs { display: flex; gap: 4px; flex-wrap: wrap; padding: 10px 0 0; }
+/* Barn tab row: tabs on the left, zoom control pinned to the right. */
+.eem-smap-barn-row { display: flex; align-items: flex-end; justify-content: space-between; padding: 10px 0 0; min-width: 0; max-width: 100%; }
+.eem-smap-barn-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
 .eem-smap-barn-tab { appearance: none; border: 1px solid var(--eem-line, #d9e2ec); border-bottom: 0; background: #f6f9fd; color: var(--eem-muted, #5f6f85); font-weight: 700; font-size: 13px; padding: 8px 14px; border-radius: var(--eem-radius-lg, 6px) var(--eem-radius-lg, 6px) 0 0; cursor: pointer; }
 .eem-smap-barn-tab.active { background: #fff; color: var(--eem-navy, #031B4E); box-shadow: inset 0 -2px 0 var(--eem-electric, #1668F2); }
 .eem-smap-legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 10px 0; border-bottom: 1px solid var(--eem-line, #d9e2ec); font-size: 12px; color: var(--eem-muted, #5f6f85); align-items: center; }
@@ -9169,9 +9171,7 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
 .eem-smap-scroll { overflow: auto; padding: 18px 0; background: #fbfcfe; max-height: 640px; -webkit-overflow-scrolling: touch; min-width: 0; max-width: 100%; }
 /* "Map zoom": chips resize inside this capped viewport; the chart card never
    grows. min-width:0 stops the grid's intrinsic width from stretching the card. */
-.eem-smap, .eem-smap-zoombar { min-width: 0; max-width: 100%; }
-/* Chart zoom bar layout — the shared .eem-zoom handles button chrome. */
-.eem-smap-zoombar { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 2px; gap: 8px; }
+.eem-smap { min-width: 0; max-width: 100%; }
 /* Map search lives in the top filter row (right side), reusing the default
    .eem-search-wrap / .eem-search-input chrome. */
 .eem-sc-map-search-group { display: flex; align-items: center; gap: 8px; margin-left: auto; }

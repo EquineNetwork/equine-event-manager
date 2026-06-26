@@ -3261,7 +3261,14 @@ class EEM_Admin {
 			<?php // Per-barn stat boxes (total/avail/assigned/tack/blocked) removed per
 			// Whitney 2026-06-25 — took up too much space; the top summary cards cover totals. ?>
 
-			<div class="eem-smap-barn-tabs" data-eem-smap-tabs></div>
+			<div class="eem-smap-barn-row">
+				<div class="eem-smap-barn-tabs" data-eem-smap-tabs></div>
+				<span class="eem-zoom" data-eem-smap-zoom>
+					<button type="button" data-zoom="out" title="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>">&minus;</button>
+					<button type="button" data-zoom="reset" title="<?php esc_attr_e( 'Reset zoom', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Zoom', 'equine-event-manager' ); ?></button>
+					<button type="button" data-zoom="in" title="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>">+</button>
+				</span>
+			</div>
 
 			<div class="eem-smap-legend">
 				<span><i class="eem-smap-sw eem-smap-sw--avail"></i> <?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
@@ -3272,14 +3279,6 @@ class EEM_Admin {
 				<span><i class="eem-smap-sw eem-smap-sw--block"></i> <?php esc_html_e( 'Blocked', 'equine-event-manager' ); ?></span>
 				<span><i class="eem-smap-sw eem-smap-sw--vip">★</i> <?php esc_html_e( 'VIP', 'equine-event-manager' ); ?></span>
 				<span class="eem-smap-legend-hint"><?php echo esc_html( $is_rv ? __( 'Click any lot to assign or block.', 'equine-event-manager' ) : __( 'Click any stall to assign, mark tack, or block.', 'equine-event-manager' ) ); ?></span>
-			</div>
-
-			<div class="eem-smap-zoombar">
-				<span class="eem-zoom" data-eem-smap-zoom>
-					<button type="button" data-zoom="out" title="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>">&minus;</button>
-					<button type="button" data-zoom="reset" title="<?php esc_attr_e( 'Reset zoom', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Zoom', 'equine-event-manager' ); ?></button>
-					<button type="button" data-zoom="in" title="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>">+</button>
-				</span>
 			</div>
 
 			<div class="eem-smap-scroll" data-eem-smap-scroll><div class="eem-smap-grid" data-eem-smap-grid></div></div>
