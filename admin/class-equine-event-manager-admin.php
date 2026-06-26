@@ -4310,6 +4310,16 @@ class EEM_Admin {
 				return strcasecmp( $a['n'], $b['n'] );
 			} );
 		}
+		// Default arrival/departure for the new-customer assign modal — pull the
+		// reservation's available date range so the date inputs pre-fill instead
+		// of starting blank (matches the customer event-page defaults).
+		$eem_def_arrival   = '';
+		$eem_def_departure = '';
+		if ( class_exists( 'EEM_Shortcodes' ) ) {
+			$eem_sc_inv        = ( new EEM_Shortcodes() )->get_addable_inventory( $reservation_id );
+			$eem_def_arrival   = ! empty( $eem_sc_inv['available_start'] ) ? (string) $eem_sc_inv['available_start'] : '';
+			$eem_def_departure = ! empty( $eem_sc_inv['available_end'] ) ? (string) $eem_sc_inv['available_end'] : '';
+		}
 		?>
 		<script>
 			window.eemStallChart = window.eemStallChart || {};
@@ -4320,6 +4330,8 @@ class EEM_Admin {
 			window.eemStallChart.assignContext = <?php echo $assign_ctx ? wp_json_encode( $assign_ctx ) : 'null'; ?>;
 			window.eemStallChart.assignRoster = <?php echo wp_json_encode( $eem_assign_roster ); ?>;
 			window.eemStallChart.reservationId = <?php echo (int) $reservation_id; ?>;
+			window.eemStallChart.defaultArrival = <?php echo wp_json_encode( $eem_def_arrival ); ?>;
+			window.eemStallChart.defaultDeparture = <?php echo wp_json_encode( $eem_def_departure ); ?>;
 		</script>
 		<?php
 	}
@@ -7143,39 +7155,99 @@ class EEM_Admin {
 		$notes .= 'Reservation setup ID: ' . $reservation_id . "\n";
 		$notes .= 'Placeholder: Yes';
 
-		$qty_col = $is_rv ? 'rv_qty' : 'stall_qty';
-
 		// `$stall` may be a comma-joined list (ad-hoc map multi-select → one new
 		// customer assigned to N stalls). Quantity = number of distinct units.
 		$unit_count = count( array_values( array_filter( array_map( 'trim', explode( ',', $stall ) ) ) ) );
 		$unit_count = max( 1, $unit_count );
 
-		$inserted = $wpdb->insert(
-			$table,
-			array(
-				'event_source'   => 'placeholder',
-				'event_id'       => null,
-				'reservation_id' => $reservation_id,
-				'customer_name'  => $customer_name,
-				'email'          => '',
-				'phone'          => '',
-				$qty_col         => $unit_count,
-				'stay_type'      => '',
-				'unit_price'     => '0.00',
-				'subtotal'       => '0.00',
-				'convenience_fee' => '0.00',
-				'tax'            => '0.00',
-				'tax_rate'       => '0.0000',
-				'total'          => '0.00',
-				'amount_paid'    => 0,
-				'payment_status' => 'open',
-				'payment_gateway' => '',
-				'order_number'   => $order_number,
-				'transaction_id' => '',
-				'notes'          => trim( $notes ),
-				'created_at'     => current_time( 'mysql' ),
-			)
+		// Optional billing window + tack count from the Add-New-Customer modal.
+		// Tack stalls bill at the same rate as a stall but are EXCLUDED from
+		// required shavings (mirrors the customer event page).
+		$arrival    = isset( $_POST['arrival'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['arrival'] ) ) : '';
+		$departure  = isset( $_POST['departure'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['departure'] ) ) : '';
+		$tack_count = isset( $_POST['tack_qty'] ) ? max( 0, (int) wp_unslash( $_POST['tack_qty'] ) ) : 0;
+		$tack_count = $is_rv ? 0 : min( $tack_count, $unit_count );
+
+		// Price the order from the reservation's configured rates so the new order
+		// shows a real Balance Due instead of $0. Base charge = units × rate ×
+		// nights; stalls also add required shavings for the non-tack count. The
+		// convenience fee + tax come from the same reservation config the customer
+		// event page reads.
+		$unit_price            = 0.0;
+		$subtotal              = 0.0;
+		$convenience_fee       = 0.0;
+		$tax                   = 0.0;
+		$tax_rate              = 0.0;
+		$stay_type             = '';
+		$required_shavings_qty = 0;
+		if ( class_exists( 'EEM_Shortcodes' ) ) {
+			$pricer  = new EEM_Shortcodes();
+			$section = $is_rv ? 'rv' : 'stall';
+
+			// Resolve a stay type to price against — the reservation's first enabled
+			// stay type for this section (nightly when available; the modal supplies
+			// the dates that drive nightly nights).
+			$inv_info   = $pricer->get_addable_inventory( $reservation_id );
+			$stay_map   = ! empty( $inv_info[ $section ]['stay_types'] ) ? (array) $inv_info[ $section ]['stay_types'] : array();
+			$stay_type  = ! empty( $stay_map ) ? (string) array_key_first( $stay_map ) : 'nightly';
+
+			$priced     = $pricer->price_base_rate_addition( $reservation_id, $section, $unit_count, $stay_type, $arrival, $departure );
+			$unit_price = (float) $priced['unit_price'];
+			$tax_rate   = (float) $priced['tax_rate'];
+			$subtotal   = (float) $priced['subtotal'];
+
+			if ( ! $is_rv ) {
+				$shav                  = $pricer->price_required_shavings( $reservation_id, max( 0, $unit_count - $tack_count ) );
+				$required_shavings_qty = (int) $shav['qty'];
+				$subtotal             += (float) $shav['subtotal'];
+			}
+
+			// Convenience fee on the full subtotal, mirroring the customer path.
+			if ( ! empty( $priced['fee_enabled'] ) ) {
+				if ( 'flat' === ( $priced['fee_type'] ?? 'none' ) ) {
+					$convenience_fee = (float) ( $priced['fee_value'] ?? 0.0 );
+				} elseif ( 'percentage' === ( $priced['fee_type'] ?? 'none' ) ) {
+					$convenience_fee = round( $subtotal * ( (float) ( $priced['fee_value'] ?? 0.0 ) / 100 ), 2 );
+				}
+			}
+			$tax = $tax_rate > 0 ? round( $subtotal * ( $tax_rate / 100 ), 2 ) : 0.0;
+		}
+		$subtotal = round( $subtotal, 2 );
+		$total    = round( $subtotal + $convenience_fee + $tax, 2 );
+
+		$row = array(
+			'event_source'    => 'placeholder',
+			'event_id'        => null,
+			'reservation_id'  => $reservation_id,
+			'customer_name'   => $customer_name,
+			'email'           => '',
+			'phone'           => '',
+			'stay_type'       => $stay_type,
+			'arrival_date'    => $arrival,
+			'departure_date'  => $departure,
+			'unit_price'      => number_format( $unit_price, 2, '.', '' ),
+			'subtotal'        => number_format( $subtotal, 2, '.', '' ),
+			'convenience_fee' => number_format( $convenience_fee, 2, '.', '' ),
+			'tax'             => number_format( $tax, 2, '.', '' ),
+			'tax_rate'        => number_format( $tax_rate, 4, '.', '' ),
+			'total'           => number_format( $total, 2, '.', '' ),
+			'amount_paid'     => 0,
+			'payment_status'  => 'open',
+			'payment_gateway' => '',
+			'order_number'    => $order_number,
+			'transaction_id'  => '',
+			'notes'           => trim( $notes ),
+			'created_at'      => current_time( 'mysql' ),
 		);
+		if ( $is_rv ) {
+			$row['rv_qty'] = $unit_count;
+		} else {
+			$row['stall_qty']             = $unit_count - $tack_count;
+			$row['tack_stall_qty']        = $tack_count;
+			$row['required_shavings_qty'] = $required_shavings_qty;
+		}
+
+		$inserted = $wpdb->insert( $table, $row );
 
 		if ( ! $inserted ) {
 			wp_send_json_error( array( 'message' => __( 'Could not create placeholder order.', 'equine-event-manager' ) ), 500 );
@@ -10725,13 +10797,23 @@ class EEM_Admin {
 		$new_nights = max( 0, (int) round( ( $d_ts - $a_ts ) / DAY_IN_SECONDS ) );
 		$delta      = $new_nights - $old_nights;
 
+		// Per-row billable quantity. The raw component row stores the stall count
+		// in `stall_qty` (+ `tack_stall_qty`), NOT `stall_quantity` — using the
+		// latter made isset() fail and the qty silently fell back to 1, so a
+		// multi-stall order's date edit charged/refunded for only ONE stall. RV
+		// uses `rv_qty`. (Bug: balance due came out half-right after Edit Dates.)
+		$row_qty = static function ( array $r ) use ( $component ) {
+			if ( 'rv' === $component ) {
+				return max( 1, (int) ( $r['rv_qty'] ?? 0 ) );
+			}
+			return max( 1, (int) ( $r['stall_qty'] ?? 0 ) + (int) ( $r['tack_stall_qty'] ?? 0 ) );
+		};
+
 		// Per-night cost for the whole section = Σ(unit_price × qty).
-		$qty_col      = 'rv' === $component ? 'rv_qty' : 'stall_quantity';
 		$per_night    = 0.0;
 		foreach ( $rows as $r ) {
 			$unit = isset( $r['unit_price'] ) ? (float) $r['unit_price'] : 0.0;
-			$qty  = isset( $r[ $qty_col ] ) ? max( 1, (int) $r[ $qty_col ] ) : 1;
-			$per_night += $unit * $qty;
+			$per_night += $unit * $row_qty( $r );
 		}
 
 		$refunded_amount = 0.0;
@@ -10819,7 +10901,7 @@ class EEM_Admin {
 			// untouched; a fully-paid row drops to partially_paid.
 			foreach ( $rows as $r ) {
 				$unit       = isset( $r['unit_price'] ) ? (float) $r['unit_price'] : 0.0;
-				$qty        = isset( $r[ $qty_col ] ) ? max( 1, (int) $r[ $qty_col ] ) : 1;
+				$qty        = $row_qty( $r );
 				$row_add    = round( $unit * $qty * $delta, 2 );
 				if ( $row_add <= 0 ) {
 					continue;

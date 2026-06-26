@@ -2220,9 +2220,14 @@ class EEM_Order_Detail_Page {
 			return;
 		}
 
-		$inventory = ( $reservation_id > 0 && class_exists( 'EEM_Shortcodes' ) )
-			? ( new EEM_Shortcodes() )->get_addable_inventory( $reservation_id )
+		$shortcodes = ( $reservation_id > 0 && class_exists( 'EEM_Shortcodes' ) ) ? new EEM_Shortcodes() : null;
+		$inventory  = $shortcodes
+			? $shortcodes->get_addable_inventory( $reservation_id )
 			: array( 'stall' => null, 'rv' => null, 'available_start' => '', 'available_end' => '' );
+		// Flat-rate sellable products (Additional Shavings + General Add-Ons) the
+		// reservation has enabled — scanned live so the dropdown always reflects
+		// what's actually for sale rather than a hardcoded Stall/RV/Custom list.
+		$products = $shortcodes ? $shortcodes->get_addable_products( $reservation_id ) : array();
 
 		// Prefill billing dates from the order's existing section, else the
 		// reservation's available window.
@@ -2256,8 +2261,20 @@ class EEM_Order_Detail_Page {
 									</option>
 								<?php endif; ?>
 							<?php endforeach; ?>
+							<?php if ( ! empty( $products ) ) : ?>
+								<optgroup label="<?php esc_attr_e( 'Add-Ons & Shavings', 'equine-event-manager' ); ?>">
+									<?php foreach ( $products as $product ) : ?>
+										<option value="product"
+											data-product-key="<?php echo esc_attr( $product['key'] ); ?>"
+											data-price="<?php echo esc_attr( (string) (float) $product['price'] ); ?>">
+											<?php echo esc_html( $product['label'] . ' — $' . number_format_i18n( (float) $product['price'], 2 ) ); ?>
+										</option>
+									<?php endforeach; ?>
+								</optgroup>
+							<?php endif; ?>
 							<option value="custom"><?php esc_html_e( 'Custom Line Item', 'equine-event-manager' ); ?></option>
 						</select>
+						<input type="hidden" name="product_key" value="" data-eem-add-items-product-key />
 					</div>
 
 					<?php // Inventory fields (stall / rv) — hidden when item type is custom. ?>
@@ -2280,7 +2297,7 @@ class EEM_Order_Detail_Page {
 							<label class="eem-field-label" for="eem-add-items-qty"><?php esc_html_e( 'Quantity', 'equine-event-manager' ); ?></label>
 							<input type="number" class="eem-field-input" id="eem-add-items-qty" name="qty" min="1" step="1" value="1" data-eem-add-items-qty />
 						</div>
-						<div class="eem-field-row eem-field-row--split">
+						<div class="eem-field-row eem-field-row--split" data-eem-add-items-dates-row>
 							<div>
 								<label class="eem-field-label" for="eem-add-items-arrival"><?php esc_html_e( 'Arrival', 'equine-event-manager' ); ?></label>
 								<input type="date" class="eem-field-input" id="eem-add-items-arrival" name="arrival" value="<?php echo esc_attr( $default_arrival ); ?>" data-eem-add-items-arrival />
@@ -2626,6 +2643,66 @@ class EEM_Order_Detail_Page {
 			wp_send_json_success( array(
 				'requires_reload' => true,
 				'message'         => __( 'Line item added.', 'equine-event-manager' ),
+			) );
+		}
+
+		/* ---- Flat-rate product (Additional Shavings / General Add-On) ---- */
+		if ( 'product' === $item_type ) {
+			$reservation_id = isset( $order['reservation_id'] ) ? (int) $order['reservation_id'] : 0;
+			$product_key    = isset( $_POST['product_key'] ) ? sanitize_text_field( wp_unslash( $_POST['product_key'] ) ) : '';
+			$qty            = isset( $_POST['qty'] ) ? max( 1, (int) wp_unslash( $_POST['qty'] ) ) : 0;
+			if ( $reservation_id < 1 ) {
+				wp_send_json_error( array(
+					'message' => __( 'This order is not linked to a reservation, so add-ons cannot be priced. Add a custom line item instead.', 'equine-event-manager' ),
+					'code'    => 'no_reservation',
+				), 422 );
+			}
+			if ( $qty < 1 ) {
+				wp_send_json_error( array( 'message' => __( 'Enter a quantity of at least 1.', 'equine-event-manager' ), 'code' => 'qty_required' ), 422 );
+			}
+			if ( ! class_exists( 'EEM_Shortcodes' ) || ! class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+				wp_send_json_error( array( 'message' => __( 'Pricing engine unavailable.', 'equine-event-manager' ) ), 500 );
+			}
+
+			// Re-resolve the product price server-side from reservation config —
+			// never trust a client-sent amount.
+			$catalog = ( new EEM_Shortcodes() )->get_addable_products( $reservation_id );
+			$match   = null;
+			foreach ( $catalog as $candidate ) {
+				if ( isset( $candidate['key'] ) && $candidate['key'] === $product_key ) {
+					$match = $candidate;
+					break;
+				}
+			}
+			if ( null === $match ) {
+				wp_send_json_error( array( 'message' => __( 'That add-on is no longer available on this reservation.', 'equine-event-manager' ), 'code' => 'bad_product' ), 422 );
+			}
+
+			$amount      = round( (float) $match['price'] * $qty, 2 );
+			$description  = $qty > 1
+				? sprintf( '%s × %d', $match['label'], $qty )
+				: (string) $match['label'];
+			$inserted = EEM_Order_Adjustments_Repo::insert_custom_item( $order_key, $description, $amount );
+			if ( false === $inserted ) {
+				wp_send_json_error( array( 'message' => __( 'The item could not be added. Please try again.', 'equine-event-manager' ) ), 500 );
+			}
+
+			self::log_item_added( $order_key, array(
+				'item_type'   => 'product',
+				'description' => $description,
+				'qty'         => $qty,
+				'unit_price'  => (float) $match['price'],
+				'amount'      => $amount,
+			) );
+
+			wp_send_json_success( array(
+				'requires_reload' => true,
+				'message'         => sprintf(
+					/* translators: 1: quantity, 2: product label */
+					__( 'Added %1$d × %2$s.', 'equine-event-manager' ),
+					$qty,
+					$match['label']
+				),
 			) );
 		}
 

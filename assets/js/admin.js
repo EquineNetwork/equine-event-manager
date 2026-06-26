@@ -2216,11 +2216,23 @@
 		var custom = modal.querySelector('[data-eem-add-items-custom]');
 		if (!typeSel) return;
 		var isCustom = typeSel.value === 'custom';
+		var isProduct = typeSel.value === 'product';
 		if (inv) inv.hidden = isCustom;
 		if (custom) custom.hidden = !isCustom;
 
-		if (!isCustom) {
-			var opt = typeSel.options[typeSel.selectedIndex];
+		// Flat-rate product (Add-On / Shavings): show only the quantity field +
+		// preview; stay type, dates and the nights math don't apply. Stash the
+		// selected product's key on the hidden field so submit re-prices it.
+		var stayRow = modal.querySelector('[data-eem-add-items-staytype-row]');
+		var datesRow = modal.querySelector('[data-eem-add-items-dates-row]');
+		var keyField = modal.querySelector('[data-eem-add-items-product-key]');
+		if (stayRow) stayRow.hidden = isProduct;
+		if (datesRow) datesRow.hidden = isProduct;
+		var selOpt = typeSel.options[typeSel.selectedIndex];
+		if (keyField) keyField.value = isProduct && selOpt ? (selOpt.getAttribute('data-product-key') || '') : '';
+
+		if (!isCustom && !isProduct) {
+			var opt = selOpt;
 			var stayTypes = {};
 			try { stayTypes = JSON.parse(opt.getAttribute('data-staytypes') || '{}'); } catch (e) { stayTypes = {}; }
 			var staySel = modal.querySelector('[data-eem-add-items-staytype]');
@@ -2248,6 +2260,18 @@
 		if (typeSel.value === 'custom') { preview.textContent = ''; return; }
 
 		var opt = typeSel.options[typeSel.selectedIndex];
+
+		// Flat-rate product: charge = price × qty (no nights).
+		if (typeSel.value === 'product') {
+			var pPrice = parseFloat(opt.getAttribute('data-price') || '0') || 0;
+			var pQtyEl = modal.querySelector('[data-eem-add-items-qty]');
+			var pQty = pQtyEl ? Math.max(1, parseInt(pQtyEl.value, 10) || 1) : 1;
+			if (pPrice <= 0) { preview.textContent = 'No price configured for that item.'; return; }
+			preview.textContent = 'Charge: $' + (pPrice * pQty).toFixed(2) +
+				' (' + pQty + ' × $' + pPrice.toFixed(2) + ').';
+			return;
+		}
+
 		var rates = {};
 		try { rates = JSON.parse(opt.getAttribute('data-rates') || '{}'); } catch (e) { rates = {}; }
 		var staySel = modal.querySelector('[data-eem-add-items-staytype]');
@@ -6926,13 +6950,28 @@
 		var overlay = document.createElement('div');
 		overlay.id = 'eem-map-sel-modal';
 		overlay.className = 'eem-modal';
+		var cfg = window.eemStallChart || {};
+		var defArr = cfg.defaultArrival || '';
+		var defDep = cfg.defaultDeparture || '';
+		var kindLabel = ((eemMapSelContainer() && eemMapSelContainer().getAttribute && eemMapSelContainer().getAttribute('data-eem-smap-kind')) === 'rv') ? 'lot' : 'stall';
 		overlay.innerHTML =
 			'<div class="eem-modal-card">' +
-				'<div class="eem-modal-head"><span class="eem-modal-title">New customer — assign ' + n + ' stall' + (n === 1 ? '' : 's') + '</span>' +
+				'<div class="eem-modal-head"><span class="eem-modal-title">New customer — assign ' + n + ' ' + kindLabel + (n === 1 ? '' : 's') + '</span>' +
 				'<button type="button" class="eem-modal-close" data-eem-action="map-sel-modal-close">×</button></div>' +
 				'<div class="eem-modal-body">' +
+					'<div class="eem-map-sel-qty-summary" style="background:#f1f1f3;border-radius:6px;padding:8px 12px;margin-bottom:12px;color:#50575e;font-weight:600;">' + n + ' ' + kindLabel + (n === 1 ? '' : 's') + ' selected</div>' +
 					'<input type="text" class="eem-smap-pop-search" data-eem-map-sel-first placeholder="First name" autocomplete="off">' +
 					'<input type="text" class="eem-smap-pop-search" data-eem-map-sel-last placeholder="Last name" autocomplete="off">' +
+					'<label style="display:block;margin-top:10px;font-size:12px;font-weight:600;color:#50575e;">Arrival date' +
+						'<input type="date" class="eem-smap-pop-search" data-eem-map-sel-arrival value="' + defArr + '" style="margin-top:4px;">' +
+					'</label>' +
+					'<label style="display:block;margin-top:10px;font-size:12px;font-weight:600;color:#50575e;">Departure date' +
+						'<input type="date" class="eem-smap-pop-search" data-eem-map-sel-departure value="' + defDep + '" style="margin-top:4px;">' +
+					'</label>' +
+					(kindLabel === 'stall' ?
+						'<label style="display:block;margin-top:10px;font-size:12px;font-weight:600;color:#50575e;">Tack stalls (of ' + n + ')' +
+							'<input type="number" class="eem-smap-pop-search" data-eem-map-sel-tack min="0" max="' + n + '" value="0" style="margin-top:4px;">' +
+						'</label>' : '') +
 				'</div>' +
 				'<div class="eem-modal-foot">' +
 					'<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="map-sel-modal-close">Cancel</button>' +
@@ -6954,12 +6993,20 @@
 		var f = (fn && fn.value.trim()) || '';
 		var l = (ln && ln.value.trim()) || '';
 		if (!f && !l) { if (fn) { fn.focus(); } return; }
+		var arrEl = overlay.querySelector('[data-eem-map-sel-arrival]');
+		var depEl = overlay.querySelector('[data-eem-map-sel-departure]');
+		var tackEl = overlay.querySelector('[data-eem-map-sel-tack]');
+		var opts = {
+			arrival: (arrEl && arrEl.value) || '',
+			departure: (depEl && depEl.value) || '',
+			tack: tackEl ? Math.max(0, parseInt(tackEl.value, 10) || 0) : 0
+		};
 		var stalls = _eemMapSel.slice().join(',');
 		var container = eemMapSelContainer();
 		eemMapSelCloseModal();
 		// eemSmapCreatePlaceholder accepts a comma-joined stall string; the server
 		// assigns every unit and re-renders the region in place. Clears selection.
-		eemSmapCreatePlaceholder(container, stalls, f, l);
+		eemSmapCreatePlaceholder(container, stalls, f, l, opts);
 	}
 
 	// Delegated handlers for the ad-hoc selection action bar + its modals.
@@ -6974,8 +7021,9 @@
 		if (t.closest('[data-eem-action="map-sel-add-save"]')) { ev.preventDefault(); eemMapSelSubmitNewCustomer(); return; }
 	});
 
-	function eemSmapCreatePlaceholder(container, stall, firstName, lastName) {
+	function eemSmapCreatePlaceholder(container, stall, firstName, lastName, opts) {
 		eemMapSelClear();
+		opts = opts || {};
 		var cfg = window.eemStallChart || {};
 		var body = new URLSearchParams();
 		body.set('action', 'eem_stall_create_placeholder');
@@ -6984,6 +7032,9 @@
 		body.set('stall', stall);
 		body.set('first_name', firstName || '');
 		body.set('last_name', lastName || '');
+		body.set('arrival', opts.arrival || '');
+		body.set('departure', opts.departure || '');
+		body.set('tack_qty', String(opts.tack || 0));
 		body.set('kind', (container && container.getAttribute && container.getAttribute('data-eem-smap-kind')) || 'stall');
 		body.set('inv', window._eemScInv || 'all');
 		body.set('tab', window._eemScTab || 'location');
@@ -7448,10 +7499,11 @@
 			var smapZoomBar = container.querySelector('[data-eem-smap-zoom]');
 			if (smapZoomBar && !smapZoomBar._eemSmapBound) {
 				smapZoomBar._eemSmapBound = true;
-				// SMAP_MIN low (12) so a large facility map can shrink far enough to
-				// show EVERY chip on load without horizontal/vertical scroll — the
-				// customer should see the whole layout the moment the page loads.
-				var SMAP_BASE = 30, SMAP_MIN = 12;
+				// SMAP_MIN is the hard floor for chip size: cells must NEVER render
+				// below 30px (stall numbers become illegible). Fit-to-width still
+				// drives the on-load size, but it's clamped up to 30px — a large
+				// facility scrolls rather than shrinking past readability.
+				var SMAP_BASE = 30, SMAP_MIN = 30;
 				var applySmapZoom = function (px) {
 					container.style.setProperty('--eem-smap-chip', px + 'px');
 					// Below ~24px a 4-digit stall number is illegible — switch the grid

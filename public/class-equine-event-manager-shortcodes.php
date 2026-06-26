@@ -4717,6 +4717,98 @@ class EEM_Shortcodes {
 	}
 
 	/**
+	 * Price the reservation's REQUIRED shavings for a given number of billable
+	 * (non-tack) stalls. Mirrors the customer event page: bags = stalls ×
+	 * per-stall count, subtotal = bags × price-per-bag. Tack stalls are excluded
+	 * by the caller passing the non-tack stall count. Returns zeros when required
+	 * shavings is not enabled on the reservation.
+	 *
+	 * @param int $reservation_id       Reservation post ID.
+	 * @param int $billable_stall_count Number of stalls that incur required shavings (excludes tack).
+	 * @return array{qty:int,price:float,subtotal:float}
+	 */
+	public function price_required_shavings( int $reservation_id, int $billable_stall_count ): array {
+		$out = array( 'qty' => 0, 'price' => 0.0, 'subtotal' => 0.0 );
+		if ( $reservation_id < 1 || $billable_stall_count < 1 ) {
+			return $out;
+		}
+		$data = $this->get_reservation_data( $reservation_id );
+		if ( ! is_array( $data ) || empty( $data['required_shavings_enabled'] ) ) {
+			return $out;
+		}
+		$per_stall = isset( $data['required_shavings_per_stall'] ) ? absint( $data['required_shavings_per_stall'] ) : 0;
+		$price     = isset( $data['required_shavings_price'] ) ? (float) $data['required_shavings_price'] : 0.0;
+		$qty       = $billable_stall_count * $per_stall;
+		$out['qty']      = $qty;
+		$out['price']    = $price;
+		$out['subtotal'] = round( $qty * $price, 2 );
+
+		return $out;
+	}
+
+	/**
+	 * Describe the flat-rate sellable products that can be added to an order —
+	 * every enabled Additional Shavings product and every enabled General Add-On
+	 * on the linked reservation. These are simple price × quantity charges (no
+	 * stay type / nights), priced from the same reservation config the customer
+	 * event page reads, so the Add-Items dropdown always reflects exactly what the
+	 * reservation is selling rather than a hardcoded list.
+	 *
+	 * Each entry carries a stable `key` so the Add-Items AJAX handler can re-resolve
+	 * the price server-side (never trusting a client-sent amount). Keys are
+	 * `shav_<index>` for Additional Shavings products and `addon_<addon_key>` for
+	 * General Add-Ons.
+	 *
+	 * @param int $reservation_id Reservation post ID.
+	 * @return array<int,array{key:string,label:string,price:float,group:string}>
+	 */
+	public function get_addable_products( int $reservation_id ): array {
+		$out = array();
+		if ( $reservation_id < 1 ) {
+			return $out;
+		}
+
+		$data = $this->get_reservation_data( $reservation_id );
+		if ( ! is_array( $data ) || empty( $data ) ) {
+			return $out;
+		}
+
+		// Additional Shavings products (flat price per bag/unit).
+		if ( ! empty( $data['additional_shavings_enabled'] ) && ! empty( $data['additional_shavings_products'] ) ) {
+			foreach ( (array) $data['additional_shavings_products'] as $idx => $product ) {
+				$name  = isset( $product['name'] ) ? (string) $product['name'] : '';
+				$price = isset( $product['price'] ) ? (float) $product['price'] : 0.0;
+				if ( '' === trim( $name ) || $price <= 0 ) {
+					continue;
+				}
+				$out[] = array(
+					'key'   => 'shav_' . (int) $idx,
+					'label' => $name,
+					'price' => $price,
+					'group' => __( 'Additional Shavings', 'equine-event-manager' ),
+				);
+			}
+		}
+
+		// General Add-Ons (flat price per unit).
+		foreach ( $this->get_enabled_general_addon_options( $data ) as $addon_key => $addon ) {
+			$name  = isset( $addon['name'] ) ? (string) $addon['name'] : '';
+			$price = isset( $addon['price'] ) ? (float) $addon['price'] : 0.0;
+			if ( '' === trim( $name ) || $price <= 0 ) {
+				continue;
+			}
+			$out[] = array(
+				'key'   => 'addon_' . sanitize_key( (string) $addon_key ),
+				'label' => $name,
+				'price' => $price,
+				'group' => __( 'Add-Ons', 'equine-event-manager' ),
+			);
+		}
+
+		return $out;
+	}
+
+	/**
 	 * Overlay canonical base-rate fields from the reservation config table onto a
 	 * post-meta-derived $data array. get_reservation_meta() already overlays
 	 * pricing_mode + packages from config, but NOT the base nightly/weekend/weekly
