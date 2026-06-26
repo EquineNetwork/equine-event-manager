@@ -4098,6 +4098,9 @@ class EEM_Events {
 							<?php if ( $directions_url ) : ?>
 								<a class="btn-directions" href="<?php echo esc_url( $directions_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Directions', 'equine-event-manager' ); ?></a>
 							<?php endif; ?>
+							<?php if ( ! empty( $event_data['flyer_url'] ) ) : ?>
+								<a class="btn-directions btn-flyer" href="<?php echo esc_url( $event_data['flyer_url'] ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View Flyer', 'equine-event-manager' ); ?></a>
+							<?php endif; ?>
 						</div>
 
 						<?php
