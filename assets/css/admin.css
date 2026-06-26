@@ -9214,6 +9214,10 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
    out from plain Available before the admin confirms the batch. */
 .eem-smap-grid .eem-smap-stall.eem-assign-pending { background: var(--eem-electric, #1668F2); color: #fff; outline: 2px solid var(--eem-electric, #1668F2); outline-offset: -1px; z-index: 2; }
 .eem-smap-grid .eem-smap-stall.eem-assign-pending .eem-smap-cname { color: rgba(255,255,255,.92); }
+/* Ad-hoc multi-select highlight (Ctrl/Cmd+click or drag-paint outside assign-mode).
+   Distinct from the solid-blue assign-pending fill: a blue outline + light tint so
+   the cell still reads as available, just selected. */
+.eem-smap-grid .eem-smap-stall.eem-smap-selected { outline: 2px solid var(--eem-electric, #1668F2); outline-offset: -2px; background: #cfe0fb; color: #1d4ed8; z-index: 2; }
 /* Group membership: a left accent bar whose width scales WITH the cell, so the
    indicator stays proportional ("same size as the box") at every zoom level
    instead of a fixed 4px sliver. */
@@ -9270,6 +9274,12 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
 .eem-smap-pop-addform .eem-smap-pop-search { margin-bottom: 0; }
 .eem-smap-pop-addform-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 2px; }
 .eem-smap-pop-empty { padding: 9px 10px; font-size: 12px; color: var(--eem-muted, #5f6f85); }
+
+/* Ad-hoc map multi-select floating action bar (bottom-center). Shown only while
+   one or more available stalls are selected via Ctrl/Cmd+click or drag-paint. */
+.eem-map-sel-bar { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%) translateY(12px); display: none; align-items: center; gap: 10px; padding: 10px 14px; background: #fff; border: 1px solid var(--eem-line, #d9e2ec); border-radius: 10px; box-shadow: 0 10px 30px rgba(3,27,78,.20); z-index: 140; opacity: 0; transition: opacity .12s ease, transform .12s ease; }
+.eem-map-sel-bar.open { display: flex; opacity: 1; transform: translateX(-50%) translateY(0); }
+.eem-map-sel-bar__count { font-size: 13px; font-weight: 700; color: var(--eem-navy, #031B4E); margin-right: 4px; white-space: nowrap; }
 
 /* v4 Slice 6 — group reconciliation (Manage Groups) */
 .eem-group-manage { margin: 0 18px 14px; }

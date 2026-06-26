@@ -6516,7 +6516,277 @@
 		if (pop) pop.classList.remove('open');
 	}
 
+	// ── Ad-hoc map multi-select (non-assign-mode) ──────────────────────────────
+	// Lets an admin select several AVAILABLE stalls directly on the map — without
+	// first opening an order's "Assign Stalls" flow — then assign them all to a
+	// customer, create a new customer for them, or block them. Selection model:
+	//   • Plain click   → popover (unchanged).
+	//   • Ctrl/Cmd+click → toggle a cell in/out of the selection.
+	//   • Click-drag on an available cell → paint cells into the selection.
+	// The selection set holds stall LABELS (global identifiers in payload.state).
+	var _eemMapSel = [];
+
+	function eemMapSelContainer() {
+		var region = document.getElementById('eem-stall-chart-dynamic');
+		return region ? region.querySelector('[data-eem-smap-kind]') : null;
+	}
+
+	function eemMapSelPayload() {
+		var c = eemMapSelContainer();
+		var el = c && c.querySelector('[data-eem-smap-payload]');
+		if (!el) { return null; }
+		try { return JSON.parse(el.textContent); } catch (e) { return null; }
+	}
+
+	// Re-apply the .eem-smap-selected highlight to every cell currently in the
+	// set (and clear it from the rest). Safe to call after any grid re-render or
+	// barn/zoom switch — cells in other barns simply aren't present.
+	function eemMapSelMark() {
+		var c = eemMapSelContainer();
+		var grid = c && c.querySelector('[data-eem-smap-grid]');
+		if (!grid) { return; }
+		var cells = grid.querySelectorAll('[data-eem-smap-stall]');
+		for (var i = 0; i < cells.length; i++) {
+			var lbl = cells[i].getAttribute('data-eem-smap-stall');
+			cells[i].classList.toggle('eem-smap-selected', _eemMapSel.indexOf(lbl) !== -1);
+		}
+	}
+
+	function eemMapSelToggle(label) {
+		var i = _eemMapSel.indexOf(label);
+		if (i === -1) { _eemMapSel.push(label); } else { _eemMapSel.splice(i, 1); }
+		eemMapSelMark();
+		eemMapSelRenderBar();
+	}
+
+	function eemMapSelAdd(label) {
+		if (_eemMapSel.indexOf(label) === -1) {
+			_eemMapSel.push(label);
+			eemMapSelMark();
+			eemMapSelRenderBar();
+		}
+	}
+
+	function eemMapSelClear() {
+		if (!_eemMapSel.length) { return; }
+		_eemMapSel = [];
+		eemMapSelMark();
+		eemMapSelRenderBar();
+	}
+
+	// Floating action bar (bottom-center) shown only while the set is non-empty.
+	function eemMapSelRenderBar() {
+		var bar = document.getElementById('eem-map-sel-bar');
+		if (!_eemMapSel.length) {
+			if (bar) { bar.classList.remove('open'); }
+			return;
+		}
+		if (!bar) {
+			bar = document.createElement('div');
+			bar.id = 'eem-map-sel-bar';
+			bar.className = 'eem-map-sel-bar';
+			bar.innerHTML =
+				'<span class="eem-map-sel-bar__count" data-eem-map-sel-count></span>' +
+				'<button type="button" class="eem-btn eem-btn-electric eem-btn-sm" data-eem-action="map-sel-assign">Assign to customer</button>' +
+				'<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="map-sel-add">+ Add new customer</button>' +
+				'<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="map-sel-block">Block selected</button>' +
+				'<button type="button" class="eem-btn eem-btn-ghost eem-btn-sm" data-eem-action="map-sel-clear">Clear</button>';
+			document.body.appendChild(bar);
+		}
+		var cnt = bar.querySelector('[data-eem-map-sel-count]');
+		if (cnt) { cnt.textContent = _eemMapSel.length + (_eemMapSel.length === 1 ? ' stall selected' : ' stalls selected'); }
+		bar.classList.add('open');
+	}
+
+	function eemMapSelCloseModal() {
+		var m = document.getElementById('eem-map-sel-modal');
+		if (m) { m.parentNode.removeChild(m); }
+	}
+
+	// Assign every selected stall to an EXISTING customer/order. Reuses the
+	// verified single-unit endpoint (eemAssignUnit) sequentially, then reloads —
+	// identical to the multi-stall assign-mode confirm path.
+	function eemMapSelBatchAssign(orderKey) {
+		var cfg = window.eemStallChart || {};
+		var kind = 'stall';
+		var ctx = { orderKey: orderKey, kind: kind };
+		var units = _eemMapSel.slice();
+		eemMapSelCloseModal();
+		var failed = [];
+		var chain = Promise.resolve();
+		units.forEach(function (u) {
+			chain = chain.then(function () {
+				return eemAssignUnit(cfg, ctx, u).then(function (resp) {
+					if (!resp || !resp.success) { failed.push(u); }
+				});
+			});
+		});
+		chain.then(function () {
+			if (window.EEM && window.EEM.showSaveToast) {
+				window.EEM.showSaveToast(
+					failed.length === 0
+						? ('All ' + units.length + ' assigned.')
+						: ('Could not assign: ' + failed.join(', ') + '. The others were saved.'),
+					{ variant: failed.length === 0 ? 'success' : 'error' }
+				);
+			}
+			eemScSaveViewState();
+			setTimeout(function () { window.location.reload(); }, 600);
+		}).catch(function () {
+			if (window.EEM && window.EEM.showSaveToast) {
+				window.EEM.showSaveToast('Network error. Please try again.', { variant: 'error' });
+			}
+		});
+	}
+
+	// Block every selected stall. Sequential map-action posts, one reload at end.
+	function eemMapSelBatchBlock() {
+		var cfg = window.eemStallChart || {};
+		var units = _eemMapSel.slice();
+		var failed = [];
+		var chain = Promise.resolve();
+		units.forEach(function (u) {
+			chain = chain.then(function () {
+				var body = new URLSearchParams();
+				body.set('action', 'eem_stall_map_action');
+				body.set('_wpnonce', cfg.moveNonce || '');
+				body.set('reservation_id', String(cfg.reservationId || ''));
+				body.set('op', 'block');
+				body.set('stall', u);
+				body.set('kind', 'stall');
+				body.set('inv', window._eemScInv || 'all');
+				body.set('tab', window._eemScTab || 'location');
+				return fetch((cfg.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php'), {
+					method: 'POST', credentials: 'same-origin',
+					headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+					body: body.toString()
+				}).then(function (r) { return r.json().catch(function () { return { success: false }; }); })
+					.then(function (resp) { if (!resp || !resp.success) { failed.push(u); } });
+			});
+		});
+		chain.then(function () {
+			if (window.EEM && window.EEM.showSaveToast) {
+				window.EEM.showSaveToast(
+					failed.length === 0 ? (units.length + ' blocked.') : ('Some could not be blocked: ' + failed.join(', ')),
+					{ variant: failed.length === 0 ? 'success' : 'error' }
+				);
+			}
+			eemScSaveViewState();
+			setTimeout(function () { window.location.reload(); }, 600);
+		}).catch(function () {
+			if (window.EEM && window.EEM.showSaveToast) {
+				window.EEM.showSaveToast('Network error. Please try again.', { variant: 'error' });
+			}
+		});
+	}
+
+	// Modal: search existing customers, pick one to assign all selected stalls to.
+	function eemMapSelOpenAssignModal() {
+		if (!_eemMapSel.length) { return; }
+		var p = eemMapSelPayload();
+		var customers = (p && p.customers) || [];
+		var n = _eemMapSel.length;
+		eemMapSelCloseModal();
+		var overlay = document.createElement('div');
+		overlay.id = 'eem-map-sel-modal';
+		overlay.className = 'eem-modal';
+		overlay.innerHTML =
+			'<div class="eem-modal-card">' +
+				'<div class="eem-modal-head"><span class="eem-modal-title">Assign ' + n + ' stall' + (n === 1 ? '' : 's') + ' to…</span>' +
+				'<button type="button" class="eem-modal-close" data-eem-action="map-sel-modal-close">×</button></div>' +
+				'<div class="eem-modal-body">' +
+					'<input type="text" class="eem-smap-pop-search" data-eem-map-sel-search placeholder="Search customer…" autocomplete="off">' +
+					'<div class="eem-smap-pop-list" data-eem-map-sel-list></div>' +
+				'</div>' +
+			'</div>';
+		document.body.appendChild(overlay);
+		overlay.classList.add('open');
+		var search = overlay.querySelector('[data-eem-map-sel-search]');
+		var list = overlay.querySelector('[data-eem-map-sel-list]');
+		function renderList(q) {
+			list.innerHTML = '';
+			q = (q || '').toLowerCase();
+			var hits = customers.filter(function (cu) { return cu.n.toLowerCase().indexOf(q) !== -1; });
+			if (!hits.length) {
+				var e = document.createElement('div');
+				e.className = 'eem-smap-pop-empty';
+				e.textContent = search.value.trim() ? 'No match' : 'No customers yet';
+				list.appendChild(e);
+				return;
+			}
+			hits.forEach(function (cu) {
+				var b = document.createElement('button');
+				b.type = 'button';
+				b.className = 'eem-smap-pop-row';
+				b.textContent = cu.n;
+				b.addEventListener('click', function () { eemMapSelBatchAssign(cu.o); });
+				list.appendChild(b);
+			});
+		}
+		search.addEventListener('input', function () { renderList(search.value); });
+		renderList('');
+		setTimeout(function () { search.focus(); }, 0);
+	}
+
+	// Modal: first/last name → create an OPEN order and assign ALL selected stalls
+	// to it in one server call (create endpoint accepts a comma-joined stall list).
+	function eemMapSelOpenAddCustomerModal() {
+		if (!_eemMapSel.length) { return; }
+		var n = _eemMapSel.length;
+		eemMapSelCloseModal();
+		var overlay = document.createElement('div');
+		overlay.id = 'eem-map-sel-modal';
+		overlay.className = 'eem-modal';
+		overlay.innerHTML =
+			'<div class="eem-modal-card">' +
+				'<div class="eem-modal-head"><span class="eem-modal-title">New customer — assign ' + n + ' stall' + (n === 1 ? '' : 's') + '</span>' +
+				'<button type="button" class="eem-modal-close" data-eem-action="map-sel-modal-close">×</button></div>' +
+				'<div class="eem-modal-body">' +
+					'<input type="text" class="eem-smap-pop-search" data-eem-map-sel-first placeholder="First name" autocomplete="off">' +
+					'<input type="text" class="eem-smap-pop-search" data-eem-map-sel-last placeholder="Last name" autocomplete="off">' +
+				'</div>' +
+				'<div class="eem-modal-foot">' +
+					'<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="map-sel-modal-close">Cancel</button>' +
+					'<button type="button" class="eem-btn eem-btn-electric" data-eem-action="map-sel-add-save">Save &amp; Assign</button>' +
+				'</div>' +
+			'</div>';
+		document.body.appendChild(overlay);
+		overlay.classList.add('open');
+		var fn = overlay.querySelector('[data-eem-map-sel-first]');
+		setTimeout(function () { fn.focus(); }, 0);
+	}
+
+	// Create the new-customer order with all selected stalls (one create call).
+	function eemMapSelSubmitNewCustomer() {
+		var overlay = document.getElementById('eem-map-sel-modal');
+		if (!overlay) { return; }
+		var fn = overlay.querySelector('[data-eem-map-sel-first]');
+		var ln = overlay.querySelector('[data-eem-map-sel-last]');
+		var f = (fn && fn.value.trim()) || '';
+		var l = (ln && ln.value.trim()) || '';
+		if (!f && !l) { if (fn) { fn.focus(); } return; }
+		var stalls = _eemMapSel.slice().join(',');
+		var container = eemMapSelContainer();
+		eemMapSelCloseModal();
+		// eemSmapCreatePlaceholder accepts a comma-joined stall string; the server
+		// assigns every unit and re-renders the region in place. Clears selection.
+		eemSmapCreatePlaceholder(container, stalls, f, l);
+	}
+
+	// Delegated handlers for the ad-hoc selection action bar + its modals.
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) { return; }
+		if (t.closest('[data-eem-action="map-sel-clear"]')) { ev.preventDefault(); eemMapSelClear(); return; }
+		if (t.closest('[data-eem-action="map-sel-assign"]')) { ev.preventDefault(); eemMapSelOpenAssignModal(); return; }
+		if (t.closest('[data-eem-action="map-sel-add"]')) { ev.preventDefault(); eemMapSelOpenAddCustomerModal(); return; }
+		if (t.closest('[data-eem-action="map-sel-block"]')) { ev.preventDefault(); eemMapSelBatchBlock(); return; }
+		if (t.closest('[data-eem-action="map-sel-modal-close"]')) { ev.preventDefault(); eemMapSelCloseModal(); return; }
+		if (t.closest('[data-eem-action="map-sel-add-save"]')) { ev.preventDefault(); eemMapSelSubmitNewCustomer(); return; }
+	});
+
 	function eemSmapCreatePlaceholder(container, stall, firstName, lastName) {
+		eemMapSelClear();
 		var cfg = window.eemStallChart || {};
 		var body = new URLSearchParams();
 		body.set('action', 'eem_stall_create_placeholder');
@@ -6571,6 +6841,7 @@
 	}
 
 	function eemSmapAction(container, op, stall, orderKey) {
+		eemMapSelClear();
 		var cfg = window.eemStallChart || {};
 		var body = new URLSearchParams();
 		body.set('action', 'eem_stall_map_action');
@@ -6857,6 +7128,8 @@
 			}
 			eemSmapRenderGrid(container, payload, container._eemSmapBarn);
 			if (container._eemSmapApplyLevel) { container._eemSmapApplyLevel(); }
+			// Re-apply any ad-hoc selection highlight after the grid is (re)built.
+			eemMapSelMark();
 			// Cell click → popover (bound once per render via the grid host).
 			var host = container.querySelector('[data-eem-smap-grid]');
 			if (host && !host._eemSmapBound) {
@@ -6867,10 +7140,19 @@
 					ev.stopPropagation();
 					var pEl = container.querySelector('[data-eem-smap-payload]');
 					var p; try { p = JSON.parse(pEl.textContent); } catch (e) { return; }
+					var aCtx = (window.eemStallChart || {}).assignContext;
+					var inAssignMode = !!(aCtx && aCtx.orderKey && aCtx.kind !== 'rv');
+					// Ad-hoc multi-select (outside assign-mode): Ctrl/Cmd+click toggles
+					// an AVAILABLE stall in/out of the selection set.
+					if (!inAssignMode && (ev.metaKey || ev.ctrlKey)) {
+						var selLabel = cell.getAttribute('data-eem-smap-stall');
+						var selSt = (p.state && p.state[selLabel]) ? p.state[selLabel] : { s: 'available' };
+						if ((selSt.s || 'available') === 'available') { eemMapSelToggle(selLabel); }
+						return;
+					}
 					// Assign-mode: clicking an AVAILABLE stall places the pending
 					// order directly (reuses the map's own assign action), instead
 					// of opening the generic customer-search popup.
-					var aCtx = (window.eemStallChart || {}).assignContext;
 					if (aCtx && aCtx.orderKey && aCtx.kind !== 'rv') {
 						var aLabel = cell.getAttribute('data-eem-smap-stall');
 						var aState = (p.state && p.state[aLabel]) ? p.state[aLabel] : { s: 'available' };
@@ -6885,12 +7167,14 @@
 					eemSmapOpenPop(container, cell, p);
 				});
 			}
-			// Drag-to-paint multi-select in assign-mode (qty>1): press on an
-			// available stall and drag across more available stalls to queue them,
-			// up to the order's quantity. Reuses the same queue as click-select
-			// (openAssignOrderModal) so the banner + confirm modal behave identically.
-			// Suppresses map pan while painting, and swallows the drag-ending click so
-			// the first cell isn't toggled back off.
+			// Drag-to-paint multi-select. Two modes share one press/move/up cycle:
+			//   • Assign-mode (qty>1): drag queues available stalls up to the order's
+			//     quantity, reusing the same queue as click-select (openAssignOrderModal).
+			//   • Ad-hoc mode (no active assignContext): drag paints available stalls
+			//     into the ad-hoc selection set (_eemMapSel) → floating action bar.
+			// Painting starts only on an AVAILABLE cell, so a press on empty space /
+			// aisles / occupied cells still pans the map. Suppresses pan while painting
+			// and swallows the drag-ending click so the first cell isn't toggled back.
 			if (host && !host._eemSmapPaintBound) {
 				host._eemSmapPaintBound = true;
 				var painting = false, paintMoved = false;
@@ -6898,27 +7182,35 @@
 					var pEl = container.querySelector('[data-eem-smap-payload]');
 					try { return JSON.parse(pEl.textContent).state || {}; } catch (e) { return {}; }
 				};
-				var paintCtx = function () {
+				// Returns 'assign' (with ctx) or 'select' (ad-hoc) for the current press.
+				var paintMode = function () {
 					var c = (window.eemStallChart || {}).assignContext;
-					return (c && c.orderKey && c.kind !== 'rv' && (c.qty || 1) > 1) ? c : null;
+					if (c && c.orderKey && c.kind !== 'rv' && (c.qty || 1) > 1) { return { mode: 'assign', ctx: c }; }
+					if (!(c && c.orderKey && c.kind !== 'rv')) { return { mode: 'select' }; }
+					return null; // assign-mode qty===1: single-click only, no paint.
 				};
 				var paintCellAt = function (x, y) {
 					var el = document.elementFromPoint(x, y);
 					return el && el.closest ? el.closest('[data-eem-smap-stall]') : null;
 				};
-				var paintAdd = function (cell, ctx, state) {
+				var paintAdd = function (cell, state) {
 					if (!cell) { return; }
 					var label = cell.getAttribute('data-eem-smap-stall');
 					var s = (state[label] && state[label].s) ? state[label].s : 'available';
 					if (s !== 'available') { return; }
-					if (_eemAssignPending.indexOf(label) !== -1) { return; }
-					if (_eemAssignPending.length >= (ctx.qty || 1)) { return; }
-					openAssignOrderModal(ctx, label); // queues + highlights + opens modal at qty
+					if (host._eemPaintMode === 'assign') {
+						var ctx = host._eemPaintCtx;
+						if (_eemAssignPending.indexOf(label) !== -1) { return; }
+						if (_eemAssignPending.length >= (ctx.qty || 1)) { return; }
+						openAssignOrderModal(ctx, label); // queues + highlights + opens modal at qty
+					} else {
+						eemMapSelAdd(label);
+					}
 				};
 				host.addEventListener('mousedown', function (ev) {
 					if (ev.button !== 0) { return; }
-					var ctx = paintCtx();
-					if (!ctx) { return; }
+					var pm = paintMode();
+					if (!pm) { return; }
 					var cell = ev.target.closest('[data-eem-smap-stall]');
 					if (!cell) { return; }
 					var state = paintState();
@@ -6927,12 +7219,12 @@
 					if (s !== 'available') { return; }
 					painting = true; paintMoved = false;
 					ev.stopPropagation();
-					host._eemPaintCtx = ctx; host._eemPaintState = state;
+					host._eemPaintMode = pm.mode; host._eemPaintCtx = pm.ctx; host._eemPaintState = state;
 				});
 				window.addEventListener('mousemove', function (ev) {
 					if (!painting) { return; }
 					paintMoved = true;
-					paintAdd(paintCellAt(ev.clientX, ev.clientY), host._eemPaintCtx, host._eemPaintState);
+					paintAdd(paintCellAt(ev.clientX, ev.clientY), host._eemPaintState);
 				});
 				window.addEventListener('mouseup', function () {
 					if (!painting) { return; }

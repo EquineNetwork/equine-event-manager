@@ -6838,6 +6838,11 @@ class EEM_Admin {
 
 		$qty_col = $is_rv ? 'rv_qty' : 'stall_qty';
 
+		// `$stall` may be a comma-joined list (ad-hoc map multi-select → one new
+		// customer assigned to N stalls). Quantity = number of distinct units.
+		$unit_count = count( array_values( array_filter( array_map( 'trim', explode( ',', $stall ) ) ) ) );
+		$unit_count = max( 1, $unit_count );
+
 		$inserted = $wpdb->insert(
 			$table,
 			array(
@@ -6847,7 +6852,7 @@ class EEM_Admin {
 				'customer_name'  => $customer_name,
 				'email'          => '',
 				'phone'          => '',
-				$qty_col         => 1,
+				$qty_col         => $unit_count,
 				'stay_type'      => '',
 				'unit_price'     => '0.00',
 				'subtotal'       => '0.00',
