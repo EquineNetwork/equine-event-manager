@@ -3964,7 +3964,7 @@ class EEM_Admin {
 				$assign_ctx  = array(
 					'orderKey'      => $assign_order_key,
 					'kind'          => $assign_kind,
-					'customer'      => (string) $assign_order['customer_name'],
+					'customer'      => self::format_customer_last_first( (string) ( $assign_order['customer_name'] ?? '' ) ),
 					'arrival'       => (string) ( 'rv' === $assign_kind ? $assign_order['rv_arrival_date'] : $assign_order['stall_arrival_date'] ),
 					'departure'     => (string) ( 'rv' === $assign_kind ? $assign_order['rv_departure_date'] : $assign_order['stall_departure_date'] ),
 					'orderNumber'   => $this->format_order_number_display( (string) ( $assign_order['order_number'] ?? '' ) ),

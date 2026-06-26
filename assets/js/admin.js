@@ -6471,15 +6471,11 @@
 						el.appendChild(vb);
 					}
 					// Customer name — small text at bottom-left; readable when zoomed in.
-					// Format: "Last, First" by splitting on the last space.
+					// PHP formats as "Last, First" via format_customer_last_first(); use directly.
 					if (st.c) {
-						var cnParts = st.c.trim().split(' ');
-						var cnDisplay = cnParts.length > 1
-							? cnParts[cnParts.length - 1] + ', ' + cnParts.slice(0, -1).join(' ')
-							: st.c;
 						var cnEl = document.createElement('span');
 						cnEl.className = 'eem-smap-cname';
-						cnEl.textContent = cnDisplay;
+						cnEl.textContent = st.c;
 						el.appendChild(cnEl);
 					}
 					host.appendChild(el);
