@@ -6583,6 +6583,7 @@
 			search.type = 'text';
 			search.className = 'eem-smap-pop-search';
 			search.placeholder = 'Search customer…';
+			search.autocomplete = 'off';
 			var list = document.createElement('div');
 			list.className = 'eem-smap-pop-list';
 			function renderList(q) {
@@ -6637,7 +6638,7 @@
 			bodyEl.appendChild(list);
 			renderList('');
 			setTimeout(function () { search.focus(); }, 0);
-			row('+ Add New Customer', 'eem-smap-pop-row--add-new', function () { showAddCustomerForm(); });
+			row('+ Add New Customer', 'eem-smap-pop-row--add-new', function (ev) { ev.stopPropagation(); showAddCustomerForm(); });
 			row(zq ? 'Block lot' : 'Block stall', 'danger', function () { eemSmapAction(container, 'block', label, ''); });
 		} else if (status === 'reserved') {
 			if (!zq) { row('Mark as Tack stall', '', function () { eemSmapAction(container, 'tack', label, st.o || ''); }); }
