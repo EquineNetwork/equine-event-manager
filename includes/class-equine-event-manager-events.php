@@ -4487,15 +4487,29 @@ class EEM_Events {
 			return '';
 		}
 
+		$fmt = get_option( 'date_format' );
+
+		// These are pure calendar dates (a TEC event on July 4 is July 4 in every
+		// timezone). Parse + render in UTC so a site timezone *behind* UTC doesn't
+		// shift the displayed day back one. The prior code parsed with strtotime()
+		// in server/UTC time but rendered with wp_date() in site time, so a July 4
+		// event showed as July 3 (TEC list correct, EEM page off by one).
+		$utc = new DateTimeZone( 'UTC' );
+		$fmt_date = static function ( $value ) use ( $fmt, $utc ) {
+			$ymd = substr( (string) $value, 0, 10 ); // tolerate "Y-m-d" or "Y-m-d H:i:s".
+			$ts  = strtotime( $ymd . ' 12:00:00 UTC' ); // noon avoids any DST edge.
+			return $ts ? wp_date( $fmt, $ts, $utc ) : '';
+		};
+
 		if ( ! $end_date || $start_date === $end_date ) {
-			return wp_date( get_option( 'date_format' ), strtotime( $start_date ) );
+			return $fmt_date( $start_date );
 		}
 
 		return sprintf(
 			/* translators: 1: start date, 2: end date. */
 			__( '%1$s - %2$s', 'equine-event-manager' ),
-			wp_date( get_option( 'date_format' ), strtotime( $start_date ) ),
-			wp_date( get_option( 'date_format' ), strtotime( $end_date ) )
+			$fmt_date( $start_date ),
+			$fmt_date( $end_date )
 		);
 	}
 

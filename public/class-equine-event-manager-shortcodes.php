@@ -12281,42 +12281,47 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return string
 	 */
 	private function format_compact_date_range_label( $start_value, $end_value ) {
-		$start_timestamp = strtotime( $start_value . ' 00:00:00' );
-		$end_timestamp   = strtotime( $end_value . ' 00:00:00' );
+		// Pure calendar dates — parse + render in UTC so a site timezone behind UTC
+		// doesn't shift the displayed day back one (strtotime parsed in server/UTC
+		// time while wp_date rendered in site time → a July 4 event showed July 3).
+		// Noon avoids any DST edge.
+		$utc             = new DateTimeZone( 'UTC' );
+		$start_timestamp = strtotime( substr( (string) $start_value, 0, 10 ) . ' 12:00:00 UTC' );
+		$end_timestamp   = strtotime( substr( (string) $end_value, 0, 10 ) . ' 12:00:00 UTC' );
 
 		if ( ! $start_timestamp || ! $end_timestamp ) {
 			return '';
 		}
 
-		if ( wp_date( 'Y-m-d', $start_timestamp ) === wp_date( 'Y-m-d', $end_timestamp ) ) {
-			return wp_date( 'M j, Y', $start_timestamp );
+		if ( wp_date( 'Y-m-d', $start_timestamp, $utc ) === wp_date( 'Y-m-d', $end_timestamp, $utc ) ) {
+			return wp_date( 'M j, Y', $start_timestamp, $utc );
 		}
 
-		if ( wp_date( 'Y', $start_timestamp ) === wp_date( 'Y', $end_timestamp ) ) {
-			if ( wp_date( 'm', $start_timestamp ) === wp_date( 'm', $end_timestamp ) ) {
+		if ( wp_date( 'Y', $start_timestamp, $utc ) === wp_date( 'Y', $end_timestamp, $utc ) ) {
+			if ( wp_date( 'm', $start_timestamp, $utc ) === wp_date( 'm', $end_timestamp, $utc ) ) {
 				return sprintf(
 					/* translators: 1: start month/day, 2: end day, 3: year. */
 					__( '%1$s-%2$s, %3$s', 'equine-event-manager' ),
-					wp_date( 'M j', $start_timestamp ),
-					wp_date( 'j', $end_timestamp ),
-					wp_date( 'Y', $start_timestamp )
+					wp_date( 'M j', $start_timestamp, $utc ),
+					wp_date( 'j', $end_timestamp, $utc ),
+					wp_date( 'Y', $start_timestamp, $utc )
 				);
 			}
 
 			return sprintf(
 				/* translators: 1: start month/day, 2: end month/day, 3: year. */
 				__( '%1$s-%2$s, %3$s', 'equine-event-manager' ),
-				wp_date( 'M j', $start_timestamp ),
-				wp_date( 'M j', $end_timestamp ),
-				wp_date( 'Y', $start_timestamp )
+				wp_date( 'M j', $start_timestamp, $utc ),
+				wp_date( 'M j', $end_timestamp, $utc ),
+				wp_date( 'Y', $start_timestamp, $utc )
 			);
 		}
 
 		return sprintf(
 			/* translators: 1: start date, 2: end date. */
 			__( '%1$s - %2$s', 'equine-event-manager' ),
-			wp_date( 'M j, Y', $start_timestamp ),
-			wp_date( 'M j, Y', $end_timestamp )
+			wp_date( 'M j, Y', $start_timestamp, $utc ),
+			wp_date( 'M j, Y', $end_timestamp, $utc )
 		);
 	}
 
