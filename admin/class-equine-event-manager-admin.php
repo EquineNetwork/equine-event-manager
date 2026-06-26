@@ -133,6 +133,7 @@ class EEM_Admin {
 		add_action( 'wp_ajax_eem_stall_bulk_status_set', array( $this, 'ajax_stall_bulk_status_set' ) );
 		add_action( 'wp_ajax_eem_toggle_tack_stall', array( $this, 'ajax_toggle_tack_stall' ) );
 		add_action( 'wp_ajax_eem_toggle_order_vip', array( $this, 'ajax_toggle_order_vip' ) );
+		add_action( 'wp_ajax_eem_toggle_form_visibility', array( $this, 'ajax_toggle_form_visibility' ) );
 		add_action( 'wp_ajax_eem_stall_map_action', array( $this, 'ajax_stall_map_action' ) );
 		add_action( 'wp_ajax_eem_stall_create_placeholder', array( $this, 'ajax_stall_create_placeholder' ) );
 		add_action( 'wp_ajax_eem_group_rename', array( $this, 'ajax_group_rename' ) );
@@ -6625,6 +6626,48 @@ class EEM_Admin {
 		) );
 	}
 
+	/**
+	 * #47 — Toggle a reservation's "admin-only" booking-form visibility.
+	 *
+	 * Drives the sticky save bar's Public/Hidden chip. When the
+	 * `_eem_form_admin_only` meta is set, the customer-facing booking form
+	 * is hidden from visitors (logged-in admins still see it); when empty,
+	 * the form is live to the public. Flips the flag and reports the new
+	 * state so the chip can re-label itself without a page reload.
+	 *
+	 * @return void Sends a JSON response and exits.
+	 */
+	public function ajax_toggle_form_visibility(): void {
+		check_ajax_referer( 'eem_toggle_form_visibility', '_wpnonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
+		}
+
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
+		if ( $reservation_id <= 0 || 'en_reservation' !== get_post_type( $reservation_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Reservation not found.', 'equine-event-manager' ) ), 404 );
+		}
+
+		// Flip: currently hidden → make public (delete meta); currently
+		// public → hide (set meta to '1').
+		$currently_hidden = '' !== (string) get_post_meta( $reservation_id, '_eem_form_admin_only', true );
+		$now_hidden       = ! $currently_hidden;
+
+		if ( $now_hidden ) {
+			update_post_meta( $reservation_id, '_eem_form_admin_only', '1' );
+		} else {
+			delete_post_meta( $reservation_id, '_eem_form_admin_only' );
+		}
+
+		wp_send_json_success( array(
+			'hidden'  => $now_hidden,
+			'message' => $now_hidden
+				? __( 'Booking form hidden from visitors.', 'equine-event-manager' )
+				: __( 'Booking form is now public.', 'equine-event-manager' ),
+		) );
+	}
+
 	public function ajax_move_stall_assignment() {
 		check_ajax_referer( 'eem_stall_chart_move', '_wpnonce' );
 
@@ -6858,7 +6901,30 @@ class EEM_Admin {
 		// other component's existing assignment.
 		$current = $this->parse_assigned_units_string( $this->get_order_component_note_value( $order, $note_comp, $assign_lbl ) );
 		$current = array_map( 'strval', (array) $current );
+
+		// Over-assignment guardrail: an order may only hold as many units as it was
+		// paid for. stall_quantity already folds in tack stalls (orders repo); rv_quantity
+		// covers RV lots. Re-assigning a unit the order already holds is a no-op and is
+		// always allowed; only a genuine NEW unit beyond the paid cap is blocked. The
+		// Move flow uses a separate endpoint, so relocations are unaffected.
 		if ( ! in_array( (string) $unit, $current, true ) ) {
+			$paid_cap = $is_rv
+				? absint( isset( $order['rv_quantity'] ) ? $order['rv_quantity'] : 0 )
+				: absint( isset( $order['stall_quantity'] ) ? $order['stall_quantity'] : 0 );
+			if ( $paid_cap > 0 && count( $current ) >= $paid_cap ) {
+				$this->release_assignment_lock( $reservation_id );
+				if ( 1 === $paid_cap ) {
+					$noun = $is_rv ? __( 'RV lot', 'equine-event-manager' ) : __( 'stall', 'equine-event-manager' );
+				} else {
+					$noun = $is_rv ? __( 'RV lots', 'equine-event-manager' ) : __( 'stalls', 'equine-event-manager' );
+				}
+				wp_send_json_error( array( 'message' => sprintf(
+					/* translators: 1: paid quantity, 2: stall/lot noun (singular or plural) */
+					__( 'This order is paid for %1$d %2$s, which are all assigned. Remove one first, or use Move to relocate.', 'equine-event-manager' ),
+					$paid_cap,
+					$noun
+				) ), 409 );
+			}
 			$current[] = (string) $unit;
 		}
 		$new_csv = implode( ', ', array_filter( $current ) );
@@ -8108,7 +8174,14 @@ class EEM_Admin {
 		$orders    = array_filter(
 			$this->orders_repository->get_orders(),
 			function ( $order ) use ( $reservation_id ) {
-				return absint( isset( $order['reservation_id'] ) ? $order['reservation_id'] : 0 ) === absint( $reservation_id );
+				if ( absint( isset( $order['reservation_id'] ) ? $order['reservation_id'] : 0 ) !== absint( $reservation_id ) ) {
+					return false;
+				}
+				// Cancelled / fully-refunded orders are voided bookings — they must
+				// not appear in the roster or hold stalls/RV lots on the map (BUG:
+				// cancelled orders kept their assignments on the chart).
+				$status = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
+				return ! in_array( $status, array( 'cancelled', 'refunded' ), true );
 			}
 		);
 		$rows      = array();

@@ -385,6 +385,12 @@ class EEM_Reservation_Editor_Page {
 		$addons_context   = $reservations_cpt->get_editor_general_addons_context( $reservation_id );
 		$addons           = isset( $addons_context['addons'] ) ? (array) $addons_context['addons'] : array();
 
+		// #47 — Form Visibility moved OUT of a top-of-page card and into the
+		// sticky save bar as a clickable Public/Hidden chip (see
+		// templates/admin/reservation-editor/_sticky-save-bar.php). The chip
+		// persists instantly via the eem_toggle_form_visibility AJAX endpoint;
+		// the customer-facing render gate in EEM_Shortcodes still consults
+		// `_eem_form_admin_only`.
 		$sections = self::section_definitions();
 		foreach ( $sections as $section ) {
 			$body_html     = self::render_section_body( $section['key'], $data, $addons, $reservations_cpt );
@@ -1011,6 +1017,13 @@ class EEM_Reservation_Editor_Page {
 				wp_send_json_error( array( 'message' => $result->get_error_message() ), 500 );
 			}
 		}
+
+		// #47 — The "admin-only form visibility" flag (`_eem_form_admin_only`)
+		// is NO LONGER touched here. It is owned by the sticky save bar's
+		// Public/Hidden chip, which persists it instantly via the dedicated
+		// eem_toggle_form_visibility AJAX endpoint. Saving the editor must NOT
+		// clear it, so the previous read-from-$_POST/delete-when-absent block
+		// was removed.
 
 		// Pre-validate before invoking save_meta() — surfaces validation
 		// errors to the JS toast instead of silently no-op'ing.

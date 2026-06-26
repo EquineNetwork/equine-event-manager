@@ -8,6 +8,28 @@
 
 ---
 
+## 🐛 CRITICAL BUGS — found 2026-06-26 (live rsnc.us, event "Columbiana, OH – Northeast Circuit Finals", reservation_id 30884)
+
+> Reported by Whitney from the live production site. Fix **one at a time**, Whitney verifies each before it's checked off.
+> Most are stall-assignment / cancellation logic; two are order-detail pricing **display** (no payment-processing changes).
+> NOTE: code fixes deploy via plugin update, but **existing bad data** (cancelled orders still holding stalls) likely needs a one-time cleanup too.
+
+1. [ ] **Cancelling an order does NOT release its stall/RV assignments.** Two cancelled orders (#00002 Mitchell, Whitney; #00003 Sperle, Tanner) still show stall assignments on the Stall & RV Chart. When an order's status → **Cancelled** (and almost certainly **Refunded** + **Move to Trash**), its stall + RV assignments must be auto-released so the stalls free up on the chart.
+
+2. [ ] **Cancelled + manually-removed orders STILL appear in the chart "Assigned" sidebar roster.** Whitney cancelled the orders AND manually removed them from the map, yet they still show in the "Assigned (3)" customer list (Tanner Sperle Test · Mitchell, Whitney · Sperle, Tanner). The Assigned roster must reflect actual current assignments and exclude cancelled/removed orders. (Find what source the roster reads — orders vs. notes — and why cancel/manual-removal doesn't clear it.)
+
+3. [ ] **"Manage Stall Assignment" allows OVER-assignment beyond the paid stall quantity.** Order has 5 paid stalls; Manage Stall Assignment opens the map with the 5 selected, but selecting another block of 5 and assigning gives the customer **10 stalls — 5 unpaid**. Need a guardrail: cannot assign more stalls than the order's paid quantity (block/warn at the paid count, or require explicit override).
+
+4. [ ] **No multi-select "Remove from stall" on the chart/map.** Can't currently select multiple assigned stalls and remove them in one action. Add bulk-select + "Remove from stall" on the map.
+
+5. [ ] **Order total math — required shavings cost is silently folded into the Stall Subtotal.** Rate line shows "$35.00 × 5 stalls × 5 nights" = $875, but **Stall Subtotal = $955.00**; the $80 difference = 8 bags shavings (×$10/bag) bundled in with no breakdown. Required shavings must show as its own priced line (per-bag rate + total); the stall subtotal breakdown must be transparent.
+
+6. [ ] **Required shavings render under "Add-Ons" and show $0.00.** Add-Ons section shows "SHAVINGS (×8) $0.00" — wrongly implies it's an add-on AND shows no price. Distinguish **required shavings** (part of the stall reservation) from **add-on shavings**, and show the real dollar amount (per bag + total).
+
+7. [ ] **Order Detail doesn't indicate WHICH assigned stall is the tack stall.** Order had 1 tack stall among the 5 (#295–#299) but the detail page doesn't mark which one. Surface tack-stall identification on the order detail.
+
+---
+
 ## 🔖 SESSION HANDOFF — 2026-06-25 (continued — v2.7.624 target)
 
 ### ✅ Code written this session — AWAITING VERIFICATION (v2.7.624)

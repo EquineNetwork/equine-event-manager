@@ -56,7 +56,16 @@ $status_label  = isset( $status_labels[ $status ] ) ? $status_labels[ $status ] 
 
 $dot_modifier = 'publish' === $status ? 'published' : ( 'trash' === $status ? 'trash' : 'draft' );
 
-$visibility     = 'private' === $status ? __( 'Private', 'equine-event-manager' ) : __( 'Public', 'equine-event-manager' );
+/*
+ * #47 — Form visibility chip. `_eem_form_admin_only` non-empty means the
+ * booking form is hidden from visitors (admins still see it); empty means
+ * the form is live to the public. The chip below is clickable and persists
+ * instantly via the eem_toggle_form_visibility AJAX endpoint — no full save
+ * required. Replaces the old top-of-page "Form Visibility" card.
+ */
+$form_admin_only = '' !== (string) get_post_meta( $reservation_id, '_eem_form_admin_only', true );
+$fv_nonce        = wp_create_nonce( 'eem_toggle_form_visibility' );
+
 $pub_date_ts    = strtotime( (string) $post->post_date );
 $pub_date_label = $pub_date_ts ? date_i18n( get_option( 'date_format' ), $pub_date_ts ) : __( "\xe2\x80\x94", 'equine-event-manager' );
 
@@ -74,12 +83,32 @@ $nonce = wp_create_nonce( 'eem_reservation_editor' );
 		<span data-eem-publish-status><?php echo esc_html( $status_label ); ?></span>
 	</div>
 
-	<!-- Visibility + Published date -->
-	<div class="eem-sticky-save-meta">
-		<span class="eem-sticky-save-meta-item">
-			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false" style="width:14px;height:14px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-			<?php echo esc_html( $visibility ); ?>
+	<!-- #47 Form visibility — clickable Public/Hidden chip; persists instantly -->
+	<button type="button"
+		class="eem-sticky-save-visibility<?php echo $form_admin_only ? ' eem-sticky-save-visibility--hidden' : ''; ?>"
+		data-eem-action="reservation-editor-toggle-form-visibility"
+		data-eem-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>"
+		data-eem-nonce="<?php echo esc_attr( $fv_nonce ); ?>"
+		aria-pressed="<?php echo $form_admin_only ? 'true' : 'false'; ?>"
+		data-label-public="<?php esc_attr_e( 'Public', 'equine-event-manager' ); ?>"
+		data-label-hidden="<?php esc_attr_e( 'Hidden', 'equine-event-manager' ); ?>"
+		title="<?php echo esc_attr( $form_admin_only
+			? __( 'The booking form is hidden from visitors (admins can still see it). Click to make it public.', 'equine-event-manager' )
+			: __( 'The booking form is live to the public. Click to hide it from visitors (admin preview only).', 'equine-event-manager' ) ); ?>">
+		<span class="eem-sticky-save-visibility-icon" data-eem-fv-icon aria-hidden="true">
+			<?php if ( $form_admin_only ) : ?>
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" focusable="false" style="width:14px;height:14px"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+			<?php else : ?>
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" focusable="false" style="width:14px;height:14px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+			<?php endif; ?>
 		</span>
+		<span class="eem-sticky-save-visibility-label" data-eem-fv-label><?php
+			echo esc_html( $form_admin_only ? __( 'Hidden', 'equine-event-manager' ) : __( 'Public', 'equine-event-manager' ) );
+		?></span>
+	</button>
+
+	<!-- Published date -->
+	<div class="eem-sticky-save-meta">
 		<span class="eem-sticky-save-meta-item">
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false" style="width:14px;height:14px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
 			<?php echo esc_html( $pub_date_label ); ?>

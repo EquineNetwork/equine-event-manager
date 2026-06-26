@@ -4212,6 +4212,68 @@
 		/* Cancel anchor is a real href — let the browser navigate, no dispatch needed */
 	});
 
+	/* #47 — Form visibility chip (sticky save bar). Clicking flips the
+	   reservation's `_eem_form_admin_only` flag instantly via AJAX and
+	   re-labels the chip Public ⇄ Hidden — no full save required. */
+	document.addEventListener('click', function (ev) {
+		var t = ev.target;
+		if (!t || !t.closest) return;
+		var chip = t.closest('[data-eem-action="reservation-editor-toggle-form-visibility"]');
+		if (!chip) return;
+		ev.preventDefault();
+		if (chip.disabled) return;
+
+		var rid = chip.getAttribute('data-eem-reservation-id') || '';
+		var nonce = chip.getAttribute('data-eem-nonce') || '';
+		if (!rid || !nonce) {
+			EEM.showSaveToast('Missing nonce — refresh the page.', { variant: 'error', sub: '' });
+			return;
+		}
+
+		chip.disabled = true;
+
+		var data = new FormData();
+		data.append('action', 'eem_toggle_form_visibility');
+		data.append('reservation_id', rid);
+		data.append('_wpnonce', nonce);
+
+		fetch(window.ajaxurl || '/wp-admin/admin-ajax.php', {
+			method: 'POST',
+			credentials: 'same-origin',
+			body: data
+		})
+			.then(function (res) { return res.json(); })
+			.then(function (json) {
+				if (json && typeof json === 'object' && json.success) {
+					var hidden = !!(json.data && json.data.hidden);
+					var labelEl = chip.querySelector('[data-eem-fv-label]');
+					var iconEl = chip.querySelector('[data-eem-fv-icon]');
+					var labelPublic = chip.getAttribute('data-label-public') || 'Public';
+					var labelHidden = chip.getAttribute('data-label-hidden') || 'Hidden';
+					if (labelEl) { labelEl.textContent = hidden ? labelHidden : labelPublic; }
+					chip.classList.toggle('eem-sticky-save-visibility--hidden', hidden);
+					chip.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+					if (iconEl) {
+						iconEl.innerHTML = hidden
+							? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" focusable="false" style="width:14px;height:14px"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+							: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" focusable="false" style="width:14px;height:14px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+					}
+					EEM.showSaveToast((json.data && json.data.message) || 'Saved.');
+				} else if (EEM.isSessionExpiredResponse(json)) {
+					EEM.showSaveToast('Your session expired. Reload the page and try again.', { variant: 'error', sub: '' });
+				} else {
+					var msg = (json && json.data && json.data.message) || 'Could not update form visibility.';
+					EEM.showSaveToast(msg, { variant: 'error', sub: '' });
+				}
+			})
+			.catch(function () {
+				EEM.showSaveToast('Could not reach the server.', { variant: 'error', sub: '' });
+			})
+			.then(function () {
+				chip.disabled = false;
+			});
+	});
+
 	/* C7.C.1 — Repeating-row helper handlers (add + remove). Shared
 	   surface so C7.C.2's Stall Rows / RV Lot Zones reuse the same
 	   wiring. Each helper container exposes its config via
@@ -6176,19 +6238,39 @@
 		if (qty <= 1) {
 			return '<strong>Assigning ' + (ctx.customer || 'this customer') + '</strong> — click an available ' + noun + dates + ' to place them.';
 		}
+		// Remaining capacity = paid qty minus units already assigned. Caps the
+		// multi-select so an order can never hold more units than it paid for (#3).
+		var remaining = eemAssignRemaining(ctx);
+		if (remaining <= 0) {
+			return '<strong>' + (ctx.customer || 'This customer') + '</strong> is fully assigned to ' + qty + ' ' + nouns +
+				' (highlighted). Use “Remove from ' + noun + '” on a highlighted ' + noun + ' to free one before re-assigning.';
+		}
 		var sel = _eemAssignPending.length;
+		var pre = (assigned.length > 0) ? ('<strong>' + assigned.length + ' of ' + qty + ' already assigned</strong> (highlighted). ') : '';
 		if (sel === 0) {
-			return '<strong>Assigning ' + (ctx.customer || 'this customer') + '</strong> — select ' + qty + ' ' + nouns + dates + '. Click each stall to add it.';
+			return pre + '<strong>Assigning ' + (ctx.customer || 'this customer') + '</strong> — select ' + remaining + ' ' + nouns + dates + '. Click each ' + noun + ' to add it.';
 		}
-		if (sel < qty) {
-			return '<strong>' + sel + ' of ' + qty + ' ' + nouns + ' selected</strong> — click ' + (qty - sel) + ' more' + dates + '.';
+		if (sel < remaining) {
+			return '<strong>' + sel + ' of ' + remaining + ' ' + nouns + ' selected</strong> — click ' + (remaining - sel) + ' more' + dates + '.';
 		}
-		return '<strong>' + qty + ' of ' + qty + ' ' + nouns + ' selected</strong> — click “Assign” to confirm.';
+		return '<strong>' + remaining + ' of ' + remaining + ' ' + nouns + ' selected</strong> — click “Assign” to confirm.';
+	}
+
+	// Units this order may still be assigned, given what it already holds. Mirrors
+	// the server-side cap in ajax_assign_order_to_unit() so the UI never lets the
+	// admin queue more than the paid quantity (#3).
+	function eemAssignRemaining(ctx) {
+		var qty = ctx.qty || 1;
+		var assignedCount = (ctx.assignedUnits || []).filter(Boolean).length;
+		return Math.max(0, qty - assignedCount);
 	}
 
 	function eemAssignBannerUpdate(ctx) {
 		var banner = document.getElementById('eem-assign-banner');
-		if (banner) { banner.innerHTML = eemAssignBannerText(ctx) + ((_eemAssignPending.length === (ctx.qty || 1)) ? ' <button type="button" class="eem-btn eem-btn-primary eem-assign-banner-confirm" data-eem-action="assign-order-multi-confirm">Assign</button>' : ''); }
+		if (!banner) { return; }
+		var target = (ctx.qty || 1) > 1 ? eemAssignRemaining(ctx) : (ctx.qty || 1);
+		var showConfirm = (target > 0 && _eemAssignPending.length === target);
+		banner.innerHTML = eemAssignBannerText(ctx) + (showConfirm ? ' <button type="button" class="eem-btn eem-btn-primary eem-assign-banner-confirm" data-eem-action="assign-order-multi-confirm">Assign</button>' : '');
 	}
 
 	(function initAssignMode() {
@@ -6254,12 +6336,25 @@
 				eemAssignBannerUpdate(ctx);
 				return;
 			}
-			if (_eemAssignPending.length >= qty) { return; } // already full
+			// Ignore clicks on a unit this order already holds (highlighted) — those
+			// are managed via Move / Remove, not the new-selection queue.
+			if ((ctx.assignedUnits || []).map(String).indexOf(String(unit)) !== -1) { return; }
+			// Over-assignment guardrail (#3): cap the queue at remaining capacity
+			// (paid qty minus already-assigned), not the raw paid qty.
+			var remaining = eemAssignRemaining(ctx);
+			if (remaining <= 0) {
+				var nounsFull = ctx.kind === 'rv' ? 'RV lots' : 'stalls';
+				if (window.EEM && window.EEM.showSaveToast) {
+					window.EEM.showSaveToast('This order is paid for ' + qty + ' ' + nounsFull + ', which are all assigned. Remove one first, or use Move to relocate.', { variant: 'error' });
+				}
+				return;
+			}
+			if (_eemAssignPending.length >= remaining) { return; } // queue full for remaining capacity
 			_eemAssignPending.push(unit);
 			eemAssignMarkPending(unit, true);
 			eemAssignBannerUpdate(ctx);
-			// If we've now selected enough, open the confirm modal.
-			if (_eemAssignPending.length === qty) {
+			// If we've now selected enough to fill remaining capacity, open the confirm modal.
+			if (_eemAssignPending.length === remaining) {
 				openAssignMultiModal(ctx);
 			}
 			return;
@@ -6788,6 +6883,9 @@
 	}
 
 	// Floating action bar (bottom-center) shown only while the set is non-empty.
+	// The bar is rebuilt on every change so its buttons match what's selected:
+	// available cells offer Assign / + Add / Block; occupied cells (reserved/tack)
+	// offer Remove. A mixed selection shows both groups. Clear is always present.
 	function eemMapSelRenderBar() {
 		var bar = document.getElementById('eem-map-sel-bar');
 		if (!_eemMapSel.length) {
@@ -6798,16 +6896,32 @@
 			bar = document.createElement('div');
 			bar.id = 'eem-map-sel-bar';
 			bar.className = 'eem-map-sel-bar';
-			bar.innerHTML =
-				'<span class="eem-map-sel-bar__count" data-eem-map-sel-count></span>' +
-				'<button type="button" class="eem-btn eem-btn-electric eem-btn-sm" data-eem-action="map-sel-assign">Assign to customer</button>' +
-				'<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="map-sel-add">+ Add new customer</button>' +
-				'<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="map-sel-block">Block selected</button>' +
-				'<button type="button" class="eem-btn eem-btn-ghost eem-btn-sm" data-eem-action="map-sel-clear">Clear</button>';
 			document.body.appendChild(bar);
 		}
+		var payload = eemMapSelPayload();
+		var state = (payload && payload.state) || {};
+		var nAvail = 0, nOcc = 0;
+		_eemMapSel.forEach(function (lbl) {
+			var s = (state[lbl] && state[lbl].s) ? state[lbl].s : 'available';
+			if (s === 'available') { nAvail++; }
+			else if (s === 'reserved' || s === 'tack') { nOcc++; }
+		});
+		var container = eemMapSelContainer();
+		var noun = ((container && container.getAttribute && container.getAttribute('data-eem-smap-kind')) === 'rv') ? 'lot' : 'stall';
+		var html = '<span class="eem-map-sel-bar__count" data-eem-map-sel-count></span>';
+		if (nAvail > 0) {
+			html +=
+				'<button type="button" class="eem-btn eem-btn-electric eem-btn-sm" data-eem-action="map-sel-assign">Assign to customer</button>' +
+				'<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="map-sel-add">+ Add new customer</button>' +
+				'<button type="button" class="eem-btn eem-btn-secondary eem-btn-sm" data-eem-action="map-sel-block">Block selected</button>';
+		}
+		if (nOcc > 0) {
+			html += '<button type="button" class="eem-btn eem-btn-delete eem-btn-sm" data-eem-action="map-sel-unassign">Remove from ' + noun + (nOcc === 1 ? '' : 's') + '</button>';
+		}
+		html += '<button type="button" class="eem-btn eem-btn-ghost eem-btn-sm" data-eem-action="map-sel-clear">Clear</button>';
+		bar.innerHTML = html;
 		var cnt = bar.querySelector('[data-eem-map-sel-count]');
-		if (cnt) { cnt.textContent = _eemMapSel.length + (_eemMapSel.length === 1 ? ' stall selected' : ' stalls selected'); }
+		if (cnt) { cnt.textContent = _eemMapSel.length + ' ' + noun + (_eemMapSel.length === 1 ? ' selected' : 's selected'); }
 		bar.classList.add('open');
 	}
 
@@ -6881,6 +6995,100 @@
 			if (window.EEM && window.EEM.showSaveToast) {
 				window.EEM.showSaveToast(
 					failed.length === 0 ? (units.length + ' blocked.') : ('Some could not be blocked: ' + failed.join(', ')),
+					{ variant: failed.length === 0 ? 'success' : 'error' }
+				);
+			}
+			eemScSaveViewState();
+			setTimeout(function () { window.location.reload(); }, 600);
+		}).catch(function () {
+			if (window.EEM && window.EEM.showSaveToast) {
+				window.EEM.showSaveToast('Network error. Please try again.', { variant: 'error' });
+			}
+		});
+	}
+
+	// Confirm modal for the bulk "Remove from stall(s)" action. Lists the occupied
+	// cells in the current selection and, on confirm, frees each one back to
+	// Available. Removal is reversible (re-assign anytime), so a plain confirm —
+	// not the typed-confirm used for permanent deletes — is the right safety here.
+	function eemMapSelOpenUnassignConfirm() {
+		var payload = eemMapSelPayload();
+		var state = (payload && payload.state) || {};
+		var container = eemMapSelContainer();
+		var noun = ((container && container.getAttribute && container.getAttribute('data-eem-smap-kind')) === 'rv') ? 'lot' : 'stall';
+		var units = _eemMapSel.filter(function (lbl) {
+			var s = (state[lbl] && state[lbl].s) ? state[lbl].s : 'available';
+			return s === 'reserved' || s === 'tack';
+		});
+		if (!units.length) { return; }
+		var n = units.length;
+		var esc = function (v) { return String(v).replace(/[&<>"]/g, function (ch) {
+			return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch];
+		}); };
+		eemMapSelCloseModal();
+		var overlay = document.createElement('div');
+		overlay.id = 'eem-map-sel-modal';
+		overlay.className = 'eem-modal';
+		overlay.innerHTML =
+			'<div class="eem-modal-card">' +
+				'<div class="eem-modal-head"><span class="eem-modal-title">Remove ' + n + ' ' + noun + (n === 1 ? '' : 's') + '</span>' +
+				'<button type="button" class="eem-modal-close" data-eem-action="map-sel-modal-close">×</button></div>' +
+				'<div class="eem-modal-body">' +
+					'<p class="eem-order-refund-summary">Remove the customer assignment from <strong>' + units.map(esc).join(', ') + '</strong>? ' +
+					'This frees ' + (n === 1 ? 'it' : 'them') + ' back to Available. You can re-assign at any time.</p>' +
+				'</div>' +
+				'<div class="eem-modal-foot">' +
+					'<button type="button" class="eem-btn eem-btn-secondary" data-eem-action="map-sel-modal-close">Cancel</button>' +
+					'<button type="button" class="eem-btn eem-btn-delete" data-eem-action="map-sel-unassign-confirm">Remove from ' + noun + (n === 1 ? '' : 's') + '</button>' +
+				'</div>' +
+			'</div>';
+		document.body.appendChild(overlay);
+		overlay.classList.add('open');
+	}
+
+	// Remove every SELECTED occupied cell from its order, freeing it back to
+	// Available. Reuses the verified single-cell unassign op (eem_stall_map_action
+	// op=unassign) sequentially, then reloads once. The per-cell order_key comes
+	// from the payload so each removal targets the right order.
+	function eemMapSelBatchUnassign() {
+		var cfg = window.eemStallChart || {};
+		var container = eemMapSelContainer();
+		var kind = (container && container.getAttribute && container.getAttribute('data-eem-smap-kind')) || 'stall';
+		var payload = eemMapSelPayload();
+		var state = (payload && payload.state) || {};
+		var units = _eemMapSel.filter(function (lbl) {
+			var s = (state[lbl] && state[lbl].s) ? state[lbl].s : 'available';
+			return s === 'reserved' || s === 'tack';
+		});
+		eemMapSelCloseModal();
+		if (!units.length) { return; }
+		var failed = [];
+		var chain = Promise.resolve();
+		units.forEach(function (u) {
+			chain = chain.then(function () {
+				var body = new URLSearchParams();
+				body.set('action', 'eem_stall_map_action');
+				body.set('_wpnonce', cfg.moveNonce || '');
+				body.set('reservation_id', String(cfg.reservationId || ''));
+				body.set('op', 'unassign');
+				body.set('stall', u);
+				body.set('kind', kind);
+				var ok = state[u] && state[u].o;
+				if (ok) { body.set('order_key', ok); }
+				body.set('inv', window._eemScInv || 'all');
+				body.set('tab', window._eemScTab || 'location');
+				return fetch((cfg.ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php'), {
+					method: 'POST', credentials: 'same-origin',
+					headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+					body: body.toString()
+				}).then(function (r) { return r.json().catch(function () { return { success: false }; }); })
+					.then(function (resp) { if (!resp || !resp.success) { failed.push(u); } });
+			});
+		});
+		chain.then(function () {
+			if (window.EEM && window.EEM.showSaveToast) {
+				window.EEM.showSaveToast(
+					failed.length === 0 ? (units.length + ' removed.') : ('Some could not be removed: ' + failed.join(', ')),
 					{ variant: failed.length === 0 ? 'success' : 'error' }
 				);
 			}
@@ -7017,6 +7225,8 @@
 		if (t.closest('[data-eem-action="map-sel-assign"]')) { ev.preventDefault(); eemMapSelOpenAssignModal(); return; }
 		if (t.closest('[data-eem-action="map-sel-add"]')) { ev.preventDefault(); eemMapSelOpenAddCustomerModal(); return; }
 		if (t.closest('[data-eem-action="map-sel-block"]')) { ev.preventDefault(); eemMapSelBatchBlock(); return; }
+		if (t.closest('[data-eem-action="map-sel-unassign"]')) { ev.preventDefault(); eemMapSelOpenUnassignConfirm(); return; }
+		if (t.closest('[data-eem-action="map-sel-unassign-confirm"]')) { ev.preventDefault(); eemMapSelBatchUnassign(); return; }
 		if (t.closest('[data-eem-action="map-sel-modal-close"]')) { ev.preventDefault(); eemMapSelCloseModal(); return; }
 		if (t.closest('[data-eem-action="map-sel-add-save"]')) { ev.preventDefault(); eemMapSelSubmitNewCustomer(); return; }
 	});
@@ -7397,11 +7607,15 @@
 					var aCtx = (window.eemStallChart || {}).assignContext;
 					var inAssignMode = !!(aCtx && aCtx.orderKey && aCtx.kind !== 'rv');
 					// Ad-hoc multi-select (outside assign-mode): Ctrl/Cmd+click toggles
-					// an AVAILABLE stall in/out of the selection set.
+					// a cell in/out of the selection set. AVAILABLE cells feed the
+					// bulk assign/block actions; OCCUPIED cells (reserved/tack) feed
+					// the bulk "Remove from stall(s)" action. Blocked cells are left
+					// out — they're managed via their own unblock control.
 					if (!inAssignMode && (ev.metaKey || ev.ctrlKey)) {
 						var selLabel = cell.getAttribute('data-eem-smap-stall');
 						var selSt = (p.state && p.state[selLabel]) ? p.state[selLabel] : { s: 'available' };
-						if ((selSt.s || 'available') === 'available') { eemMapSelToggle(selLabel); }
+						var selS = selSt.s || 'available';
+						if (selS === 'available' || selS === 'reserved' || selS === 'tack') { eemMapSelToggle(selLabel); }
 						return;
 					}
 					// Assign-mode: clicking an AVAILABLE stall places the pending

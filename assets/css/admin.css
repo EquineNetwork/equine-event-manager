@@ -5296,6 +5296,21 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
 	font-style: italic;
 }
 
+/* Tack-stall indicator under the assigned-units line (Bug #7): which of the
+   assigned stalls is the tack stall. Amber chip so it reads as a distinct
+   call-out without competing with the navy unit badges. */
+.eem-stall-assignment__tack {
+	display: inline-block;
+	margin-top: 6px;
+	padding: 2px 8px;
+	border-radius: var(--eem-radius);
+	background: var(--eem-badge-amber-bg);
+	color: var(--eem-badge-amber-text);
+	border: 1px solid var(--eem-badge-amber-border);
+	font-size: 12px;
+	font-weight: 700;
+}
+
 /* Blue CTA button under the assignment block (replaced the italic text link). */
 /* ── ORDER SUMMARY sidebar (right column) ── */
 .eem-order-summary__body {
@@ -7989,6 +8004,34 @@ a.eem-btn-preview:hover { background: #EEF4FF; border-color: var(--eem-electric)
 	gap: 4px;
 }
 .eem-sticky-save-meta-item svg { opacity: 0.6; }
+/* #47 — Clickable form-visibility chip (Public ⇄ Hidden). Lives outside
+   .eem-sticky-save-meta so it stays visible on mobile (meta is hidden). */
+.eem-sticky-save-visibility {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	margin-left: 14px;
+	padding: 4px 10px;
+	font-size: 12.5px;
+	font-weight: 600;
+	line-height: 1;
+	color: #15803d;
+	background: #f0fdf4;
+	border: 1px solid #bbf7d0;
+	border-radius: var(--eem-radius);
+	cursor: pointer;
+	transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.eem-sticky-save-visibility:hover { background: #dcfce7; border-color: #86efac; }
+.eem-sticky-save-visibility:disabled { opacity: 0.6; cursor: default; }
+.eem-sticky-save-visibility-icon { display: inline-flex; }
+/* Hidden state — amber, matches the plugin's "needs attention" token family */
+.eem-sticky-save-visibility--hidden {
+	color: var(--eem-badge-amber-text);
+	background: var(--eem-badge-amber-bg);
+	border-color: var(--eem-badge-amber-border);
+}
+.eem-sticky-save-visibility--hidden:hover { background: #fef3c7; border-color: #fcd34d; }
 /* Spacer pushes buttons to the right */
 .eem-sticky-save-spacer { flex: 1; }
 /* Button cluster (right side) */

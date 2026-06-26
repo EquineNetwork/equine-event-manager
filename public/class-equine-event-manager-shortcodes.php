@@ -203,6 +203,15 @@ class EEM_Shortcodes {
 			return '<!-- eem: no reservation linked to this event -->';
 		}
 
+		// #47 — Admin-only form visibility. When the reservation is flagged
+		// "admin preview only", the booking form is hidden from the public even
+		// though the event page is published. Logged-in users who can manage the
+		// plugin still see the working form so they can preview/test it. No
+		// visible "unavailable" message — the output is simply withheld.
+		if ( get_post_meta( $reservation_id, '_eem_form_admin_only', true ) && ! current_user_can( 'manage_options' ) ) {
+			return '<!-- eem: reservation form hidden (admin-only preview) -->';
+		}
+
 		$data    = $this->get_reservation_meta( $reservation_id );
 		$cfg     = EEM_Reservation_Config::for( $reservation_id );
 		$this->active_reservation_id = (int) $reservation_id;

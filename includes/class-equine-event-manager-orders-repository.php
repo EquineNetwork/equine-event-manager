@@ -953,6 +953,21 @@ class EEM_Orders_Repository {
 				$notes = $this->upsert_note_line( $notes, 'Cancellation Reason', $reason );
 			}
 
+			// Release any stall/RV assignments — a cancelled order is no longer a
+			// live booking, so its units must free up on the Stall & RV chart
+			// (BUG: cancelling left assignments stuck on the chart). Strip the
+			// assignment note lines and drop the per-night stall-status occupancy
+			// rows so Daily Movement / availability reads are correct too.
+			$notes = $this->remove_note_line( $notes, 'Assigned Stall Units' );
+			$notes = $this->remove_note_line( $notes, 'Assigned RV Lots' );
+			$notes = $this->remove_note_line( $notes, 'Assigned RV Units' );
+			$notes = $this->remove_note_line( $notes, 'Tack Stalls' );
+			$notes = $this->remove_note_line( $notes, 'Stall Night Map' );
+			$notes = $this->remove_note_line( $notes, 'RV Lot Night Map' );
+			if ( 'stall' === $component['table'] ) {
+				EEM_Stall_Status_Repo::delete_for_order( (int) $component['row_id'] );
+			}
+
 			// payment_status -> cancelled; transaction_id + gateway preserved so
 			// the original payment record survives for a separate refund.
 			$updated_any = $this->update_component_fields(
@@ -1337,7 +1352,13 @@ class EEM_Orders_Repository {
 			array_filter(
 				$this->get_grouped_orders(),
 				function ( $candidate ) use ( $reservation_id ) {
-					return absint( isset( $candidate['reservation_id'] ) ? $candidate['reservation_id'] : 0 ) === $reservation_id;
+					if ( absint( isset( $candidate['reservation_id'] ) ? $candidate['reservation_id'] : 0 ) !== $reservation_id ) {
+						return false;
+					}
+					// Cancelled / fully-refunded orders hold no live booking — never
+					// allocate stalls/RV lots to them via Generate Assignments.
+					$status = isset( $candidate['status_slug'] ) ? (string) $candidate['status_slug'] : '';
+					return ! in_array( $status, array( 'cancelled', 'refunded' ), true );
 				}
 			)
 		);

@@ -622,6 +622,36 @@ class EEM_Order_Detail_Page {
 			)
 			: '';
 
+		// --- Shavings pricing (Bug #5/#6): surface required + additional shavings
+		// as their own priced lines so the Stall Subtotal reconciles transparently
+		// (rate + shavings = subtotal) instead of silently folding shavings into
+		// the subtotal. Prices come from the reservation config (per-bag). ---
+		$required_price   = 0.0;
+		$additional_price = 0.0;
+		if ( $res_id > 0 && class_exists( 'EEM_Reservation_Config' ) ) {
+			$eem_cfg          = EEM_Reservation_Config::for( $res_id );
+			$required_price   = (float) $eem_cfg->get( 'required_shavings_price' );
+			$additional_price = (float) $eem_cfg->get( 'additional_shavings_price' );
+		}
+		$required_total   = $required * $required_price;
+		$additional_total = $additional * $additional_price;
+		$stall_surcharge  = $this->stall_surcharge_total( $order );
+		// Base stall charge derived as a RESIDUAL of the authoritative stored
+		// subtotal (which folds in premium + required/additional shavings). This
+		// guarantees every itemized line reconciles to the Stall Subtotal — and
+		// avoids asserting a reconstructed "rate × qty × nights" product that can
+		// disagree with the subtotal under package / per-night / weekend pricing.
+		$base_stall = $subtotal - $stall_surcharge - $required_total - $additional_total;
+		if ( $base_stall < 0 ) {
+			$base_stall = 0.0;
+		}
+		// Show the friendly per-unit rate formula only when it actually reconciles
+		// to the residual base; otherwise fall back to a qty × nights context line.
+		$rate_factor     = $nights > 0 ? $nights : 1;
+		$rate_reconciles = $unit_price > 0 && abs( ( $unit_price * $qty * $rate_factor ) - $base_stall ) < 0.01;
+		// Tack-stall indicator (Bug #7): which assigned unit(s) are the tack stall.
+		$tack_units = $this->extract_assigned_units( $order, 'Tack Stalls' );
+
 		?>
 		<div class="eem-card eem-order-card">
 			<div class="eem-order-card__header">
@@ -661,36 +691,80 @@ class EEM_Order_Detail_Page {
 					<tr><td><?php esc_html_e( 'Departure Date', 'equine-event-manager' ); ?></td><td><?php echo esc_html( $this->format_long_date( $departure ) ); ?></td></tr>
 				<?php endif; ?>
 				<tr><td><?php esc_html_e( 'Stall Quantity', 'equine-event-manager' ); ?></td><td><?php echo esc_html( (string) $qty ); ?></td></tr>
-				<?php if ( $unit_price > 0 ) : ?>
-					<tr><td><?php esc_html_e( 'Rate', 'equine-event-manager' ); ?></td><td><?php
-						echo esc_html(
-							$nights > 0
-								? sprintf(
-									/* translators: 1: rate, 2: stall qty, 3: "stall(s)", 4: nights, 5: "night(s)" */
-									__( '$%1$s × %2$d %3$s × %4$d %5$s', 'equine-event-manager' ),
-									number_format_i18n( $unit_price, 2 ),
-									$qty,
-									_n( 'stall', 'stalls', $qty, 'equine-event-manager' ),
-									$nights,
-									_n( 'night', 'nights', $nights, 'equine-event-manager' )
-								)
-								: sprintf(
-									/* translators: 1: rate, 2: stall qty, 3: "stall(s)" */
-									__( '$%1$s × %2$d %3$s', 'equine-event-manager' ),
-									number_format_i18n( $unit_price, 2 ),
-									$qty,
-									_n( 'stall', 'stalls', $qty, 'equine-event-manager' )
-								)
-						);
+				<?php if ( $base_stall > 0 || $unit_price > 0 ) : ?>
+					<tr><td><?php esc_html_e( 'Stalls', 'equine-event-manager' ); ?></td><td><?php
+						$rate_formula = $nights > 0
+							? sprintf(
+								/* translators: 1: rate, 2: stall qty, 3: "stall(s)", 4: nights, 5: "night(s)" */
+								__( '$%1$s × %2$d %3$s × %4$d %5$s', 'equine-event-manager' ),
+								number_format_i18n( $unit_price, 2 ),
+								$qty,
+								_n( 'stall', 'stalls', $qty, 'equine-event-manager' ),
+								$nights,
+								_n( 'night', 'nights', $nights, 'equine-event-manager' )
+							)
+							: sprintf(
+								/* translators: 1: rate, 2: stall qty, 3: "stall(s)" */
+								__( '$%1$s × %2$d %3$s', 'equine-event-manager' ),
+								number_format_i18n( $unit_price, 2 ),
+								$qty,
+								_n( 'stall', 'stalls', $qty, 'equine-event-manager' )
+							);
+						if ( $rate_reconciles ) {
+							// Clean reconcile: per-unit formula equals the residual base exactly.
+							echo esc_html( $rate_formula . ' = $' . number_format_i18n( $base_stall, 2 ) );
+						} elseif ( $nights > 0 ) {
+							// Package / per-night pricing: the per-unit product would
+							// contradict the subtotal, so show qty × nights context only.
+							echo esc_html( sprintf(
+								/* translators: 1: stall qty, 2: "stall(s)", 3: nights, 4: "night(s)", 5: base dollar total */
+								__( '%1$d %2$s × %3$d %4$s = $%5$s', 'equine-event-manager' ),
+								$qty,
+								_n( 'stall', 'stalls', $qty, 'equine-event-manager' ),
+								$nights,
+								_n( 'night', 'nights', $nights, 'equine-event-manager' ),
+								number_format_i18n( $base_stall, 2 )
+							) );
+						} else {
+							echo esc_html( sprintf(
+								/* translators: 1: stall qty, 2: "stall(s)", 3: base dollar total */
+								__( '%1$d %2$s = $%3$s', 'equine-event-manager' ),
+								$qty,
+								_n( 'stall', 'stalls', $qty, 'equine-event-manager' ),
+								number_format_i18n( $base_stall, 2 )
+							) );
+						}
 					?></td></tr>
 				<?php endif; ?>
 				<?php if ( $required > 0 ) : ?>
-					<tr><td><?php esc_html_e( 'Required Shavings', 'equine-event-manager' ); ?></td><td><?php echo esc_html( sprintf( _n( '%d bag', '%d bags', $required, 'equine-event-manager' ), $required ) ); ?></td></tr>
+					<tr><td><?php esc_html_e( 'Required Shavings', 'equine-event-manager' ); ?></td><td><?php
+						echo $required_price > 0
+							? esc_html( sprintf(
+								/* translators: 1: bag count, 2: "bag(s)", 3: per-bag price, 4: line total */
+								__( '%1$d %2$s × $%3$s = $%4$s', 'equine-event-manager' ),
+								$required,
+								_n( 'bag', 'bags', $required, 'equine-event-manager' ),
+								number_format_i18n( $required_price, 2 ),
+								number_format_i18n( $required_total, 2 )
+							) )
+							: esc_html( sprintf( _n( '%d bag', '%d bags', $required, 'equine-event-manager' ), $required ) );
+					?></td></tr>
 				<?php endif; ?>
 				<?php if ( $additional > 0 ) : ?>
-					<tr><td><?php esc_html_e( 'Additional Shavings', 'equine-event-manager' ); ?></td><td><?php echo esc_html( sprintf( _n( '%d bag', '%d bags', $additional, 'equine-event-manager' ), $additional ) ); ?></td></tr>
+					<tr><td><?php esc_html_e( 'Additional Shavings', 'equine-event-manager' ); ?></td><td><?php
+						echo $additional_price > 0
+							? esc_html( sprintf(
+								/* translators: 1: bag count, 2: "bag(s)", 3: per-bag price, 4: line total */
+								__( '%1$d %2$s × $%3$s = $%4$s', 'equine-event-manager' ),
+								$additional,
+								_n( 'bag', 'bags', $additional, 'equine-event-manager' ),
+								number_format_i18n( $additional_price, 2 ),
+								number_format_i18n( $additional_total, 2 )
+							) )
+							: esc_html( sprintf( _n( '%d bag', '%d bags', $additional, 'equine-event-manager' ), $additional ) );
+					?></td></tr>
 				<?php endif; ?>
-				<?php $stall_surcharge = $this->stall_surcharge_total( $order ); ?>
+				<?php // $stall_surcharge computed once above (residual base derivation). ?>
 				<?php if ( $stall_surcharge > 0 ) : ?>
 					<tr><td><?php esc_html_e( 'Includes Stall Premium', 'equine-event-manager' ); ?></td><td><?php echo esc_html( '$' . number_format_i18n( $stall_surcharge, 2 ) ); ?></td></tr>
 				<?php endif; ?>
@@ -702,6 +776,16 @@ class EEM_Order_Detail_Page {
 					<div class="eem-stall-assignment__value">
 						<span class="eem-stall-assignment__badge"><?php echo esc_html( $assigned ); ?></span>
 					</div>
+				<?php endif; ?>
+				<?php if ( '' !== $tack_units ) : ?>
+					<div class="eem-stall-assignment__tack"><?php
+						echo esc_html( sprintf(
+							/* translators: 1: "Tack Stall"/"Tack Stalls" label, 2: comma-joined tack unit list e.g. "#299" */
+							_n( '%1$s: %2$s', '%1$s: %2$s', substr_count( $tack_units, ',' ) + 1, 'equine-event-manager' ),
+							_n( 'Tack Stall', 'Tack Stalls', substr_count( $tack_units, ',' ) + 1, 'equine-event-manager' ),
+							$tack_units
+						) );
+					?></div>
 				<?php endif; ?>
 				<?php
 				// Only offer the assign/manage button when the reservation actually
@@ -943,10 +1027,7 @@ class EEM_Order_Detail_Page {
 			return;
 		}
 
-		$required   = isset( $order['required_shavings_qty'] )   ? (int) $order['required_shavings_qty']   : 0;
-		$additional = isset( $order['additional_shavings_qty'] ) ? (int) $order['additional_shavings_qty'] : 0;
-		$total_qty  = $required + $additional;
-		$subtotal   = $this->compute_addon_subtotal( $order );
+		$subtotal = $this->compute_addon_subtotal( $order );
 
 		// Required shavings are billed WITHIN the Stall Reservation subtotal, and
 		// their quantities are already itemized on the Stall card ("Required
@@ -969,9 +1050,8 @@ class EEM_Order_Detail_Page {
 				</div>
 			</div>
 			<table class="eem-detail-table">
-				<?php if ( $total_qty > 0 ) : ?>
-					<tr><td><?php echo esc_html( sprintf( __( 'Shavings (×%d)', 'equine-event-manager' ), $total_qty ) ); ?></td><td><?php echo esc_html( '$' . number_format_i18n( $subtotal, 2 ) ); ?></td></tr>
-				<?php endif; ?>
+				<?php // Residual is genuine non-shavings add-on charge (shavings live on the Stall card). ?>
+				<tr><td><?php esc_html_e( 'Add-On Charges', 'equine-event-manager' ); ?></td><td><?php echo esc_html( '$' . number_format_i18n( $subtotal, 2 ) ); ?></td></tr>
 				<tr class="eem-detail-table__subtotal"><td><?php esc_html_e( 'Add-On Subtotal', 'equine-event-manager' ); ?></td><td><?php echo esc_html( '$' . number_format_i18n( $subtotal, 2 ) ); ?></td></tr>
 			</table>
 		</div>
@@ -1052,9 +1132,6 @@ class EEM_Order_Detail_Page {
 			isset( $order['rv_arrival_date'] )   ? (string) $order['rv_arrival_date']   : '',
 			isset( $order['rv_departure_date'] ) ? (string) $order['rv_departure_date'] : ''
 		);
-		$required     = isset( $order['required_shavings_qty'] )   ? (int) $order['required_shavings_qty']   : 0;
-		$additional   = isset( $order['additional_shavings_qty'] ) ? (int) $order['additional_shavings_qty'] : 0;
-		$addon_qty    = $required + $additional;
 
 		// C13.C: order-level adjustments (custom line items + discount). These
 		// aren't part of the component-row totals, so the grand total is recomputed
@@ -1108,13 +1185,9 @@ class EEM_Order_Detail_Page {
 					<div class="eem-order-summary__section">
 						<div class="eem-order-summary__section-header">
 							<span class="eem-order-summary__section-title"><?php esc_html_e( 'Add-Ons', 'equine-event-manager' ); ?></span>
-							<?php if ( $addon_qty > 0 ) : ?>
-								<span class="eem-order-summary__section-badge eem-order-summary__section-badge--addon"><?php echo esc_html( sprintf( _n( '%d item', '%d items', $addon_qty, 'equine-event-manager' ), $addon_qty ) ); ?></span>
-							<?php endif; ?>
 						</div>
-						<?php if ( $addon_qty > 0 ) : ?>
-							<div class="eem-order-summary__line"><span><?php echo esc_html( sprintf( __( 'Shavings (×%d)', 'equine-event-manager' ), $addon_qty ) ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $addon_subtotal, 2 ) ); ?></span></div>
-						<?php endif; ?>
+						<?php // Shavings are billed within the Stall subtotal; this section is the genuine non-shavings add-on residual. ?>
+						<div class="eem-order-summary__line"><span><?php esc_html_e( 'Add-On Charges', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $addon_subtotal, 2 ) ); ?></span></div>
 						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Add-Ons Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $addon_subtotal, 2 ) ); ?></span></div>
 					</div>
 				<?php endif; ?>
