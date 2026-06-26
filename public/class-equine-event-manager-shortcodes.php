@@ -198,7 +198,7 @@ class EEM_Shortcodes {
 			// Explicit id="" pointing at a missing/unpublished reservation keeps
 			// the visible admin notice; an auto-resolved bare tag stays silent.
 			if ( $explicit_id ) {
-				return $this->render_unavailable_empty_state( __( 'Reservations are not available for this event yet.', 'equine-event-manager' ) );
+				return $this->render_unavailable_empty_state( __( 'Reservations are not available for this event yet.', 'equine-event-manager' ), $this->resolve_event_flyer_url( $reservation_id ) );
 			}
 			return '<!-- eem: no reservation linked to this event -->';
 		}
@@ -12095,14 +12095,69 @@ RV Lot: " . $rv_lot['name'] );
 	 * @param string $message The empty-state message.
 	 * @return string
 	 */
-	private function render_unavailable_empty_state( $message ) {
+	private function render_unavailable_empty_state( $message, $flyer_url = '' ) {
 		$icon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="4.5" width="18" height="16" rx="2"></rect><path d="M3 9.5h18M8 3v3M16 3v3"></path></svg>';
 
+		// Even when reservations aren't open yet, the event flyer is useful to
+		// customers — surface a "View Flyer" button here when the linked event
+		// has one (the hero CTA with the same button never renders on this path).
+		$flyer_url    = (string) $flyer_url;
+		$flyer_button = '';
+		if ( '' !== $flyer_url ) {
+			$flyer_button = sprintf(
+				'<a class="btn-directions btn-flyer eem-reservation-empty__flyer" href="%1$s" target="_blank" rel="noopener noreferrer">%2$s</a>',
+				esc_url( $flyer_url ),
+				esc_html__( 'View Flyer', 'equine-event-manager' )
+			);
+		}
+
 		return sprintf(
-			'<div class="eem-reservation-empty" role="status"><div class="eem-reservation-empty__inner"><span class="eem-reservation-empty__icon">%1$s</span><p class="eem-reservation-empty__title">%2$s</p></div></div>',
+			'<div class="eem-reservation-empty" role="status"><div class="eem-reservation-empty__inner"><span class="eem-reservation-empty__icon">%1$s</span><p class="eem-reservation-empty__title">%2$s</p>%3$s</div></div>',
 			$icon,
-			esc_html( $message )
+			esc_html( $message ),
+			$flyer_button
 		);
+	}
+
+	/**
+	 * Resolve the event flyer URL for the current request context.
+	 *
+	 * The flyer is stored on the linked event (TEC/native), not the
+	 * reservation, so it is available even when the reservation is unpublished
+	 * or its booking window is closed. Prefers the direct PDF URL, then any
+	 * uploaded attachment.
+	 *
+	 * @param int $reservation_id Linked reservation post ID (may be unpublished).
+	 * @return string Flyer URL, or '' when none is set.
+	 */
+	private function resolve_event_flyer_url( $reservation_id ) {
+		$event_id = 0;
+
+		if ( function_exists( 'is_singular' ) && is_singular( 'tribe_events' ) ) {
+			$event_id = (int) get_the_ID();
+		}
+
+		if ( ! $event_id && $reservation_id ) {
+			$cfg = class_exists( 'EEM_Reservation_Config' ) ? EEM_Reservation_Config::for( $reservation_id ) : null;
+			$event_id = $cfg ? absint( $cfg->get( 'event_id' ) ) : 0;
+			if ( ! $event_id ) {
+				$event_id = absint( get_post_meta( $reservation_id, '_en_event_id', true ) );
+			}
+		}
+
+		if ( ! $event_id ) {
+			return '';
+		}
+
+		$flyer_url = (string) get_post_meta( $event_id, '_equine_event_manager_event_flyer_url', true );
+		if ( '' === $flyer_url ) {
+			$flyer_file_id = absint( get_post_meta( $event_id, '_equine_event_manager_event_flyer_file_id', true ) );
+			if ( $flyer_file_id ) {
+				$flyer_url = (string) wp_get_attachment_url( $flyer_file_id );
+			}
+		}
+
+		return $flyer_url;
 	}
 
 	/**
