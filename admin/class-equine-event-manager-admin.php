@@ -2713,39 +2713,8 @@ class EEM_Admin {
 				$eem_avail_stalls = max( 0, $stall_count - (int) ( $grid['peak_stalls_used'] ?? 0 ) );
 				$eem_avail_rv     = max( 0, $rv_count - (int) ( $grid['peak_rv_used'] ?? 0 ) );
 				?>
-				<!-- KPI bar -->
-				<div class="eem-sc-kpi-bar">
-					<div class="eem-sc-kpi-cards">
-						<div class="eem-sc-kpi-card" data-inv-section="stalls">
-							<div class="eem-sc-kpi-icon" aria-hidden="true">&#9638;</div>
-							<div>
-								<div class="eem-sc-kpi-num"><?php echo esc_html( number_format_i18n( $stall_count ) ); ?></div>
-								<div class="eem-sc-kpi-label"><?php esc_html_e( 'Total Stalls', 'equine-event-manager' ); ?></div>
-							</div>
-						</div>
-						<div class="eem-sc-kpi-card" data-inv-section="stalls">
-							<div class="eem-sc-kpi-icon eem-sc-kpi-icon--green" aria-hidden="true">&#9638;</div>
-							<div>
-								<div class="eem-sc-kpi-num eem-sc-kpi-num--green"><?php echo esc_html( number_format_i18n( $eem_avail_stalls ) ); ?></div>
-								<div class="eem-sc-kpi-label"><?php esc_html_e( 'Available Stalls', 'equine-event-manager' ); ?></div>
-							</div>
-						</div>
-						<div class="eem-sc-kpi-card" data-inv-section="rv">
-							<div class="eem-sc-kpi-icon" aria-hidden="true">&#11041;</div>
-							<div>
-								<div class="eem-sc-kpi-num"><?php echo esc_html( number_format_i18n( $rv_count ) ); ?></div>
-								<div class="eem-sc-kpi-label"><?php esc_html_e( 'Total RV Lots', 'equine-event-manager' ); ?></div>
-							</div>
-						</div>
-						<div class="eem-sc-kpi-card" data-inv-section="rv">
-							<div class="eem-sc-kpi-icon eem-sc-kpi-icon--green" aria-hidden="true">&#11041;</div>
-							<div>
-								<div class="eem-sc-kpi-num eem-sc-kpi-num--green"><?php echo esc_html( number_format_i18n( $eem_avail_rv ) ); ?></div>
-								<div class="eem-sc-kpi-label"><?php esc_html_e( 'Available RV Lots', 'equine-event-manager' ); ?></div>
-							</div>
-						</div>
-					</div>
-				</div>
+				<?php // Top KPI summary cards (Total/Available Stalls + RV) removed per
+				// Whitney 2026-06-25 — redundant with the at-a-glance map + counts. ?>
 
 				<!-- Filter bar: Show (segmented) + View (select). -->
 				<?php $eem_has_any_map = ( $has_stall_map || $has_rv_map ); ?>
