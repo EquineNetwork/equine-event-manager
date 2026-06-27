@@ -12697,7 +12697,6 @@ RV Lot: " . $rv_lot['name'] );
 				// 4) Recompute derived UI now that values are back.
 				try {
 					syncReservationSectionToggles(form);
-					syncRvAddonAvailability(form);
 					syncGeneralAddonAvailability(form);
 					updateProductPricing(form);
 					updateReservationTotals(form);
@@ -12719,7 +12718,6 @@ RV Lot: " . $rv_lot['name'] );
 					syncReservationSectionToggles(form);
 					syncSectionStayDateFields(form, 'stall');
 					syncSectionStayDateFields(form, 'rv');
-					syncRvAddonAvailability(form);
 					syncGeneralAddonAvailability(form);
 					updateProductPricing(form);
 					updateReservationTotals(form);
@@ -13392,27 +13390,6 @@ RV Lot: " . $rv_lot['name'] );
 				});
 			}
 
-			function syncRvAddonAvailability(form) {
-				var rvQty = getNumberFieldValue(form, 'rv_qty');
-				var hasRvSelection = rvQty > 0;
-
-				form.querySelectorAll('.eem-product-line-item--rv-addon').forEach(function(lineItem) {
-					var checkbox = lineItem.querySelector('input[type="checkbox"]');
-
-					if (!checkbox) {
-						return;
-					}
-
-					checkbox.disabled = !hasRvSelection;
-					checkbox.setAttribute('aria-disabled', hasRvSelection ? 'false' : 'true');
-					lineItem.classList.toggle('eem-product-line-item--disabled', !hasRvSelection);
-
-					if (!hasRvSelection) {
-						checkbox.checked = false;
-					}
-				});
-			}
-
 			function syncGeneralAddonAvailability(form) {
 				// 2.3.66 — Add-ons are stand-alone products (shavings, hay, etc.) and
 				// are always purchasable, with or without a stall/RV reservation. The
@@ -13549,7 +13526,6 @@ RV Lot: " . $rv_lot['name'] );
 				var rvPkg = eemPackageFor(form, 'rv', rvStayRaw);
 				var stallStayType = stallStayRaw === 'weekend' ? 'weekend' : 'nightly';
 				var rvStayType = rvStayRaw === 'weekend' ? 'weekend' : 'nightly';
-				var rvAddonPricingMatrix = parseJsonAttribute(form.dataset.rvAddonPricing);
 				var rvLotPricingMatrix = parseJsonAttribute(form.dataset.rvLotPricing);
 				var selectedRvLot = getFieldValue(form, 'rv_lot');
 				var stallRateKey = stallStayType === 'weekend' ? 'stallWeekendRate' : (stallStayType === 'weekly' ? 'stallWeeklyRate' : 'stallNightlyRate');
@@ -13571,10 +13547,6 @@ RV Lot: " . $rv_lot['name'] );
 						price = rvRate;
 						stayType = rvStayType;
 						stayTypeLabel = rvPkg ? '' : (stayType === 'weekend' ? 'each' : 'per night');
-					} else if (type === 'rv_addon') {
-						price = parseCurrency(rvAddonPricingMatrix && rvAddonPricingMatrix[dynamicKey] ? rvAddonPricingMatrix[dynamicKey][rvStayType] : 0);
-						stayType = rvStayType;
-						stayTypeLabel = '';
 					}
 
 					if (titleText) {
@@ -13602,7 +13574,6 @@ RV Lot: " . $rv_lot['name'] );
 
 			function updateReservationTotals(form) {
 				syncReservationSectionToggles(form);
-				syncRvAddonAvailability(form);
 				syncGeneralAddonAvailability(form);
 				var stallStayRaw = getFieldValue(form, 'stall_stay_type');
 				var rvStayRaw = getFieldValue(form, 'rv_stay_type');
@@ -13610,7 +13581,6 @@ RV Lot: " . $rv_lot['name'] );
 				var rvPkg = eemPackageFor(form, 'rv', rvStayRaw);
 				var stallStayType = stallStayRaw === 'weekend' ? 'weekend' : 'nightly';
 				var rvStayType = rvStayRaw === 'weekend' ? 'weekend' : 'nightly';
-				var rvAddonPricingMatrix = parseJsonAttribute(form.dataset.rvAddonPricing);
 				var generalAddonPricingMatrix = parseJsonAttribute(form.dataset.generalAddonPricing);
 				var preEntryPricingMatrix = parseJsonAttribute(form.dataset.preEntryPricing);
 				var rvLotPricingMatrix = parseJsonAttribute(form.dataset.rvLotPricing);
@@ -13667,7 +13637,6 @@ RV Lot: " . $rv_lot['name'] );
 				var stallSurchargeTotal = stallZoneSurcharge * stallUnits;
 				stallSubtotal += stallSurchargeTotal;
 				var rvQty = getNumberFieldValue(form, 'rv_qty');
-				var rvAddonSubtotals = {};
 				var generalAddonSubtotals = {};
 				var preEntrySubtotals = {};
 				var preEntriesSubtotal = 0;
@@ -13703,14 +13672,6 @@ RV Lot: " . $rv_lot['name'] );
 				var subtotal = 0;
 				var fees = 0;
 				var total = 0;
-
-				Object.keys(rvAddonPricingMatrix || {}).forEach(function(addonKey) {
-					var isSelected = !!form.querySelector('[name="rv_addon_' + addonKey + '"]:checked');
-					var addonSubtotal = isSelected ? rvQty * parseCurrency(rvAddonPricingMatrix[addonKey] ? rvAddonPricingMatrix[addonKey][rvStayType] : 0) * rvUnits : 0;
-
-					rvAddonSubtotals[addonKey] = addonSubtotal;
-					rvSubtotal += addonSubtotal;
-				});
 
 				Object.keys(generalAddonPricingMatrix || {}).forEach(function(addonKey) {
 					var addonQty = getNumberFieldValue(form, 'general_addon_' + addonKey + '_qty');
@@ -13759,9 +13720,6 @@ RV Lot: " . $rv_lot['name'] );
 				Object.keys(preEntryPricingMatrix || {}).forEach(function(entryKey) {
 					setTotal(form, 'pre_entry_' + entryKey + '_subtotal', preEntrySubtotals[entryKey] || 0);
 				});
-				Object.keys(rvAddonPricingMatrix || {}).forEach(function(addonKey) {
-					setTotal(form, 'rv_addon_' + addonKey + '_subtotal', rvAddonSubtotals[addonKey] || 0);
-				});
 				setTotal(form, 'fees', fees);
 				setTotal(form, 'tax', tax);
 				setTotal(form, 'total', total);
@@ -13781,9 +13739,6 @@ RV Lot: " . $rv_lot['name'] );
 				});
 				Object.keys(preEntryPricingMatrix || {}).forEach(function(entryKey) {
 					toggleSummaryRow(form, 'pre_entry_' + entryKey + '_subtotal', (preEntrySubtotals[entryKey] || 0) > 0);
-				});
-				Object.keys(rvAddonPricingMatrix || {}).forEach(function(addonKey) {
-					toggleSummaryRow(form, 'rv_addon_' + addonKey + '_subtotal', (rvAddonSubtotals[addonKey] || 0) > 0);
 				});
 				toggleSummaryRow(form, 'fees', fees > 0);
 				toggleSummaryRow(form, 'tax', tax > 0);

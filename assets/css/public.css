@@ -2238,12 +2238,6 @@
 	color: #0f172a;
 	font-weight: 600;
 }
-/* 2.3.84 — RV add-on helper note: breathing room so it doesn't touch the
-   product-row divider directly above it. */
-.eem-rv-addon-help {
-	padding-top: 14px;
-	margin-top: 0;
-}
 .eem-reservation-grid {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
