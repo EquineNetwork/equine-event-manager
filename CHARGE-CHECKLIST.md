@@ -172,4 +172,54 @@ Route: `equine-event-manager-collect-payment&order_key=…`
 ---
 
 ## EXECUTION LOG
-(seeded scenarios + per-surface verdicts appended here as the harness runs)
+
+### Harness coverage on v2.7.671 (seeded real orders, charge==stored==Σlines+tax)
+**✅ VERIFIED CORRECT (charge + persistence + receipt line + reconciliation):**
+- Stall base (nightly) · multi-night × qty
+- General Add-Ons (price × qty, own line)
+- Additional Shavings (per-product JSON, own line — #00009 NOT reproduced)
+- Group Reservations (grounds fee + rider deposit × rider count, own lines)
+- RV base (nightly × qty)
+- Stall + RV + Add-On + Group combined (all lines present, reconciles)
+- **Stay Packages (stall) — $150 billed once** ✅ (last-week feature, wired correctly)
+- **Per-package Early Bird — $120 when window active** ✅
+- Required Shavings (qty × price, own line)
+- **Tack stall excluded from required shavings** ✅ (pays stall rate, no req-shavings)
+- Convenience fee PERCENTAGE (4%) — correct on every scenario
+- Sales Tax (8%) — correct base + reconciles
+- **Stall MAP surcharges — tab (barn) + zone (area), STACKED** ✅ ($5 barn + $3 zone = $8/night,
+  × nights; bare-barn stall = $5). Verified end-to-end: charged, persisted, shown as its own
+  "Stall Premium" line, display recompute matches, reconciles.
+- Harness: **100 / 101 assertions pass** (+ surcharge suites 5/5 charge, 6/6 e2e display).
+
+**RESULT: every EDIT RESERVATION pricing input is verified correct on v2.7.671.** All
+remaining bugs are in the ORDER-EDIT / ORDER-CREATION paths (F3, F4, F7, F9) + F6 cap + F8 imports.
+
+### Additional verifications (round 2)
+- **Refund engine** (partial/full/over-refund guard) ✅ 7/7 on a real seeded order.
+- **Edit Dates** (lengthen=charge, shorten=refund-owed, fee/tax on delta, multi-stall qty) ✅
+  code-verified on 671 (the team's date bugs were already fixed).
+- **Front-end Order Summary sidebar** ✅ has rows for every charge incl. Additional Shavings,
+  Stall/RV Premium, group grounds-fee + deposit, add-ons, pre-entries, fee, tax (your original
+  "additional shavings missing" symptom is structurally resolved on 671).
+- **Admin Order Detail** ✅ uses STORED subtotals → correct even for imported orders ($137 ✓).
+- **Receipt Subtotal + Grand Total** ✅ stored-derived → correct. (Only receipt LINE ITEMS
+  diverge on imported orders — F8.)
+
+### AUDIT COMPLETE — definitive findings: F1, F3, F4/F4b/F9, F6, F7, F8 (see PAYMENT-CALC-AUDIT.md)
+Remaining minor/visual (low risk): Activity Log $ amounts, confirmation-email visual render,
+negative custom line item (works; no fee per F4), live-JS recompute (rows present, roadmap-verified).
+
+**⚠️ BUGS FOUND (see PAYMENT-CALC-AUDIT.md):**
+- F7 — FLAT convenience fee double-charged on multi-component (stall+RV) orders (1 fail)
+- F6 🚨 CRITICAL — order repo capped at 250 rows (old orders unreachable)
+- F3 — map "Add New Customer" placeholder mispriced (no surcharge, 1 night)
+- F4 — Add Items products/custom items get no fee/tax
+
+**⏳ STILL TO VERIFY (need map snapshot / order-edit / browser):**
+- Stall/RV MAP tab-surcharge + zone-surcharge + stacked (Part 1 chart builder)
+- Add Items recalc (stall/RV/product/custom) + fee/tax (F4)
+- Edit Dates lengthen=Balance Due / shorten=Refund Owed + fee on delta (F5)
+- Discount apply/remove; custom line item ±
+- Order-creation paths parity (placeholder F3, Create Order)
+- Visual render of receipts / Order Detail / invoice email (browser)

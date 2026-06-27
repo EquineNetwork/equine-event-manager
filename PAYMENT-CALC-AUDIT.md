@@ -165,11 +165,169 @@ mints an order must inherit the full reservation pricing, not just customer chec
 "customer forgot an add-on, admin adds it later" flow (Whitney's exact words).
 **Open question Q1 (asked Whitney):** should the convenience fee + tax apply to (a) added
 products [likely YES — match checkout], (b) custom line items [ambiguous]?
+**Q1 ANSWERED — yes, fee+tax on EVERY line item.** CONFIRMED at the composition layer:
+`EEM_Collect_Payment_Page` line 128 `$total_due = $base_total + $custom_total - $discount_amt`
+— custom items/products are added at FLAT amount; `$fees` is the original component-row fee,
+NOT recomputed to include custom items, and no tax is applied to them. So every product/
+custom item added via Add Items undercharges fee+tax vs the checkout path.
+**Related concern (F4b):** the same line subtracts `$discount_amt` from `$base_total` WITHOUT
+recomputing the convenience fee + tax on the POST-discount subtotal — but the roadmap
+Discount-handling spec says fee + tax should recalc from the post-discount subtotal. So a
+discount may leave the fee/tax computed on the pre-discount amount (customer overpays fee+tax
+after a discount). Needs explicit verification + decision (likely a bug per the spec).
 
 ### F5 (to verify) — Edit Dates shorten must say "Refund Owed", lengthen "Balance Due"
-**Path:** Order Detail → Edit Dates modal. Lengthen shows "Charge $X more — balance due"
-(screenshot confirms). Need to verify SHORTEN shows a refund-owed path with correct
-amount, and that the fee/tax recompute on the night delta (not just base × nights).
-Pending harness + live check.
+**Path:** Order Detail → Edit Dates modal. **CODE-VERIFIED CORRECT on v2.7.671**
+(`handle_ajax_edit_dates`, admin.php:10689): lengthen (delta>0, 'charge') adds
+`unit×qty×delta` + fee delta + tax delta → Balance Due, flips paid→partially_paid; shorten
+(delta<0, 'reduce') lowers subtotal/fee/tax/total — paid order then shows Refund Due (manual
+refund on demand), unpaid order's balance shrinks. The two exact bugs Whitney hit have
+fix-comments in-code: (a) multi-stall orders billed only 1 stall (now `stall_qty+tack`), (b)
+fee/tax dropped on the delta (now recomputed via price_base_rate_addition's global fee/tax).
+Subset/split + per-stall apply present. **Remaining: confirm live in browser** (math reads
+correct; the team's breakage was apparently fixed 662→671). NOT currently a bug.
+**Watch:** the flat-fee delta logic is `calc_fee(new_sub)` = flat value, so fee_add for a
+single-component lengthen = 0 (flat fee doesn't grow) — correct; but cross-check against F7
+(flat fee on multi-component at CREATE time is still double-counted — different code path).
+
+### F6 — 🚨 CRITICAL: order system is hard-capped at the 250 most-recent rows
+**File:** `includes/class-equine-event-manager-orders-repository.php` — `get_component_rows()`
+line 2829: `SELECT * FROM {$table} ORDER BY created_at DESC LIMIT 250` (then `array_slice 250`).
+**Impact:** `get_grouped_orders()` only ever sees the 250 newest stall rows + 250 newest RV
+rows. EVERY single-order operation routes through it:
+- `get_order($order_key)` (line 128) → linear scan of the capped set → **Order Detail**,
+  **Add Items**, **Edit Dates**, **Collect Payment**, **refunds**, **print/receipt**.
+- `get_order_by_submission_token` / `get_order_by_invoice_token` / `get_order_by_order_key`
+  → **confirmation email**, **hosted receipt**, **PDF**, **payment link**.
+**Consequence:** once a venue accumulates >250 stall (or >250 RV) component rows — a single
+large event can do this alone — the OLDEST orders silently become **unreachable**: cannot be
+viewed, charged, refunded, or receipted. They still exist in the DB and on the (separately
+paginated) Orders LIST, but every action that opens a specific order fails to find it.
+**NOT mitigated by the list page:** the Orders list uses a different repo
+(`EEM_Orders_List_Repo::get_paginated`, 25/page, uncapped) — so orders APPEAR in the list but
+their detail/receipt/refund actions 404. That divergence makes it look fine until you click.
+**Severity:** CRITICAL / launch-blocker for a high-volume payment system.
+**Recommended fix (architectural — flag for Whitney, do NOT silently patch):** single-order
+lookups must query the specific order's rows directly by order_key/token/order_number
+(indexed WHERE), not rebuild + scan a capped full-table grouping. At minimum remove/raise the
+250 cap, but the real fix is targeted queries. Touches the core order repo → Whitney sign-off.
+**Currently on Local:** 222 stall / 181 RV rows after cleanup — just under the cap, so not yet
+triggering, but it WILL in production.
+**BLAST RADIUS CONFIRMED — every aggregate money surface is hit, not just single-order lookups:**
+- **Reports** (`EEM_Reports_Repo`, line 78: `orders_repo->get_orders()`): Revenue report, Orders
+  report, Reservations summary, Refund Log all iterate the capped set → **revenue UNDERCOUNTS**
+  once >250 orders. You cannot trust the revenue numbers.
+- **Dashboard** (`EEM_Dashboard_Repo`, line 101: reflects `get_grouped_orders`): Total Revenue
+  KPI, Revenue-by-Reservation chart, This Week, Recent Orders all undercount.
+- The ONLY uncapped order surface is the Orders LIST (`EEM_Orders_List_Repo::get_paginated`).
+This elevates F6 from "old orders unmanageable" to "**revenue reporting is silently wrong past
+250 orders**" — unambiguous launch-blocker.
+
+---
+
+## HARNESS ENGINE — BUILT & GREEN (task #7 done)
+`scratchpad/charge-audit-harness.php` seeds real orders via the actual write path
+(`insert_reservation_orders`), reloads via the consumer, and asserts per surface. Core
+6-scenario baseline on **v2.7.671: PASS=36 / FAIL=0** — charge math, persistence, reload,
+reconciliation invariant (Σ lines + tax == stored total == charge), and every expected line
+present (incl. Additional Shavings as its OWN line — #00009 class NOT reproduced here).
+**Note:** convenience fee is GLOBAL now and currently DISABLED in Settings → Payments, so
+these scenarios ran fee=0 (correct for current config). Next: enable global fee + tax and
+re-run; expand matrix to packages, per-package early-bird, tack exclusion, required shavings,
+map tab+zone surcharges, multi-product, discounts.
+**Harness lessons (not product bugs):** (a) submission tokens MUST be pure hex+hyphen —
+`extract_submission_token_from_notes` matches `/[a-f0-9-]+/i`; (b) `get_grouped_orders`
+caches per-instance — use a fresh repo per reload; (c) reserve_order_number repeats within
+one CLI request (object-cache quirk; not a production path).
+
+### F7 — FLAT convenience fee double-charged on multi-component orders (MEDIUM)
+**File:** `public/class-equine-event-manager-shortcodes.php` `insert_reservation_orders()`
+line ~5476: `$row_fee = $this->calculate_convenience_fee( $row_subtotal, $data );` — computed
+PER component row. For a PERCENTAGE fee this is linear and correct (4%·stall + 4%·rv =
+4%·total). For a FLAT fee it returns the full flat amount on EVERY row, so a stall+RV order
+persists the flat fee TWICE.
+**Proof (harness scenario 7, flat $25, stall+RV):** charge total = $197.80 (subtotal $160 +
+$25 fee once + $12.80 tax) — but stored/grouped total = $222.80 (fee counted twice).
+**Impact:** the customer is charged correctly ($197.80 via `$totals['total']`), but Order
+Detail / receipt / Orders-list TOTAL and BALANCE are overstated by one extra flat fee per
+extra component — a fully-paid order shows a phantom $25 balance due.
+**Scope:** only when the global fee TYPE is `flat` AND the order has >1 component (stall+RV).
+Current Local config is `percentage 4%` → NOT affected today, but the flat option exists.
+**Fix (charge-math — flag for Whitney):** apply a flat fee ONCE per order (e.g. on the first
+persisted row only, mirroring how tax is split — stall row takes it, RV row takes 0), so the
+sum of row fees equals the calculator's single flat fee.
+
+### Stay Packages + per-package Early Bird — VERIFIED CORRECT ✅
+Harness scenarios 8 & 9 (v2.7.671): package priced at $150 (×1, billed once) and $120 when
+the early-bird window is active — both charged, persisted, displayed, and reconciled to the
+penny. The last-week Stay Packages work is wired end-to-end. Percentage fee + 8% tax also
+reconcile across all 8 other scenarios. Harness now: **80 / 81 assertions pass** (the 1 fail =
+F7 flat-fee).
+
+### F8 — 🟡 MEDIUM (DOWNGRADED after browser+render verify): receipt LINE ITEMS diverge on IMPORTED orders only
+**CORRECTED SCOPE — not an overcharge, not Order Detail, not the totals:**
+- Admin **Order Detail = CORRECT** (uses stored `stall_subtotal`; #IMP-90697 shows $137 ✓).
+- Receipt **Subtotal + Grand Total = CORRECT** (stored-derived: `total − fees − tax`; $137 ✓).
+- Only the receipt/email/PDF **itemized LINE ITEMS + per-section breakdown** are recomputed via
+  `get_order_stall_breakdown` (`qty × unit_price × billable_stay_units`) and can diverge.
+- **Proven:** #IMP-90697 receipt shows a "Thursday-sunday" line of **$285** above a Subtotal/
+  Total of **$137** — internally inconsistent (line ≠ total), but the customer is charged the
+  correct $137.
+**Scope:** ONLY orders whose stored `unit_price × nights ≠ stored subtotal` — i.e. CSV-IMPORTED
+orders with custom/weekend stay-type LABELS ("Thursday-Sunday") that `get_billable_stay_units`
+doesn't treat as bill-once. **Real checkout orders are unaffected** (stay types are
+`nightly`/`weekend`/`pkg_*`, which compute consistently — all seeded harness orders reconciled).
+**Impact:** imported-order receipts look broken (line items don't match the correct total).
+Not an overcharge. **Severity MEDIUM** (was provisionally HIGH before render-verify).
+**Fix:** derive receipt line items from stored amounts (base = stored stall_subtotal − shavings
+− surcharge), OR make the importer store a consistent unit_price/nights/subtotal, OR have
+get_billable_stay_units recognize imported stay labels. Single-source-of-truth per roadmap #9.
+**(ORIGINAL provisional finding kept below for trail:)**
+### F8-orig (provisional, superseded by the corrected scope above)
+receipts/Order Detail RECOMPUTE lines from rate×nights, diverge from charge
+**File:** `get_order_stall_breakdown()` (shortcodes ~6976) computes
+`row_base = stall_quantity × unit_price × get_billable_stay_units(arrival,departure,stay_type)`
+— i.e. the displayed line is RECONSTRUCTED from rate×qty×nights, NOT taken from the stored
+charged subtotal. `build_order_line_items` then renders that. The same applies to per-bag
+shavings (recomputed at config price) and RV.
+**Divergence proven on REAL orders (60 checked, only 2 reconciled):**
+- #IMP-90707 (imported, weekend "Friday–Sunday" stay): stored $70 (billed once), receipt
+  recomputes `1×$70×2 nights = $140` → **receipt shows 2× the charge.** Cause:
+  `get_billable_stay_units` returns 1 only for literal `weekend`/`weekly`/`pkg_*`; a custom/
+  imported stay-type label falls through to a raw night count.
+- #0002 (NOT imported): receipt $539.40 vs stored $504.40 — stall lines over by one night.
+- Pattern across the IMP-* set: receipts ~2× the stored/charged total.
+**Why seeded orders reconcile:** calculator-created NIGHTLY orders have
+`subtotal == qty×price×nights` by construction, so the recompute happens to match. The bug is
+masked for that path and EXPOSED for imports, weekend/custom stay labels, and edited orders.
+**Impact:** customer receipt + admin Order Detail show totals that disagree with what was
+actually charged (the #00009 class, root-caused). Imported orders (Whitney uses CSV import)
+are dramatically wrong.
+**Fix direction (flag for Whitney):** display must reconcile to the STORED charged amounts —
+either derive the base line from `stored stall_subtotal − shavings − surcharge` (don't
+recompute from rate×nights), or make `get_billable_stay_units` authoritative for every stored
+stay-type. Roadmap #9 intended this single-source-of-truth fix but `get_order_stall_breakdown`
+still reconstructs. Touches every receipt surface → sign-off + careful re-verify.
+**Minor:** `date_create_from_format(null)` deprecation at shortcodes.php:11155 (null dates) —
+fold into the same fix.
+
+### F9 — Add Items can't add Group fees or Pre-Entries (MEDIUM, UX/feature gap)
+**File:** `render_add_items_modal` (order-detail-page.php:2363). Item types offered: Stall, RV
+(from `get_addable_inventory`), Additional Shavings + General Add-Ons (from
+`get_addable_products`), Custom Line Item. **NOT offered: Group reservation fees (grounds fee
++ rider deposit), Pre-Entries.** Whitney's stated use case "customer forgot to pay their group
+reservation fees, add them later" is unsupported — the only workaround is a Custom Line Item,
+which (F4) carries no fee/tax and isn't itemized as a group charge.
+**Fix:** add Group grounds-fee + rider-deposit and Pre-Entry as addable item types (priced
+from reservation config, fee+tax applied per F4 fix).
+
+### F4/F4b/F9 ROOT CAUSE (one issue, several symptoms)
+The order's convenience fee + tax are FROZEN at checkout-time. Post-creation adjustments do
+NOT recompute them: custom items + products added flat (F4); discount subtracts without
+recomputing fee/tax on post-discount subtotal (F4b); group/pre-entry not addable at all (F9).
+The paths that DO recompute correctly: Add stall/RV qty (`add_component_quantity`) and Edit
+Dates (per-row fee/tax recompute). Fix should make the order's fee + tax DERIVED from the
+current (components + custom items − discount) subtotal everywhere they're displayed/charged,
+so every surface and every adjustment stays consistent.
 
 (more below as the run continues)

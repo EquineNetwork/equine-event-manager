@@ -8,6 +8,20 @@
 
 ## 🔖 SESSION HANDOFF — 2026-06-27
 
+---
+
+## ⚠️ BRANCHES WAITING TO MERGE — DO THIS BEFORE NEXT PLUGIN UPDATE
+
+Before any version bump or release, these branches MUST be merged to `main` first:
+
+| Branch | PR | What's in it |
+|---|---|---|
+| `claude/page-styling-template-jwx3ez` | PR #36 | Import/Export styling; list-page rounded border fix (Events, Customers, Term Categories); Daily Movement footer; invoice/refund/payment-received email restyle to design system; report PDF color tokens; **audit fixes A2 (CSV import hardening), A7 (order-status whitelist), A8 (cart-hold cleanup cron), A9 (admin BCC failure logging), A11 (move_uploaded_file suppression)**; ROADMAP #15/#17/#18/#19 done |
+
+**How to merge when ready:** Whitney approves → merge PR on GitHub → confirm `main` has the changes → then bump version as normal.
+
+---
+
 **Current state:** `main` at **v2.7.649**. All PRs (#6 – #9) merged. Branch `claude/festive-heisenberg-muha01` is up to date with main.
 
 **Verified live this session (rsnc.us, "Columbiana, OH – Northeast Circuit Finals"):**
@@ -58,28 +72,50 @@ Customer checkout · Create Order · **Map "Add New Customer" placeholder** · S
 Tab · Add Items (stall/RV/product/custom) · Edit Dates (lengthen=Balance Due,
 shorten=Refund Owed) · Discount apply/remove.
 
-### FINDINGS SO FAR
-- **F1** (Med) Production build ships without `tools/` → wp-cli fatals (browser unaffected). Workaround applied.
-- **F2** (Low) refund-math smoke stale (`order_key` schema drift) — test only, not a bug.
-- **F3** 🔴 (HIGH) Map "Add New Customer" placeholder orders mis-priced: NO map surcharge,
-  no dates→1 night, sparse order. `ajax_stall_create_placeholder` uses base-rate-only pricer.
-- **F4** 🔴 (HIGH) Add Items: products + custom items inserted FLAT — no convenience fee/tax
-  (stalls/RV get it). Per Decision #1 this is a bug; must apply fee+tax to every added line.
-- **F5** Edit Dates: verify shorten=Refund Owed, lengthen=Balance Due, fee/tax recompute on delta.
-- **NEW** Cash-skips-fee (Decision #2) not yet built on the Paid Cash flow.
-- Charge calculator itself reads every input incl. Stay Packages + per-package early bird
-  (verified by code trace + green money smokes). Invoice email already itemizes + has a pay
-  button ("Review Invoice & Pay Now").
+### AUDIT STATUS — COMPLETE (2026-06-27). I own findings F1–F9 (here) + P1–P5 (next section).
 
-### TASK TRACKER
-Active task list IDs #1–#13 (this session). Build a seeding+verification harness, then work
-`CHARGE-CHECKLIST.md` row by row: seed real orders across every input × scenario × surface,
-assert Σ(lines)+fee+tax−discount == charged total, fix display/recalc bugs, flag charge-math
-changes (F3/F4/cash) for Whitney sign-off before they go live.
+**✅ VERIFIED CORRECT** (seeded real orders via the actual write path; 100/101 harness assertions
++ surcharge suites): all Edit Reservation pricing — stall/RV base, **Stay Packages + per-package
+early-bird**, required shavings, **tack exclusion**, **map tab+zone surcharges (stacked)**, %
+convenience fee, sales tax; **Edit Dates** math (lengthen=charge / shorten=refund-owed / fee+tax
+on delta — the team's date bugs were already fixed by 671); **refund engine**; **front-end Order
+Summary** (every charge has a row incl. Additional Shavings — your original "missing" symptom is
+resolved on 671); Order Detail totals + receipt totals.
 
-### OPEN (answered) DECISIONS NEEDING FIX-WORK
-- F3, F4, and cash-skips-fee all CHANGE charged amounts → implement, but get Whitney's
-  explicit OK on the resulting numbers before deploying. No version bump without approval.
+### FINDINGS (functional / math / scale — F-series)
+- **F6** 🚨 CRITICAL — order system capped at the **250 most-recent rows** (`get_component_rows`
+  `LIMIT 250`). Every single-order lookup (Order Detail, Add Items, Edit Dates, Collect Payment,
+  refunds, receipts, confirmation email, payment link) AND **Reports revenue + Dashboard revenue
+  UNDERCOUNT** past 250 orders. Orders LIST is separately paginated so it looks fine until you
+  click in. **Launch-blocker.** Fix: targeted indexed lookups + uncapped reports/dashboard aggregation.
+- **F3** 🔴 HIGH — map "Add New Customer" placeholder orders mis-priced: NO tab/zone surcharge,
+  bills 1 night (no dates), sparse order. `ajax_stall_create_placeholder` uses a base-rate-only pricer.
+- **F4/F4b/F9** 🔴 HIGH — order fee+tax FROZEN at checkout; adjustments don't recompute: Add Items
+  products + custom items added FLAT (no fee/tax); discount subtracts without recomputing fee/tax on
+  post-discount subtotal; Group fees + Pre-Entries not addable via Add Items. (Add-qty + Edit Dates
+  DO recompute — fine.) Fix: fee+tax DERIVED from current (components + custom − discount) subtotal
+  everywhere; add Group + Pre-Entry as addable item types.
+- **F8** 🟡 MEDIUM — imported-order RECEIPT line items recompute (qty×price×nights) and diverge when
+  stored unit_price×nights ≠ stored subtotal (CSV imports w/ custom stay labels, e.g. "Thursday-Sunday"
+  → line $285 above a correct $137 total). NOT an overcharge; Order Detail + totals correct; checkout
+  orders unaffected. Fix: receipt line items from stored amounts.
+- **F7** 🟡 MEDIUM — FLAT convenience fee double-charged on multi-component (stall+RV) orders. % is
+  linear so the current 4% config is safe. Fix: flat fee once per order.
+- **F1** 🟡 MEDIUM — production build ships without `tools/` → wp-cli fatals (browser unaffected).
+  Fix: include `tools/` in build or guard the require with `file_exists()`. (Workaround applied on Local.)
+- **F2** (Low, NOT a bug) refund-math smoke stale (`order_key` schema drift) — test drift only.
+
+### NEW FEATURES (Whitney decisions — V1)
+- **Cash/check removes the convenience fee** — Collect Payment "Paid Cash" tab only (backend); recalc total w/o fee at payment. (Decision #2.)
+- **Payment-link/invoice email button** → "Click here to pay" (currently "Review Invoice & Pay Now"); verify invoice layout + totals.
+- **Remove dev/stub UI references** ("ported in C7" in Settings → Payments tax help; grep all user-facing strings).
+
+### FIX ORDER + SIGN-OFF
+Suggested order: **F6 → F4/F4b/F9 → F3 → P1 → F8 → F7 → P3 → P5 → cash-fee → F1 → email/stub
+cleanup.** Every F/P fix except F1 + email/stub changes charge / refund / payment behavior →
+confirm the approach + resulting numbers with Whitney; NO version bump or deploy without
+approval. Full per-finding detail in `PAYMENT-CALC-AUDIT.md`; surface-by-surface coverage in
+`CHARGE-CHECKLIST.md`. Audit harness: `tests/` + the seed-real-order scripts (charge==stored==Σlines+tax).
 
 ---
 
@@ -95,16 +131,11 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 ---
 
-## 📋 v1 — Open items
+## 📋 v1 — Must ship before launch (next week)
 
-> **NUMBERING IS PERMANENT (locked 2026-06-27).** Each item's number is a stable ID — never renumber, never reuse. New items get the next unused number. Completed or removed items KEEP their number (marked ✅ done or ~~struck~~) so a number always means the same thing across conversations. Highest number used so far: **17**.
+> Everything in this list is blocking. Anything not here and not in the v2 list is not planned. When an item is done AND Whitney has verified it, delete it (don't leave a checked-off marker). Numbers are stable IDs — don't reuse them; `A`-prefixed items came from the pre-launch audit and several are owned by the desktop payment-audit chat (marked below — do not edit those here).
 
-### Awaiting Whitney verification
-- [x] **Stall popover icon/style parity** — ✅ verified by Whitney 2026-06-27.
-- [x] **Special Requests field** (renamed + read-only, 2.7.653) — ✅ verified by Whitney 2026-06-27.
-- [ ] **Group Names feature — VERIFY LATER (not in use yet).** Shipped 2.7.650 + branch follow-ups. Verify when groups are actually used: (1) admin adds names in the editor Group Names table (Description + Riders Per Group removed; Group Names is the only field); (2) customer event page shows the strict-list Group dropdown; (3) assign/change/remove group from the map popover; (4) sidebar Groups filter (shown only when groups enabled); (5) group shows on order detail; (6) **Grounds Fee + Rider Deposit charges show on the customer Order Summary AND on the admin Order Detail** (verify the per-rider amounts actually appear and total correctly). Editor-cleanup commit `1bc0432` is on the branch and NOT yet merged to main / deployed — bump + merge when ready to verify.
-
-### Active (tackle one at a time)
+- [ ] **Group Names feature — verify when groups are actually in use (not yet).** Shipped 2.7.650 + branch follow-ups. Verify: (1) admin adds names in the editor Group Names table; (2) customer event page shows the strict-list Group dropdown; (3) assign/change/remove group from the map popover; (4) sidebar Groups filter (only when groups enabled); (5) group shows on order detail; (6) **Grounds Fee + Rider Deposit charges show on the customer Order Summary AND admin Order Detail** with correct per-rider totals. Editor-cleanup commit `1bc0432` on the branch is NOT yet merged/deployed — bump + merge when ready to verify.
 
 0. [ ] **Stall & RV Charts — rethink the toolbar layout (Whitney sleeping on it, 2026-06-27).** The 2.7.657 cleanup shipped but feels "clunky." THE core problem (Whitney, said twice): **the filters/controls MOVE on every one of the 3 views** (By Customer / By Location—List / By Location—Map) — that inconsistency is the jarring part. Goal: **ONE consistent control layout that stays put across all 3 views**, with **Show + View anchored together, left-aligned directly under the page title**, identical position on every view. Today they sit top-right and the surrounding controls (Search, Barns, Quick-view, sidebar) reflow per view. Tomorrow: design a single fixed toolbar; Show/View never move; only the contents that genuinely don't apply to a view (e.g. Bulk update, barn tabs) hide in place rather than reshuffling everything. Don't start until Whitney confirms the direction. Header moves + sidebar declutter from 2.7.657 are self-contained commits → easy to revert individually if she wants a different base.
 
@@ -115,35 +146,54 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 3. [ ] **Full end-to-end customer checkout sweep** — run a real checkout on the NTR 6519 fixture page. Also the recommended way to seed test data (real checkout writes correct `reservation_id` + notes tag + config-based pricing).
 
-4. [x] **Full map post-meta → config migration** — stall/RV map snapshots dual-write to the config table + post-meta; reads are config-first with post-meta fallback + lazy backfill. Shipped 2.7.652. ✅ **verified by Whitney 2026-06-27.**
-
 5. [ ] **Postmeta → relational de-coupling Phase 1** — remaining gaps: map snapshots, hybrid blocked-units reads, events/venues/producers/divisions editors still on post-meta. Audit plan: `docs/POSTMETA-AUDIT.md`.
 
-6. [x] **Self-test harness: order-totals math validation.** DONE — `tests/smoke/order-totals-math-smoke.php` drives the canonical charging calculator (`calculate_submission_totals`, the source of truth for what's charged) and asserts every line against hand-math: stalls, required shavings (tack excluded), additional shavings, general add-ons, group grounds-fee + deposit, convenience fee (% + flat), tax, total, and a group-off case. 16/16 assertions pass. Harness via `scripts/dev-sqlite-harness.sh`. FOLLOW-UP (optional, lower priority): extend to assert the customer Order Summary (JS) and admin Order Detail (stored line items) match the calculator end-to-end; and prune the ~465 environmental SQLite smoke failures so the suite roll-up is clean. Run smokes with `php -d opcache.enable_cli=0` (CLI OPcache caches edited files otherwise).
+7. [ ] **Generate Assignments — single customer's stalls kept contiguous** — built on branch (Pass 1.6 `assign_order_contiguous_stalls`; smokes pass). Needs your verify + merge.
 
-7. [x] **Generate Assignments — keep a single customer's stalls contiguous — DONE (branch), awaiting verify.** New Pass 1.6 `assign_order_contiguous_stalls` seats each single order still needing 2+ stalls in a consecutive run within one barn (runs after the group-contiguous pass, before lowest-first fill); falls through to scattered lowest-first when no run is long enough. Smoke `single-order-contiguous-smoke` (4/4); group-contiguous (12/12) + bulk auto-assign (32/32) + assignment-conflict (11/11) unaffected. Original: **keep a single customer's stalls contiguous.** Today auto-assign only seats multi-ORDER *groups* contiguously (`assign_group_contiguous_stalls`); a single order needing 2+ stalls just takes the lowest-numbered available stalls in pool order, so one customer can be split across the barn (e.g. 238 + 250 instead of 238 + 239). Generalize the contiguous-run helper to also run per-order: try to seat each multi-stall order in a consecutive block within one barn, fall back to scattered lowest-first only when no run is large enough. Code in `EEM_Orders_Repository::auto_assign_units_for_reservation` / `assign_group_contiguous_stalls` (`includes/class-equine-event-manager-orders-repository.php`).
+8. [ ] **Convenience Fee → global Settings → Payments** — built on branch (global fee, ships disabled/$0, editor Fees section removed; smokes pass). Needs your verify + merge.
 
-8. [x] **Convenience Fee → global Settings → Payments — DONE (2.7.x branch), awaiting verify.** Single global fee (no per-reservation override, Whitney decision); ships disabled/$0, admin sets amount/type/label in Settings → Payments (new card above Tax). `EEM_Settings_Repo::get_convenience_fee_amount()` is the single source of truth; checkout calculator + add-items pricer + frontend Order Summary all derive from it. Editor Fees section removed. Smokes: convenience-fee-global (10/10), order-totals (26/26), order-edit (9/9). Original: **Move Convenience Fee from per-reservation to global Settings → Payments.** Remove the Convenience Fee section from the Edit Reservation editor; add it to Settings → Payments, positioned **above** the Tax Rate block. Becomes a global default (like Tax). Migration: snapshot existing per-reservation convenience-fee config into the global setting (or keep per-reservation override semantics — decide at kickoff, mirror how Tax does per-reservation override). Touches: editor section removal, Settings → Payments UI + save, and `calculate_submission_totals`'s `calculate_convenience_fee` source (read global instead of `$data`). **Charging math — verify totals before/after on the harness (#6).**
+9. [ ] **Display-math parity across all 4 surfaces** — built on branch (admin Order Detail uses the canonical breakdown; receipt/Order Detail itemize surcharges; Σ rows == total guard). Needs your verify + merge. Live side-by-side of customer checkout JS vs receipt is folded into #3.
 
-9. [x] **DISPLAY MATH parity — DONE (2.7.655), awaiting verify.** Admin Order Detail now delegates to the canonical `EEM_Shortcodes::get_order_stall_breakdown` (kills the #00009 divergence); admin Order Detail totals + print receipt itemize stall/RV premium surcharges to match the customer receipt and reconcile to the stored total. Guards: `order-breakdown-cross-surface-smoke` (admin==customer, 11/11) + `admin-totals-reconcile-smoke` (Σ rows == Total, 4/4) + pre-entry itemization on receipt/email. RESIDUAL (optional, fold into #3): explicit cross-check that the live customer frontend Order Summary (checkout JS) matches the receipt/Order Detail line-for-line — the charge calculator (`calculate_submission_totals`) is the shared source of truth the JS mirrors, but a side-by-side sweep on a real checkout hasn't been run. Original: **all four surfaces must match (HIGH / pre-launch).** The customer **frontend Order Summary** (checkout JS), the **customer receipt** (hosted + PDF), the **admin receipt/print**, and the **admin Order Detail** must ALL show the same line items + the same subtotal/fee/tax/total — and must reconcile to what was actually charged. Today they diverge (real example, order #00009: additional shavings charged but missing from receipt + folded into the stall line on Order Detail; tack stall missing from receipt). Root cause class: each surface RECONSTRUCTS the breakdown independently instead of from one source of truth. Work: (a) the `build_order_line_items` / `get_order_stall_breakdown` reconstruction must cover EVERY charge line (stalls, stall premium/surcharge, required shavings, additional shavings [per-product], RV base, RV premium, general add-ons, group grounds fee + deposit, pre-entries, discount, custom items) on every surface; (b) tack-stall + group + assignments shown consistently; (c) **structural guard: a smoke that asserts Σ(displayed line items) + fee + tax == the order's charged total** for representative orders — so nothing can be silently dropped from a receipt again. Partial fixes already shipped for #00009 (additional shavings line + tack on receipt + breakdown price fix); this item is the full sweep + the invariant guard.
+10. [ ] **Hide assignment UI when inventory is Bulk/Quantity** — built on branch (Order Detail hides Manage Stall/RV blocks unless numbered/mapped). Needs your verify + merge.
 
-10. [x] **Hide assignment UI when inventory is Bulk/Quantity — DONE (awaiting verify).** Order Detail now hides the "Assigned Stall Units / Manage Stall Assignment" block unless stalls are `numbered`, and the "Assigned RV Lots / Assign RV Lots" block unless RV is `mapped`. Needs bump+deploy to verify live. Original: On Order Detail, the "Assigned Stall Units / Manage Stall Assignment" and "Assigned RV Lots / Assign RV Lots" blocks show even when the reservation's inventory type is **Bulk** + customer selection is **Quantity** (no specific lots/stalls exist to manage). Admins click the button expecting to manage assignments and there's nothing to manage. Gate these blocks/buttons on the reservation actually using mapped/pick-from-layout inventory (per section: stall + RV independently). When Bulk/Quantity, suppress the assign button (optionally show a "No mapping — quantity only" note).
-
-11. [x] **Special Requests field — renamed + made read-only (DONE, awaiting verify).** Order Detail "Special Instructions" card → renamed **"Special Requests"**, now READ-ONLY showing the customer's checkout free-text (sourced from the order's customer notes, same value as the receipt + Stall Chart column); removed the editable textarea, Save button, and the false "Applies to the entire reservation" helper text; removed the duplicate "Customer Notes" block from the Order Notes card. Decision locked: read-only customer field only (no admin-editable instructions field). Orphaned `eem_special_instructions_set` AJAX handler + `order-instructions-save` JS can be pruned in a later cleanup. Original spec: The customer-facing checkout field is **"Special Requests"** (e.g. "put me on an end row", "stallion accommodations"). Today the customer's text is being routed into **Order Notes → Customer Notes** on Order Detail, while a SEPARATE admin-editable **"Special Instructions"** card exists (scoped "applies to entire reservation"). Desired: the customer's Special Requests is the single canonical field — display it (read-only, NOT editable; it's the customer's words) on Order Detail under the heading **"Special Requests"** (rename the "Special Instructions" card), on the receipt (already shows as "Special Requests"), and on the Stall & RV Charts "Special Requests" column (already reads `get_special_requests_from_order_notes`). **Scope nuance to confirm at kickoff:** the current "Special Instructions" admin card is PER-RESERVATION (all orders) while the customer Special Requests is PER-ORDER — decide whether to (a) drop the per-reservation editable field entirely and show only the read-only per-order customer requests, or (b) keep both (read-only customer Special Requests + a separately-labeled admin note). Whitney's words: "it's not editable, it's what the customer types in at checkout, we should not be editing that." Touches: checkout submission routing, Order Detail render (rename + read-only), confirm stall-chart + receipt read the same source.
-
-12. [x] **Auto-save stall/RV maps to the venue — DONE (branch), awaiting verify.** Every reservation/map save now auto-saves the layout to its venue as a single rolling "Auto-saved (latest)" row (decisions: every save + one rolling per venue). `EEM_Venue::auto_save_layout()` upserts the reserved row with an empty-guard (never clobbers a good map with a blank). Hooked into both `ajax_map_builder_save` (the map builder) and `save_meta` (Update Reservation). Coexists with manual named saves + is loadable. Smoke `venue-auto-save-layout-smoke` (10/10). Original: **Auto-save stall/RV maps to the venue (don't lose maps).** Whitney's concern: a built stall/RV map should automatically persist to the **venue** so it can't get lost (rather than relying on a manual "Save Map" / "Save Layout" action that's easy to forget). On map edit/build, auto-save the layout to the reservation's venue as the venue's current layout, so the next reservation at that venue can reuse it. Relates to the v2 Facility Layout Templates work (copy-on-use clone), but this is the lighter "never lose a map" safety net. Decide at kickoff: auto-save on every edit vs. on publish; one current-layout per venue vs. named templates; interaction with the existing manual Save Layout flow.
-
-### Later (polish, non-blocking)
+12. [ ] **Auto-save stall/RV maps to the venue** — built on branch (rolling "Auto-saved (latest)" per venue, empty-guard; smokes pass). Needs your verify + merge.
 
 13. [ ] **Restyle "View Event" overview page** to match plugin design system.
 
 14. [ ] **Remove "X days" countdown chip** on the event-list flyer card. **BLOCKED** — needs Whitney's mockup before starting.
 
-15. [ ] **Restyle squished "Choose File" inputs** on Settings → Import/Export.
-
 16. [ ] **Import/Export: event-level dates not carried** into the imported reservation.
 
-17. [ ] **TEC event list template** — frontend event-list display for TEC-sourced events (part of the deferred frontend-lists work; scope/design TBD).
+20. [ ] **TEC event list template** — frontend event-list display for TEC-sourced events (part of the deferred frontend-lists work; scope/design TBD).
+
+21. [ ] **Verify + merge PR #36 (styling + audit fixes, this branch).** All built and pushed, needs your click-through then merge: Import/Export page styling + custom file inputs; list-table bottom-border fix (Events/Customers/Term Categories); Daily Movement footer; invoice/refund/payment-received email + report-PDF design-system parity; CSV import hardening (size/type validation, no DB-error leak); order payment-status whitelist; hourly cart-hold cleanup cron; admin BCC send-failure logging; move_uploaded_file error-suppression fix.
+
+22. [ ] **Bulk-notification unsubscribe.** Per-recipient opt-out: HMAC-signed (WP-salt keyed) unsubscribe link in bulk emails (Notifications page + Email Customers), a public handler that records the opt-out, a skip-check before non-transactional sends. Transactional sends (confirmation, refund, payment, invoice, cancellation) always send regardless. Approved, not started.
+
+23. [ ] **Auto payment-reminder for unpaid orders.** Daily WP-cron finds unpaid orders past a configurable age and sends the existing `PAYMENT_REMINDER` template, with dedupe so an order isn't reminded repeatedly. Reads payment_status + sends email only (no payment-dispatch changes). Approved, not started.
+
+---
+
+## 🛑 Payment security / robustness findings (P-series) — owned by the payment-audit chat
+
+These are v1-blocking, found by the styling chat's code/security pass and HANDED TO the payment
+chat (which now owns this whole roadmap). They complement the F-series above (F = math/display/
+scale; P = gateway/security/robustness). Fix order is in FIX ORDER + SIGN-OFF above. (Audit
+verdict: money math, Stripe signature verification, refund capping, and decimal storage all PASS;
+the "critical SQL injection" flag was a verified false positive — safe `prepare()` concatenation at
+`stay-packages-repo.php:36`.)
+
+P1. [ ] **Authorize.net response doesn't verify the charged amount** matches the server total. Stripe does (`shortcodes.php:4648`); the Auth.net path (`shortcodes.php:~8859`) only checks `responseCode === '1'` + `transId`. Add the amount-match assertion. *(Most important real finding.)*
+
+P2. [ ] **Authorize.net error_log dumps full payload** to debug.log (`shortcodes.php:~8864`). WP_DEBUG-gated, but filter sensitive fields.
+
+P3. [ ] **Charge happens before order insert** (`shortcodes.php` ~3260 charge / ~3266 insert). Crash between = charged but no stall. Persist a pending order first, or auto-void the charge if the insert throws. Significant rework — discuss first.
+
+P4. [ ] **Refund-notes regex preserves the minus sign** (`refund-engine.php:56`). Mitigated by a `max(0.0,…)` clamp; drop the `\-` for belt-and-suspenders.
+
+P5. [ ] **Payment-gateway key at-rest encryption.** Encrypt secret keys (Stripe secret/webhook, Auth.net transaction key) in `equine_event_manager_payment_settings`, keyed off WP salts, with a one-time migration for existing keys. Settings-layer only (`class-eem-settings-repo.php` read + `class-eem-settings-page.php` save); keep getter return contracts identical so payment dispatch is untouched. **MUST be live-verified (real test charge) before merge.** Sequence last.
+
+**Coordination note for the desktop chat:** P1 and P3 both edit the Authorize.net block in `shortcodes.php` — do them together to avoid a self-conflict.
 
 ---
 
