@@ -3848,6 +3848,101 @@ class EEM_Shortcodes {
 	}
 
 	/**
+	 * Whether a unit is already taken by a real order (so a hold should not be
+	 * granted over it). Uses the same occupancy map the picker greys from.
+	 *
+	 * @param int    $reservation_id Reservation id.
+	 * @param array  $data           Reservation meta values.
+	 * @param string $section        'stall' | 'rv'.
+	 * @param string $unit_label     Unit label.
+	 * @return bool
+	 */
+	private function unit_in_real_order( int $reservation_id, array $data, string $section, string $unit_label ): bool {
+		$map = $this->get_stall_assignment_occupancy_map( $reservation_id, $data, ( 'rv' === $section ? 'rv' : 'stall' ) );
+		return is_array( $map ) && array_key_exists( $unit_label, $map );
+	}
+
+	/**
+	 * Read + validate the shared POST shape for the three hold AJAX endpoints.
+	 * Verifies the nonce and that the target is a real reservation; dies with a
+	 * JSON error otherwise. Returns the sanitized payload.
+	 *
+	 * @return array{reservation_id:int,section:string,unit:string,token:string,arrival:string,departure:string}
+	 */
+	private function read_hold_request(): array {
+		check_ajax_referer( 'eem_hold', 'nonce' );
+		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( $_POST['reservation_id'] ) : 0;
+		$section        = isset( $_POST['section'] ) ? sanitize_key( wp_unslash( $_POST['section'] ) ) : 'stall';
+		$unit           = isset( $_POST['unit'] ) ? sanitize_text_field( wp_unslash( $_POST['unit'] ) ) : '';
+		$token          = isset( $_POST['session_token'] ) ? sanitize_text_field( wp_unslash( $_POST['session_token'] ) ) : '';
+		$arrival        = isset( $_POST['arrival'] ) ? sanitize_text_field( wp_unslash( $_POST['arrival'] ) ) : '';
+		$departure      = isset( $_POST['departure'] ) ? sanitize_text_field( wp_unslash( $_POST['departure'] ) ) : '';
+		if ( $reservation_id < 1 || 'en_reservation' !== get_post_type( $reservation_id ) || '' === $token ) {
+			wp_send_json_error( array( 'code' => 'bad_request' ), 400 );
+		}
+		return array(
+			'reservation_id' => $reservation_id,
+			'section'        => ( 'rv' === $section ? 'rv' : 'stall' ),
+			'unit'           => $unit,
+			'token'          => $token,
+			'arrival'        => $arrival,
+			'departure'      => $departure,
+		);
+	}
+
+	/**
+	 * AJAX (public): claim a 15-min hold on a unit when a customer picks it.
+	 * Rejects if the unit is already in a real order or actively held by another
+	 * shopper's session. ROADMAP #36.
+	 *
+	 * @return void
+	 */
+	public function ajax_hold_unit(): void {
+		$req = $this->read_hold_request();
+		if ( '' === $req['unit'] ) {
+			wp_send_json_error( array( 'code' => 'bad_request' ), 400 );
+		}
+		EEM_Unit_Holds_Repo::cleanup_expired();
+		$data = $this->get_reservation_data( $req['reservation_id'] );
+		if ( is_array( $data ) && $this->unit_in_real_order( $req['reservation_id'], $data, $req['section'], $req['unit'] ) ) {
+			wp_send_json_error( array( 'code' => 'taken', 'message' => __( 'That one was just taken.', 'equine-event-manager' ) ), 409 );
+		}
+		$ok = EEM_Unit_Holds_Repo::claim( $req['reservation_id'], $req['section'], $req['unit'], $req['token'], $req['arrival'], $req['departure'] );
+		if ( ! $ok ) {
+			wp_send_json_error( array( 'code' => 'held', 'message' => __( 'Someone else is booking that one right now.', 'equine-event-manager' ) ), 409 );
+		}
+		wp_send_json_success( array( 'held' => $req['unit'] ) );
+	}
+
+	/**
+	 * AJAX (public): release this session's hold on a unit (customer deselected).
+	 * ROADMAP #36.
+	 *
+	 * @return void
+	 */
+	public function ajax_release_unit(): void {
+		$req = $this->read_hold_request();
+		if ( '' !== $req['unit'] ) {
+			EEM_Unit_Holds_Repo::release( $req['reservation_id'], $req['section'], $req['unit'], $req['token'] );
+		}
+		wp_send_json_success();
+	}
+
+	/**
+	 * AJAX (public): heartbeat — refresh this session's holds AND return the set of
+	 * units currently taken/held by OTHERS so the picker can grey them live.
+	 * ROADMAP #36.
+	 *
+	 * @return void
+	 */
+	public function ajax_hold_heartbeat(): void {
+		$req = $this->read_hold_request();
+		EEM_Unit_Holds_Repo::heartbeat( $req['reservation_id'], $req['token'] );
+		$held = EEM_Unit_Holds_Repo::held_units( $req['reservation_id'], $req['section'], $req['token'] );
+		wp_send_json_success( array( 'held' => array_values( $held ) ) );
+	}
+
+	/**
 	 * Get the full generated stall assignment pool excluding blocked stalls.
 	 *
 	 * @param array $data Reservation data.

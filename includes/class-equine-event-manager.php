@@ -432,6 +432,16 @@ class EEM_Plugin {
 		add_action( 'wp_ajax_equine_event_manager_create_invoice_payment_intent', array( $this->shortcodes, 'ajax_create_invoice_payment_intent' ) );
 		add_action( 'wp_ajax_nopriv_equine_event_manager_create_invoice_payment_intent', array( $this->shortcodes, 'ajax_create_invoice_payment_intent' ) );
 
+		// ROADMAP #36 — 15-min in-cart unit holds on the customer event page.
+		// Public (nopriv) since customers aren't logged in; arbitrated by a browser
+		// session token, not a WP user.
+		add_action( 'wp_ajax_eem_hold_unit',       array( $this->shortcodes, 'ajax_hold_unit' ) );
+		add_action( 'wp_ajax_nopriv_eem_hold_unit', array( $this->shortcodes, 'ajax_hold_unit' ) );
+		add_action( 'wp_ajax_eem_release_unit',       array( $this->shortcodes, 'ajax_release_unit' ) );
+		add_action( 'wp_ajax_nopriv_eem_release_unit', array( $this->shortcodes, 'ajax_release_unit' ) );
+		add_action( 'wp_ajax_eem_hold_heartbeat',       array( $this->shortcodes, 'ajax_hold_heartbeat' ) );
+		add_action( 'wp_ajax_nopriv_eem_hold_heartbeat', array( $this->shortcodes, 'ajax_hold_heartbeat' ) );
+
 		add_action( 'init', array( $this->events, 'register_event_routes' ) );
 		add_filter( 'query_vars', array( $this->events, 'filter_query_vars' ) );
 		add_action( 'template_redirect', array( $this->events, 'maybe_render_virtual_event_page' ) );
