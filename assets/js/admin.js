@@ -5449,10 +5449,88 @@
 		});
 		// Re-mark the armed customer card.
 		var armed = window._eemSbSelectedOrder || '';
+		// Auto-exit click-to-assign once the armed order's stall quota is filled,
+		// so the map doesn't get stuck in assign mode after the last stall lands.
+		if ( armed ) {
+			var armedCard = sidebar.querySelector('[data-eem-sb-customer][data-order-key="' + (window.CSS && CSS.escape ? CSS.escape(armed) : armed) + '"]');
+			var needed = armedCard ? (parseInt(armedCard.getAttribute('data-stalls') || '0', 10) || 0) : 0;
+			var placed = eemAssignedCountFor(armed);
+			if ( needed > 0 && placed !== null && placed >= needed ) {
+				window._eemSbSelectedOrder = '';
+				armed = '';
+			}
+		}
 		sidebar.querySelectorAll('[data-eem-sb-customer]').forEach(function (card) {
 			card.classList.toggle('eem-sb-selected', !!armed && card.getAttribute('data-order-key') === armed);
 		});
 		eemSbFilter();
+		eemUpdateAssignBanner();
+	}
+
+	/**
+	 * Count stalls currently assigned to an order, read from the spatial stall
+	 * map's JSON payload. Used to auto-exit click-to-assign when the order's
+	 * quota is filled. Returns null if no stall map is present.
+	 */
+	function eemAssignedCountFor(orderKey) {
+		var c = document.querySelector('[data-eem-smap-kind="stall"] [data-eem-smap-payload]');
+		if (!c) { return null; }
+		var p; try { p = JSON.parse(c.textContent); } catch (e) { return null; }
+		var st = (p && p.state) || {};
+		var n = 0;
+		Object.keys(st).forEach(function (k) {
+			var s = st[k] || {};
+			if (s.o === orderKey && (s.s === 'reserved' || s.s === 'tack')) { n++; }
+		});
+		return n;
+	}
+
+	/**
+	 * Show/hide the floating "Assigning {name}" banner while a customer card is
+	 * armed for click-to-assign. Gives an obvious exit (Done button / Esc /
+	 * click the card again) so the map never gets silently stuck in assign mode.
+	 */
+	function eemUpdateAssignBanner() {
+		var armed = window._eemSbSelectedOrder || '';
+		var banner = document.getElementById('eem-sb-assign-banner');
+		if (!armed) {
+			if (banner) { banner.parentNode.removeChild(banner); }
+			return;
+		}
+		var card = document.querySelector('[data-eem-sb-customer][data-order-key="' + (window.CSS && CSS.escape ? CSS.escape(armed) : armed) + '"]');
+		var nameEl = card ? card.querySelector('.eem-sb-cust-name') : null;
+		var name = nameEl ? nameEl.textContent : 'customer';
+		if (!banner) {
+			banner = document.createElement('div');
+			banner.id = 'eem-sb-assign-banner';
+			banner.className = 'eem-assign-banner';
+			banner.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;background:#1f2a44;color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;align-items:center;gap:12px;font-size:14px;';
+			var msg = document.createElement('span');
+			msg.setAttribute('data-eem-assign-banner-msg', '');
+			var done = document.createElement('button');
+			done.type = 'button';
+			done.textContent = 'Done';
+			done.style.cssText = 'background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;';
+			done.addEventListener('click', function () {
+				window._eemSbSelectedOrder = '';
+				eemSbApply();
+			});
+			banner.appendChild(msg);
+			banner.appendChild(done);
+			document.body.appendChild(banner);
+		}
+		banner.querySelector('[data-eem-assign-banner-msg]').textContent = 'Assigning ' + name + ' — click available stalls. Press Esc or Done to stop.';
+	}
+
+	// Esc exits click-to-assign mode (bound once).
+	if (!window._eemAssignEscBound) {
+		window._eemAssignEscBound = true;
+		document.addEventListener('keydown', function (ev) {
+			if (ev.key === 'Escape' && window._eemSbSelectedOrder) {
+				window._eemSbSelectedOrder = '';
+				eemSbApply();
+			}
+		});
 	}
 
 	function eemScApplyState(inv, tab) {
@@ -7727,9 +7805,11 @@
 						var sbState = (p.state && p.state[sbLabel]) ? p.state[sbLabel] : { s: 'available' };
 						if ((sbState.s || 'available') === 'available') {
 							eemSmapAction(container, 'assign', sbLabel, window._eemSbSelectedOrder);
-						} else if (window.EEM && window.EEM.showSaveToast) {
-							window.EEM.showSaveToast('That stall is not available.', { variant: 'error', sub: '' });
+							return;
 						}
+						// Occupied/blocked cell while armed: don't dead-end — open its
+						// popover so the admin can still inspect/act (and isn't stuck).
+						eemSmapOpenPop(container, cell, p);
 						return;
 					}
 					var aCtx = (window.eemStallChart || {}).assignContext;
