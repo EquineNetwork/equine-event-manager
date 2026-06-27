@@ -10297,6 +10297,43 @@ a.eem-sc-mob-edit-btn:focus { background: #e8eef8; color: #0d1b3e; text-decorati
 	align-items: flex-end;
 	flex-wrap: wrap;
 }
+/* Merged View switcher toolbar — sits on its own row directly under the title,
+   left-aligned, with the unified search filling the right (2026-06-27). One
+   consistent toolbar across all 3 views so the controls never move. */
+.eem-shell-page--stall-charts .eem-sc-viewbar {
+	flex-basis: 100%;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-top: 6px;
+}
+.eem-shell-page--stall-charts .eem-sc-vswitch {
+	display: inline-flex;
+	border: 1.5px solid #d0daea;
+	border-radius: 9px;
+	overflow: hidden;
+	background: #f7f9fc;
+}
+.eem-shell-page--stall-charts .eem-sc-vbtn {
+	appearance: none;
+	border: 0;
+	border-right: 1px solid #d0daea;
+	background: #f7f9fc;
+	color: #5b6677;
+	font-family: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	padding: 9px 17px;
+	cursor: pointer;
+	line-height: 1.2;
+	min-height: 40px;
+}
+.eem-shell-page--stall-charts .eem-sc-vbtn:last-child { border-right: 0; }
+.eem-shell-page--stall-charts .eem-sc-vbtn:hover { background: #e8eef8; color: #0d1b3e; }
+.eem-shell-page--stall-charts .eem-sc-vbtn.active { background: #1668F2; color: #fff; }
+.eem-shell-page--stall-charts .eem-sc-vbtn--rv { color: #7c4dff; }
+.eem-shell-page--stall-charts .eem-sc-vbtn--rv.active { background: #7c4dff; color: #fff; }
+.eem-shell-page--stall-charts .eem-sc-toolbar-search { margin-left: auto; }
 .eem-shell-page--stall-charts .eem-sc-btn-primary,
 .eem-shell-page--stall-charts button.eem-sc-btn-primary {
 	display: inline-flex;
