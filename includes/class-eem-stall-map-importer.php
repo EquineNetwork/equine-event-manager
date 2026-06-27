@@ -105,7 +105,25 @@ class EEM_Stall_Map_Importer {
 	 * @return void
 	 */
 	public static function save_to_reservation( int $reservation_id, array $snapshot, string $meta_key = self::META_KEY ): void {
+		// Dual-write: the canonical config table (primary read source post-decouple)
+		// AND legacy post-meta (still read by the Venue layout-template system, and a
+		// safety net if the config table is absent). Mirrors EEM_Venue's pattern.
 		update_post_meta( $reservation_id, $meta_key, $snapshot );
+		if ( class_exists( 'EEM_Reservation_Config' ) && EEM_Reservation_Config::table_exists() ) {
+			EEM_Reservation_Config::for( $reservation_id )->set( self::config_key_for_meta( $meta_key ), $snapshot )->save();
+			EEM_Reservation_Config::flush_cache( $reservation_id );
+		}
+	}
+
+	/**
+	 * Map a snapshot post-meta key (`_en_stall_map`) to its config short key
+	 * (`stall_map`) — strip the `_en_` prefix, matching the config column map.
+	 *
+	 * @param string $meta_key Post-meta key.
+	 * @return string Config short key.
+	 */
+	private static function config_key_for_meta( string $meta_key ): string {
+		return ( 0 === strpos( $meta_key, '_en_' ) ) ? substr( $meta_key, 4 ) : $meta_key;
 	}
 
 	/**
@@ -116,7 +134,25 @@ class EEM_Stall_Map_Importer {
 	 * @return array Snapshot, or an empty array if none stored.
 	 */
 	public static function get_for_reservation( int $reservation_id, string $meta_key = self::META_KEY ): array {
+		// Config table is the primary source post-decouple. Fall back to legacy
+		// post-meta for reservations whose maps predate the move, lazily backfilling
+		// the config table so they migrate themselves on first read.
+		if ( class_exists( 'EEM_Reservation_Config' ) && EEM_Reservation_Config::table_exists() ) {
+			$cfg = EEM_Reservation_Config::for( $reservation_id )->get( self::config_key_for_meta( $meta_key ) );
+			if ( is_array( $cfg ) && ! empty( $cfg ) ) {
+				return $cfg;
+			}
+		}
+
 		$snap = get_post_meta( $reservation_id, $meta_key, true );
+		if ( is_array( $snap ) && ! empty( $snap ) ) {
+			if ( class_exists( 'EEM_Reservation_Config' ) && EEM_Reservation_Config::table_exists() ) {
+				EEM_Reservation_Config::for( $reservation_id )->set( self::config_key_for_meta( $meta_key ), $snap )->save();
+				EEM_Reservation_Config::flush_cache( $reservation_id );
+			}
+			return $snap;
+		}
+
 		return is_array( $snap ) ? $snap : array();
 	}
 

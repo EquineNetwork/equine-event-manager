@@ -54,29 +54,27 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 3. [ ] **Full end-to-end customer checkout sweep** — run a real checkout on the NTR 6519 fixture page. Also the recommended way to seed test data (real checkout writes correct `reservation_id` + notes tag + config-based pricing).
 
-4. [ ] **Full map post-meta → config migration** — migrate remaining `_en_stall_map` / `_en_rv_map` snapshot data into config table.
+4. [x] **Full map post-meta → config migration** — stall/RV map snapshots now dual-write to the config table + post-meta; reads are config-first with post-meta fallback + lazy backfill. Shipped 2.7.652 — **awaiting Whitney staging spot-check** (load a stall map, save it, confirm the chart renders). Config-table branch couldn't be exercised on the SQLite harness (table_exists uses MySQL-only SHOW TABLES).
 
 5. [ ] **Print views smoke coverage** — move-customer + readiness/print flows.
 
-6. [ ] **Verify RV lot name/number split against real GEMS labels** — confirmed correct on NTR 6519 real data; audit against more label formats.
+6. [ ] **Postmeta → relational de-coupling Phase 1** — remaining gaps: map snapshots, hybrid blocked-units reads, events/venues/producers/divisions editors still on post-meta. Audit plan: `docs/POSTMETA-AUDIT.md`.
 
-7. [ ] **Postmeta → relational de-coupling Phase 1** — remaining gaps: map snapshots, hybrid blocked-units reads, events/venues/producers/divisions editors still on post-meta. Audit plan: `docs/POSTMETA-AUDIT.md`.
+7. [ ] **Events flyer variant** — `show_flyer` thumbnail + countdown badge (today `flyer="yes"` only adds a "View Flyer" link).
 
-8. [ ] **Events flyer variant** — `show_flyer` thumbnail + countdown badge (today `flyer="yes"` only adds a "View Flyer" link).
+8. [ ] **Self-test harness: seeded order-totals validation.** The throwaway WordPress (SQLite) harness is up — see `scripts/dev-sqlite-harness.sh` (rebuilds in ~2 min; lives at `/home/user/wp`, does NOT survive container recycling). Plugin activates at current version, smoke suite runs (3,435 assertions pass; pricing-math smokes clean). REMAINING: build a programmatically-seeded **configured reservation** (stall rows + pricing config) so the order seeder works, then add an order-totals assertion path that places an order and verifies exact dollar amounts (e.g. the #00008 = $811.20 manual check) — so math regressions are caught BEFORE pushing/bumping. Caveat: SQLite ≠ MySQL (one payments-ledger migration query errors, PRAGMA/DDL introspection differs) — ~465 of the current smoke failures are environmental, not real bugs; separate those out as part of this task.
 
-9. [x] **Map drag-and-drop assignment** — drag a customer from the sidebar onto an available stall to assign; arms the order so remaining stalls place by click/drag, auto-exits when filled. Shipped 2.7.651 — awaiting Whitney verification.
-
-10. [ ] **Self-test harness: seeded order-totals validation.** The throwaway WordPress (SQLite) harness is up — see `scripts/dev-sqlite-harness.sh` (rebuilds in ~2 min; lives at `/home/user/wp`, does NOT survive container recycling). Plugin activates at current version, smoke suite runs (3,435 assertions pass; pricing-math smokes clean). REMAINING: build a programmatically-seeded **configured reservation** (stall rows + pricing config) so the order seeder works, then add an order-totals assertion path that places an order and verifies exact dollar amounts (e.g. the #00008 = $811.20 manual check) — so math regressions are caught BEFORE pushing/bumping. Caveat: SQLite ≠ MySQL (one payments-ledger migration query errors, PRAGMA/DDL introspection differs) — ~465 of the current smoke failures are environmental, not real bugs; separate those out as part of this task.
+9. [ ] **Generate Assignments — keep a single customer's stalls contiguous.** Today auto-assign only seats multi-ORDER *groups* contiguously (`assign_group_contiguous_stalls`); a single order needing 2+ stalls just takes the lowest-numbered available stalls in pool order, so one customer can be split across the barn (e.g. 238 + 250 instead of 238 + 239). Generalize the contiguous-run helper to also run per-order: try to seat each multi-stall order in a consecutive block within one barn, fall back to scattered lowest-first only when no run is large enough. Code in `EEM_Orders_Repository::auto_assign_units_for_reservation` / `assign_group_contiguous_stalls` (`includes/class-equine-event-manager-orders-repository.php`).
 
 ### Later (polish, non-blocking)
 
-11. [ ] **Restyle "View Event" overview page** to match plugin design system.
+12. [ ] **Restyle "View Event" overview page** to match plugin design system.
 
-12. [ ] **Remove "X days" countdown chip** on the event-list flyer card. **BLOCKED** — needs Whitney's mockup before starting.
+13. [ ] **Remove "X days" countdown chip** on the event-list flyer card. **BLOCKED** — needs Whitney's mockup before starting.
 
-13. [ ] **Restyle squished "Choose File" inputs** on Settings → Import/Export.
+14. [ ] **Restyle squished "Choose File" inputs** on Settings → Import/Export.
 
-14. [ ] **Import/Export: event-level dates not carried** into the imported reservation.
+15. [ ] **Import/Export: event-level dates not carried** into the imported reservation.
 
 ---
 
@@ -107,6 +105,8 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 ## ✅ Completed this cycle (verified by Whitney)
 
 **Session 2026-06-27 (live walkthrough):**
+- Map drag-and-drop assignment — drag a sidebar customer onto an available stall; arms the order, auto-exits when filled (2.7.651) ✅ verified
+- Map click-to-assign stuck-mode fix — armed banner + Done/Esc + auto-exit + occupied-cell opens popover (2.7.651) ✅ verified
 - Critical bug #1 — Cancelling an order now auto-releases stall/RV assignments
 - Critical bug #2 — Cancelled/removed orders no longer appear in chart Assigned roster
 - Critical bug #3 — Manage Stall Assignment blocks over-assignment beyond paid qty
