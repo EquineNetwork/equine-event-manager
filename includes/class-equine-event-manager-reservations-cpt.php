@@ -1457,7 +1457,6 @@ class EEM_Reservations_CPT {
 			'stall_chart_blocked_rv_units'   => isset( $source['stall_chart_blocked_rv_units'] ) ? $this->sanitize_chart_unit_list( $source['stall_chart_blocked_rv_units'], $rv_lot_names ) : $existing['stall_chart_blocked_rv_units'],
 			'stall_map_file_id'              => isset( $source['stall_map_file_id'] ) ? absint( $source['stall_map_file_id'] ) : $existing['stall_map_file_id'],
 			'rv_lot_selection_enabled'        => isset( $source['rv_lot_selection_enabled'] ) ? 1 : 0,
-			'rv_addons_enabled'               => isset( $source['rv_addons_enabled'] ) ? 1 : 0,
 			'rv_lots'                         => $rv_lots,
 			'stall_nightly_rate'              => isset( $source['stall_nightly_rate'] ) ? $this->sanitize_money_value( $source['stall_nightly_rate'] ) : $existing['stall_nightly_rate'],
 			'stall_weekend_rate'              => isset( $source['stall_weekend_rate'] ) ? $this->sanitize_money_value( $source['stall_weekend_rate'] ) : $existing['stall_weekend_rate'],
@@ -1537,7 +1536,6 @@ class EEM_Reservations_CPT {
 				? $this->sanitize_group_names( $source['group_names'] )
 				: ( isset( $existing['group_names'] ) ? (array) $existing['group_names'] : array() ),
 			'general_addons'                  => isset( $source['general_addons'] ) && is_array( $source['general_addons'] ) ? $this->sanitize_general_addons( $source['general_addons'] ) : $existing['general_addons'],
-			'rv_addons'                       => isset( $source['rv_addons'] ) && is_array( $source['rv_addons'] ) ? $this->sanitize_rv_addons( $source['rv_addons'] ) : $existing['rv_addons'],
 			// C7.X.4 — NEW: rv_lot_zones (pricing tiers — color slug from
 			// 8-preset palette + name + surcharge). Non-destructive
 			// additive schema (Option L1 — see CLEANUP #44).
@@ -1842,34 +1840,6 @@ class EEM_Reservations_CPT {
 			$values['general_addons_enabled'] = 1;
 		}
 
-		if ( empty( $values['rv_addons_enabled'] ) && ! empty( $values['rv_addons'] ) && is_array( $values['rv_addons'] ) ) {
-			$values['rv_addons_enabled'] = 1;
-		}
-
-
-		if ( empty( $values['rv_addons'] ) || ! is_array( $values['rv_addons'] ) ) {
-			$legacy_rv_addons = array();
-
-			foreach ( $this->get_rv_addon_definitions() as $addon_key => $addon_label ) {
-				$is_enabled   = (bool) get_post_meta( $post_id, '_en_rv_addon_' . $addon_key . '_enabled', true );
-				$nightly_rate = $this->sanitize_money_value( get_post_meta( $post_id, '_en_rv_addon_' . $addon_key . '_nightly_rate', true ) );
-				$weekend_rate = $this->sanitize_money_value( get_post_meta( $post_id, '_en_rv_addon_' . $addon_key . '_weekend_rate', true ) );
-
-				if ( ! $is_enabled && '0.00' === $nightly_rate && '0.00' === $weekend_rate ) {
-					continue;
-				}
-
-				$legacy_rv_addons[] = array(
-					'name'         => $addon_label,
-					'description'  => '',
-					'nightly_rate' => $nightly_rate,
-					'weekend_rate' => $weekend_rate,
-				);
-			}
-
-			$values['rv_addons'] = $legacy_rv_addons;
-		}
-
 		if ( empty( $values['venue_map_enabled'] ) && ( ! empty( $values['venue_map_download_url'] ) || ! empty( $values['venue_map_image_id'] ) ) ) {
 			$values['venue_map_enabled'] = 1;
 		}
@@ -2006,7 +1976,6 @@ class EEM_Reservations_CPT {
 			'stall_chart_blocked_rv_units'   => array(),
 			'stall_map_file_id'              => 0,
 			'rv_lot_selection_enabled'        => 0,
-			'rv_addons_enabled'               => 0,
 			'rv_lots'                         => array(),
 			'stall_nightly_rate'              => '0.00',
 			'stall_weekend_rate'              => '0.00',
@@ -2073,7 +2042,6 @@ class EEM_Reservations_CPT {
 			'event_day_contact'               => '',
 			'cancellation_enabled'            => 1,
 			'cancellation_policy_override'    => '',
-			'rv_addons'                       => array(),
 			'rv_nightly_rate'                 => '0.00',
 			'rv_weekend_rate'                 => '0.00',
 			'rv_weekly_rate'                  => '0.00',
@@ -2584,64 +2552,6 @@ class EEM_Reservations_CPT {
 	}
 
 	/**
-	 * Sanitize submitted RV add-on rows.
-	 *
-	 * @param array $addons Raw add-on rows.
-	 * @return array
-	 */
-	private function sanitize_rv_addons( $addons ) {
-		$sanitized = array();
-
-		foreach ( (array) $addons as $addon ) {
-			if ( ! is_array( $addon ) ) {
-				continue;
-			}
-
-			$name        = isset( $addon['name'] ) ? sanitize_text_field( $addon['name'] ) : '';
-			$description = isset( $addon['description'] ) ? sanitize_text_field( $addon['description'] ) : '';
-			// 2.3.83 — `price` is the per-NIGHT add-on rate; `weekend_price` is the
-			// flat add-on rate charged with a Weekend Rate stay. Legacy rows that
-			// only carried `nightly_rate`/`weekend_rate` map onto the new keys.
-			$price = isset( $addon['price'] ) ? $this->sanitize_money_value( $addon['price'] ) : '';
-			if ( '' === $price ) {
-				$price = isset( $addon['nightly_rate'] ) ? $this->sanitize_money_value( $addon['nightly_rate'] ) : '0.00';
-			}
-			$weekend_price = isset( $addon['weekend_price'] ) ? $this->sanitize_money_value( $addon['weekend_price'] ) : '';
-			if ( '' === $weekend_price ) {
-				$weekend_price = isset( $addon['weekend_rate'] ) ? $this->sanitize_money_value( $addon['weekend_rate'] ) : '0.00';
-			}
-
-			if ( '' === $name ) {
-				continue;
-			}
-
-			// Per-zone availability (RV map mode). Empty = available for all zones;
-			// otherwise the add-on is only offered when a picked lot is in one of
-			// these zones.
-			$zones = array();
-			if ( isset( $addon['zones'] ) && is_array( $addon['zones'] ) ) {
-				foreach ( $addon['zones'] as $z ) {
-					$z = sanitize_text_field( (string) $z );
-					if ( '' !== $z ) {
-						$zones[] = $z;
-					}
-				}
-				$zones = array_values( array_unique( $zones ) );
-			}
-
-			$sanitized[] = array(
-				'name'          => $name,
-				'description'   => $description,
-				'price'         => '' !== $price ? $price : '0.00',
-				'weekend_price' => '' !== $weekend_price ? $weekend_price : '0.00',
-				'zones'         => $zones,
-			);
-		}
-
-		return array_values( $sanitized );
-	}
-
-	/**
 	 * Sanitize rv_lot_zones submission (C7.X.4 NEW). Each zone has
 	 * a color slug from the 8-preset palette, a non-empty name, and
 	 * a non-negative surcharge dollar amount.
@@ -2672,54 +2582,6 @@ class EEM_Reservations_CPT {
 			);
 		}
 		return array_values( $out );
-	}
-
-	/**
-	 * Get saved RV add-on definitions.
-	 *
-	 * @param array $data Reservation meta values.
-	 * @param bool  $include_all Whether to include zero-price rows.
-	 * @return array
-	 */
-	private function get_enabled_rv_addons( $data, $include_all = false ) {
-		if ( ! $include_all && empty( $data['rv_addons_enabled'] ) ) {
-			return array();
-		}
-
-		$addons  = isset( $data['rv_addons'] ) && is_array( $data['rv_addons'] ) ? $data['rv_addons'] : array();
-		$results = array();
-
-		foreach ( $addons as $index => $addon ) {
-			if ( ! is_array( $addon ) ) {
-				continue;
-			}
-
-			$name        = isset( $addon['name'] ) ? sanitize_text_field( $addon['name'] ) : '';
-			$description = isset( $addon['description'] ) ? sanitize_text_field( $addon['description'] ) : '';
-			// 2.3.83 — `price` is the per-night add-on rate; `weekend_price` the flat
-			// add-on rate for a Weekend Rate stay. Legacy single-rate rows map across.
-			$price = isset( $addon['price'] ) ? $this->sanitize_money_value( $addon['price'] ) : '';
-			if ( '' === $price ) {
-				$price = isset( $addon['nightly_rate'] ) ? $this->sanitize_money_value( $addon['nightly_rate'] ) : '0.00';
-			}
-			$weekend_price = isset( $addon['weekend_price'] ) ? $this->sanitize_money_value( $addon['weekend_price'] ) : '';
-			if ( '' === $weekend_price ) {
-				$weekend_price = isset( $addon['weekend_rate'] ) ? $this->sanitize_money_value( $addon['weekend_rate'] ) : '0.00';
-			}
-
-			if ( '' === $name ) {
-				continue;
-			}
-
-			$results[ (string) $index ] = array(
-				'name'          => $name,
-				'description'   => $description,
-				'price'         => '' !== $price ? $price : '0.00',
-				'weekend_price' => '' !== $weekend_price ? $weekend_price : '0.00',
-			);
-		}
-
-		return $results;
 	}
 
 	/**
@@ -2842,19 +2704,6 @@ class EEM_Reservations_CPT {
 		$lot_surcharge = (float) ( 'weekend' === $stay_type ? $lot['weekend_rate'] : $lot['nightly_rate'] );
 
 		return $base_rate + $lot_surcharge;
-	}
-
-	/**
-	 * Get the fixed RV add-on definitions.
-	 *
-	 * @return array<string, string>
-	 */
-	private function get_rv_addon_definitions() {
-		return array(
-			'electric' => __( 'Electric', 'equine-event-manager' ),
-			'water'    => __( 'Water', 'equine-event-manager' ),
-			'sewage'   => __( 'Sewage', 'equine-event-manager' ),
-		);
 	}
 
 	/**
