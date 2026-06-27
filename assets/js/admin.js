@@ -7454,11 +7454,26 @@
 			status === 'blocked' ? 'Blocked' : 'Available';
 		var bodyEl = pop.querySelector('[data-eem-smap-pop-body]');
 		bodyEl.innerHTML = '';
-		function row(txt, cls, fn) {
+		// Leading icons MUST match the By Location LIST popover
+		// (admin/class-equine-event-manager-admin.php cell-action-menu) so the two
+		// popovers look identical — see ROADMAP "Stall popover canonical option set".
+		var SMAP_ICONS = {
+			move:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>',
+			view:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',
+			tack:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>',
+			vip:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="12 2 15 8.5 22 9.3 17 14 18.5 21 12 17.5 5.5 21 7 14 2 9.3 9 8.5 12 2"/></svg>',
+			remove: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
+			add:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+			block:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>'
+		};
+		function row(txt, cls, fn, icon) {
 			var b = document.createElement('button');
 			b.type = 'button';
 			b.className = 'eem-smap-pop-row' + (cls ? ' ' + cls : '');
-			b.textContent = txt;
+			if (icon) { b.insertAdjacentHTML('beforeend', icon); }
+			var lbl = document.createElement('span');
+			lbl.textContent = txt;
+			b.appendChild(lbl);
 			b.addEventListener('click', fn);
 			bodyEl.appendChild(b);
 		}
@@ -7522,8 +7537,8 @@
 			bodyEl.appendChild(list);
 			renderList('');
 			setTimeout(function () { search.focus(); }, 0);
-			row('+ Add New Customer', 'eem-smap-pop-row--add-new', function (ev) { ev.stopPropagation(); showAddCustomerForm(); });
-			row(zq ? 'Block lot' : 'Block stall', 'danger', function () { eemSmapAction(container, 'block', label, ''); });
+			row('+ Add New Customer', 'eem-smap-pop-row--add-new', function (ev) { ev.stopPropagation(); showAddCustomerForm(); }, SMAP_ICONS.add);
+			row(zq ? 'Block lot' : 'Block stall', 'danger', function () { eemSmapAction(container, 'block', label, ''); }, SMAP_ICONS.block);
 		} else if (status === 'reserved' || status === 'tack') {
 			// Assigned/tack popover — MUST mirror the By Location LIST popover's
 			// option set (Move / View order / Tack / VIP / Remove). The two popovers
@@ -7555,23 +7570,23 @@
 				if (banner) banner.style.display = '';
 				var nameEl = document.getElementById('eem-destination-customer-name');
 				if (nameEl) nameEl.textContent = window._scCustomerName || '—';
-			});
+			}, SMAP_ICONS.move);
 			// View order — open the order detail page in a new tab.
 			if (st.o) {
 				row('View order', '', function () {
 					var u = (window.ajaxurl || '/wp-admin/admin-ajax.php').replace('admin-ajax.php', '') + 'admin.php?page=equine-event-manager-order&order_key=' + encodeURIComponent(st.o);
 					window.open(u, '_blank');
 					eemSmapClosePop(container);
-				});
+				}, SMAP_ICONS.view);
 			}
-			if (!zq && status === 'reserved') { row('Mark as Tack stall', '', function () { eemSmapAction(container, 'tack', label, st.o || ''); }); }
-			if (!zq && status === 'tack') { row('Unmark Tack (keep assigned)', '', function () { eemSmapAction(container, 'untack', label, st.o || ''); }); }
+			if (!zq && status === 'reserved') { row('Mark as Tack stall', '', function () { eemSmapAction(container, 'tack', label, st.o || ''); }, SMAP_ICONS.tack); }
+			if (!zq && status === 'tack') { row('Unmark Tack (keep assigned)', '', function () { eemSmapAction(container, 'untack', label, st.o || ''); }, SMAP_ICONS.tack); }
 			// Mark as VIP / Remove VIP — routes through the map handler's 'vip' op so
 			// the grid re-renders in place (zoom/scroll preserved).
-			row(st.vip ? 'Remove VIP' : 'Mark as VIP', '', function () { eemSmapAction(container, 'vip', label, st.o || ''); });
-			row('Remove from stall', 'danger', function () { eemSmapAction(container, 'unassign', label, st.o || ''); });
+			row(st.vip ? 'Remove VIP' : 'Mark as VIP', '', function () { eemSmapAction(container, 'vip', label, st.o || ''); }, SMAP_ICONS.vip);
+			row('Remove from stall', 'danger', function () { eemSmapAction(container, 'unassign', label, st.o || ''); }, SMAP_ICONS.remove);
 		} else if (status === 'blocked') {
-			row(zq ? 'Unblock lot' : 'Unblock stall', '', function () { eemSmapAction(container, 'unblock', label, ''); });
+			row(zq ? 'Unblock lot' : 'Unblock stall', '', function () { eemSmapAction(container, 'unblock', label, ''); }, SMAP_ICONS.block);
 		}
 		// Add drag handle + close (×) once, then position by MEASURING the rendered
 		// popover (its height varies: the available-cell variant with search list is

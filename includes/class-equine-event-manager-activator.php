@@ -37,6 +37,9 @@ class EEM_Activator {
 		self::create_event_defaults_table();
 		self::create_order_adjustments_table();
 		self::create_order_payments_table();
+		if ( class_exists( 'EEM_Unit_Holds_Repo' ) ) {
+			EEM_Unit_Holds_Repo::create_table();
+		}
 		if ( class_exists( 'EEM_Division_Entries' ) ) {
 			EEM_Division_Entries::create_table();
 		}

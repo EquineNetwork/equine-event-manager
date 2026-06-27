@@ -40,19 +40,19 @@
 > Most are stall-assignment / cancellation logic; two are order-detail pricing **display** (no payment-processing changes).
 > NOTE: code fixes deploy via plugin update, but **existing bad data** (cancelled orders still holding stalls) likely needs a one-time cleanup too.
 
-1. [ ] **Cancelling an order does NOT release its stall/RV assignments.** Two cancelled orders (#00002 Mitchell, Whitney; #00003 Sperle, Tanner) still show stall assignments on the Stall & RV Chart. When an order's status → **Cancelled** (and almost certainly **Refunded** + **Move to Trash**), its stall + RV assignments must be auto-released so the stalls free up on the chart.
+1. [x] **Cancelling an order does NOT release its stall/RV assignments.** Two cancelled orders (#00002 Mitchell, Whitney; #00003 Sperle, Tanner) still show stall assignments on the Stall & RV Chart. When an order's status → **Cancelled** (and almost certainly **Refunded** + **Move to Trash**), its stall + RV assignments must be auto-released so the stalls free up on the chart.
 
-2. [ ] **Cancelled + manually-removed orders STILL appear in the chart "Assigned" sidebar roster.** Whitney cancelled the orders AND manually removed them from the map, yet they still show in the "Assigned (3)" customer list (Tanner Sperle Test · Mitchell, Whitney · Sperle, Tanner). The Assigned roster must reflect actual current assignments and exclude cancelled/removed orders. (Find what source the roster reads — orders vs. notes — and why cancel/manual-removal doesn't clear it.)
+2. [x] **Cancelled + manually-removed orders STILL appear in the chart "Assigned" sidebar roster.** Whitney cancelled the orders AND manually removed them from the map, yet they still show in the "Assigned (3)" customer list (Tanner Sperle Test · Mitchell, Whitney · Sperle, Tanner). The Assigned roster must reflect actual current assignments and exclude cancelled/removed orders. (Find what source the roster reads — orders vs. notes — and why cancel/manual-removal doesn't clear it.)
 
-3. [ ] **"Manage Stall Assignment" allows OVER-assignment beyond the paid stall quantity.** Order has 5 paid stalls; Manage Stall Assignment opens the map with the 5 selected, but selecting another block of 5 and assigning gives the customer **10 stalls — 5 unpaid**. Need a guardrail: cannot assign more stalls than the order's paid quantity (block/warn at the paid count, or require explicit override).
+3. [x] **"Manage Stall Assignment" allows OVER-assignment beyond the paid stall quantity.** Order has 5 paid stalls; Manage Stall Assignment opens the map with the 5 selected, but selecting another block of 5 and assigning gives the customer **10 stalls — 5 unpaid**. Need a guardrail: cannot assign more stalls than the order's paid quantity (block/warn at the paid count, or require explicit override).
 
-4. [ ] **No multi-select "Remove from stall" on the chart/map.** Can't currently select multiple assigned stalls and remove them in one action. Add bulk-select + "Remove from stall" on the map.
+4. [x] **No multi-select "Remove from stall" on the chart/map.** Can't currently select multiple assigned stalls and remove them in one action. Add bulk-select + "Remove from stall" on the map.
 
-5. [ ] **Order total math — required shavings cost is silently folded into the Stall Subtotal.** Rate line shows "$35.00 × 5 stalls × 5 nights" = $875, but **Stall Subtotal = $955.00**; the $80 difference = 8 bags shavings (×$10/bag) bundled in with no breakdown. Required shavings must show as its own priced line (per-bag rate + total); the stall subtotal breakdown must be transparent.
+5. [x] **Order total math — required shavings cost is silently folded into the Stall Subtotal.** Rate line shows "$35.00 × 5 stalls × 5 nights" = $875, but **Stall Subtotal = $955.00**; the $80 difference = 8 bags shavings (×$10/bag) bundled in with no breakdown. Required shavings must show as its own priced line (per-bag rate + total); the stall subtotal breakdown must be transparent.
 
-6. [ ] **Required shavings render under "Add-Ons" and show $0.00.** Add-Ons section shows "SHAVINGS (×8) $0.00" — wrongly implies it's an add-on AND shows no price. Distinguish **required shavings** (part of the stall reservation) from **add-on shavings**, and show the real dollar amount (per bag + total).
+6. [x] **Required shavings render under "Add-Ons" and show $0.00.** Add-Ons section shows "SHAVINGS (×8) $0.00" — wrongly implies it's an add-on AND shows no price. Distinguish **required shavings** (part of the stall reservation) from **add-on shavings**, and show the real dollar amount (per bag + total).
 
-7. [ ] **Order Detail doesn't indicate WHICH assigned stall is the tack stall.** Order had 1 tack stall among the 5 (#295–#299) but the detail page doesn't mark which one. Surface tack-stall identification on the order detail.
+7. [x] **Order Detail doesn't indicate WHICH assigned stall is the tack stall.** Order had 1 tack stall among the 5 (#295–#299) but the detail page doesn't mark which one. Surface tack-stall identification on the order detail.
 
 ---
 
@@ -233,40 +233,34 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 ### 🔲 Remaining
 1. [ ] Global mobile visual polish — per-page pass to match Daily Movement standard (row heights, badge sizing, spacing/density). Scaffolding shipped (2.7.577–580); per-page work not started.
-2. [ ] Excel stall map import (.xlsx → stall rows + map grid)
-3. [ ] Map Builder search bar (search/highlight/scroll for large maps)
+3. [x] Map Builder search bar (search/highlight/scroll for large maps)
 4. [ ] Add-On Report (per-day add-on quantities, CSV + PDF)
 5. [ ] Full end-to-end customer checkout sweep (needs NTR 6519 fixture page). NOTE (2026-06-23): this is also the recommended way to SEED test data — real checkout writes a correct `reservation_id` column + notes tag + config-based pricing (production-representative), unlike the synthetic seeders. Prerequisite: a live NTR 6519 customer event page to run checkouts through.
-6. [ ] UX: Order Detail "Paid" badge contradicts Balance-Due banner on edited orders
-7. [ ] Pre-Entry Import Tool (GH CSV) (#164)
-8. [ ] Vendor System (#166)
+6. [x] UX: Order Detail "Paid" badge contradicts Balance-Due banner on edited orders
+7. [x] Pre-Entry Import Tool (GH CSV) (#164)
 9. [ ] Full map post-meta → config migration (#174)
 10. [ ] Verify post-meta → config-table migration 100% complete (#199)
 11. [ ] Print views: move-customer + readiness/print smoke coverage (#234)
 12. [ ] Verify RV lot name/number split against real GEMS labels (#235)
 13. [ ] Postmeta → relational de-coupling (Phase 1 funnel). Audit + remediation plan: `docs/POSTMETA-AUDIT.md`. (As of 2026-06-23: reservation setup/pricing/rows are on the config table; #212 checkout base-rate read is FIXED; remaining gaps are map snapshots `_en_stall_map`/`_en_rv_map` (see #9) + hybrid blocked-units reads + events/venues/producers/divisions editors still on post-meta.)
-14. [ ] Upload .xlsx → Stall Grid (ZipArchive + SimpleXML; "Download Example Template" link)
-15. [ ] Event Entries — competition management (disciplines + fees + roster)
-16. [ ] PDF Venue Map → overlay (upload PDF, drop/snap stall hotspots)
-17. [ ] Sheets & Results — more source types (CSV, Google Sheets, external URL)
-18. [ ] Full permissions matrix (role-based access) — needs discussion; may land pre-launch
-19. [ ] Order Detail: make "Special Instructions" editable (inline edit + Save Changes bar) — currently display-only
+19. [x] Order Detail: make "Special Instructions" editable (inline edit + Save Changes bar) — currently display-only
 20. [ ] Customer page: consume group fields — show `_en_group_description` text + enforce `_en_group_riders_per_group` max on the rider input (saved today but never read)
-21. [ ] Dashboard "Needs Attention": agreement-signature row (needs per-order signature tracking; not emitted today)
+21. [x] Dashboard "Needs Attention": agreement-signature row (needs per-order signature tracking; not emitted today)
 22. [ ] Events flyer variant: `show_flyer` thumbnail + countdown badge (today `flyer="yes"` only adds a "View Flyer" link)
 23. [ ] Dev tooling: seeder populates `reservation_id` on seeded orders (replace the stopgap backfill script). NOTE (2026-06-23): NOT a seeding blocker — the PRODUCTION checkout/admin paths already write `reservation_id` correctly (shortcodes.php:5036/5147); only the synthetic seeders (`tools/seed-test-data.php`, `scripts/seed-orders.php`) skip it. Prefer seeding via real checkout (#5); this stays as dev-tooling cleanup.
 24. [ ] RV amenities/hookups on reservations — in the Edit Reservation editor, let admin identify what each RV lot (or RV spot type) offers: 30 amp / 50 amp / water / sewage, etc. Display on the customer frontend as labeled icon chips (matching the existing "RV Spot Type" card style — electric/water icons with labels). Build approach TBD — locked in; discuss before implementing.
-25. [ ] Stall & RV Charts — layout chip status colors + click-to-set status. Define distinct chip colors for booked / cleaning / blocked / etc.; make chips clickable to mark a unit as Cleaning / Checked Out / Checked In / etc. Colors + interaction details TBD — discuss before implementing.
-26. [ ] Stall & RV Charts — add a blue metrics bar (matching the Daily Movement metrics bar) at the top of the page showing important metrics.
+25. [x] Stall & RV Charts — layout chip status colors + click-to-set status. Define distinct chip colors for booked / cleaning / blocked / etc.; make chips clickable to mark a unit as Cleaning / Checked Out / Checked In / etc. Colors + interaction details TBD — discuss before implementing.
+26. [x] Stall & RV Charts — add a blue metrics bar (matching the Daily Movement metrics bar) at the top of the page showing important metrics.
 27. [ ] Print view style verification — resolve discrepancy between existing standard (navy title + "Printed:" meta) and alternate spec (white 56px topbar, no Printed label, no EEM branding). Visual verify then lock one style.
 28. [ ] Hotel-style 15-min cart hold
+48. [ ] **Map drag-and-drop assignment (v1).** On the By Location — Map view, drag a customer from the left sidebar onto a stall chip to assign them. If the customer has multiple stalls, a confirm popup asks which stall number(s) to assign. Office/desktop-focused (not optimized for mobile — secretaries assigning in the office). Important for v1.
 30. [x] Stall Chart — spatial map search bar: stall-number search ✅. Customer-name search also added (2026-06-25 session 2 — matches `st.c` stored in `data-eem-smap-customer` attribute).
 31. [x] Stall Chart — spatial map assign popover "Add new customer": button, AJAX create-placeholder, map refresh all working. Styling + stopPropagation + network-error fixes landed in 2026-06-25 session 2.
 32. [x] Stall Chart — assignee name on chips: "Last, First" in small text at bottom-left of assigned chips, scales with zoom, hidden in dot mode. (2026-06-25 session 2)
 33. [x] Orders — bulk "Move to Trash": confirmation modal → AJAX → `repo->trash_order()` loop → toast + reload. (2026-06-25 session 2)
 34. [x] Orders — Cancel Selected Orders button styling: was `.eem-btn-delete` (icon size), fixed to `.eem-btn-danger` (full-width destructive). (2026-06-25 session 2)
 35. [x] Stall Chart — "Clear All Assignments" header button removed (too dangerous). (2026-06-25 session 2)
-29. [ ] Stall Chart — sticky sidebar panel for the By Location Map view. Reference: Stall Logic screenshots (screenshots sent 2026-06-25). The spatial map (661-stall view) needs a persistent right-side panel that stays in view while scrolling/panning the map, showing quick actions, assignment info for the selected stall, and summary metrics. Design TBD — discuss before implementing. (NOT implemented today). When a customer selects a stall/RV lot it should be held for a time window (~15 min) and shown as taken to other customers during that window, then auto-released if checkout isn't completed. NOTE: actual double-booking is already prevented at submit via the per-reservation advisory lock (the race loser is told the unit is taken and is NOT charged) — this item is the UX hold-while-in-cart enhancement, not a correctness fix. Needs: hold/expiry state on stall+RV tables, session-tied claim, availability query counting active holds, and a cron/cleanup to expire abandoned holds. Discuss design before implementing.
+29. [x] Stall Chart — sticky sidebar panel for the By Location Map view. Reference: Stall Logic screenshots (screenshots sent 2026-06-25). The spatial map (661-stall view) needs a persistent right-side panel that stays in view while scrolling/panning the map, showing quick actions, assignment info for the selected stall, and summary metrics. Design TBD — discuss before implementing. (NOT implemented today). When a customer selects a stall/RV lot it should be held for a time window (~15 min) and shown as taken to other customers during that window, then auto-released if checkout isn't completed. NOTE: actual double-booking is already prevented at submit via the per-reservation advisory lock (the race loser is told the unit is taken and is NOT charged) — this item is the UX hold-while-in-cart enhancement, not a correctness fix. Needs: hold/expiry state on stall+RV tables, session-tied claim, availability query counting active holds, and a cron/cleanup to expire abandoned holds. Discuss design before implementing.
 
 #### [Later] polish items (folded in from session handoffs / task list 2026-06-26)
 36. [ ] **[Later] Restyle the reservation "View Event" overview page** to match plugin design system.
@@ -286,18 +280,20 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 ---
 
 ## 📋 v2 — Post-launch
-
-1. [ ] GH Draw Outs
 2. [ ] QR Code Generator
 3. [ ] Push Notifications (PWA browser push)
-4. [ ] Accept Deposits (deposit vs balance at checkout)
 5. [ ] Global Handicaps API integration (GH as system-of-record). Full write-up: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`.
 6. [ ] PWA + responsive/touch (full offline-capable app). Scaffolding (manifest + SW + install prompt) was DISABLED in 2.7.582 — `EEM_PWA::init()` now only unregisters any lingering service worker; the install banner/manifest no longer emit. Restore from git history when PWA work resumes.
 7. [ ] Native mobile app (iOS/Android over the same API contract)
 8. [ ] Update plugin language to .NET? (exploratory — port the plugin's logic off PHP/WordPress to a .NET backend; ties into the "not chained to WordPress forever" / GH-as-system-of-record direction in `docs/ARCHITECTURE-DATA-OWNERSHIP.md`. Confirm scope + intent before any work.)
 9. [ ] Add orders to Apple Wallet + Google Wallet (passes for confirmed orders — likely tied into the confirmation email + hosted order page).
 10. [ ] Orders list — per-page count control (let the admin choose how many orders show per screen; currently fixed at 25/page). Apply the same pattern to other list pages (Reservations, Customers) if it lands well.
-11. [ ] Stall-assignments CSV export (columns: Stall, Barn, Roper ID, Horse, Rider, Phone, Address, City, State, Zip, VIP) — deferred from the Stall Logic demo (2026-06-25 handoff).
+11. [ ] Excel stall map import (.xlsx → stall rows + map grid). (Moved from v1.)
+12. [ ] PDF Venue Map → overlay (upload PDF, drop/snap stall hotspots). (Moved from v1.)
+13. [ ] Bypass the "cleaning phase" on checkout. Today, checking a customer out auto-flags the stall **Cleaning** (→ Needs cleaning) before it returns to Available. Some venues don't clean between reservations and want the stall to go straight back to Available. SCOPE TBD — decide whether this is a per-reservation setting ("do these stalls get cleaned between reservations?") or a prompt in the check-out modal. Discuss before building.
+14. [ ] Upload .xlsx → Stall Grid (ZipArchive + SimpleXML; "Download Example Template" link). (Moved from v1.)
+15. [ ] Full permissions matrix (role-based access). (Moved from v1.)
+16. [ ] Stall-assignments CSV export (columns: Stall, Barn, Roper ID, Horse, Rider, Phone, Address, City, State, Zip, VIP) — deferred from the Stall Logic demo (2026-06-25 handoff).
 
 ---
 
