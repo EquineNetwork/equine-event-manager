@@ -2674,7 +2674,7 @@ class EEM_Admin {
 	 * @param array $rows Order rows from build_stall_chart_rows().
 	 * @return void
 	 */
-	private function render_stall_chart_sidebar( array $rows ): void {
+	private function render_stall_chart_sidebar( array $rows, bool $groups_enabled = false ): void {
 		// Stalls-only roster for Phase 1 (RV mirrors in Phase 3).
 		$stall_rows = array_values( array_filter( $rows, static function ( $r ) {
 			return ! empty( $r['has_stall'] );
@@ -2682,6 +2682,18 @@ class EEM_Admin {
 		if ( empty( $stall_rows ) ) {
 			return;
 		}
+
+		// Distinct group names present on this reservation's orders — populates the
+		// sidebar Groups filter (only rendered when group reservations are enabled).
+		$group_set = array();
+		foreach ( $stall_rows as $r ) {
+			$g = trim( (string) ( isset( $r['group_name'] ) ? $r['group_name'] : '' ) );
+			if ( '' !== $g ) {
+				$group_set[ $g ] = true;
+			}
+		}
+		$group_options = array_keys( $group_set );
+		usort( $group_options, 'strcasecmp' );
 
 		// Distinct option sets for the four date/count filters.
 		$arrivals   = array();
@@ -2798,6 +2810,19 @@ class EEM_Admin {
 						</select>
 					</div>
 				</div>
+				<?php // Groups filter — only when group reservations are enabled on the
+				// reservation AND at least one customer is in a group. ?>
+				<?php if ( $groups_enabled && ! empty( $group_options ) ) : ?>
+					<div>
+						<div class="eem-sb-filter-label"><?php esc_html_e( 'Groups', 'equine-event-manager' ); ?></div>
+						<select class="eem-sb-filter-select" data-eem-sb-filter="group">
+							<option value=""><?php esc_html_e( 'All groups', 'equine-event-manager' ); ?></option>
+							<?php foreach ( $group_options as $g_opt ) : ?>
+								<option value="<?php echo esc_attr( $g_opt ); ?>"><?php echo esc_html( $g_opt ); ?></option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+				<?php endif; ?>
 			</div>
 
 			<div class="eem-sb-list" data-eem-sb-list>
@@ -2869,7 +2894,8 @@ class EEM_Admin {
 			data-arrival="<?php echo esc_attr( $arr ); ?>"
 			data-departure="<?php echo esc_attr( $dep ); ?>"
 			data-nights="<?php echo esc_attr( (string) $nights ); ?>"
-			data-stalls="<?php echo esc_attr( (string) $stalls ); ?>">
+			data-stalls="<?php echo esc_attr( (string) $stalls ); ?>"
+			data-group="<?php echo esc_attr( trim( (string) ( isset( $r['group_name'] ) ? $r['group_name'] : '' ) ) ); ?>">
 			<div class="eem-sb-cust-avatar<?php echo $assigned ? ' assigned' : ''; ?>"><?php echo esc_html( $initials ); ?></div>
 			<div class="eem-sb-cust-info">
 				<span class="eem-sb-cust-name"><?php echo esc_html( $name_lf ); ?></span>
@@ -2961,7 +2987,7 @@ class EEM_Admin {
 			: array();
 		?>
 				<div class="eem-sc-body" data-eem-sc-body>
-				<?php $this->render_stall_chart_sidebar( $order_rows ); ?>
+				<?php $this->render_stall_chart_sidebar( $order_rows, $groups_enabled ); ?>
 				<div class="eem-sc-main">
 				<?php $eem_unsaved = isset( $grid['unsaved_order_count'] ) ? (int) $grid['unsaved_order_count'] : 0; ?>
 				<?php if ( false ) : // Suggestion banner removed (Whitney 2026-06-24): stalls stay Available until manually assigned; no auto-suggest push. ?>

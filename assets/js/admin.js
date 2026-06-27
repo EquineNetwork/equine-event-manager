@@ -5406,6 +5406,7 @@
 				var s = parseInt(card.getAttribute('data-stalls') || '0', 10) || 0;
 				show = (f.stalls === '4+') ? (s >= 4) : (String(s) === f.stalls);
 			}
+			if (show && f.group && (card.getAttribute('data-group') || '') !== f.group) { show = false; }
 			if (show && search && (card.getAttribute('data-name') || '').indexOf(search) === -1) { show = false; }
 			card.style.display = show ? '' : 'none';
 			if (show) { if (isAssigned) { anyAssigned = true; } else { anyUnassigned = true; } }
