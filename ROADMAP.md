@@ -53,7 +53,7 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 1. [ ] **Global mobile visual polish** — per-page pass to match Daily Movement standard (row heights, badge sizing, spacing/density). Scaffolding shipped (2.7.577–580); per-page work not started.
 
-2. [ ] **Add-On Report** — per-day add-on quantities, CSV + PDF.
+2. [ ] **Add-On Report** — per-day add-on quantities, CSV + PDF. **Decisions locked (2026-06-27, paused mid-build):** (a) per-day model = count each add-on on EVERY day of the order's stay (daily-consumable, mirrors Shavings daily report); (b) scope = GENERAL add-ons only (shavings has its own report). Mirror `shavings_report` structure (summary across reservations + per-day rows for a single reservation); register in `EEM_Reports_Repo::REPORTS` + `get_report()` dispatch + reports page UI + exporter + PDF. General add-on per-order qty comes from order notes ("Add-On: NAME | Qty: N | ...").
 
 3. [ ] **Full end-to-end customer checkout sweep** — run a real checkout on the NTR 6519 fixture page. Also the recommended way to seed test data (real checkout writes correct `reservation_id` + notes tag + config-based pricing).
 
