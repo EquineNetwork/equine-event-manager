@@ -37,7 +37,7 @@ class EEM_Reports_Repo {
 	 *
 	 * @var array<int,string>
 	 */
-	const REPORTS = array( 'orders', 'reservations', 'revenue', 'stall_occupancy', 'rv_occupancy', 'shavings', 'customer_list', 'refund_log', 'cleaning' );
+	const REPORTS = array( 'orders', 'reservations', 'revenue', 'stall_occupancy', 'rv_occupancy', 'shavings', 'addons', 'customer_list', 'refund_log', 'cleaning' );
 
 	/**
 	 * Orders repository.
@@ -157,6 +157,8 @@ class EEM_Reports_Repo {
 				return $this->stall_occupancy_report( $filters );
 			case 'shavings':
 				return $this->shavings_report( $filters );
+			case 'addons':
+				return $this->addons_report( $filters );
 			case 'customer_list':
 				return $this->customer_list_report( $filters );
 			case 'refund_log':
@@ -1000,6 +1002,233 @@ class EEM_Reports_Repo {
 		return array(
 			'title'             => __( 'Shavings', 'equine-event-manager' ),
 			'slug'              => 'shavings',
+			'event_header'      => $event_header,
+			'headers'           => $headers,
+			'rows'              => array_merge( array( $totals_row ), $rows ),
+			'summary_row_count' => 1,
+			'note_sections'     => $note_sections,
+		);
+	}
+
+	/**
+	 * Parse general add-on quantities from an order's notes.
+	 *
+	 * Checkout writes one "Add-On: NAME | Qty: N | Per: … | Subtotal: $X" line per
+	 * selected general add-on. This sums quantity per add-on name for one order.
+	 *
+	 * @param string $notes Raw order notes.
+	 * @return array<string,int> Map of add-on name => total quantity.
+	 */
+	private function parse_addons_from_notes( string $notes ): array {
+		$out = array();
+		if ( preg_match_all( '/(?:^|\n)Add-On:\s*(.+?)\s*\|\s*Qty:\s*(\d+)/mi', $notes, $matches, PREG_SET_ORDER ) ) {
+			foreach ( $matches as $match ) {
+				$name = trim( (string) $match[1] );
+				$qty  = absint( $match[2] );
+				if ( '' === $name || $qty <= 0 ) {
+					continue;
+				}
+				$out[ $name ] = ( $out[ $name ] ?? 0 ) + $qty;
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Add-Ons report — per-event summary across all reservations, or per-day
+	 * quantities for a single reservation. Mirrors the Shavings report shape.
+	 *
+	 * @param array $filters Filters.
+	 * @return array{title:string,slug:string,headers:array,rows:array}
+	 */
+	public function addons_report( array $filters ): array {
+		$rid = absint( $filters['reservation_id'] ?? 0 );
+		return $rid > 0 ? $this->addons_daily( $filters ) : $this->addons_summary( $filters );
+	}
+
+	/**
+	 * Add-Ons — per-event summary row for the "All reservations" view.
+	 *
+	 * @param array $filters Filters.
+	 * @return array{title:string,slug:string,headers:array,rows:array}
+	 */
+	private function addons_summary( array $filters ): array {
+		$buckets = array();
+		foreach ( $this->get_filtered_orders( $filters ) as $o ) {
+			$units = array_sum( $this->parse_addons_from_notes( (string) ( $o['notes'] ?? '' ) ) );
+			if ( $units <= 0 ) {
+				continue;
+			}
+			$rid = absint( $o['reservation_id'] ?? 0 );
+			$key = $rid > 0 ? (string) $rid : 'r:' . (string) ( $o['event_name'] ?? '' );
+			if ( ! isset( $buckets[ $key ] ) ) {
+				$title = $rid > 0 ? (string) get_the_title( $rid ) : (string) ( $o['event_name'] ?? '' );
+				if ( '' === trim( $title ) ) {
+					$title = __( '(Unlinked reservation)', 'equine-event-manager' );
+				}
+				$buckets[ $key ] = array( 'title' => $title, 'units' => 0 );
+			}
+			$buckets[ $key ]['units'] += $units;
+		}
+
+		$rows = array();
+		foreach ( $buckets as $b ) {
+			$rows[] = array( $b['title'], (string) $b['units'] );
+		}
+
+		return array(
+			'title'   => __( 'Add-Ons', 'equine-event-manager' ),
+			'slug'    => 'addons',
+			'headers' => array(
+				__( 'Reservation', 'equine-event-manager' ),
+				__( 'Add-On Units', 'equine-event-manager' ),
+			),
+			'rows'    => $rows,
+		);
+	}
+
+	/**
+	 * Add-Ons — per-day quantities for a single reservation.
+	 *
+	 * Each row = one calendar day in the event range. Columns are dynamic, one per
+	 * distinct general add-on, plus a Total. An add-on's quantity is counted on
+	 * EVERY day of its order's stay (per Whitney's spec). A navy TOTALS row pins
+	 * the column sums at the top; a note section lists total quantity purchased per
+	 * add-on (the actual order count, not day-multiplied).
+	 *
+	 * @param array $filters Filters (reservation_id must be > 0).
+	 * @return array{title:string,slug:string,headers:array,rows:array}
+	 */
+	private function addons_daily( array $filters ): array {
+		$rid              = absint( $filters['reservation_id'] );
+		$order_data       = array();
+		$types            = array();
+		$purchased_totals = array();
+		$min_date         = null;
+		$max_date         = null;
+
+		foreach ( $this->get_filtered_orders( $filters ) as $o ) {
+			$addons = $this->parse_addons_from_notes( (string) ( $o['notes'] ?? '' ) );
+			if ( empty( $addons ) ) {
+				continue;
+			}
+			$arrival   = (string) ( $o['stall_arrival_date'] ?? '' );
+			$departure = (string) ( $o['stall_departure_date'] ?? '' );
+			if ( '' === $arrival ) {
+				$arrival = (string) ( $o['rv_arrival_date'] ?? '' );
+			}
+			if ( '' === $departure ) {
+				$departure = (string) ( $o['rv_departure_date'] ?? '' );
+			}
+			if ( '' !== $arrival && ( null === $min_date || $arrival < $min_date ) ) {
+				$min_date = $arrival;
+			}
+			if ( '' !== $departure && ( null === $max_date || $departure > $max_date ) ) {
+				$max_date = $departure;
+			}
+			foreach ( $addons as $name => $qty ) {
+				$types[ $name ]            = true;
+				$purchased_totals[ $name ] = ( $purchased_totals[ $name ] ?? 0 ) + $qty;
+			}
+			$order_data[] = array(
+				'addons'    => $addons,
+				'arrival'   => $arrival,
+				'departure' => $departure,
+			);
+		}
+
+		ksort( $types );
+		$type_names = array_keys( $types );
+
+		$res_title    = (string) get_the_title( $rid );
+		$event_header = $res_title;
+		if ( null !== $min_date && null !== $max_date ) {
+			$event_header .= '  ·  ' . date_i18n( 'M j', strtotime( $min_date ) )
+				. ' – ' . date_i18n( 'M j, Y', strtotime( $max_date ) );
+		}
+
+		$headers = array_merge(
+			array( __( 'Date', 'equine-event-manager' ) ),
+			$type_names,
+			array( __( 'Total', 'equine-event-manager' ) )
+		);
+
+		if ( null === $min_date || null === $max_date || empty( $type_names ) ) {
+			return array(
+				'title'        => __( 'Add-Ons', 'equine-event-manager' ),
+				'slug'         => 'addons',
+				'event_header' => $event_header,
+				'headers'      => $headers,
+				'rows'         => array(),
+			);
+		}
+
+		$dates   = array();
+		$current = new DateTime( $min_date );
+		$end     = new DateTime( $max_date );
+		while ( $current <= $end ) {
+			$dates[] = $current->format( 'Y-m-d' );
+			$current->modify( '+1 day' );
+		}
+
+		$rows        = array();
+		$col_totals  = array_fill_keys( $type_names, 0 );
+		$grand_total = 0;
+		foreach ( $dates as $date ) {
+			$day = array_fill_keys( $type_names, 0 );
+			foreach ( $order_data as $od ) {
+				if (
+					'' !== $od['arrival'] &&
+					'' !== $od['departure'] &&
+					$date >= $od['arrival'] &&
+					$date <= $od['departure']
+				) {
+					foreach ( $od['addons'] as $name => $qty ) {
+						$day[ $name ] += $qty;
+					}
+				}
+			}
+			$row       = array( date_i18n( 'D, M j', strtotime( $date ) ) );
+			$day_total = 0;
+			foreach ( $type_names as $name ) {
+				$row[]               = (string) $day[ $name ];
+				$col_totals[ $name ] += $day[ $name ];
+				$day_total           += $day[ $name ];
+			}
+			$row[]        = (string) $day_total;
+			$grand_total += $day_total;
+			$rows[]       = $row;
+		}
+
+		$totals_row = array(
+			/* translators: %d: number of days. */
+			sprintf( _n( 'TOTALS (%d day)', 'TOTALS (%d days)', count( $dates ), 'equine-event-manager' ), count( $dates ) ),
+		);
+		foreach ( $type_names as $name ) {
+			$totals_row[] = (string) $col_totals[ $name ];
+		}
+		$totals_row[] = (string) $grand_total;
+
+		$note_sections = array();
+		if ( ! empty( $purchased_totals ) ) {
+			arsort( $purchased_totals );
+			$type_rows = array();
+			foreach ( $purchased_totals as $name => $qty ) {
+				$type_rows[] = array( $name, (string) $qty );
+			}
+			$note_sections[] = array(
+				'label'   => __( 'Add-Ons — Total Purchased', 'equine-event-manager' ),
+				'headers' => array(
+					__( 'Add-On', 'equine-event-manager' ),
+					__( 'Quantity', 'equine-event-manager' ),
+				),
+				'rows'    => $type_rows,
+			);
+		}
+
+		return array(
+			'title'             => __( 'Add-Ons', 'equine-event-manager' ),
+			'slug'              => 'addons',
 			'event_header'      => $event_header,
 			'headers'           => $headers,
 			'rows'              => array_merge( array( $totals_row ), $rows ),
