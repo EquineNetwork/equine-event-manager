@@ -217,8 +217,6 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 11. [ ] Print views: move-customer + readiness/print smoke coverage (#234)
 12. [ ] Verify RV lot name/number split against real GEMS labels (#235)
 13. [ ] Postmeta → relational de-coupling (Phase 1 funnel). Audit + remediation plan: `docs/POSTMETA-AUDIT.md`. (As of 2026-06-23: reservation setup/pricing/rows are on the config table; #212 checkout base-rate read is FIXED; remaining gaps are map snapshots `_en_stall_map`/`_en_rv_map` (see #9) + hybrid blocked-units reads + events/venues/producers/divisions editors still on post-meta.)
-14. [ ] Upload .xlsx → Stall Grid (ZipArchive + SimpleXML; "Download Example Template" link)
-18. [ ] Full permissions matrix (role-based access) — needs discussion; may land pre-launch
 19. [x] Order Detail: make "Special Instructions" editable (inline edit + Save Changes bar) — currently display-only
 20. [ ] Customer page: consume group fields — show `_en_group_description` text + enforce `_en_group_riders_per_group` max on the rider input (saved today but never read)
 21. [x] Dashboard "Needs Attention": agreement-signature row (needs per-order signature tracking; not emitted today)
@@ -251,6 +249,8 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 10. [ ] Orders list — per-page count control (let the admin choose how many orders show per screen; currently fixed at 25/page). Apply the same pattern to other list pages (Reservations, Customers) if it lands well.
 11. [ ] Excel stall map import (.xlsx → stall rows + map grid). (Moved from v1.)
 12. [ ] PDF Venue Map → overlay (upload PDF, drop/snap stall hotspots). (Moved from v1.)
+14. [ ] Upload .xlsx → Stall Grid (ZipArchive + SimpleXML; "Download Example Template" link). (Moved from v1.)
+15. [ ] Full permissions matrix (role-based access). (Moved from v1.)
 13. [ ] Bypass the "cleaning phase" on checkout. Today, checking a customer out auto-flags the stall **Cleaning** (→ Needs cleaning) before it returns to Available. Some venues don't clean between reservations and want the stall to go straight back to Available. SCOPE TBD — decide whether this is a per-reservation setting ("do these stalls get cleaned between reservations?") or a prompt in the check-out modal. Discuss before building.
 
 ---
