@@ -7036,10 +7036,18 @@ RV Lot: " . $rv_lot['name'] );
 	/**
 	 * Get a derived stall subtotal breakdown for an order.
 	 *
+	 * CANONICAL implementation — the single source of truth for splitting a
+	 * stored stall subtotal into base / required-shavings / additional-shavings
+	 * across EVERY surface (customer receipt + PDF, confirmation email, and the
+	 * admin Order Detail / print). The admin side delegates here
+	 * (EEM_Admin::get_order_stall_breakdown) so the four surfaces can't diverge —
+	 * the #00009 class of bug where additional shavings (per-product JSON) were
+	 * computed one way on the receipt and another on Order Detail.
+	 *
 	 * @param array $order Order payload.
-	 * @return array
+	 * @return array{base_subtotal:float,required_shavings_qty:int,required_shavings_subtotal:float,additional_shavings_qty:int,additional_shavings_subtotal:float}
 	 */
-	private function get_order_stall_breakdown( $order ) {
+	public function get_order_stall_breakdown( $order ) {
 		$reservation_id                = ! empty( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0;
 		// 2.3.86 (C11) — reservation meta is stored with the `_en_` prefix; the
 		// prior unprefixed reads always returned 0, so the required/additional

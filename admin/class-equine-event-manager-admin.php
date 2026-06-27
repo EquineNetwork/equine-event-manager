@@ -14514,103 +14514,14 @@ class EEM_Admin {
 	 * @return array
 	 */
 	private function get_order_stall_breakdown( $order ) {
-		$reservation_id               = ! empty( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0;
-		$required_price              = $reservation_id ? (float) get_post_meta( $reservation_id, 'required_shavings_price', true ) : 0.0;
-		$additional_price            = $reservation_id ? (float) get_post_meta( $reservation_id, 'additional_shavings_price', true ) : 0.0;
-		$required_shavings_qty       = 0;
-		$additional_shavings_qty     = 0;
-		$base_subtotal               = 0.0;
-		$required_shavings_subtotal  = 0.0;
-		$additional_shavings_subtotal = 0.0;
-		$stall_rows                  = $this->get_order_component_rows( $order, 'stall' );
-
-		foreach ( $stall_rows as $row ) {
-			$row_reservation_id         = self::extract_reservation_id_from_notes( isset( $row['notes'] ) ? $row['notes'] : '' );
-			$row_reservation_id         = $row_reservation_id ? $row_reservation_id : $reservation_id;
-			$row_required_price         = $row_reservation_id ? (float) get_post_meta( $row_reservation_id, 'required_shavings_price', true ) : $required_price;
-			$row_additional_price       = $row_reservation_id ? (float) get_post_meta( $row_reservation_id, 'additional_shavings_price', true ) : $additional_price;
-			$stall_quantity             = absint( $row['stall_qty'] ) + absint( $row['tack_stall_qty'] );
-			$row_required_qty           = absint( $row['required_shavings_qty'] );
-			$row_additional_qty         = absint( $row['additional_shavings_qty'] );
-			$stay_units                 = $this->get_billable_stay_units( $row['arrival_date'], $row['departure_date'], $row['stay_type'] );
-			$row_base_subtotal          = $stall_quantity * (float) $row['unit_price'] * $stay_units;
-			$row_required_subtotal      = $row_required_qty * $row_required_price;
-			$row_additional_subtotal    = $row_additional_qty * $row_additional_price;
-			$row_shavings_total         = max( 0, (float) $row['subtotal'] - $row_base_subtotal );
-			$row_priced_shavings_total  = $row_required_subtotal + $row_additional_subtotal;
-
-			if ( $row_shavings_total > 0 && ( $row_required_qty > 0 || $row_additional_qty > 0 ) ) {
-				if ( $row_priced_shavings_total > 0 ) {
-					$shavings_scale = $row_shavings_total / $row_priced_shavings_total;
-
-					$row_required_subtotal   *= $shavings_scale;
-					$row_additional_subtotal *= $shavings_scale;
-				} else {
-					$total_shavings_qty = $row_required_qty + $row_additional_qty;
-
-					if ( $total_shavings_qty > 0 ) {
-						$derived_per_bag = $row_shavings_total / $total_shavings_qty;
-
-						$row_required_subtotal   = $row_required_qty * $derived_per_bag;
-						$row_additional_subtotal = $row_additional_qty * $derived_per_bag;
-					}
-				}
-			}
-
-			$required_shavings_qty      += $row_required_qty;
-			$additional_shavings_qty    += $row_additional_qty;
-			$base_subtotal              += $row_base_subtotal;
-			$required_shavings_subtotal += $row_required_subtotal;
-			$additional_shavings_subtotal += $row_additional_subtotal;
-		}
-
-		if ( empty( $stall_rows ) ) {
-			$required_shavings_qty       = absint( $order['required_shavings_qty'] );
-			$additional_shavings_qty     = absint( $order['additional_shavings_qty'] );
-			$required_shavings_subtotal  = $required_shavings_qty * $required_price;
-			$additional_shavings_subtotal = $additional_shavings_qty * $additional_price;
-			$base_subtotal               = max( 0, (float) $order['stall_subtotal'] - $required_shavings_subtotal - $additional_shavings_subtotal );
-		}
-
-		$total_shavings_qty = $required_shavings_qty + $additional_shavings_qty;
-		$stored_stall_total = (float) $order['stall_subtotal'];
-		$derived_shavings_total = $required_shavings_subtotal + $additional_shavings_subtotal;
-
-		if ( $total_shavings_qty > 0 && $stored_stall_total > 0 ) {
-			$derived_base_subtotal = max( 0, $stored_stall_total - $derived_shavings_total );
-
-			if ( $derived_shavings_total <= 0 || $derived_base_subtotal > $base_subtotal + 0.01 ) {
-				$fallback_shavings_total = max( 0, $stored_stall_total - $base_subtotal );
-
-				if ( $fallback_shavings_total > 0 ) {
-					if ( $derived_shavings_total > 0 ) {
-						$shavings_scale = $fallback_shavings_total / $derived_shavings_total;
-
-						$required_shavings_subtotal   *= $shavings_scale;
-						$additional_shavings_subtotal *= $shavings_scale;
-					} elseif ( $required_shavings_qty > 0 && $additional_shavings_qty > 0 ) {
-						$required_ratio = $required_shavings_qty / $total_shavings_qty;
-
-						$required_shavings_subtotal   = $fallback_shavings_total * $required_ratio;
-						$additional_shavings_subtotal = $fallback_shavings_total - $required_shavings_subtotal;
-					} elseif ( $required_shavings_qty > 0 ) {
-						$required_shavings_subtotal   = $fallback_shavings_total;
-						$additional_shavings_subtotal = 0.0;
-					} elseif ( $additional_shavings_qty > 0 ) {
-						$required_shavings_subtotal   = 0.0;
-						$additional_shavings_subtotal = $fallback_shavings_total;
-					}
-				}
-			}
-		}
-
-		return array(
-			'base_subtotal'               => $base_subtotal,
-			'required_shavings_qty'       => $required_shavings_qty,
-			'required_shavings_subtotal'  => $required_shavings_subtotal,
-			'additional_shavings_qty'     => $additional_shavings_qty,
-			'additional_shavings_subtotal' => $additional_shavings_subtotal,
-		);
+		// DELEGATE to the canonical breakdown in EEM_Shortcodes so the admin
+		// Order Detail / print surfaces compute the stall base / required-shavings
+		// / additional-shavings split IDENTICALLY to the customer receipt + PDF +
+		// confirmation email. The previous admin-local copy used the legacy
+		// `additional_shavings_price × qty` model (and read unprefixed reservation
+		// meta that returned 0), so per-product additional shavings — the order
+		// #00009 case — diverged from the receipt. One implementation, one result.
+		return ( new EEM_Shortcodes() )->get_order_stall_breakdown( $order );
 	}
 
 	/**
