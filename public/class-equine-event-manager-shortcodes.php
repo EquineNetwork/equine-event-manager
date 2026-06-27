@@ -2447,9 +2447,12 @@ class EEM_Shortcodes {
 			<div class="eem-map-legend">
 				<span><i class="eem-map-sw eem-map-sw--avail"></i> <?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
 				<span><i class="eem-map-sw eem-map-sw--sel"></i> <?php esc_html_e( 'Selected', 'equine-event-manager' ); ?></span>
-				<span><i class="eem-map-sw eem-map-sw--tack"></i> <?php esc_html_e( 'Tack', 'equine-event-manager' ); ?></span>
 				<span><i class="eem-map-sw eem-map-sw--res"></i> <?php esc_html_e( 'Taken', 'equine-event-manager' ); ?></span>
 				<span><i class="eem-map-sw eem-map-sw--block"></i> <?php esc_html_e( 'Unavailable', 'equine-event-manager' ); ?></span>
+				<?php // Tack swatch only when the reservation offers tack-stall designation; shown last. ?>
+				<?php if ( $tack_enabled ) : ?>
+					<span><i class="eem-map-sw eem-map-sw--tack"></i> <?php esc_html_e( 'Tack', 'equine-event-manager' ); ?></span>
+				<?php endif; ?>
 			</div>
 			<div class="eem-map-scroll" data-eem-map-scroll><div class="eem-map-grid" data-eem-map-grid></div></div>
 			<div class="eem-map-summary" data-eem-map-summary></div>
