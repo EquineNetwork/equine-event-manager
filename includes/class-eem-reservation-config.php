@@ -487,31 +487,24 @@ class EEM_Reservation_Config {
 	 * @return int[]
 	 */
 	public static function with_stalls_or_rv( $post_status = 'publish', int $limit = 200 ): array {
-		if ( self::table_exists() ) {
-			global $wpdb;
-			$table   = $wpdb->prefix . 'eem_reservation_config';
-			$statuses = (array) $post_status;
-			if ( in_array( 'any', $statuses, true ) ) {
-				$status_clause = "p.post_status NOT IN ('auto-draft','inherit')";
-			} else {
-				$placeholders  = implode( ',', array_fill( 0, count( $statuses ), '%s' ) );
-				$status_clause = $wpdb->prepare( "p.post_status IN ($placeholders)", ...$statuses );
-			}
+		// The enable flags (stalls_enabled / rv_enabled) are authoritatively
+		// stored in postmeta — section_enabled() always reads postmeta, never the
+		// config table. The config table is a Phase-2 acceleration that is only
+		// LAZILY populated (a reservation gets a config row the first time it is
+		// saved / its map is written), so a freshly-created config table can be
+		// empty or partial even though every reservation still has its postmeta
+		// flags. Querying the config table ALONE therefore drops every
+		// not-yet-migrated reservation — that is the regression that emptied the
+		// Stall & RV Charts list after the config table first appeared.
+		//
+		// Fix: always run the authoritative postmeta meta_query, and UNION it with
+		// the config-table result (when the table exists) so migrated and
+		// unmigrated reservations both surface. The postmeta query is the floor;
+		// the config table can only add rows whose postmeta flags were missed
+		// (it never legitimately should, but the union is harmless either way).
+		$ids = array();
 
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$ids = $wpdb->get_col(
-				"SELECT c.reservation_id FROM {$table} c
-				 INNER JOIN {$wpdb->posts} p ON p.ID = c.reservation_id
-				 WHERE (c.stalls_enabled = 1 OR c.rv_enabled = 1)
-				 AND p.post_type = 'en_reservation'
-				 AND {$status_clause}
-				 LIMIT {$limit}"
-			);
-
-			return array_map( 'intval', $ids );
-		}
-
-		$query = new WP_Query( array(
+		$meta_query = new WP_Query( array(
 			'post_type'      => 'en_reservation',
 			'post_status'    => $post_status,
 			'posts_per_page' => $limit,
@@ -541,8 +534,41 @@ class EEM_Reservation_Config {
 				),
 			),
 		) );
+		foreach ( (array) $meta_query->posts as $pid ) {
+			$ids[ (int) $pid ] = true;
+		}
 
-		return array_map( 'intval', (array) $query->posts );
+		if ( self::table_exists() ) {
+			global $wpdb;
+			$table    = $wpdb->prefix . 'eem_reservation_config';
+			$statuses = (array) $post_status;
+			if ( in_array( 'any', $statuses, true ) ) {
+				$status_clause = "p.post_status NOT IN ('auto-draft','inherit')";
+			} else {
+				$placeholders  = implode( ',', array_fill( 0, count( $statuses ), '%s' ) );
+				$status_clause = $wpdb->prepare( "p.post_status IN ($placeholders)", ...$statuses );
+			}
+
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$config_ids = $wpdb->get_col(
+				"SELECT c.reservation_id FROM {$table} c
+				 INNER JOIN {$wpdb->posts} p ON p.ID = c.reservation_id
+				 WHERE (c.stalls_enabled = 1 OR c.rv_enabled = 1)
+				 AND p.post_type = 'en_reservation'
+				 AND {$status_clause}
+				 LIMIT {$limit}"
+			);
+			foreach ( (array) $config_ids as $cid ) {
+				$ids[ (int) $cid ] = true;
+			}
+		}
+
+		$ids = array_keys( $ids );
+		if ( count( $ids ) > $limit ) {
+			$ids = array_slice( $ids, 0, $limit );
+		}
+
+		return array_map( 'intval', $ids );
 	}
 
 	/**
