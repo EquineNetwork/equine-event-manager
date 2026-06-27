@@ -51,6 +51,9 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 ### Active (tackle one at a time)
 
+0. [ ] **Stall & RV Charts — rethink the toolbar layout (Whitney sleeping on it, 2026-06-27).** The 2.7.657 cleanup shipped but feels "clunky." THE core problem (Whitney, said twice): **the filters/controls MOVE on every one of the 3 views** (By Customer / By Location—List / By Location—Map) — that inconsistency is the jarring part. Goal: **ONE consistent control layout that stays put across all 3 views**, with **Show + View anchored together, left-aligned directly under the page title**, identical position on every view. Today they sit top-right and the surrounding controls (Search, Barns, Quick-view, sidebar) reflow per view. Tomorrow: design a single fixed toolbar; Show/View never move; only the contents that genuinely don't apply to a view (e.g. Bulk update, barn tabs) hide in place rather than reshuffling everything. Don't start until Whitney confirms the direction. Header moves + sidebar declutter from 2.7.657 are self-contained commits → easy to revert individually if she wants a different base.
+
+
 1. [ ] **Global mobile visual polish** — per-page pass to match Daily Movement standard (row heights, badge sizing, spacing/density). Scaffolding shipped (2.7.577–580); per-page work not started.
 
 2. [ ] **Add-On Report** — per-day add-on quantities, CSV + PDF. **Decisions locked (2026-06-27, paused mid-build):** (a) per-day model = count each add-on on EVERY day of the order's stay (daily-consumable, mirrors Shavings daily report); (b) scope = GENERAL add-ons only (shavings has its own report). Mirror `shavings_report` structure (summary across reservations + per-day rows for a single reservation); register in `EEM_Reports_Repo::REPORTS` + `get_report()` dispatch + reports page UI + exporter + PDF. General add-on per-order qty comes from order notes ("Add-On: NAME | Qty: N | ...").
