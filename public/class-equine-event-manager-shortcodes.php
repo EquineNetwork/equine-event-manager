@@ -2447,9 +2447,12 @@ class EEM_Shortcodes {
 			<div class="eem-map-legend">
 				<span><i class="eem-map-sw eem-map-sw--avail"></i> <?php esc_html_e( 'Available', 'equine-event-manager' ); ?></span>
 				<span><i class="eem-map-sw eem-map-sw--sel"></i> <?php esc_html_e( 'Selected', 'equine-event-manager' ); ?></span>
-				<span><i class="eem-map-sw eem-map-sw--tack"></i> <?php esc_html_e( 'Tack', 'equine-event-manager' ); ?></span>
 				<span><i class="eem-map-sw eem-map-sw--res"></i> <?php esc_html_e( 'Taken', 'equine-event-manager' ); ?></span>
 				<span><i class="eem-map-sw eem-map-sw--block"></i> <?php esc_html_e( 'Unavailable', 'equine-event-manager' ); ?></span>
+				<?php // Tack swatch only when the reservation offers tack-stall designation; shown last. ?>
+				<?php if ( $tack_enabled ) : ?>
+					<span><i class="eem-map-sw eem-map-sw--tack"></i> <?php esc_html_e( 'Tack', 'equine-event-manager' ); ?></span>
+				<?php endif; ?>
 			</div>
 			<div class="eem-map-scroll" data-eem-map-scroll><div class="eem-map-grid" data-eem-map-grid></div></div>
 			<div class="eem-map-summary" data-eem-map-summary></div>
@@ -4738,8 +4741,8 @@ class EEM_Shortcodes {
 		$shavings_stall_qty            = max( 0, $stall_qty_total - $tack_stall_count );
 		$rv_unit_price                 = ! empty( $data['rv_lot_selection_enabled'] ) && '' !== (string) $submission['rv_lot'] ? $this->get_rv_lot_rate( $data, $submission['rv_lot'], $submission['rv_stay_type'] ) : $this->get_current_rate( $data, 'rv', $submission['rv_stay_type'] );
 		$rv_night_count                = $this->get_billable_stay_units( $submission['rv_arrival_date'], $submission['rv_departure_date'], $submission['rv_stay_type'] );
-		$required_shavings             = ! empty( $data['required_shavings_enabled'] ) ? $shavings_stall_qty * absint( $data['required_shavings_per_stall'] ) : 0;
-		$required_shavings_subtotal    = $required_shavings * (float) $data['required_shavings_price'];
+		$required_shavings             = ! empty( $data['required_shavings_enabled'] ) ? $shavings_stall_qty * absint( $data['required_shavings_per_stall'] ?? 0 ) : 0;
+		$required_shavings_subtotal    = $required_shavings * (float) ( $data['required_shavings_price'] ?? 0 );
 
 		$stall_unit_price = 0.0;
 		$stall_night_count = 0;
@@ -6376,6 +6379,20 @@ RV Lot: " . $rv_lot['name'] );
 			);
 		}
 
+		// Additional shavings (customer-purchased, per-product list) — its own line
+		// so it's never silently folded into the stall subtotal on the receipt.
+		if ( (float) $stall_breakdown['additional_shavings_subtotal'] > 0 ) {
+			$add_shav_qty = absint( $stall_breakdown['additional_shavings_qty'] );
+			$line_items[] = array(
+				'section' => __( 'Stall Product', 'equine-event-manager' ),
+				'desc'    => __( 'Additional Shavings', 'equine-event-manager' ),
+				'qty'     => (string) $add_shav_qty,
+				'units'   => __( 'bags', 'equine-event-manager' ),
+				'rate'    => $rate( (float) $stall_breakdown['additional_shavings_subtotal'], $add_shav_qty ),
+				'total'   => '$' . number_format_i18n( (float) $stall_breakdown['additional_shavings_subtotal'], 2 ),
+			);
+		}
+
 		if ( (float) $rv_base_subtotal > 0 && $rv_qty > 0 ) {
 			$line_items[] = array(
 				'section' => __( 'RV Res.', 'equine-event-manager' ),
@@ -6788,6 +6805,7 @@ RV Lot: " . $rv_lot['name'] );
 		// customer sees where they're placed on the receipt.
 		$receipt_stall_units = '';
 		$receipt_rv_units    = '';
+		$receipt_tack_units  = '';
 		$eem_assign_sources  = array();
 		foreach ( (array) ( $order['components'] ?? array() ) as $eem_ac ) {
 			$eem_assign_sources[] = (string) ( $eem_ac['notes'] ?? '' );
@@ -6800,10 +6818,23 @@ RV Lot: " . $rv_lot['name'] );
 			if ( '' === $receipt_rv_units && preg_match( '/Assigned RV Lots:\s*(.+)/i', $eem_src, $eem_rvm ) ) {
 				$receipt_rv_units = trim( $eem_rvm[1] );
 			}
+			if ( '' === $receipt_tack_units && preg_match( '/Tack Stalls:\s*(.+)/i', $eem_src, $eem_tm ) ) {
+				$receipt_tack_units = trim( $eem_tm[1] );
+			}
 		}
 		$receipt_assignments = array();
 		if ( '' !== $receipt_stall_units ) {
-			$receipt_assignments[] = array( 'label' => __( 'Stalls', 'equine-event-manager' ), 'value' => $receipt_stall_units, 'nights' => '' );
+			// Mark which assigned stall(s) are the tack stall so the customer receipt
+			// matches the admin order detail (tack was omitted from the receipt).
+			$stalls_value = $receipt_stall_units;
+			if ( '' !== $receipt_tack_units ) {
+				$stalls_value .= '<br>' . sprintf(
+					/* translators: %s: tack stall number(s) */
+					esc_html__( 'Tack stall: %s', 'equine-event-manager' ),
+					esc_html( $receipt_tack_units )
+				);
+			}
+			$receipt_assignments[] = array( 'label' => __( 'Stalls', 'equine-event-manager' ), 'value' => $stalls_value, 'nights' => '' );
 		}
 		if ( '' !== $receipt_rv_units ) {
 			$receipt_assignments[] = array( 'label' => __( 'RV Lots', 'equine-event-manager' ), 'value' => $receipt_rv_units, 'nights' => '' );
@@ -7016,7 +7047,25 @@ RV Lot: " . $rv_lot['name'] );
 			$stay_units               = $this->get_billable_stay_units( $row['arrival_date'], $row['departure_date'], $row['stay_type'] );
 			$row_base_subtotal        = $stall_quantity * (float) $row['unit_price'] * $stay_units;
 			$row_required_subtotal    = $row_required_qty * $required_price;
-			$row_additional_subtotal  = $row_additional_qty * $additional_price;
+			// Additional shavings is a LIST of products, each with its own price
+			// (stored as JSON on the row at checkout). Sum the per-product subtotals
+			// — the legacy single `additional_shavings_price` is $0 under the new
+			// model, which silently zeroed this line on the receipt + order detail
+			// and folded the charge into the stall base (display-only bug; the
+			// charge itself used the per-product prices). Fall back to qty × legacy
+			// price only when the JSON isn't present (pre-list orders).
+			$row_items_json           = isset( $row['additional_shavings_items'] ) ? (string) $row['additional_shavings_items'] : '';
+			$row_items                = '' !== $row_items_json ? json_decode( $row_items_json, true ) : null;
+			if ( is_array( $row_items ) && ! empty( $row_items ) ) {
+				$row_additional_subtotal = 0.0;
+				foreach ( $row_items as $row_item ) {
+					$row_additional_subtotal += isset( $row_item['subtotal'] )
+						? (float) $row_item['subtotal']
+						: ( (float) ( $row_item['qty'] ?? 0 ) * (float) ( $row_item['price'] ?? 0 ) );
+				}
+			} else {
+				$row_additional_subtotal = $row_additional_qty * $additional_price;
+			}
 
 			$required_shavings_qty       += $row_required_qty;
 			$additional_shavings_qty     += $row_additional_qty;

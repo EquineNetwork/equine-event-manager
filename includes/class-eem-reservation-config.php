@@ -758,7 +758,9 @@ class EEM_Reservation_Config {
 			'additional_shavings_enabled'    => 'tinyint(1)',
 			'additional_shavings_description' => 'varchar(255)',
 			'additional_shavings_price'       => 'decimal(10,2)',
-			'additional_shavings_products'   => 'text',
+			// NOTE: additional_shavings_products is an array → defined once in
+			// json_keys() (longtext). Was also (wrongly) declared here as 'text',
+			// producing a duplicate column on a fresh CREATE. Removed 2026-06-27.
 			// Descriptions / venue / check-in.
 			'reservation_description'        => 'text',
 			'event_details_summary'          => 'text',
@@ -1071,7 +1073,15 @@ class EEM_Reservation_Config {
 			return $exists;
 		}
 		$table  = $wpdb->prefix . 'eem_reservation_config';
-		$exists = (bool) $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+		// MySQL (production) uses SHOW TABLES exactly as before. Under the SQLite
+		// database-integration drop-in (dev test harness only) SHOW TABLES is not
+		// supported, so detect SQLite and query sqlite_master instead. The MySQL
+		// path is unchanged — DB_ENGINE is only defined as 'sqlite' by the drop-in.
+		if ( defined( 'DB_ENGINE' ) && 'sqlite' === DB_ENGINE ) {
+			$exists = (bool) $wpdb->get_var( $wpdb->prepare( "SELECT name FROM sqlite_master WHERE type = 'table' AND name = %s", $table ) );
+		} else {
+			$exists = (bool) $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
+		}
 		return $exists;
 	}
 }

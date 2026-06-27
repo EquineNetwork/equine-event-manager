@@ -196,7 +196,7 @@ class EEM_Order_Detail_Page {
 			</aside>
 		</div>
 
-		<?php $this->render_special_instructions_card( $reservation_id ); ?>
+		<?php $this->render_special_requests_card( $order ); ?>
 
 		<?php $this->render_order_notes_card( $order ); ?>
 
@@ -1697,35 +1697,27 @@ class EEM_Order_Detail_Page {
 	 * @param int $reservation_id
 	 * @return void
 	 */
-	private function render_special_instructions_card( $reservation_id ) {
-		$reservation_id = (int) $reservation_id;
-		$text  = $reservation_id > 0 ? (string) get_post_meta( $reservation_id, '_en_special_instructions', true ) : '';
-		$nonce = $reservation_id > 0 ? wp_create_nonce( 'eem_special_instructions_' . $reservation_id ) : '';
+	private function render_special_requests_card( array $order ): void {
+		// "Special Requests" is the CUSTOMER's free-text from checkout ("put me on
+		// an end row", etc.) — read-only; admins don't author or edit it. Sourced
+		// from the order's customer notes, the same value shown on the receipt and
+		// the Stall & RV Charts "Special Requests" column. (Was wrongly a separate
+		// admin-editable per-reservation "Special Instructions" field.)
+		$notes = isset( $order['notes'] ) ? (string) $order['notes'] : '';
+		$text  = class_exists( 'EEM_Admin' ) ? EEM_Admin::parse_customer_notes_from_order_notes( $notes ) : '';
 		?>
 		<div class="eem-order-full-width">
-			<div class="eem-card eem-order-card eem-order-instructions"
-				data-reservation-id="<?php echo esc_attr( (string) $reservation_id ); ?>"
-				data-nonce="<?php echo esc_attr( $nonce ); ?>"
-				data-ajax-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>">
+			<div class="eem-card eem-order-card eem-order-instructions">
 				<div class="eem-order-card__header">
-					<div class="eem-order-card__title"><?php echo EEM_Dashboard_Icons::svg( 'file' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- self-authored inline SVG. ?> <?php esc_html_e( 'Special Instructions', 'equine-event-manager' ); ?></div>
+					<div class="eem-order-card__title"><?php echo EEM_Dashboard_Icons::svg( 'file' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- self-authored inline SVG. ?> <?php esc_html_e( 'Special Requests', 'equine-event-manager' ); ?></div>
 				</div>
-				<?php if ( $reservation_id > 0 ) : ?>
-					<div class="eem-order-notes__body">
-						<div class="eem-order-notes__field">
-							<textarea class="eem-field-input eem-order-notes__input eem-order-instructions__input" rows="4" placeholder="<?php esc_attr_e( 'Add special instructions for this reservation…', 'equine-event-manager' ); ?>"><?php echo esc_textarea( $text ); ?></textarea>
-							<p class="eem-order-notes__hint"><?php esc_html_e( 'Applies to the entire reservation (every order), not just this order.', 'equine-event-manager' ); ?></p>
-							<div class="eem-order-notes__actions">
-								<button type="button" class="eem-btn eem-btn-electric eem-btn-sm" data-eem-action="order-instructions-save"><?php esc_html_e( 'Save Changes', 'equine-event-manager' ); ?></button>
-								<span class="eem-order-notes__status" role="status" aria-live="polite"></span>
-							</div>
-						</div>
-					</div>
-				<?php else : ?>
-					<div class="eem-order-instructions__body">
-						<p class="eem-order-instructions__text eem-order-instructions__text--empty">&mdash;</p>
-					</div>
-				<?php endif; ?>
+				<div class="eem-order-instructions__body">
+					<?php if ( '' !== trim( $text ) ) : ?>
+						<p class="eem-order-instructions__text"><?php echo nl2br( esc_html( trim( $text ) ) ); ?></p>
+					<?php else : ?>
+						<p class="eem-order-instructions__text eem-order-instructions__text--empty"><?php esc_html_e( 'No special requests.', 'equine-event-manager' ); ?></p>
+					<?php endif; ?>
+				</div>
 			</div>
 		</div>
 		<?php
@@ -1776,12 +1768,8 @@ class EEM_Order_Detail_Page {
 							<span class="eem-order-notes__value"><?php echo esc_html( $conf ); ?></span>
 						</div>
 					<?php endif; ?>
-					<?php if ( '' !== trim( $text ) ) : ?>
-						<div class="eem-order-notes__field">
-							<span class="eem-order-notes__label"><?php esc_html_e( 'Customer Notes', 'equine-event-manager' ); ?></span>
-							<p class="eem-order-notes__text"><?php echo nl2br( esc_html( trim( $text ) ) ); ?></p>
-						</div>
-					<?php endif; ?>
+					<?php // Customer free-text now shows in the dedicated read-only "Special
+					// Requests" card above — not duplicated here. ?>
 					<?php if ( '' !== $order_key ) : ?>
 						<div class="eem-order-notes__field">
 							<label class="eem-order-notes__label" for="eem-order-note-input"><?php esc_html_e( 'Note', 'equine-event-manager' ); ?></label>
