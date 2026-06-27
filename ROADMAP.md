@@ -64,7 +64,7 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 8. [ ] **Events flyer variant** — `show_flyer` thumbnail + countdown badge (today `flyer="yes"` only adds a "View Flyer" link).
 
-9. [ ] **Map drag-and-drop assignment** — on By Location Map view, drag a customer from the left sidebar onto a stall chip to assign them. If customer has multiple stalls, a confirm popup asks which stall number(s). Office/desktop-focused (not mobile-optimized). Important for v1 — discuss design before building.
+9. [x] **Map drag-and-drop assignment** — drag a customer from the sidebar onto an available stall to assign; arms the order so remaining stalls place by click/drag, auto-exits when filled. Shipped 2.7.651 — awaiting Whitney verification.
 
 10. [ ] **Self-test harness: seeded order-totals validation.** The throwaway WordPress (SQLite) harness is up — see `scripts/dev-sqlite-harness.sh` (rebuilds in ~2 min; lives at `/home/user/wp`, does NOT survive container recycling). Plugin activates at current version, smoke suite runs (3,435 assertions pass; pricing-math smokes clean). REMAINING: build a programmatically-seeded **configured reservation** (stall rows + pricing config) so the order seeder works, then add an order-totals assertion path that places an order and verifies exact dollar amounts (e.g. the #00008 = $811.20 manual check) — so math regressions are caught BEFORE pushing/bumping. Caveat: SQLite ≠ MySQL (one payments-ledger migration query errors, PRAGMA/DDL introspection differs) — ~465 of the current smoke failures are environmental, not real bugs; separate those out as part of this task.
 
