@@ -62,6 +62,8 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 7. [ ] **Generate Assignments — keep a single customer's stalls contiguous.** Today auto-assign only seats multi-ORDER *groups* contiguously (`assign_group_contiguous_stalls`); a single order needing 2+ stalls just takes the lowest-numbered available stalls in pool order, so one customer can be split across the barn (e.g. 238 + 250 instead of 238 + 239). Generalize the contiguous-run helper to also run per-order: try to seat each multi-stall order in a consecutive block within one barn, fall back to scattered lowest-first only when no run is large enough. Code in `EEM_Orders_Repository::auto_assign_units_for_reservation` / `assign_group_contiguous_stalls` (`includes/class-equine-event-manager-orders-repository.php`).
 
+8. [ ] **Move Convenience Fee from per-reservation to global Settings → Payments.** Remove the Convenience Fee section from the Edit Reservation editor; add it to Settings → Payments, positioned **above** the Tax Rate block. Becomes a global default (like Tax). Migration: snapshot existing per-reservation convenience-fee config into the global setting (or keep per-reservation override semantics — decide at kickoff, mirror how Tax does per-reservation override). Touches: editor section removal, Settings → Payments UI + save, and `calculate_submission_totals`'s `calculate_convenience_fee` source (read global instead of `$data`). **Charging math — verify totals before/after on the harness (#6).**
+
 ### Later (polish, non-blocking)
 
 12. [ ] **Restyle "View Event" overview page** to match plugin design system.
