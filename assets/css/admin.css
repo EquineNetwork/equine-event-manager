@@ -14567,3 +14567,54 @@ input.eem-pkg-price-input:focus { box-shadow: none; }
 	margin-bottom: 12px;
 }
 .eem-package-form-actions { display: flex; gap: 8px; margin-top: 8px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   M0 — Mobile-responsive foundation (Phase #1 sweep)
+
+   Shared primitives every page chunk reuses so the whole plugin reads as one
+   product on phones/tablets. Baseline density is taken from the Daily Movement
+   table (Whitney's reference). Breakpoints: 782px = WP's mobile-admin cutoff
+   (sidebar collapses), 600px = phone, 380px = small phone.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+	--eem-tap-min: 44px; /* minimum finger-friendly hit target */
+}
+
+/* Reusable horizontal-scroll wrapper. Wrap any wide table in this so the table
+   keeps its natural column widths and scrolls sideways on narrow screens instead
+   of collapsing/truncating cells (the Daily Movement pattern, generalized). */
+.eem-table-scroll,
+.eem-table-wrap {
+	overflow-x: auto;
+	-webkit-overflow-scrolling: touch;
+	max-width: 100%;
+}
+
+/* On narrow screens a wrapped .eem-table keeps its natural width and scrolls
+   sideways inside the wrapper instead of squishing/wrapping cells (the Daily
+   Movement pattern). Scoped to wrapped tables so an un-wrapped table can't
+   overflow the page. */
+@media (max-width: 782px) {
+	.eem-table-wrap .eem-table { width: auto; min-width: 100%; }
+	.eem-table-wrap .eem-table th,
+	.eem-table-wrap .eem-table td { white-space: nowrap; }
+}
+
+/* Plugin pages must never force the viewport wider than the screen. Long content
+   (wide tables, code) scrolls inside its own wrapper, not the whole page. */
+@media (max-width: 782px) {
+	.eem-page,
+	.eem-plugin-wrap { max-width: 100%; }
+
+	/* Finger-friendly hit targets for the core interactive primitives. Scoped to
+	   plugin classes so WP admin chrome is untouched. */
+	.eem-page .eem-btn,
+	.eem-page .eem-sc-qf-chip,
+	.eem-page .eem-filter-tab,
+	.eem-page select.eem-list-select,
+	.eem-page select.eem-field-select,
+	.eem-page select.eem-sc-control-select {
+		min-height: var(--eem-tap-min);
+	}
+}
