@@ -1,0 +1,71 @@
+name: CI
+
+# Runs on every PR and on pushes to non-main branches. `main` auto-deploys to the
+# live site, so this gate catches syntax-level regressions before they merge.
+#
+# Scope today: PHP lint (all source) + JS syntax check + the no-WordPress smokes.
+# The full WordPress smoke suite (tests/run-all-smokes.php) needs a MySQL + seeded
+# WP fixture and lands as a follow-up job once the suite is green on a CI fixture
+# (see the "Green the smoke suite" task).
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  php-lint:
+    name: PHP lint (${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [ '7.4', '8.2' ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: Lint all PHP files
+        run: |
+          set -euo pipefail
+          find equine-event-manager.php includes admin public tests tools \
+            -name '*.php' -print0 \
+            | xargs -0 -n1 -P4 php -l > /dev/null
+
+  js-syntax:
+    name: JS syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: node --check every JS file
+        run: |
+          set -euo pipefail
+          for f in assets/js/*.js; do
+            node --check "$f"
+          done
+
+  no-wp-smokes:
+    name: No-WordPress smokes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - name: Run standalone (no-WP) smokes
+        run: |
+          set -euo pipefail
+          out=$(php tests/smoke/stall-map-sanitize-smoke.php)
+          echo "$out"
+          echo "$out" | grep -q ' 0 failed'
