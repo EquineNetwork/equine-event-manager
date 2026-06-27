@@ -2448,3 +2448,29 @@ begin the V1 commit sequence.**
 
 **Execution rule:** ship each V1 commit individually (never bundled), browser-verify each
 before the next, and give each its own cache-bust version number.
+
+### RV add-ons removed — replaced by per-row/zone surcharges
+**Decided:** 2026-06-27 (Whitney)
+
+The legacy per-item RV add-on model (optional bolt-ons like "Electric / Water /
+Sewage Hookup", each with its own nightly/weekend price) is **removed entirely**.
+RV price variation is now expressed solely through **per-row / per-zone nightly
+surcharges** (the Lot Rows builder + map zone surcharges), which is how premium
+lots are already priced. RV spots have fixed amenities the customer gets by
+picking a spot — they aren't optional add-ons.
+
+Confirmed by Whitney: the add-on options were only ever exercised while the
+feature was being built; **no order on any site ever used them**, so there is no
+legacy order data to preserve. The removal therefore deleted the whole code path
+rather than gating it:
+
+- Customer event page + charge calculator + checkout notes (shortcodes)
+- Confirmation email / receipt / PDF line items + the frontend pricing JS
+- Admin Order Detail + print receipt + Reports "RV Add-On" category; refunds now
+  refund the full RV reservation charge (base + premium surcharge) on one line
+- `rv_addons` (json) + `rv_addons_enabled` (column) dropped from the config
+  schema and the reservation save path
+
+Pre-existing live DB columns are left in place (dbDelta never drops); they are
+simply no longer read or written. The `rv_type` column on the RV reservations
+table remains (real schema) but is always empty for new orders.
