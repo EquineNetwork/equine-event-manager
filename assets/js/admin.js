@@ -5738,6 +5738,18 @@
 		eemScApplyState(window._eemScInv || 'all', sel.value || 'customer');
 	});
 
+	// Merged View switcher (Stall Map / By Customer / Stall List / RV) — one button
+	// sets BOTH the inventory and the view in a single tap (Whitney 2026-06-27).
+	document.addEventListener('click', function (ev) {
+		var b = ev.target.closest && ev.target.closest('[data-eem-action="sc-view-switch"]');
+		if (!b) return;
+		ev.preventDefault();
+		document.querySelectorAll('[data-eem-action="sc-view-switch"]').forEach(function (x) {
+			x.classList.toggle('active', x === b);
+		});
+		eemScApplyState(b.getAttribute('data-inv') || 'stalls', b.getAttribute('data-tab') || 'map');
+	});
+
 	// Inventory selector (All / Stalls / RV): mirrors the old segmented toggle.
 	document.addEventListener('change', function (ev) {
 		var sel = ev.target.closest && ev.target.closest('[data-eem-action="sc-inv-select"]');
