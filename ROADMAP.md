@@ -212,18 +212,12 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 4. [ ] Add-On Report (per-day add-on quantities, CSV + PDF)
 5. [ ] Full end-to-end customer checkout sweep (needs NTR 6519 fixture page). NOTE (2026-06-23): this is also the recommended way to SEED test data — real checkout writes a correct `reservation_id` column + notes tag + config-based pricing (production-representative), unlike the synthetic seeders. Prerequisite: a live NTR 6519 customer event page to run checkouts through.
 6. [x] UX: Order Detail "Paid" badge contradicts Balance-Due banner on edited orders
-7. [x] Pre-Entry Import Tool (GH CSV) (#164)
-8. [ ] Vendor System (#166)
-9. [ ] Full map post-meta → config migration (#174)
+7. [x] Pre-Entry Import Tool (GH CSV) (#164)9. [ ] Full map post-meta → config migration (#174)
 10. [ ] Verify post-meta → config-table migration 100% complete (#199)
 11. [ ] Print views: move-customer + readiness/print smoke coverage (#234)
 12. [ ] Verify RV lot name/number split against real GEMS labels (#235)
 13. [ ] Postmeta → relational de-coupling (Phase 1 funnel). Audit + remediation plan: `docs/POSTMETA-AUDIT.md`. (As of 2026-06-23: reservation setup/pricing/rows are on the config table; #212 checkout base-rate read is FIXED; remaining gaps are map snapshots `_en_stall_map`/`_en_rv_map` (see #9) + hybrid blocked-units reads + events/venues/producers/divisions editors still on post-meta.)
-14. [ ] Upload .xlsx → Stall Grid (ZipArchive + SimpleXML; "Download Example Template" link)
-15. [ ] Event Entries — competition management (disciplines + fees + roster)
-16. [ ] PDF Venue Map → overlay (upload PDF, drop/snap stall hotspots)
-17. [ ] Sheets & Results — more source types (CSV, Google Sheets, external URL)
-18. [ ] Full permissions matrix (role-based access) — needs discussion; may land pre-launch
+14. [ ] Upload .xlsx → Stall Grid (ZipArchive + SimpleXML; "Download Example Template" link)16. [ ] PDF Venue Map → overlay (upload PDF, drop/snap stall hotspots)18. [ ] Full permissions matrix (role-based access) — needs discussion; may land pre-launch
 19. [x] Order Detail: make "Special Instructions" editable (inline edit + Save Changes bar) — currently display-only
 20. [ ] Customer page: consume group fields — show `_en_group_description` text + enforce `_en_group_riders_per_group` max on the rider input (saved today but never read)
 21. [x] Dashboard "Needs Attention": agreement-signature row (needs per-order signature tracking; not emitted today)
@@ -245,12 +239,8 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 ---
 
 ## 📋 v2 — Post-launch
-
-1. [ ] GH Draw Outs
 2. [ ] QR Code Generator
-3. [ ] Push Notifications (PWA browser push)
-4. [ ] Accept Deposits (deposit vs balance at checkout)
-5. [ ] Global Handicaps API integration (GH as system-of-record). Full write-up: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`.
+3. [ ] Push Notifications (PWA browser push)5. [ ] Global Handicaps API integration (GH as system-of-record). Full write-up: `docs/ARCHITECTURE-DATA-OWNERSHIP.md`.
 6. [ ] PWA + responsive/touch (full offline-capable app). Scaffolding (manifest + SW + install prompt) was DISABLED in 2.7.582 — `EEM_PWA::init()` now only unregisters any lingering service worker; the install banner/manifest no longer emit. Restore from git history when PWA work resumes.
 7. [ ] Native mobile app (iOS/Android over the same API contract)
 8. [ ] Update plugin language to .NET? (exploratory — port the plugin's logic off PHP/WordPress to a .NET backend; ties into the "not chained to WordPress forever" / GH-as-system-of-record direction in `docs/ARCHITECTURE-DATA-OWNERSHIP.md`. Confirm scope + intent before any work.)
