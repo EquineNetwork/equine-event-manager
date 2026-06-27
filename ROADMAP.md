@@ -44,6 +44,7 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 ### Awaiting Whitney verification
 - [ ] **#8 — Stall popover icon/style parity.** Map popover shipped with same icons as List popover. Click a stall on the spatial map → confirm popover shows customer name header, Order # + Shavings line, action icons match List.
+- [ ] **Group Names feature — VERIFY LATER (not in use yet).** Shipped 2.7.650 + branch follow-ups. Verify when groups are actually used: (1) admin adds names in the editor Group Names table (Description + Riders Per Group removed; Group Names is the only field); (2) customer event page shows the strict-list Group dropdown; (3) assign/change/remove group from the map popover; (4) sidebar Groups filter (shown only when groups enabled); (5) group shows on order detail; (6) **Grounds Fee + Rider Deposit charges show on the customer Order Summary AND on the admin Order Detail** (verify the per-rider amounts actually appear and total correctly). Editor-cleanup commit `1bc0432` is on the branch and NOT yet merged to main / deployed — bump + merge when ready to verify.
 
 ### Active (tackle one at a time)
 
@@ -61,13 +62,11 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 7. [ ] **Postmeta → relational de-coupling Phase 1** — remaining gaps: map snapshots, hybrid blocked-units reads, events/venues/producers/divisions editors still on post-meta. Audit plan: `docs/POSTMETA-AUDIT.md`.
 
-8. [ ] **Customer page: consume group fields** — show `_en_group_description` text + enforce `_en_group_riders_per_group` max on the rider input (saved but never read by the customer page).
+8. [ ] **Events flyer variant** — `show_flyer` thumbnail + countdown badge (today `flyer="yes"` only adds a "View Flyer" link).
 
-9. [ ] **Events flyer variant** — `show_flyer` thumbnail + countdown badge (today `flyer="yes"` only adds a "View Flyer" link).
+9. [x] **Map drag-and-drop assignment** — drag a customer from the sidebar onto an available stall to assign; arms the order so remaining stalls place by click/drag, auto-exits when filled. Shipped 2.7.651 — awaiting Whitney verification.
 
-10. [ ] **Map drag-and-drop assignment** — on By Location Map view, drag a customer from the left sidebar onto a stall chip to assign them. If customer has multiple stalls, a confirm popup asks which stall number(s). Office/desktop-focused (not mobile-optimized). Important for v1 — discuss design before building.
-
-11. [ ] **Self-test harness: seeded order-totals validation.** The throwaway WordPress (SQLite) harness is up — see `scripts/dev-sqlite-harness.sh` (rebuilds in ~2 min; lives at `/home/user/wp`, does NOT survive container recycling). Plugin activates at current version, smoke suite runs (3,435 assertions pass; pricing-math smokes clean). REMAINING: build a programmatically-seeded **configured reservation** (stall rows + pricing config) so the order seeder works, then add an order-totals assertion path that places an order and verifies exact dollar amounts (e.g. the #00008 = $811.20 manual check) — so math regressions are caught BEFORE pushing/bumping. Caveat: SQLite ≠ MySQL (one payments-ledger migration query errors, PRAGMA/DDL introspection differs) — ~465 of the current smoke failures are environmental, not real bugs; separate those out as part of this task.
+10. [ ] **Self-test harness: seeded order-totals validation.** The throwaway WordPress (SQLite) harness is up — see `scripts/dev-sqlite-harness.sh` (rebuilds in ~2 min; lives at `/home/user/wp`, does NOT survive container recycling). Plugin activates at current version, smoke suite runs (3,435 assertions pass; pricing-math smokes clean). REMAINING: build a programmatically-seeded **configured reservation** (stall rows + pricing config) so the order seeder works, then add an order-totals assertion path that places an order and verifies exact dollar amounts (e.g. the #00008 = $811.20 manual check) — so math regressions are caught BEFORE pushing/bumping. Caveat: SQLite ≠ MySQL (one payments-ledger migration query errors, PRAGMA/DDL introspection differs) — ~465 of the current smoke failures are environmental, not real bugs; separate those out as part of this task.
 
 ### Later (polish, non-blocking)
 

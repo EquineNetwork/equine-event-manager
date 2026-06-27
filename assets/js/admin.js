@@ -5449,10 +5449,113 @@
 		});
 		// Re-mark the armed customer card.
 		var armed = window._eemSbSelectedOrder || '';
+		// Auto-exit click-to-assign once the armed order's stall quota is filled,
+		// so the map doesn't get stuck in assign mode after the last stall lands.
+		if ( armed ) {
+			var armedCard = sidebar.querySelector('[data-eem-sb-customer][data-order-key="' + (window.CSS && CSS.escape ? CSS.escape(armed) : armed) + '"]');
+			var needed = armedCard ? (parseInt(armedCard.getAttribute('data-stalls') || '0', 10) || 0) : 0;
+			var placed = eemAssignedCountFor(armed);
+			if ( needed > 0 && placed !== null && placed >= needed ) {
+				window._eemSbSelectedOrder = '';
+				armed = '';
+			}
+		}
 		sidebar.querySelectorAll('[data-eem-sb-customer]').forEach(function (card) {
 			card.classList.toggle('eem-sb-selected', !!armed && card.getAttribute('data-order-key') === armed);
+			card.setAttribute('draggable', 'true');
 		});
 		eemSbFilter();
+		eemUpdateAssignBanner();
+	}
+
+	/**
+	 * Count stalls currently assigned to an order, read from the spatial stall
+	 * map's JSON payload. Used to auto-exit click-to-assign when the order's
+	 * quota is filled. Returns null if no stall map is present.
+	 */
+	function eemAssignedCountFor(orderKey) {
+		var c = document.querySelector('[data-eem-smap-kind="stall"] [data-eem-smap-payload]');
+		if (!c) { return null; }
+		var p; try { p = JSON.parse(c.textContent); } catch (e) { return null; }
+		var st = (p && p.state) || {};
+		var n = 0;
+		Object.keys(st).forEach(function (k) {
+			var s = st[k] || {};
+			if (s.o === orderKey && (s.s === 'reserved' || s.s === 'tack')) { n++; }
+		});
+		return n;
+	}
+
+	/**
+	 * Show/hide the floating "Assigning {name}" banner while a customer card is
+	 * armed for click-to-assign. Gives an obvious exit (Done button / Esc /
+	 * click the card again) so the map never gets silently stuck in assign mode.
+	 */
+	function eemUpdateAssignBanner() {
+		var armed = window._eemSbSelectedOrder || '';
+		var banner = document.getElementById('eem-sb-assign-banner');
+		if (!armed) {
+			if (banner) { banner.parentNode.removeChild(banner); }
+			return;
+		}
+		var card = document.querySelector('[data-eem-sb-customer][data-order-key="' + (window.CSS && CSS.escape ? CSS.escape(armed) : armed) + '"]');
+		var nameEl = card ? card.querySelector('.eem-sb-cust-name') : null;
+		var name = nameEl ? nameEl.textContent : 'customer';
+		if (!banner) {
+			banner = document.createElement('div');
+			banner.id = 'eem-sb-assign-banner';
+			banner.className = 'eem-assign-banner';
+			banner.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;background:#1f2a44;color:#fff;padding:10px 14px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;align-items:center;gap:12px;font-size:14px;';
+			var msg = document.createElement('span');
+			msg.setAttribute('data-eem-assign-banner-msg', '');
+			var done = document.createElement('button');
+			done.type = 'button';
+			done.textContent = 'Done';
+			done.style.cssText = 'background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;';
+			done.addEventListener('click', function () {
+				window._eemSbSelectedOrder = '';
+				eemSbApply();
+			});
+			banner.appendChild(msg);
+			banner.appendChild(done);
+			document.body.appendChild(banner);
+		}
+		banner.querySelector('[data-eem-assign-banner-msg]').textContent = 'Assigning ' + name + ' — click available stalls. Press Esc or Done to stop.';
+	}
+
+	// Esc exits click-to-assign mode (bound once).
+	if (!window._eemAssignEscBound) {
+		window._eemAssignEscBound = true;
+		document.addEventListener('keydown', function (ev) {
+			if (ev.key === 'Escape' && window._eemSbSelectedOrder) {
+				window._eemSbSelectedOrder = '';
+				eemSbApply();
+			}
+		});
+	}
+
+	// Drag-to-assign: dragstart on a sidebar customer card stamps the order key
+	// onto the drag payload (bound once via delegation). The map grid's drop
+	// handler (in the smap binding) reads it. Coexists with click-to-assign.
+	if (!window._eemAssignDragBound) {
+		window._eemAssignDragBound = true;
+		document.addEventListener('dragstart', function (ev) {
+			var card = ev.target && ev.target.closest ? ev.target.closest('[data-eem-sb-customer]') : null;
+			if (!card) { return; }
+			var key = card.getAttribute('data-order-key') || '';
+			if (!key) { return; }
+			window._eemSbDragOrder = key;
+			if (ev.dataTransfer) {
+				ev.dataTransfer.setData('text/plain', key);
+				ev.dataTransfer.effectAllowed = 'copy';
+			}
+			card.classList.add('eem-sb-dragging');
+		});
+		document.addEventListener('dragend', function (ev) {
+			window._eemSbDragOrder = '';
+			var card = ev.target && ev.target.closest ? ev.target.closest('[data-eem-sb-customer]') : null;
+			if (card) { card.classList.remove('eem-sb-dragging'); }
+		});
 	}
 
 	function eemScApplyState(inv, tab) {
@@ -7543,7 +7646,7 @@
 			bodyEl.appendChild(list);
 			renderList('');
 			setTimeout(function () { search.focus(); }, 0);
-			row('+ Add New Customer', 'eem-smap-pop-row--add-new', function (ev) { ev.stopPropagation(); showAddCustomerForm(); }, SMAP_ICONS.add);
+			row('Add New Customer', 'eem-smap-pop-row--add-new', function (ev) { ev.stopPropagation(); showAddCustomerForm(); }, SMAP_ICONS.add);
 			row(zq ? 'Block lot' : 'Block stall', 'danger', function () { eemSmapAction(container, 'block', label, ''); }, SMAP_ICONS.block);
 		} else if (status === 'reserved' || status === 'tack') {
 			// Assigned/tack popover — MUST mirror the By Location LIST popover's
@@ -7727,9 +7830,11 @@
 						var sbState = (p.state && p.state[sbLabel]) ? p.state[sbLabel] : { s: 'available' };
 						if ((sbState.s || 'available') === 'available') {
 							eemSmapAction(container, 'assign', sbLabel, window._eemSbSelectedOrder);
-						} else if (window.EEM && window.EEM.showSaveToast) {
-							window.EEM.showSaveToast('That stall is not available.', { variant: 'error', sub: '' });
+							return;
 						}
+						// Occupied/blocked cell while armed: don't dead-end — open its
+						// popover so the admin can still inspect/act (and isn't stuck).
+						eemSmapOpenPop(container, cell, p);
 						return;
 					}
 					var aCtx = (window.eemStallChart || {}).assignContext;
@@ -7761,6 +7866,52 @@
 						}
 					}
 					eemSmapOpenPop(container, cell, p);
+				});
+			}
+			// Drag-to-assign drop target (bound once per grid host). Dropping a
+			// dragged sidebar customer card onto an AVAILABLE stall assigns one stall
+			// to that order, then arms click-to-assign for them (banner + auto-exit)
+			// so remaining stalls can be placed by click or further drags.
+			if (host && !host._eemSmapDropBound) {
+				host._eemSmapDropBound = true;
+				host.addEventListener('dragover', function (ev) {
+					if (!window._eemSbDragOrder) { return; }
+					var cell = ev.target.closest ? ev.target.closest('[data-eem-smap-stall]') : null;
+					if (!cell) { return; }
+					var pEl = container.querySelector('[data-eem-smap-payload]');
+					var p; try { p = JSON.parse(pEl.textContent); } catch (e) { return; }
+					var lbl = cell.getAttribute('data-eem-smap-stall');
+					var s = (p.state && p.state[lbl]) ? (p.state[lbl].s || 'available') : 'available';
+					if (s !== 'available') { return; }
+					ev.preventDefault();
+					if (ev.dataTransfer) { ev.dataTransfer.dropEffect = 'copy'; }
+					if (host._eemDropHover && host._eemDropHover !== cell) { host._eemDropHover.classList.remove('eem-smap-drop-target'); }
+					cell.classList.add('eem-smap-drop-target');
+					host._eemDropHover = cell;
+				});
+				host.addEventListener('dragleave', function (ev) {
+					var cell = ev.target.closest ? ev.target.closest('[data-eem-smap-stall]') : null;
+					if (cell) { cell.classList.remove('eem-smap-drop-target'); }
+				});
+				host.addEventListener('drop', function (ev) {
+					var key = window._eemSbDragOrder || (ev.dataTransfer ? ev.dataTransfer.getData('text/plain') : '');
+					if (!key) { return; }
+					var cell = ev.target.closest ? ev.target.closest('[data-eem-smap-stall]') : null;
+					if (!cell) { return; }
+					ev.preventDefault();
+					if (host._eemDropHover) { host._eemDropHover.classList.remove('eem-smap-drop-target'); host._eemDropHover = null; }
+					var pEl = container.querySelector('[data-eem-smap-payload]');
+					var p; try { p = JSON.parse(pEl.textContent); } catch (e) { return; }
+					var lbl = cell.getAttribute('data-eem-smap-stall');
+					var s = (p.state && p.state[lbl]) ? (p.state[lbl].s || 'available') : 'available';
+					if (s !== 'available') {
+						if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast('That stall is not available.', { variant: 'error', sub: '' }); }
+						return;
+					}
+					// Arm the order so the post-assign re-render shows the banner and
+					// auto-exits once the order's stall quota is filled.
+					window._eemSbSelectedOrder = key;
+					eemSmapAction(container, 'assign', lbl, key);
 				});
 			}
 			// Drag-to-paint multi-select. Two modes share one press/move/up cycle:
