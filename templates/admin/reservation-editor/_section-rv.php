@@ -6,14 +6,16 @@
  * Mockup lines 649–887. Replaces the legacy table-form chrome with
  * mockup-canonical .eem-field-row + .eem-toggle-label-row +
  * .eem-stay-type-btn pair + .eem-zone-row repeating-row builder
- * (NEW _eem_rv_lot_zones meta) + .eem-repeat-table RV add-ons +
- * .eem-layout-summary widget.
+ * (NEW _eem_rv_lot_zones meta) + .eem-layout-summary widget.
+ *
+ * RV add-ons (the legacy per-item "Electric/Water Hookup" model) were removed —
+ * RV pricing variation is now expressed entirely through per-row/zone nightly
+ * surcharges (the Lot Rows builder below). No RV add-on UI is emitted here.
  *
  * Field row IDs match mockup:
  *   row-rv-weekend-dates / row-rv-rate-nightly / row-rv-rate-weekend
  *   row-rv-open / row-rv-close
  *   row-rv-eb-cutoff / row-rv-eb-nightly / row-rv-eb-weekend
- *   rv-addons-table-wrap (controlled by RV Add-Ons master toggle)
  *
  * @package   EEM_Plugin
  * @license   GPL-2.0-or-later
