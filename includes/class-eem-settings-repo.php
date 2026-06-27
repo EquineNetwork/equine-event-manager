@@ -159,6 +159,99 @@ class EEM_Settings_Repo {
 	}
 
 	/* ─────────────────────────────────────────────────────────────
+	 * Convenience Fee (global; moved from per-reservation, ROADMAP v1 #8)
+	 *
+	 * A single global convenience fee applied at checkout to every reservation.
+	 * Mirrors the Tax group's shape/cache semantics but adds a `type`
+	 * (flat | percentage). There is intentionally NO per-reservation override —
+	 * the fee is global-only (Whitney decision 2026-06-27).
+	 * ───────────────────────────────────────────────────────────── */
+
+	const OPTION_CONVENIENCE_FEE = 'eem_convenience_fee';
+
+	/**
+	 * Global convenience-fee config.
+	 *
+	 * @return array{apply:bool, type:string, value:float, label:string}
+	 */
+	public static function get_convenience_fee() {
+		$stored = get_option( self::OPTION_CONVENIENCE_FEE, array() );
+		if ( ! is_array( $stored ) ) {
+			$stored = array();
+		}
+
+		$type = isset( $stored['type'] ) ? (string) $stored['type'] : 'percentage';
+		if ( ! in_array( $type, array( 'flat', 'percentage' ), true ) ) {
+			$type = 'percentage';
+		}
+
+		return array(
+			// Ships disabled — admin enables + sets the amount in Settings → Payments.
+			'apply' => ! empty( $stored['apply'] ),
+			'type'  => $type,
+			'value' => isset( $stored['value'] ) ? (float) $stored['value'] : 0.0,
+			'label' => isset( $stored['label'] ) && '' !== $stored['label']
+				? (string) $stored['label']
+				: __( 'Non-Refundable Convenience Fee', 'equine-event-manager' ),
+		);
+	}
+
+	/**
+	 * Persist the global convenience-fee config.
+	 *
+	 * @param array{apply?:bool, type?:string, value?:float|string, label?:string} $fee
+	 * @return bool
+	 */
+	public static function update_convenience_fee( array $fee ) {
+		$type = isset( $fee['type'] ) ? (string) $fee['type'] : 'percentage';
+		if ( ! in_array( $type, array( 'flat', 'percentage' ), true ) ) {
+			$type = 'percentage';
+		}
+
+		$value = isset( $fee['value'] ) ? (float) $fee['value'] : 0.0;
+		if ( $value < 0 ) {
+			$value = 0.0;
+		}
+		// A percentage fee is clamped to [0,100]; a flat fee has no upper bound.
+		if ( 'percentage' === $type && $value > 100 ) {
+			$value = 100.0;
+		}
+
+		$next = array(
+			'apply' => ! empty( $fee['apply'] ),
+			'type'  => $type,
+			'value' => $value,
+			'label' => isset( $fee['label'] ) ? sanitize_text_field( (string) $fee['label'] ) : '',
+		);
+
+		$saved = update_option( self::OPTION_CONVENIENCE_FEE, $next, false );
+		return $saved || get_option( self::OPTION_CONVENIENCE_FEE ) == $next; // phpcs:ignore WordPress.PHP.StrictComparisons.LooseComparison -- unchanged = success.
+	}
+
+	/**
+	 * Compute the global convenience fee for a given subtotal.
+	 *
+	 * Single source of truth for the charged fee — the checkout calculator, the
+	 * frontend Order Summary (via the rendered data attributes), and the
+	 * receipts all derive the fee from this same global config.
+	 *
+	 * @param float $subtotal Order subtotal the fee applies to.
+	 * @return float Fee amount (rounded to cents), or 0.0 when disabled.
+	 */
+	public static function get_convenience_fee_amount( $subtotal ) {
+		$fee = self::get_convenience_fee();
+		if ( ! $fee['apply'] ) {
+			return 0.0;
+		}
+
+		if ( 'flat' === $fee['type'] ) {
+			return round( (float) $fee['value'], 2 );
+		}
+
+		return round( (float) $subtotal * ( (float) $fee['value'] / 100 ), 2 );
+	}
+
+	/* ─────────────────────────────────────────────────────────────
 	 * Policies (SET-5)
 	 * ───────────────────────────────────────────────────────────── */
 

@@ -22,19 +22,20 @@ $chk = static function ( $cond, $label ) use ( &$pass, &$fail ) {
 
 $sc = new EEM_Shortcodes();
 
-// Seed a reservation whose config carries stall + RV nightly rates and a 4%
-// percentage convenience fee (the Add-Items pricer reads these from config).
+// Seed a reservation whose config carries stall + RV nightly rates. The
+// convenience fee is now GLOBAL (ROADMAP v1 #8): the Add-Items pricer reads it
+// from Settings, not per-reservation config.
 $rid = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_title' => 'OrderEditMath', 'post_status' => 'publish' ) );
 EEM_Reservation_Config::for( $rid )->set_many( array(
 	'stalls_enabled'          => 1,
 	'rv_enabled'              => 1,
 	'stall_nightly_rate'      => 40.0,
 	'rv_nightly_rate'         => 55.0,
-	'convenience_fee_enabled' => 1,
-	'convenience_fee_type'    => 'percentage',
-	'convenience_fee_value'   => 4.0,
 ) )->save();
 EEM_Reservation_Config::flush_cache( $rid );
+
+// Global 4% percentage convenience fee.
+EEM_Settings_Repo::update_convenience_fee( array( 'apply' => 1, 'type' => 'percentage', 'value' => 4.0 ) );
 
 // ── Add 3 stalls × 4 nights @ $40 ───────────────────────────────────────────
 $add_stall = $sc->price_base_rate_addition( $rid, 'stall', 3, 'nightly', '2026-08-19', '2026-08-23' );
@@ -59,5 +60,6 @@ $add_zero = $sc->price_base_rate_addition( $rid, 'stall', 0, 'nightly', '2026-08
 $chk( $approx( $add_zero['subtotal'], 0.0 ), 'add-items: qty 0 → subtotal $0' );
 
 wp_delete_post( $rid, true );
+EEM_Settings_Repo::update_convenience_fee( array( 'apply' => 0, 'type' => 'percentage', 'value' => 0.0 ) );
 
 echo "\nDone. PASS=$pass FAIL=$fail\n";

@@ -91,6 +91,10 @@ if ( '' !== $addon_key ) {
 
 $status = array( 'stalls_open' => true, 'rv_open' => false );
 
+// Convenience fee is now a GLOBAL setting (ROADMAP v1 #8) — drive it via the
+// settings repo, not per-reservation config (which the calculator now ignores).
+EEM_Settings_Repo::update_convenience_fee( array( 'apply' => 1, 'type' => 'percentage', 'value' => 4.0 ) );
+
 $t = $ref->invoke( $sc, $data, $submission, $status, 0 );
 
 // ── Expected hand-math ──────────────────────────────────────────────────────
@@ -118,12 +122,12 @@ $expected_tax = round( 1050.0 * ( (float) $t['tax_rate'] / 100 ), 2 );
 $chk( $approx( $t['tax'], $expected_tax ), 'tax = tax_rate% × subtotal (' . $t['tax_rate'] . '% → $' . number_format( $expected_tax, 2 ) . ')' );
 $chk( $approx( $t['total'], $t['subtotal'] + $t['fees'] + $t['tax'] ), 'total = subtotal + fees + tax = $' . number_format( $t['total'], 2 ) );
 
-// ── Flat convenience fee variation ──────────────────────────────────────────
-$data_flat = $data;
-$data_flat['convenience_fee_type']  = 'flat';
-$data_flat['convenience_fee_value'] = 25.0;
-$t2 = $ref->invoke( $sc, $data_flat, $submission, $status, 0 );
+// ── Flat convenience fee variation (global setting) ─────────────────────────
+EEM_Settings_Repo::update_convenience_fee( array( 'apply' => 1, 'type' => 'flat', 'value' => 25.0 ) );
+$t2 = $ref->invoke( $sc, $data, $submission, $status, 0 );
 $chk( $approx( $t2['fees'], 25.0 ), 'flat convenience fee = $25.00 (not percentage)' );
+// Reset to disabled so later cases (and other smokes) see no fee.
+EEM_Settings_Repo::update_convenience_fee( array( 'apply' => 0, 'type' => 'percentage', 'value' => 0.0 ) );
 
 // ── Group toggled OFF → no group charges ────────────────────────────────────
 $sub_nogroup = $submission;
