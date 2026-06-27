@@ -5806,7 +5806,11 @@ RV Lot: " . $rv_lot['name'] );
 				}
 			}
 
-			EEM_Mailer::send_html_email(
+			// A9 — capture the send result. The admin BCC copy is non-critical
+			// (the customer email is the one that matters), so a failure does not
+			// abort checkout, but it should not vanish silently: log it when
+			// debugging is enabled.
+			$admin_sent = EEM_Mailer::send_html_email(
 				$receipt_settings['admin_receipt_email'],
 				$this->replace_receipt_tokens( $receipt_settings['admin_subject'], $order ),
 				$this->build_confirmation_email_html( $order, ! empty( $admin_attachments ) ),
@@ -5818,6 +5822,9 @@ RV Lot: " . $rv_lot['name'] );
 				),
 				$admin_attachments
 			);
+			if ( is_wp_error( $admin_sent ) && defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( '[Equine Event Manager] Admin BCC receipt failed for order ' . ( isset( $order['order_key'] ) ? (string) $order['order_key'] : '?' ) . ': ' . $admin_sent->get_error_message() ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+			}
 
 			if ( '' !== $admin_pdf_path && file_exists( $admin_pdf_path ) ) {
 				wp_delete_file( $admin_pdf_path );

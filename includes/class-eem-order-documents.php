@@ -158,10 +158,15 @@ class EEM_Order_Documents {
 		$stored    = 'doc-' . md5( $order_key . '|' . $requirement ) . '-' . $rand . '.' . $ext;
 		$dest      = $dir . $stored;
 
-		if ( ! @move_uploaded_file( (string) $file['tmp_name'], $dest ) ) { // phpcs:ignore
+		// A11 — no error suppression: a failed move surfaces a diagnostic
+		// warning to the log AND returns the user-facing message below.
+		if ( ! move_uploaded_file( (string) $file['tmp_name'], $dest ) ) {
 			return __( 'The file could not be saved. Please try again.', 'equine-event-manager' );
 		}
-		@chmod( $dest, 0640 ); // phpcs:ignore
+		// chmod is intentionally best-effort: a hardened host may disallow it,
+		// and the file is already inside a private (.htaccess-protected) dir, so
+		// a failed chmod is non-fatal. Suppress the warning rather than abort.
+		@chmod( $dest, 0640 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors -- best-effort hardening; see note above.
 
 		// Replace any prior file for this pair (delete the old physical file).
 		$existing = self::get( $order_key, $requirement );
