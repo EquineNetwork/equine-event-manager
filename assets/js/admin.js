@@ -5462,6 +5462,7 @@
 		}
 		sidebar.querySelectorAll('[data-eem-sb-customer]').forEach(function (card) {
 			card.classList.toggle('eem-sb-selected', !!armed && card.getAttribute('data-order-key') === armed);
+			card.setAttribute('draggable', 'true');
 		});
 		eemSbFilter();
 		eemUpdateAssignBanner();
@@ -5530,6 +5531,30 @@
 				window._eemSbSelectedOrder = '';
 				eemSbApply();
 			}
+		});
+	}
+
+	// Drag-to-assign: dragstart on a sidebar customer card stamps the order key
+	// onto the drag payload (bound once via delegation). The map grid's drop
+	// handler (in the smap binding) reads it. Coexists with click-to-assign.
+	if (!window._eemAssignDragBound) {
+		window._eemAssignDragBound = true;
+		document.addEventListener('dragstart', function (ev) {
+			var card = ev.target && ev.target.closest ? ev.target.closest('[data-eem-sb-customer]') : null;
+			if (!card) { return; }
+			var key = card.getAttribute('data-order-key') || '';
+			if (!key) { return; }
+			window._eemSbDragOrder = key;
+			if (ev.dataTransfer) {
+				ev.dataTransfer.setData('text/plain', key);
+				ev.dataTransfer.effectAllowed = 'copy';
+			}
+			card.classList.add('eem-sb-dragging');
+		});
+		document.addEventListener('dragend', function (ev) {
+			window._eemSbDragOrder = '';
+			var card = ev.target && ev.target.closest ? ev.target.closest('[data-eem-sb-customer]') : null;
+			if (card) { card.classList.remove('eem-sb-dragging'); }
 		});
 	}
 
@@ -7841,6 +7866,52 @@
 						}
 					}
 					eemSmapOpenPop(container, cell, p);
+				});
+			}
+			// Drag-to-assign drop target (bound once per grid host). Dropping a
+			// dragged sidebar customer card onto an AVAILABLE stall assigns one stall
+			// to that order, then arms click-to-assign for them (banner + auto-exit)
+			// so remaining stalls can be placed by click or further drags.
+			if (host && !host._eemSmapDropBound) {
+				host._eemSmapDropBound = true;
+				host.addEventListener('dragover', function (ev) {
+					if (!window._eemSbDragOrder) { return; }
+					var cell = ev.target.closest ? ev.target.closest('[data-eem-smap-stall]') : null;
+					if (!cell) { return; }
+					var pEl = container.querySelector('[data-eem-smap-payload]');
+					var p; try { p = JSON.parse(pEl.textContent); } catch (e) { return; }
+					var lbl = cell.getAttribute('data-eem-smap-stall');
+					var s = (p.state && p.state[lbl]) ? (p.state[lbl].s || 'available') : 'available';
+					if (s !== 'available') { return; }
+					ev.preventDefault();
+					if (ev.dataTransfer) { ev.dataTransfer.dropEffect = 'copy'; }
+					if (host._eemDropHover && host._eemDropHover !== cell) { host._eemDropHover.classList.remove('eem-smap-drop-target'); }
+					cell.classList.add('eem-smap-drop-target');
+					host._eemDropHover = cell;
+				});
+				host.addEventListener('dragleave', function (ev) {
+					var cell = ev.target.closest ? ev.target.closest('[data-eem-smap-stall]') : null;
+					if (cell) { cell.classList.remove('eem-smap-drop-target'); }
+				});
+				host.addEventListener('drop', function (ev) {
+					var key = window._eemSbDragOrder || (ev.dataTransfer ? ev.dataTransfer.getData('text/plain') : '');
+					if (!key) { return; }
+					var cell = ev.target.closest ? ev.target.closest('[data-eem-smap-stall]') : null;
+					if (!cell) { return; }
+					ev.preventDefault();
+					if (host._eemDropHover) { host._eemDropHover.classList.remove('eem-smap-drop-target'); host._eemDropHover = null; }
+					var pEl = container.querySelector('[data-eem-smap-payload]');
+					var p; try { p = JSON.parse(pEl.textContent); } catch (e) { return; }
+					var lbl = cell.getAttribute('data-eem-smap-stall');
+					var s = (p.state && p.state[lbl]) ? (p.state[lbl].s || 'available') : 'available';
+					if (s !== 'available') {
+						if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast('That stall is not available.', { variant: 'error', sub: '' }); }
+						return;
+					}
+					// Arm the order so the post-assign re-render shows the banner and
+					// auto-exits once the order's stall quota is filled.
+					window._eemSbSelectedOrder = key;
+					eemSmapAction(container, 'assign', lbl, key);
 				});
 			}
 			// Drag-to-paint multi-select. Two modes share one press/move/up cycle:

@@ -9344,6 +9344,10 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
    orange = tack · purple = cleaning. Base chip (no is-* class) = available. */
 .eem-smap-stall { position: relative; display: flex; align-items: center; justify-content: center; font-size: clamp(5px, calc(var(--eem-smap-chip, 40px) * 0.32), 13px); font-weight: 700; border: 0; border-radius: 0; background: #e8f5ee; color: #15803d; cursor: pointer; user-select: none; line-height: 1; overflow: hidden; }
 .eem-smap-stall:hover { outline: 2px solid var(--eem-electric, #1668F2); outline-offset: -1px; z-index: 1; }
+/* Drag-to-assign: highlight the stall under a dragged customer card. */
+.eem-smap-stall.eem-smap-drop-target { outline: 2px solid var(--eem-electric, #1668F2); outline-offset: -1px; box-shadow: inset 0 0 0 2px #fff; z-index: 2; }
+/* Dim a customer card while it is being dragged to a stall. */
+.eem-sb-customer.eem-sb-dragging { opacity: 0.5; }
 .eem-smap-stall.is-reserved { background: #dbe4f3; color: #2b4a78; }
 .eem-smap-stall.is-blocked { background: repeating-linear-gradient(45deg, #fca5a5, #fca5a5 3px, #f87171 3px, #f87171 6px); color: #fff; }
 .eem-smap-stall.is-tack { background: #fff5e6; color: #9a6a14; }
