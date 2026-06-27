@@ -40,7 +40,7 @@ foreach ( $files as $file ) {
 	$ran++;
 	$cmd = escapeshellarg( $php_bin ) . ' ' . escapeshellarg( $wp_cli )
 		. ' --path=' . escapeshellarg( $wp_path )
-		. ' eval-file ' . escapeshellarg( $file ) . ' 2>&1';
+		. ' eval-file ' . escapeshellarg( $file ) . ' --allow-root 2>&1';
 	$out = (string) shell_exec( $cmd );
 
 	$pass = null;
