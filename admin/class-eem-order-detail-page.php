@@ -301,6 +301,13 @@ class EEM_Order_Detail_Page {
 		$customer_name  = isset( $order['customer_name'] ) ? (string) $order['customer_name'] : '';
 		$reservation_url = $reservation_id > 0 ? EEM_Reservation_Editor_Page::url( (int) $reservation_id ) : '';
 
+		// Group membership (admin-defined group the customer was assigned to,
+		// stored as a "Group Name:" note on the order). Surfaced in the meta line.
+		$group_name = '';
+		if ( isset( $order['notes'] ) && preg_match( '/(?:^|\n)Group Name:\s*(.+)$/im', (string) $order['notes'], $eem_gm ) ) {
+			$group_name = trim( (string) $eem_gm[1] );
+		}
+
 		ob_start();
 		?>
 		<div class="eem-order-meta-badges">
@@ -337,6 +344,9 @@ class EEM_Order_Detail_Page {
 						<?php echo esc_html( $customer_name ); ?>
 					<?php endif; ?>
 				</span>
+			<?php endif; ?>
+			<?php if ( '' !== $group_name ) : ?>
+				<span><?php esc_html_e( 'Group:', 'equine-event-manager' ); ?> <?php echo esc_html( $group_name ); ?></span>
 			<?php endif; ?>
 		</div>
 		<?php

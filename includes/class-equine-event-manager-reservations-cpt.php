@@ -1531,6 +1531,11 @@ class EEM_Reservations_CPT {
 			'group_rider_grounds_fee_amount'  => isset( $source['group_rider_grounds_fee_amount'] ) ? $this->sanitize_money_value( $source['group_rider_grounds_fee_amount'] ) : '0.00',
 			'group_rider_deposit_enabled'     => isset( $source['group_rider_deposit_enabled'] ) ? 1 : 0,
 			'group_rider_deposit_amount'      => isset( $source['group_rider_deposit_amount'] ) ? $this->sanitize_money_value( $source['group_rider_deposit_amount'] ) : '0.00',
+			// Admin-defined group names (line-item table). Customers select one
+			// on the event page; admin clusters/filters by it on the stall chart.
+			'group_names'                     => isset( $source['group_names'] ) && is_array( $source['group_names'] )
+				? $this->sanitize_group_names( $source['group_names'] )
+				: ( isset( $existing['group_names'] ) ? (array) $existing['group_names'] : array() ),
 			'general_addons'                  => isset( $source['general_addons'] ) && is_array( $source['general_addons'] ) ? $this->sanitize_general_addons( $source['general_addons'] ) : $existing['general_addons'],
 			'rv_addons'                       => isset( $source['rv_addons'] ) && is_array( $source['rv_addons'] ) ? $this->sanitize_rv_addons( $source['rv_addons'] ) : $existing['rv_addons'],
 			// C7.X.4 — NEW: rv_lot_zones (pricing tiers — color slug from
@@ -2050,6 +2055,7 @@ class EEM_Reservations_CPT {
 			// C7.C.1.4.A Decision N1 — NEW meta key defaults.
 			'group_description'               => '',
 			'group_riders_per_group'          => '', // 2.3.82: blank = unlimited.
+			'group_names'                     => array(),
 			'group_rider_grounds_fee_enabled' => 0,
 			'group_rider_grounds_fee_amount'  => '0.00',
 			'group_rider_deposit_enabled'     => 0,
@@ -2547,6 +2553,34 @@ class EEM_Reservations_CPT {
 			);
 		}
 		return array_values( $sanitized );
+	}
+
+	/**
+	 * Sanitize submitted admin-defined group names.
+	 *
+	 * Each submitted row is `{ name }`. Names are trimmed, empties dropped, and
+	 * duplicates removed case-insensitively (first spelling wins) so the
+	 * customer dropdown and the chart's group filter share one canonical list.
+	 *
+	 * @param array $rows Raw group-name rows from the editor table.
+	 * @return string[] Distinct, trimmed group names.
+	 */
+	private function sanitize_group_names( $rows ): array {
+		$names = array();
+		$seen  = array();
+		foreach ( (array) $rows as $row ) {
+			$name = is_array( $row )
+				? ( isset( $row['name'] ) ? sanitize_text_field( $row['name'] ) : '' )
+				: sanitize_text_field( (string) $row );
+			$name = trim( $name );
+			$key  = strtolower( $name );
+			if ( '' === $name || isset( $seen[ $key ] ) ) {
+				continue;
+			}
+			$seen[ $key ] = true;
+			$names[]      = $name;
+		}
+		return array_values( $names );
 	}
 
 	/**

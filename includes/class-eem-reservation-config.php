@@ -845,6 +845,9 @@ class EEM_Reservation_Config {
 			'rv_zones',
 			'rv_rows',
 			'blocked_rv_lots',
+			// Admin-defined group names (flat string list). Customers pick from
+			// this on the event page; admin clusters/filters by it on the chart.
+			'group_names',
 		);
 	}
 

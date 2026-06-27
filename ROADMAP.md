@@ -33,7 +33,7 @@
 Both the By Location **List** popover and **Map** popover MUST expose the SAME options. This is the 3rd time they've drifted. When editing either, mirror the change in the other.
 
 - **Available cell:** assign customer (search) · **+ Add New Customer** (inline First/Last → Save & Assign) · Block.
-- **Assigned/tack cell:** header = customer name · meta = Order # + Shavings · Move to different stall · View order · Mark as Tack / Unmark Tack · Mark as VIP / Remove VIP · Remove from stall.
+- **Assigned/tack cell:** header = customer name · meta = Order # + Group + Shavings · Move to different stall · View order · Mark as Tack / Unmark Tack · Mark as VIP / Remove VIP · Remove from stall.
 - **Map-only exclusion:** NO check-in / checkout on the map (assignment-focused). Check-in/out lives on the List / Daily Movement.
 
 Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin.js`; Map = `eemSmapOpenPop()` in `assets/js/admin.js` + `ajax_stall_map_action()` ops in `admin/class-equine-event-manager-admin.php`.
@@ -66,6 +66,8 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 9. [ ] **Events flyer variant** — `show_flyer` thumbnail + countdown badge (today `flyer="yes"` only adds a "View Flyer" link).
 
 10. [ ] **Map drag-and-drop assignment** — on By Location Map view, drag a customer from the left sidebar onto a stall chip to assign them. If customer has multiple stalls, a confirm popup asks which stall number(s). Office/desktop-focused (not mobile-optimized). Important for v1 — discuss design before building.
+
+11. [ ] **Self-test harness: seeded order-totals validation.** The throwaway WordPress (SQLite) harness is up — see `scripts/dev-sqlite-harness.sh` (rebuilds in ~2 min; lives at `/home/user/wp`, does NOT survive container recycling). Plugin activates at current version, smoke suite runs (3,435 assertions pass; pricing-math smokes clean). REMAINING: build a programmatically-seeded **configured reservation** (stall rows + pricing config) so the order seeder works, then add an order-totals assertion path that places an order and verifies exact dollar amounts (e.g. the #00008 = $811.20 manual check) — so math regressions are caught BEFORE pushing/bumping. Caveat: SQLite ≠ MySQL (one payments-ledger migration query errors, PRAGMA/DDL introspection differs) — ~465 of the current smoke failures are environmental, not real bugs; separate those out as part of this task.
 
 ### Later (polish, non-blocking)
 

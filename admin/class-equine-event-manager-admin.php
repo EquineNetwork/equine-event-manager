@@ -2674,7 +2674,7 @@ class EEM_Admin {
 	 * @param array $rows Order rows from build_stall_chart_rows().
 	 * @return void
 	 */
-	private function render_stall_chart_sidebar( array $rows ): void {
+	private function render_stall_chart_sidebar( array $rows, bool $groups_enabled = false ): void {
 		// Stalls-only roster for Phase 1 (RV mirrors in Phase 3).
 		$stall_rows = array_values( array_filter( $rows, static function ( $r ) {
 			return ! empty( $r['has_stall'] );
@@ -2682,6 +2682,18 @@ class EEM_Admin {
 		if ( empty( $stall_rows ) ) {
 			return;
 		}
+
+		// Distinct group names present on this reservation's orders — populates the
+		// sidebar Groups filter (only rendered when group reservations are enabled).
+		$group_set = array();
+		foreach ( $stall_rows as $r ) {
+			$g = trim( (string) ( isset( $r['group_name'] ) ? $r['group_name'] : '' ) );
+			if ( '' !== $g ) {
+				$group_set[ $g ] = true;
+			}
+		}
+		$group_options = array_keys( $group_set );
+		usort( $group_options, 'strcasecmp' );
 
 		// Distinct option sets for the four date/count filters.
 		$arrivals   = array();
@@ -2798,6 +2810,19 @@ class EEM_Admin {
 						</select>
 					</div>
 				</div>
+				<?php // Groups filter — only when group reservations are enabled on the
+				// reservation AND at least one customer is in a group. ?>
+				<?php if ( $groups_enabled && ! empty( $group_options ) ) : ?>
+					<div>
+						<div class="eem-sb-filter-label"><?php esc_html_e( 'Groups', 'equine-event-manager' ); ?></div>
+						<select class="eem-sb-filter-select" data-eem-sb-filter="group">
+							<option value=""><?php esc_html_e( 'All groups', 'equine-event-manager' ); ?></option>
+							<?php foreach ( $group_options as $g_opt ) : ?>
+								<option value="<?php echo esc_attr( $g_opt ); ?>"><?php echo esc_html( $g_opt ); ?></option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+				<?php endif; ?>
 			</div>
 
 			<div class="eem-sb-list" data-eem-sb-list>
@@ -2869,7 +2894,8 @@ class EEM_Admin {
 			data-arrival="<?php echo esc_attr( $arr ); ?>"
 			data-departure="<?php echo esc_attr( $dep ); ?>"
 			data-nights="<?php echo esc_attr( (string) $nights ); ?>"
-			data-stalls="<?php echo esc_attr( (string) $stalls ); ?>">
+			data-stalls="<?php echo esc_attr( (string) $stalls ); ?>"
+			data-group="<?php echo esc_attr( trim( (string) ( isset( $r['group_name'] ) ? $r['group_name'] : '' ) ) ); ?>">
 			<div class="eem-sb-cust-avatar<?php echo $assigned ? ' assigned' : ''; ?>"><?php echo esc_html( $initials ); ?></div>
 			<div class="eem-sb-cust-info">
 				<span class="eem-sb-cust-name"><?php echo esc_html( $name_lf ); ?></span>
@@ -2961,7 +2987,7 @@ class EEM_Admin {
 			: array();
 		?>
 				<div class="eem-sc-body" data-eem-sc-body>
-				<?php $this->render_stall_chart_sidebar( $order_rows ); ?>
+				<?php $this->render_stall_chart_sidebar( $order_rows, $groups_enabled ); ?>
 				<div class="eem-sc-main">
 				<?php $eem_unsaved = isset( $grid['unsaved_order_count'] ) ? (int) $grid['unsaved_order_count'] : 0; ?>
 				<?php if ( false ) : // Suggestion banner removed (Whitney 2026-06-24): stalls stay Available until manually assigned; no auto-suggest push. ?>
@@ -3948,6 +3974,34 @@ class EEM_Admin {
 			$message = $currently_vip
 				? __( 'VIP removed.', 'equine-event-manager' )
 				: __( 'Marked as VIP.', 'equine-event-manager' );
+		} elseif ( 'set_group' === $op ) {
+			// Assign (or clear) an order's group from the chart, mirroring how
+			// stalls are assigned. The new group label rides in $_POST['group_value']
+			// ('' clears membership). Order is resolved from the posted key or, if
+			// absent, from the clicked unit's owning order.
+			$group_value = isset( $_POST['group_value'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['group_value'] ) ) : '';
+			$group_value = trim( $group_value );
+			if ( '' === $order_key ) {
+				foreach ( $this->get_reservation_orders( $reservation_id ) as $o ) {
+					$units = array_map( 'strval', (array) $this->parse_assigned_units_string(
+						$this->get_order_component_note_value( $o, $note_comp, $note_label )
+					) );
+					if ( in_array( $stall, $units, true ) ) {
+						$order_key = (string) $o['order_key'];
+						break;
+					}
+				}
+			}
+			if ( '' === $order_key ) {
+				wp_send_json_error( array( 'message' => sprintf( /* translators: %s: stall/lot */ __( 'No order owns that %s.', 'equine-event-manager' ), $unit_noun ) ), 404 );
+			}
+			$ok = $this->orders_repository->update_order_group_name( $order_key, $group_value );
+			if ( ! $ok ) {
+				wp_send_json_error( array( 'message' => __( 'Could not update the group.', 'equine-event-manager' ) ), 500 );
+			}
+			$message = '' === $group_value
+				? __( 'Removed from group.', 'equine-event-manager' )
+				: sprintf( /* translators: %s: group name */ __( 'Added to group: %s', 'equine-event-manager' ), $group_value );
 		} else {
 			wp_send_json_error( array( 'message' => __( 'Unknown action.', 'equine-event-manager' ) ), 400 );
 		}
@@ -4333,6 +4387,16 @@ class EEM_Admin {
 			window.eemStallChart.reservationId = <?php echo (int) $reservation_id; ?>;
 			window.eemStallChart.defaultArrival = <?php echo wp_json_encode( $eem_def_arrival ); ?>;
 			window.eemStallChart.defaultDeparture = <?php echo wp_json_encode( $eem_def_departure ); ?>;
+			<?php
+			// Admin-defined group names + groups-enabled flag, for the popover
+			// "Assign to group" submenu + the sidebar Groups filter.
+			$eem_chart_cfg     = EEM_Reservation_Config::for( $reservation_id );
+			$eem_group_names   = $eem_chart_cfg->get( 'group_names' );
+			$eem_group_names   = is_array( $eem_group_names ) ? array_values( array_filter( array_map( 'strval', $eem_group_names ), static function ( $n ) { return '' !== trim( $n ); } ) ) : array();
+			$eem_groups_on     = (bool) EEM_Reservations_CPT::section_enabled( $reservation_id, 'group_reservations_enabled' );
+			?>
+			window.eemStallChart.groupsEnabled = <?php echo $eem_groups_on ? 'true' : 'false'; ?>;
+			window.eemStallChart.groupNames = <?php echo wp_json_encode( $eem_group_names ); ?>;
 		</script>
 		<?php
 	}
