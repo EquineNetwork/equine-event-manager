@@ -2724,7 +2724,7 @@ class EEM_Admin {
 	 * @param array $rows Order rows from build_stall_chart_rows().
 	 * @return void
 	 */
-	private function render_stall_chart_sidebar( array $rows, bool $groups_enabled = false ): void {
+	private function render_stall_chart_sidebar( array $rows, bool $groups_enabled = false, string $tab = 'map' ): void {
 		// Stalls-only roster for Phase 1 (RV mirrors in Phase 3).
 		$stall_rows = array_values( array_filter( $rows, static function ( $r ) {
 			return ! empty( $r['has_stall'] );
@@ -2790,7 +2790,7 @@ class EEM_Admin {
 			}
 		}
 		?>
-		<aside class="eem-sc-sidebar" id="eem-sc-sidebar" data-eem-sb>
+		<aside class="eem-sc-sidebar" id="eem-sc-sidebar" data-eem-sb<?php echo 'map' === $tab ? '' : ' style="display:none"'; ?>>
 			<div class="eem-sb-topbar">
 				<span class="eem-sb-title"><?php esc_html_e( 'Customers', 'equine-event-manager' ); ?></span>
 				<button type="button" class="eem-sb-collapse-btn" data-eem-action="sb-collapse" title="<?php esc_attr_e( 'Collapse', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Collapse customer sidebar', 'equine-event-manager' ); ?>">
@@ -3032,7 +3032,7 @@ class EEM_Admin {
 			: array();
 		?>
 				<div class="eem-sc-body" data-eem-sc-body>
-				<?php $this->render_stall_chart_sidebar( $order_rows, $groups_enabled ); ?>
+				<?php $this->render_stall_chart_sidebar( $order_rows, $groups_enabled, $tab ); ?>
 				<div class="eem-sc-main">
 				<?php $eem_unsaved = isset( $grid['unsaved_order_count'] ) ? (int) $grid['unsaved_order_count'] : 0; ?>
 				<?php if ( false ) : // Suggestion banner removed (Whitney 2026-06-24): stalls stay Available until manually assigned; no auto-suggest push. ?>
