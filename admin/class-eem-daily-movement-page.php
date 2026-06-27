@@ -700,8 +700,8 @@ class EEM_Daily_Movement_Page {
 					<th><?php esc_html_e( 'Stall #', 'equine-event-manager' ); ?></th>
 					<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
 					<th><?php esc_html_e( 'Order #', 'equine-event-manager' ); ?></th>
-					<th><?php esc_html_e( 'Arrival', 'equine-event-manager' ); ?></th>
-					<th><?php esc_html_e( 'Departure', 'equine-event-manager' ); ?></th>
+					<th class="eem-sortable-col" data-sort-col="arrival" title="<?php esc_attr_e( 'Sort by arrival date', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Arrival', 'equine-event-manager' ); ?> <span class="eem-sort-icon" aria-hidden="true">⇅</span></th>
+					<th class="eem-sortable-col" data-sort-col="departure" title="<?php esc_attr_e( 'Sort by departure date', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Departure', 'equine-event-manager' ); ?> <span class="eem-sort-icon" aria-hidden="true">⇅</span></th>
 					<th><?php esc_html_e( 'Shavings', 'equine-event-manager' ); ?></th>
 					<th><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></th>
 					<th><?php esc_html_e( 'Notes', 'equine-event-manager' ); ?></th>
@@ -712,7 +712,7 @@ class EEM_Daily_Movement_Page {
 					$order_key = isset( $row['order_key'] ) ? (string) $row['order_key'] : '';
 					$order     = '' !== $order_key && isset( $order_map[ $order_key ] ) ? $order_map[ $order_key ] : null;
 				?>
-					<tr>
+					<tr data-arrival="<?php echo esc_attr( (string) $row['arrival_date'] ); ?>" data-departure="<?php echo esc_attr( (string) $row['departure_date'] ); ?>">
 						<td class="eem-dm-cell-stall"><?php echo esc_html( implode( ', ', $row['stall_numbers'] ) ?: '—' ); ?></td>
 						<td><?php echo esc_html( $row['customer_name'] ); ?></td>
 						<td class="eem-dm-cell-order">
