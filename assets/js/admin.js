@@ -7372,7 +7372,7 @@
 		});
 	}
 
-	function eemSmapAction(container, op, stall, orderKey) {
+	function eemSmapAction(container, op, stall, orderKey, extra) {
 		eemMapSelClear();
 		var cfg = window.eemStallChart || {};
 		var body = new URLSearchParams();
@@ -7383,6 +7383,9 @@
 		body.set('stall', stall);
 		body.set('kind', (container && container.getAttribute && container.getAttribute('data-eem-smap-kind')) || 'stall');
 		if (orderKey) body.set('order_key', orderKey);
+		if (extra && typeof extra === 'object') {
+			Object.keys(extra).forEach(function (k) { body.set(k, String(extra[k])); });
+		}
 		body.set('inv', window._eemScInv || 'all');
 		body.set('tab', window._eemScTab || 'location');
 		eemSmapClosePop(container);
@@ -7443,6 +7446,7 @@
 		var st = payload.state[label] || { s: 'available' };
 		var status = st.s || 'available';
 		var isAssigned = (status === 'reserved' || status === 'tack');
+		var cfg = window.eemStallChart || {};
 		// Head: for an assigned/tack unit, lead with the CUSTOMER name (matches the
 		// List popover, whose title is the customer); otherwise the stall/lot label.
 		pop.querySelector('[data-eem-smap-pop-num]').textContent = isAssigned
@@ -7464,7 +7468,8 @@
 			vip:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="12 2 15 8.5 22 9.3 17 14 18.5 21 12 17.5 5.5 21 7 14 2 9.3 9 8.5 12 2"/></svg>',
 			remove: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
 			add:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
-			block:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>'
+			block:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>',
+			group:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
 		};
 		function row(txt, cls, fn, icon) {
 			var b = document.createElement('button');
@@ -7585,6 +7590,30 @@
 			// Mark as VIP / Remove VIP — routes through the map handler's 'vip' op so
 			// the grid re-renders in place (zoom/scroll preserved).
 			row(st.vip ? 'Remove VIP' : 'Mark as VIP', '', function () { eemSmapAction(container, 'vip', label, st.o || ''); }, SMAP_ICONS.vip);
+			// Assign to group / Change group — only when group reservations are on.
+			// Swaps the popover body for a pick-list of the admin-defined groups,
+			// posting set_group (mirrors how stalls are assigned from the chart).
+			if (cfg.groupsEnabled && (cfg.groupNames || []).length) {
+				row(st.g ? ('Change group (' + String(st.g).replace(/[&<>"]/g, '') + ')') : 'Assign to group', '', function (ev) {
+					ev.stopPropagation();
+					bodyEl.innerHTML = '';
+					(cfg.groupNames || []).forEach(function (gname) {
+						var gb = document.createElement('button');
+						gb.type = 'button';
+						gb.className = 'eem-smap-pop-row' + (st.g === gname ? ' eem-smap-pop-row--active' : '');
+						gb.textContent = gname;
+						gb.addEventListener('click', function () { eemSmapAction(container, 'set_group', label, st.o || '', { group_value: gname }); });
+						bodyEl.appendChild(gb);
+					});
+					if (st.g) {
+						var clr = document.createElement('button');
+						clr.type = 'button'; clr.className = 'eem-smap-pop-row danger';
+						clr.textContent = 'Remove from group';
+						clr.addEventListener('click', function () { eemSmapAction(container, 'set_group', label, st.o || '', { group_value: '' }); });
+						bodyEl.appendChild(clr);
+					}
+				}, SMAP_ICONS.group);
+			}
 			row('Remove from stall', 'danger', function () { eemSmapAction(container, 'unassign', label, st.o || ''); }, SMAP_ICONS.remove);
 		} else if (status === 'blocked') {
 			row(zq ? 'Unblock lot' : 'Unblock stall', '', function () { eemSmapAction(container, 'unblock', label, ''); }, SMAP_ICONS.block);
