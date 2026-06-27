@@ -7543,7 +7543,7 @@
 			bodyEl.appendChild(list);
 			renderList('');
 			setTimeout(function () { search.focus(); }, 0);
-			row('+ Add New Customer', 'eem-smap-pop-row--add-new', function (ev) { ev.stopPropagation(); showAddCustomerForm(); }, SMAP_ICONS.add);
+			row('Add New Customer', 'eem-smap-pop-row--add-new', function (ev) { ev.stopPropagation(); showAddCustomerForm(); }, SMAP_ICONS.add);
 			row(zq ? 'Block lot' : 'Block stall', 'danger', function () { eemSmapAction(container, 'block', label, ''); }, SMAP_ICONS.block);
 		} else if (status === 'reserved' || status === 'tack') {
 			// Assigned/tack popover — MUST mirror the By Location LIST popover's
