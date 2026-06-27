@@ -72,28 +72,50 @@ Customer checkout · Create Order · **Map "Add New Customer" placeholder** · S
 Tab · Add Items (stall/RV/product/custom) · Edit Dates (lengthen=Balance Due,
 shorten=Refund Owed) · Discount apply/remove.
 
-### FINDINGS SO FAR
-- **F1** (Med) Production build ships without `tools/` → wp-cli fatals (browser unaffected). Workaround applied.
-- **F2** (Low) refund-math smoke stale (`order_key` schema drift) — test only, not a bug.
-- **F3** 🔴 (HIGH) Map "Add New Customer" placeholder orders mis-priced: NO map surcharge,
-  no dates→1 night, sparse order. `ajax_stall_create_placeholder` uses base-rate-only pricer.
-- **F4** 🔴 (HIGH) Add Items: products + custom items inserted FLAT — no convenience fee/tax
-  (stalls/RV get it). Per Decision #1 this is a bug; must apply fee+tax to every added line.
-- **F5** Edit Dates: verify shorten=Refund Owed, lengthen=Balance Due, fee/tax recompute on delta.
-- **NEW** Cash-skips-fee (Decision #2) not yet built on the Paid Cash flow.
-- Charge calculator itself reads every input incl. Stay Packages + per-package early bird
-  (verified by code trace + green money smokes). Invoice email already itemizes + has a pay
-  button ("Review Invoice & Pay Now").
+### AUDIT STATUS — COMPLETE (2026-06-27). I own findings F1–F9 (here) + P1–P5 (next section).
 
-### TASK TRACKER
-Active task list IDs #1–#13 (this session). Build a seeding+verification harness, then work
-`CHARGE-CHECKLIST.md` row by row: seed real orders across every input × scenario × surface,
-assert Σ(lines)+fee+tax−discount == charged total, fix display/recalc bugs, flag charge-math
-changes (F3/F4/cash) for Whitney sign-off before they go live.
+**✅ VERIFIED CORRECT** (seeded real orders via the actual write path; 100/101 harness assertions
++ surcharge suites): all Edit Reservation pricing — stall/RV base, **Stay Packages + per-package
+early-bird**, required shavings, **tack exclusion**, **map tab+zone surcharges (stacked)**, %
+convenience fee, sales tax; **Edit Dates** math (lengthen=charge / shorten=refund-owed / fee+tax
+on delta — the team's date bugs were already fixed by 671); **refund engine**; **front-end Order
+Summary** (every charge has a row incl. Additional Shavings — your original "missing" symptom is
+resolved on 671); Order Detail totals + receipt totals.
 
-### OPEN (answered) DECISIONS NEEDING FIX-WORK
-- F3, F4, and cash-skips-fee all CHANGE charged amounts → implement, but get Whitney's
-  explicit OK on the resulting numbers before deploying. No version bump without approval.
+### FINDINGS (functional / math / scale — F-series)
+- **F6** 🚨 CRITICAL — order system capped at the **250 most-recent rows** (`get_component_rows`
+  `LIMIT 250`). Every single-order lookup (Order Detail, Add Items, Edit Dates, Collect Payment,
+  refunds, receipts, confirmation email, payment link) AND **Reports revenue + Dashboard revenue
+  UNDERCOUNT** past 250 orders. Orders LIST is separately paginated so it looks fine until you
+  click in. **Launch-blocker.** Fix: targeted indexed lookups + uncapped reports/dashboard aggregation.
+- **F3** 🔴 HIGH — map "Add New Customer" placeholder orders mis-priced: NO tab/zone surcharge,
+  bills 1 night (no dates), sparse order. `ajax_stall_create_placeholder` uses a base-rate-only pricer.
+- **F4/F4b/F9** 🔴 HIGH — order fee+tax FROZEN at checkout; adjustments don't recompute: Add Items
+  products + custom items added FLAT (no fee/tax); discount subtracts without recomputing fee/tax on
+  post-discount subtotal; Group fees + Pre-Entries not addable via Add Items. (Add-qty + Edit Dates
+  DO recompute — fine.) Fix: fee+tax DERIVED from current (components + custom − discount) subtotal
+  everywhere; add Group + Pre-Entry as addable item types.
+- **F8** 🟡 MEDIUM — imported-order RECEIPT line items recompute (qty×price×nights) and diverge when
+  stored unit_price×nights ≠ stored subtotal (CSV imports w/ custom stay labels, e.g. "Thursday-Sunday"
+  → line $285 above a correct $137 total). NOT an overcharge; Order Detail + totals correct; checkout
+  orders unaffected. Fix: receipt line items from stored amounts.
+- **F7** 🟡 MEDIUM — FLAT convenience fee double-charged on multi-component (stall+RV) orders. % is
+  linear so the current 4% config is safe. Fix: flat fee once per order.
+- **F1** 🟡 MEDIUM — production build ships without `tools/` → wp-cli fatals (browser unaffected).
+  Fix: include `tools/` in build or guard the require with `file_exists()`. (Workaround applied on Local.)
+- **F2** (Low, NOT a bug) refund-math smoke stale (`order_key` schema drift) — test drift only.
+
+### NEW FEATURES (Whitney decisions — V1)
+- **Cash/check removes the convenience fee** — Collect Payment "Paid Cash" tab only (backend); recalc total w/o fee at payment. (Decision #2.)
+- **Payment-link/invoice email button** → "Click here to pay" (currently "Review Invoice & Pay Now"); verify invoice layout + totals.
+- **Remove dev/stub UI references** ("ported in C7" in Settings → Payments tax help; grep all user-facing strings).
+
+### FIX ORDER + SIGN-OFF
+Suggested order: **F6 → F4/F4b/F9 → F3 → P1 → F8 → F7 → P3 → P5 → cash-fee → F1 → email/stub
+cleanup.** Every F/P fix except F1 + email/stub changes charge / refund / payment behavior →
+confirm the approach + resulting numbers with Whitney; NO version bump or deploy without
+approval. Full per-finding detail in `PAYMENT-CALC-AUDIT.md`; surface-by-surface coverage in
+`CHARGE-CHECKLIST.md`. Audit harness: `tests/` + the seed-real-order scripts (charge==stored==Σlines+tax).
 
 ---
 
@@ -152,9 +174,14 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 ---
 
-## 🛑 Owned by the desktop payment-audit chat — do NOT edit these here
+## 🛑 Payment security / robustness findings (P-series) — owned by the payment-audit chat
 
-These are v1-blocking too, but the desktop chat is working the payment code live. Left here untouched so the two chats don't collide. (Audit verdict: money math, Stripe signature verification, refund capping, and decimal storage all PASS; the "critical SQL injection" flag was a verified false positive — safe `prepare()` concatenation at `stay-packages-repo.php:36`.)
+These are v1-blocking, found by the styling chat's code/security pass and HANDED TO the payment
+chat (which now owns this whole roadmap). They complement the F-series above (F = math/display/
+scale; P = gateway/security/robustness). Fix order is in FIX ORDER + SIGN-OFF above. (Audit
+verdict: money math, Stripe signature verification, refund capping, and decimal storage all PASS;
+the "critical SQL injection" flag was a verified false positive — safe `prepare()` concatenation at
+`stay-packages-repo.php:36`.)
 
 P1. [ ] **Authorize.net response doesn't verify the charged amount** matches the server total. Stripe does (`shortcodes.php:4648`); the Auth.net path (`shortcodes.php:~8859`) only checks `responseCode === '1'` + `transId`. Add the amount-match assertion. *(Most important real finding.)*
 
