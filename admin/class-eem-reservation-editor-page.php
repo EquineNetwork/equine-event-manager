@@ -423,8 +423,6 @@ class EEM_Reservation_Editor_Page {
 				return __( 'This section is disabled. Enable it to set check-in and check-out times.', 'equine-event-manager' );
 			case 'group':
 				return __( 'This section is disabled. Enable it to let customers register groups of riders.', 'equine-event-manager' );
-			case 'fees':
-				return __( 'This section is disabled. Enable it to charge a convenience fee at checkout.', 'equine-event-manager' );
 			case 'shavings':
 				return __( 'This section is disabled. Enable it to offer additional shavings bag products to customers.', 'equine-event-manager' );
 			case 'addons':
@@ -459,7 +457,6 @@ class EEM_Reservation_Editor_Page {
 			'shavings'     => 'additional_shavings_enabled',
 			'addons'       => 'general_addons_enabled',
 			'group'        => 'group_reservations_enabled',
-			'fees'         => 'convenience_fee_enabled',
 			'agreement'    => 'venue_agreement_enabled',
 			'requireddocs' => 'required_documents_enabled',
 			'venuemap'           => 'venue_map_enabled',
@@ -627,18 +624,6 @@ class EEM_Reservation_Editor_Page {
 		// 2.3.82). No minimum-count gate; the field's own min="1" stops a
 		// nonsensical 0 when a value IS entered.
 
-		// Convenience Fee
-		if ( ! empty( $c['convenience_fee_enabled'] ) ) {
-			$type  = isset( $c['convenience_fee_type'] ) ? (string) $c['convenience_fee_type'] : 'none';
-			$value = isset( $c['convenience_fee_value'] ) ? (float) $c['convenience_fee_value'] : 0.0;
-			if ( 'none' === $type ) {
-				$err['fees'] = __( 'Convenience Fee is enabled but Fee Type must be Flat or Percentage (not None).', 'equine-event-manager' );
-			} elseif ( $value <= 0 ) {
-				$err['fees'] = 'flat' === $type
-					? __( 'Convenience Fee (Flat): amount must be above $0.', 'equine-event-manager' )
-					: __( 'Convenience Fee (Percentage): percentage must be above 0.', 'equine-event-manager' );
-			}
-		}
 
 		// Agreement — PDF file uploaded
 		if ( ! empty( $c['venue_agreement_enabled'] ) ) {
@@ -916,7 +901,6 @@ class EEM_Reservation_Editor_Page {
 			'shavings'          => '_section-shavings.php',
 			'addons'            => '_section-addons.php',
 			'group'        => '_section-group.php',
-			'fees'         => '_section-fees.php',
 			'venuemap'     => '_section-venuemap.php',
 			'requireddocs' => '_section-requireddocs.php',
 			'agreement'    => '_section-agreement.php',
@@ -947,7 +931,6 @@ class EEM_Reservation_Editor_Page {
 			array( 'key' => 'shavings',          'title' => __( 'Additional Shavings',     'equine-event-manager' ), 'icon_tone' => 'amber',  'icon_key' => 'package',   'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'addons',            'title' => __( 'General Add-Ons',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'plus',      'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'group',        'title' => __( 'Group Reservations',      'equine-event-manager' ), 'icon_tone' => 'green',  'icon_key' => 'users',     'enable_toggle' => true,  'collapsed' => true  ),
-			array( 'key' => 'fees',         'title' => __( 'Convenience Fee',         'equine-event-manager' ), 'icon_tone' => 'orange', 'icon_key' => 'dollar',    'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'venuemap',     'title' => __( 'Venue Map',               'equine-event-manager' ), 'icon_tone' => 'teal',   'icon_key' => 'map-pin',   'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'requireddocs', 'title' => __( 'Required Documents',       'equine-event-manager' ), 'icon_tone' => 'navy',   'icon_key' => 'paperclip', 'enable_toggle' => true,  'collapsed' => true  ),
 			array( 'key' => 'agreement',    'title' => __( 'Agreement',               'equine-event-manager' ), 'icon_tone' => 'navy',   'icon_key' => 'file',      'enable_toggle' => true,  'collapsed' => true  ),

@@ -567,8 +567,14 @@ class EEM_Shortcodes {
 					data-group-deposit-amount="<?php echo esc_attr( (float) $data['group_rider_deposit_amount'] ); ?>"
 					data-stall-pricing-mode="<?php echo esc_attr( $data['stall_pricing_mode'] ?? 'nightly' ); ?>"
 					data-rv-pricing-mode="<?php echo esc_attr( $data['rv_pricing_mode'] ?? 'nightly' ); ?>"
-					data-fee-type="<?php echo esc_attr( $data['convenience_fee_type'] ); ?>"
-					data-fee-value="<?php echo esc_attr( (float) $data['convenience_fee_value'] ); ?>"
+					<?php
+					// Convenience fee is a single global setting (ROADMAP v1 #8); the
+					// live Order Summary JS reads these attrs. Emit 'none' when the
+					// global fee is disabled so the JS computes $0.
+					$eem_global_fee = class_exists( 'EEM_Settings_Repo' ) ? EEM_Settings_Repo::get_convenience_fee() : array( 'apply' => false, 'type' => 'none', 'value' => 0.0 );
+					?>
+					data-fee-type="<?php echo esc_attr( ! empty( $eem_global_fee['apply'] ) ? (string) $eem_global_fee['type'] : 'none' ); ?>"
+					data-fee-value="<?php echo esc_attr( (float) $eem_global_fee['value'] ); ?>"
 					<?php
 					// Tax (SET-6 / C3.D.1). Rate is resolved per-reservation so
 					// the override meta (C7 wires its UI) flows transparently to JS.
@@ -1810,7 +1816,7 @@ class EEM_Shortcodes {
 						<?php endforeach; ?>
 						<?php // RV Add-On summary rows removed (Slice 6). ?>
 						<div class="eem-payment-summary-row" data-eem-summary-row="fees" hidden>
-							<span><?php echo esc_html( ! empty( $data['convenience_fee_label'] ) ? $data['convenience_fee_label'] : __( 'Non-Refundable Convenience Fee', 'equine-event-manager' ) ); ?></span>
+							<span><?php echo esc_html( class_exists( 'EEM_Settings_Repo' ) ? EEM_Settings_Repo::get_convenience_fee()['label'] : __( 'Non-Refundable Convenience Fee', 'equine-event-manager' ) ); ?></span>
 							<strong data-eem-total="fees">$0.00</strong>
 						</div>
 						<?php
@@ -4899,9 +4905,12 @@ class EEM_Shortcodes {
 		$out['nights']     = $nights;
 		$out['subtotal']   = $qty * $rate * $nights;
 		$out['tax_rate']   = class_exists( 'EEM_Settings_Repo' ) ? (float) EEM_Settings_Repo::get_tax_rate_for_reservation( $reservation_id ) : 0.0;
-		$out['fee_enabled']= ! empty( $data['convenience_fee_enabled'] );
-		$out['fee_type']   = isset( $data['convenience_fee_type'] ) ? (string) $data['convenience_fee_type'] : 'none';
-		$out['fee_value']  = isset( $data['convenience_fee_value'] ) ? (float) $data['convenience_fee_value'] : 0.0;
+		// Convenience fee is a global setting (ROADMAP v1 #8) — surface the global
+		// config here so the admin add-items recompute matches checkout exactly.
+		$global_fee        = class_exists( 'EEM_Settings_Repo' ) ? EEM_Settings_Repo::get_convenience_fee() : array( 'apply' => false, 'type' => 'none', 'value' => 0.0 );
+		$out['fee_enabled']= ! empty( $global_fee['apply'] );
+		$out['fee_type']   = (string) ( $global_fee['type'] ?? 'none' );
+		$out['fee_value']  = (float) ( $global_fee['value'] ?? 0.0 );
 		$out['stay_type']  = $stay_type;
 		$out['arrival']    = $arrival;
 		$out['departure']  = $departure;
@@ -11562,20 +11571,15 @@ RV Lot: " . $rv_lot['name'] );
 	 * @param array $data Reservation setup data.
 	 * @return float
 	 */
-	private function calculate_convenience_fee( $subtotal, $data ) {
-		if ( empty( $data['convenience_fee_enabled'] ) ) {
+	private function calculate_convenience_fee( $subtotal, $data = array() ) {
+		// The convenience fee is a single GLOBAL setting (ROADMAP v1 #8) — no
+		// per-reservation config. $data is retained for signature compatibility
+		// with existing callers but is intentionally ignored.
+		unset( $data );
+		if ( ! class_exists( 'EEM_Settings_Repo' ) ) {
 			return 0.00;
 		}
-
-		if ( 'flat' === $data['convenience_fee_type'] ) {
-			return (float) $data['convenience_fee_value'];
-		}
-
-		if ( 'percentage' === $data['convenience_fee_type'] ) {
-			return round( $subtotal * ( (float) $data['convenience_fee_value'] / 100 ), 2 );
-		}
-
-		return 0.00;
+		return EEM_Settings_Repo::get_convenience_fee_amount( (float) $subtotal );
 	}
 
 	/**

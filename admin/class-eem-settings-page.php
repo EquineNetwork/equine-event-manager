@@ -438,6 +438,7 @@ class EEM_Settings_Page {
 	 */
 	private function render_payments_panel() {
 		$tax     = EEM_Settings_Repo::get_tax();
+		$fee     = EEM_Settings_Repo::get_convenience_fee();
 		$payment = wp_parse_args(
 			get_option( 'equine_event_manager_payment_settings', array() ),
 			array(
@@ -468,6 +469,53 @@ class EEM_Settings_Page {
 			<input type="hidden" name="action" value="eem_save_settings" />
 			<input type="hidden" name="panel" value="payments" />
 			<?php wp_nonce_field( 'eem_settings_save', 'nonce' ); ?>
+
+			<section class="eem-card">
+				<header class="eem-card-header">
+					<h2 class="eem-card-title"><?php esc_html_e( 'Convenience Fee', 'equine-event-manager' ); ?></h2>
+				</header>
+				<div class="eem-card-body">
+					<p class="eem-field-hint" style="margin-bottom:14px;">
+						<?php esc_html_e( 'A single non-refundable fee added at checkout to every reservation. Applies globally — there is no per-reservation override.', 'equine-event-manager' ); ?>
+					</p>
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-fee-apply"><?php esc_html_e( 'Apply Fee', 'equine-event-manager' ); ?></label>
+						<div class="eem-field-control">
+							<label class="eem-checkbox-row">
+								<input type="checkbox" id="eem-fee-apply" name="payload[convenience_fee][apply]" value="1" <?php checked( $fee['apply'] ); ?> />
+								<span><?php esc_html_e( 'Charge a convenience fee on orders', 'equine-event-manager' ); ?></span>
+							</label>
+							<p class="eem-field-hint"><?php esc_html_e( 'Disabling hides the fee line from checkout and receipts.', 'equine-event-manager' ); ?></p>
+						</div>
+					</div>
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-fee-type"><?php esc_html_e( 'Fee Type', 'equine-event-manager' ); ?></label>
+						<div class="eem-field-control">
+							<select class="eem-field-select" id="eem-fee-type" name="payload[convenience_fee][type]" style="max-width:200px;">
+								<option value="percentage" <?php selected( $fee['type'], 'percentage' ); ?>><?php esc_html_e( 'Percentage of subtotal', 'equine-event-manager' ); ?></option>
+								<option value="flat" <?php selected( $fee['type'], 'flat' ); ?>><?php esc_html_e( 'Flat amount', 'equine-event-manager' ); ?></option>
+							</select>
+							<p class="eem-field-hint"><?php esc_html_e( 'Percentage applies to the order subtotal; flat adds a fixed dollar amount once per order.', 'equine-event-manager' ); ?></p>
+						</div>
+					</div>
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-fee-value"><?php esc_html_e( 'Fee Amount', 'equine-event-manager' ); ?></label>
+						<div class="eem-field-control">
+							<div class="eem-price-wrap" style="max-width:180px;">
+								<input class="eem-price-input" id="eem-fee-value" type="number" step="0.01" min="0" name="payload[convenience_fee][value]" value="<?php echo esc_attr( $fee['value'] ); ?>" />
+							</div>
+							<p class="eem-field-hint"><?php esc_html_e( 'For a percentage fee enter the percent (e.g. 3 = 3%); for a flat fee enter the dollar amount (e.g. 5 = $5.00).', 'equine-event-manager' ); ?></p>
+						</div>
+					</div>
+					<div class="eem-field-row">
+						<label class="eem-field-label" for="eem-fee-label"><?php esc_html_e( 'Fee Label', 'equine-event-manager' ); ?></label>
+						<div class="eem-field-control">
+							<input class="eem-field-input" id="eem-fee-label" type="text" name="payload[convenience_fee][label]" value="<?php echo esc_attr( $fee['label'] ); ?>" style="max-width:320px;" />
+							<p class="eem-field-hint"><?php esc_html_e( 'How the fee appears on checkout and receipts (e.g. "Non-Refundable Convenience Fee").', 'equine-event-manager' ); ?></p>
+						</div>
+					</div>
+				</div>
+			</section>
 
 			<section class="eem-card">
 				<header class="eem-card-header">
@@ -1537,6 +1585,12 @@ class EEM_Settings_Page {
 		if ( isset( $payload['tax'] ) && is_array( $payload['tax'] ) ) {
 			if ( ! EEM_Settings_Repo::update_tax( $payload['tax'] ) ) {
 				$errors[] = 'tax';
+			}
+		}
+
+		if ( isset( $payload['convenience_fee'] ) && is_array( $payload['convenience_fee'] ) ) {
+			if ( ! EEM_Settings_Repo::update_convenience_fee( $payload['convenience_fee'] ) ) {
+				$errors[] = 'convenience_fee';
 			}
 		}
 
