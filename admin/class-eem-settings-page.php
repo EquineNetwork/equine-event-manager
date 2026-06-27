@@ -1917,18 +1917,8 @@ class EEM_Settings_Page {
 					<h3><?php esc_html_e( 'Import Orders from CSV', 'equine-event-manager' ); ?></h3>
 				</div>
 				<div class="eem-card-body">
-					<p class="eem-card-subtitle"><?php esc_html_e( 'Upload a CSV file to create orders. Each row becomes one order marked as Paid with an IMP- prefix.', 'equine-event-manager' ); ?></p>
-
-					<div style="background:#f8f9fa;border:1px solid #e2e4e7;border-radius:6px;padding:16px;margin-bottom:20px">
-						<p style="margin:0 0 8px;font-weight:600;font-size:13px"><?php esc_html_e( 'Guidelines', 'equine-event-manager' ); ?></p>
-						<ul style="margin:0 0 12px;padding-left:20px;font-size:13px;line-height:1.6">
-							<li><?php esc_html_e( 'First Name and Last Name columns are required. All other columns are optional.', 'equine-event-manager' ); ?></li>
-							<li><?php esc_html_e( 'Stall Dates and RV Dates should match your stay package names (e.g. "Thursday-Sunday" matches "Stall Thu-Sun").', 'equine-event-manager' ); ?></li>
-							<li><?php esc_html_e( 'Shavings Total should equal Shavings Qty times the per-bag price set on the reservation.', 'equine-event-manager' ); ?></li>
-							<li><?php esc_html_e( 'Customers with only shavings (no stalls or RV) are supported.', 'equine-event-manager' ); ?></li>
-							<li><?php esc_html_e( 'If a customer has both stalls and RV, they are grouped into one order automatically.', 'equine-event-manager' ); ?></li>
-						</ul>
-						<a href="<?php echo esc_url( EQUINE_EVENT_MANAGER_URL . 'assets/templates/import-orders-template.csv' ); ?>" download class="eem-btn eem-btn-secondary" style="font-size:13px"><?php esc_html_e( 'Download CSV Template', 'equine-event-manager' ); ?></a>
+					<div style="margin-bottom:20px">
+						<a href="<?php echo esc_url( EQUINE_EVENT_MANAGER_URL . 'assets/templates/import-orders-template.csv' ); ?>" download class="eem-btn eem-btn-secondary"><?php esc_html_e( 'Download CSV Template', 'equine-event-manager' ); ?></a>
 					</div>
 
 					<!-- Step 1: Select reservation + upload -->
@@ -1943,8 +1933,12 @@ class EEM_Settings_Page {
 							</select>
 						</div>
 						<div class="eem-field-row">
-							<label class="eem-field-label" for="eem-import-csv"><?php esc_html_e( 'CSV File', 'equine-event-manager' ); ?></label>
-							<input type="file" id="eem-import-csv" accept=".csv" class="eem-field-input" />
+							<label class="eem-field-label"><?php esc_html_e( 'CSV File', 'equine-event-manager' ); ?></label>
+							<label class="eem-file-pick-label" for="eem-import-csv">
+								<span class="eem-file-pick-btn"><?php esc_html_e( 'Choose File', 'equine-event-manager' ); ?></span>
+								<span class="eem-file-pick-name" id="eem-import-csv-name"><?php esc_html_e( 'No file chosen', 'equine-event-manager' ); ?></span>
+								<input type="file" id="eem-import-csv" accept=".csv" class="eem-file-pick-input" />
+							</label>
 						</div>
 						<div style="margin-top:16px">
 							<button type="button" class="eem-btn eem-btn-primary" data-eem-action="import-csv-upload"><?php esc_html_e( 'Upload & Preview', 'equine-event-manager' ); ?></button>
@@ -2010,8 +2004,12 @@ class EEM_Settings_Page {
 				<p class="eem-card-subtitle"><?php esc_html_e( 'Upload a setup JSON file exported from another site. This creates a new event, venue, reservation, config, packages, and orders.', 'equine-event-manager' ); ?></p>
 				<div id="eem-json-import-step-1">
 					<div class="eem-field-row">
-						<label class="eem-field-label" for="eem-import-json"><?php esc_html_e( 'JSON File', 'equine-event-manager' ); ?></label>
-						<input type="file" id="eem-import-json" accept=".json" class="eem-field-input" />
+						<label class="eem-field-label"><?php esc_html_e( 'JSON File', 'equine-event-manager' ); ?></label>
+						<label class="eem-file-pick-label" for="eem-import-json">
+							<span class="eem-file-pick-btn"><?php esc_html_e( 'Choose File', 'equine-event-manager' ); ?></span>
+							<span class="eem-file-pick-name" id="eem-import-json-name"><?php esc_html_e( 'No file chosen', 'equine-event-manager' ); ?></span>
+							<input type="file" id="eem-import-json" accept=".json" class="eem-file-pick-input" />
+						</label>
 					</div>
 					<div style="margin-top:16px">
 						<button type="button" class="eem-btn eem-btn-primary" data-eem-action="import-json-upload"><?php esc_html_e( 'Import Setup', 'equine-event-manager' ); ?></button>
@@ -2280,6 +2278,15 @@ class EEM_Settings_Page {
 							target.textContent = 'Import Setup';
 							alert('Import failed. Please try again.');
 						});
+				}
+			});
+
+			/* Update filename display for styled file pickers */
+			document.addEventListener('change', function(e) {
+				if (!e.target.classList.contains('eem-file-pick-input')) return;
+				var nameEl = e.target.parentElement.querySelector('.eem-file-pick-name');
+				if (nameEl) {
+					nameEl.textContent = e.target.files.length ? e.target.files[0].name : 'No file chosen';
 				}
 			});
 		})();
