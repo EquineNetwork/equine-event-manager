@@ -1184,6 +1184,7 @@
 .eem-map-sw { width: 14px; height: 14px; border-radius: 3px; border: 1px solid #cbd5e1; display: inline-block; }
 .eem-map-sw--avail { background: #fff; border-color: #b9c6da; }
 .eem-map-sw--sel { background: #1668F2; border-color: #1668F2; }
+.eem-map-sw--tack { background: #F59E0B; border-color: #D97706; }
 .eem-map-sw--res { background: #cbd5e1; border-color: #cbd5e1; }
 .eem-map-sw--block { background: #9aa6b6; border-color: #9aa6b6; }
 .eem-map-swipe-hint { display: none; font-size: 12px; color: #5f6f85; padding: 6px 18px; background: #f6f9fd; border-bottom: 1px solid #e2e8f0; }
