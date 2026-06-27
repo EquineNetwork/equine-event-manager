@@ -69,11 +69,22 @@ addendum" at the bottom for the latest health work and the local-setup playbook.
 - **2.7.668** — `EEM_Formatter::format_order_number` dedupe (6 sites + 4 helpers) + IMP- prefix bug fix.
 - **2.7.669** — deleted 21 confirmed-dead methods (−1,089 LOC). Kept `neutralize_csv_cell` + `eemWizardSnooze` (audit false-positives, actually live). `eem_is_cancellation_policy_enabled` left for #34.
 - **2.7.670** — `EEM_Stall_Map_Importer::sanitize_snapshot()` defensive guard (corrupted-map landmine).
+- **2.7.671** — Cancellation policy: all 3 display surfaces (checkout sidebar, confirmation email, hosted/receipt) now route through `eem_resolve_cancellation_policy()` (override → event-default fallback + enabled gate). The per-reservation architecture + global-UI removal were already in place; this closed the display gap. **#34 is DONE.**
 - **CI** — `.github/workflows/ci.yml`: PHP lint (7.4/8.2) + JS syntax + no-WP smokes on every PR.
 
 ### Remaining work — LOCAL-SETUP PLAYBOOK (do on the Local site: real MySQL + fixtures)
 
 These were intentionally NOT done in the cloud sandbox because they can't be integration-verified there (SQLite, no fixtures). Each is sized + sequenced for the desktop session.
+
+**Recommended order for the desktop session:**
+1. PREP (bootstrap fixtures) → **#25** green the smoke suite. (Unblocks confidence for everything else.)
+2. **#26** finish — add the full-suite CI job + make it a required check.
+3. **#38** validator extract, then **#37** god-object split (run the now-green suite + click-through between each PR).
+4. **#33** admin-legacy.css strip (per-page DevTools verify).
+5. Mobile device checks (**#18/#19/#21/#24**) on a real phone.
+6. Optional: cancellation tidy (under #34 below); pre-launch backup (**#32**).
+
+Payments (**#27/#28/#29/#30**) stay with the payment-audit chat — coordinate before touching money paths.
 
 **PREP (once): bootstrap fixtures so the smoke suite can actually run**
 1. Confirm Local site is on MySQL and the plugin is active.
@@ -91,7 +102,7 @@ These were intentionally NOT done in the cloud sandbox because they can't be int
 
 **#33 — strip `admin-legacy.css`** (large/risky). Migrate still-used rules into `admin.css` properly scoped (no `!important`), delete the legacy file + its enqueue. Use DevTools per-page to confirm no component loses styling. Do page-family by page-family.
 
-**#34 — cancellation-policy migration** (needs Whitney sign-off — touches stored data). One-time migration snapshots global `cancellation_policy` option → each reservation's `_eem_cancellation_policy_override`; confirm all display surfaces read override-else-event-default; strip deprecated global Settings UI; then delete `eem_is_cancellation_policy_enabled()`.
+**#34 — cancellation policy — ✅ DONE (2.7.671).** Per-reservation architecture + resolver + per-event default were already built; global Settings textarea already removed; all 3 display surfaces now route through `eem_resolve_cancellation_policy()`. Snapshot migration unneeded (no live data). **Do NOT delete `eem_is_cancellation_policy_enabled()`** — it's the live resolver predicate. Optional local tidy only (non-blocking): delete `includes/migrations/eem-mig-001-cancellation-snapshot.php` and the `'cancellation_policy'` entry in `class-eem-uninstaller.php` once confident nothing references the legacy option.
 
 **Mobile device checks (#18/#19/#21/#24)** — density already matched to Daily Movement app-wide. Remaining is screenshot-only: customer event page + stall/RV **map picker** on phones, and the Edit Reservation editor `1fr 280px` rail at phone widths. Load on a real device at 320/375/768 and fix specifics.
 
