@@ -43,7 +43,8 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 ## 📋 v1 — Open items
 
 ### Awaiting Whitney verification
-- [ ] **#8 — Stall popover icon/style parity.** Map popover shipped with same icons as List popover. Click a stall on the spatial map → confirm popover shows customer name header, Order # + Shavings line, action icons match List.
+- [x] **Stall popover icon/style parity** — ✅ verified by Whitney 2026-06-27.
+- [x] **Special Requests field** (renamed + read-only, 2.7.653) — ✅ verified by Whitney 2026-06-27.
 - [ ] **Group Names feature — VERIFY LATER (not in use yet).** Shipped 2.7.650 + branch follow-ups. Verify when groups are actually used: (1) admin adds names in the editor Group Names table (Description + Riders Per Group removed; Group Names is the only field); (2) customer event page shows the strict-list Group dropdown; (3) assign/change/remove group from the map popover; (4) sidebar Groups filter (shown only when groups enabled); (5) group shows on order detail; (6) **Grounds Fee + Rider Deposit charges show on the customer Order Summary AND on the admin Order Detail** (verify the per-rider amounts actually appear and total correctly). Editor-cleanup commit `1bc0432` is on the branch and NOT yet merged to main / deployed — bump + merge when ready to verify.
 
 ### Active (tackle one at a time)
@@ -70,17 +71,19 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 11. [x] **Special Requests field — renamed + made read-only (DONE, awaiting verify).** Order Detail "Special Instructions" card → renamed **"Special Requests"**, now READ-ONLY showing the customer's checkout free-text (sourced from the order's customer notes, same value as the receipt + Stall Chart column); removed the editable textarea, Save button, and the false "Applies to the entire reservation" helper text; removed the duplicate "Customer Notes" block from the Order Notes card. Decision locked: read-only customer field only (no admin-editable instructions field). Orphaned `eem_special_instructions_set` AJAX handler + `order-instructions-save` JS can be pruned in a later cleanup. Original spec: The customer-facing checkout field is **"Special Requests"** (e.g. "put me on an end row", "stallion accommodations"). Today the customer's text is being routed into **Order Notes → Customer Notes** on Order Detail, while a SEPARATE admin-editable **"Special Instructions"** card exists (scoped "applies to entire reservation"). Desired: the customer's Special Requests is the single canonical field — display it (read-only, NOT editable; it's the customer's words) on Order Detail under the heading **"Special Requests"** (rename the "Special Instructions" card), on the receipt (already shows as "Special Requests"), and on the Stall & RV Charts "Special Requests" column (already reads `get_special_requests_from_order_notes`). **Scope nuance to confirm at kickoff:** the current "Special Instructions" admin card is PER-RESERVATION (all orders) while the customer Special Requests is PER-ORDER — decide whether to (a) drop the per-reservation editable field entirely and show only the read-only per-order customer requests, or (b) keep both (read-only customer Special Requests + a separately-labeled admin note). Whitney's words: "it's not editable, it's what the customer types in at checkout, we should not be editing that." Touches: checkout submission routing, Order Detail render (rename + read-only), confirm stall-chart + receipt read the same source.
 
+12. [ ] **Auto-save stall/RV maps to the venue (don't lose maps).** Whitney's concern: a built stall/RV map should automatically persist to the **venue** so it can't get lost (rather than relying on a manual "Save Map" / "Save Layout" action that's easy to forget). On map edit/build, auto-save the layout to the reservation's venue as the venue's current layout, so the next reservation at that venue can reuse it. Relates to the v2 Facility Layout Templates work (copy-on-use clone), but this is the lighter "never lose a map" safety net. Decide at kickoff: auto-save on every edit vs. on publish; one current-layout per venue vs. named templates; interaction with the existing manual Save Layout flow.
+
 ### Later (polish, non-blocking)
 
-12. [ ] **Restyle "View Event" overview page** to match plugin design system.
+13. [ ] **Restyle "View Event" overview page** to match plugin design system.
 
-13. [ ] **Remove "X days" countdown chip** on the event-list flyer card. **BLOCKED** — needs Whitney's mockup before starting.
+14. [ ] **Remove "X days" countdown chip** on the event-list flyer card. **BLOCKED** — needs Whitney's mockup before starting.
 
-14. [ ] **Restyle squished "Choose File" inputs** on Settings → Import/Export.
+15. [ ] **Restyle squished "Choose File" inputs** on Settings → Import/Export.
 
-15. [ ] **Import/Export: event-level dates not carried** into the imported reservation.
+16. [ ] **Import/Export: event-level dates not carried** into the imported reservation.
 
-16. [ ] **TEC event list template** — frontend event-list display for TEC-sourced events (part of the deferred frontend-lists work; scope/design TBD).
+17. [ ] **TEC event list template** — frontend event-list display for TEC-sourced events (part of the deferred frontend-lists work; scope/design TBD).
 
 ---
 
