@@ -10767,10 +10767,10 @@ a.eem-sc-mob-edit-btn:focus { background: #e8eef8; color: #0d1b3e; text-decorati
 .eem-shell-page--stall-charts .eem-loc-cell--blocked { background: #f3f4f5; border-color: #e2e4e7; color: #64748b; cursor: default; }
 /* Section dividers: stalls = blue, RV = amber (mockup .section-divider). */
 .eem-shell-page--stall-charts [data-inv-section="stalls"] .eem-sc-section-divider {
-	background: #f0f5ff;
-	border-top: 1px solid #dce8fb;
-	border-bottom: 1px solid #dce8fb;
-	color: #1668F2;
+	background: #f8fafc;
+	border-top: 1px solid #e2e8f0;
+	border-bottom: 1px solid #e2e8f0;
+	color: #0d1b3e;
 	margin: 0;
 }
 .eem-shell-page--stall-charts [data-inv-section="rv"] .eem-sc-section-divider {
