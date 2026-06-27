@@ -53,6 +53,14 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-updater.php';
 
 register_activation_hook( __FILE__, array( 'EEM_Activator', 'activate' ) );
 
+// A8 — clear the expired-holds cron sweep on deactivation so we don't leave an
+// orphaned scheduled event behind.
+register_deactivation_hook( __FILE__, function () {
+	if ( class_exists( 'EEM_Unit_Holds_Repo' ) ) {
+		EEM_Unit_Holds_Repo::unschedule_cleanup();
+	}
+} );
+
 // GitHub-backed in-WordPress auto-updates: a push to `main` with a bumped
 // Version: header surfaces "Update now" on the Plugins screen. The repo is
 // public, so no auth token is required (see EEM_Updater).

@@ -16,7 +16,7 @@ Before any version bump or release, these branches MUST be merged to `main` firs
 
 | Branch | PR | What's in it |
 |---|---|---|
-| `claude/page-styling-template-jwx3ez` | PR #36 | Import/Export styling; list-page rounded border fix (Events, Customers, Term Categories); Daily Movement footer; invoice/refund/payment-received email restyle to design system; report PDF color tokens; **audit fixes A2 (CSV import hardening), A7 (order-status whitelist), A9 (admin BCC failure logging), A11 (move_uploaded_file suppression)**; ROADMAP #15/#17/#18/#19 done |
+| `claude/page-styling-template-jwx3ez` | PR #36 | Import/Export styling; list-page rounded border fix (Events, Customers, Term Categories); Daily Movement footer; invoice/refund/payment-received email restyle to design system; report PDF color tokens; **audit fixes A2 (CSV import hardening), A7 (order-status whitelist), A8 (cart-hold cleanup cron), A9 (admin BCC failure logging), A11 (move_uploaded_file suppression)**; ROADMAP #15/#17/#18/#19 done |
 
 **How to merge when ready:** Whitney approves → merge PR on GitHub → confirm `main` has the changes → then bump version as normal.
 
@@ -191,7 +191,7 @@ A6. [ ] **[PAYMENT] Refund-notes amount regex preserves the minus sign** (`class
 
 A7. [x] **Order payment-status has no whitelist** ✅ Done (this branch). Added `EEM_Orders_Repository::VALID_PAYMENT_STATUSES` (paid, pending, unpaid, partially_paid, refunded, partially_refunded, cancelled) and an `in_array()` guard in `update_order_payment_details()` that returns `false` on any out-of-set status. This matters more than first thought: the REST `PUT /orders/{key}` endpoint passes `payment_status` straight through, so the whitelist closes a real external input vector, not just the admin-AJAX path. **Severity: LOW → resolved.**
 
-A8. [ ] **Cart-hold cleanup relies on customer traffic, not cron.** `cleanup_expired()` (`class-eem-unit-holds-repo.php`) runs opportunistically on form submit / hold attempt. Queries already filter on `held_until > now` so stale rows are harmless to behavior, but the holds table can bloat on a quiet site. Add a WP-cron cleanup. **Severity: LOW (maintenance/storage only).**
+A8. [x] **Cart-hold cleanup relies on customer traffic, not cron** ✅ Done (this branch). Added an hourly WP-cron sweep: `EEM_Unit_Holds_Repo::CRON_HOOK` (`eem_unit_holds_cleanup`) with `schedule_cleanup()` / `unschedule_cleanup()` helpers. Scheduled in the activator's create-tables pass, handler bound in `EEM_Plugin::run()` (calls `cleanup_expired()`), and cleared via a new `register_deactivation_hook` in the main plugin file. The opportunistic cleanup on form submit / hold attempt stays as a belt-and-suspenders fallback. **Note:** the schedule arms via `activate()`, which on existing installs only re-runs on a version-change upgrade — so on the live site the cron will arm at the next release bump (fine, since launch bumps the version anyway). **Severity: LOW → resolved.**
 
 A9. [x] **Admin BCC receipt send failure is unchecked** ✅ Done (this branch). The admin BCC send result is now captured; on `WP_Error` it logs a diagnostic line (gated behind `WP_DEBUG`, the sanctioned logging pattern) with the order key. Still non-fatal to checkout — the customer email remains the critical path. **Severity: LOW → resolved.**
 
