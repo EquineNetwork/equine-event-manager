@@ -658,6 +658,110 @@ class EEM_Venue {
 	}
 
 	/**
+	 * Reserved name for the rolling auto-saved layout (ROADMAP v1 #12). One per
+	 * venue, overwritten on every reservation save, kept distinct from the admin's
+	 * manual named saves.
+	 *
+	 * @var string
+	 */
+	const AUTO_LAYOUT_NAME = 'Auto-saved (latest)';
+
+	/**
+	 * Whether a layout snapshot actually contains structural content, so an empty
+	 * save (e.g. a reservation with no map yet) never clobbers a good auto-save.
+	 *
+	 * @param array<string,mixed> $snapshot Snapshot from snapshot_reservation_layout().
+	 * @return bool
+	 */
+	private static function layout_has_content( array $snapshot ): bool {
+		foreach ( $snapshot as $value ) {
+			if ( is_array( $value ) ) {
+				if ( ! empty( $value ) ) {
+					return true;
+				}
+			} elseif ( is_string( $value ) ) {
+				$trim = trim( $value );
+				if ( '' !== $trim && '[]' !== $trim && '{}' !== $trim && '0' !== $trim ) {
+					return true;
+				}
+			} elseif ( ! empty( $value ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Auto-save a reservation's current layout to its venue as the rolling
+	 * "latest" copy (ROADMAP v1 #12 — "never lose a map"). Upserts a single
+	 * reserved layout row per venue (overwrites on each call); does nothing when
+	 * the reservation has no structural layout yet, so a good auto-save is never
+	 * replaced by an empty one. Best-effort and side-effect-only — callers fire it
+	 * after a save and ignore the result.
+	 *
+	 * @param int $venue_id       Canonical venue id.
+	 * @param int $reservation_id Reservation whose layout to capture.
+	 * @return int The auto-layout row id (0 when nothing was saved).
+	 */
+	public static function auto_save_layout( int $venue_id, int $reservation_id ): int {
+		global $wpdb;
+		if ( $venue_id <= 0 || $reservation_id <= 0 ) {
+			return 0;
+		}
+
+		$snapshot = self::snapshot_reservation_layout( $reservation_id, 'combined' );
+		if ( ! self::layout_has_content( $snapshot ) ) {
+			return 0; // Nothing worth saving — don't overwrite an existing auto-save.
+		}
+
+		$json     = wp_json_encode( $snapshot );
+		$existing = (int) $wpdb->get_var( $wpdb->prepare( // phpcs:ignore WordPress.DB
+			'SELECT id FROM ' . self::layouts_table() . ' WHERE venue_id = %d AND name = %s AND layout_type = %s LIMIT 1',
+			$venue_id, self::AUTO_LAYOUT_NAME, 'combined'
+		) );
+
+		if ( $existing > 0 ) {
+			$wpdb->update( // phpcs:ignore WordPress.DB
+				self::layouts_table(),
+				array( 'layout_json' => $json, 'created_at' => current_time( 'mysql' ) ),
+				array( 'id' => $existing ),
+				array( '%s', '%s' ),
+				array( '%d' )
+			);
+			return $existing;
+		}
+
+		$ok = $wpdb->insert( self::layouts_table(), array( // phpcs:ignore WordPress.DB
+			'venue_id'    => $venue_id,
+			'name'        => self::AUTO_LAYOUT_NAME,
+			'layout_json' => $json,
+			'layout_type' => 'combined',
+			'based_on_id' => 0,
+			'created_at'  => current_time( 'mysql' ),
+		), array( '%d', '%s', '%s', '%s', '%d', '%s' ) );
+		return $ok ? (int) $wpdb->insert_id : 0;
+	}
+
+	/**
+	 * Convenience wrapper: resolve a reservation's venue and auto-save its layout.
+	 * No-op when the reservation has no resolvable venue. Safe to call after any
+	 * reservation/map save.
+	 *
+	 * @param int $reservation_id Reservation id.
+	 * @return int Auto-layout row id (0 when nothing saved).
+	 */
+	public static function auto_save_reservation_layout( int $reservation_id ): int {
+		if ( $reservation_id <= 0 ) {
+			return 0;
+		}
+		$venue_id = self::resolve_for_reservation( $reservation_id );
+		if ( $venue_id <= 0 ) {
+			return 0;
+		}
+		return self::auto_save_layout( $venue_id, $reservation_id );
+	}
+
+	/**
 	 * Saved layouts for a venue (newest first).
 	 *
 	 * @param int    $venue_id    Venue id.
