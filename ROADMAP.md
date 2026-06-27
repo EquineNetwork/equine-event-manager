@@ -28,6 +28,61 @@
 
 ---
 
+## 💰 PAYMENT & CALCULATION AUDIT — TOP PRIORITY (2026-06-27)
+
+> The system will take **hundreds of thousands of dollars** immediately. EVERY chargeable
+> input and EVERY money surface must be 100% correct. Full detail in two committed docs:
+> **`CHARGE-CHECKLIST.md`** (the exhaustive card-by-card list) + **`PAYMENT-CALC-AUDIT.md`**
+> (findings + method). This block is the durable index so nothing is missed.
+
+### LOCKED DECISIONS (Whitney, 2026-06-27 — do not re-litigate)
+1. **Convenience fee = 4% of subtotal, applies to EVERY product/line item** (stalls, RV,
+   shavings, add-ons, group fees, pre-entries, custom line items) on EVERY charge path.
+2. **Cash/check is the ONLY exception, BACKEND ONLY.** Frontend checkout is always card →
+   always charges the fee. The Collect Payment **"Paid Cash"** tab (cash or check) is the
+   single place that REMOVES the fee (recalc total w/o fee). Send Link + Charge Card are
+   card → keep the fee. Rationale: the fee is a pass-through of the merchant card fee.
+3. **Sales tax stays OFF** (Apply Tax unchecked, 0%). Keep the feature (shavings are a
+   physical good; state law may vary) but do not enable. Audit the tax MATH anyway.
+4. **No dev/stub references in UI** — remove "ported in C7" etc. All work is done.
+
+### MONEY SURFACES (every dollar must appear + reconcile on each)
+Customer: checkout Order Summary (live JS) · confirmation email · hosted receipt · PDF
+receipt · **payment-link/invoice email** (itemized + "pay" button). Admin: Order Detail ·
+print receipt · Orders list (Total / **Total Paid** / Balance) · Create Order · **Collect
+Payment** (Send Link / Charge Card / Paid Cash) · Dashboard revenue · Reports · Activity Log.
+Ground truth: the actual gateway charge + stored totals.
+
+### ORDER-CREATION & RECALC PATHS (each must inherit FULL reservation pricing)
+Customer checkout · Create Order · **Map "Add New Customer" placeholder** · Send Link/Open
+Tab · Add Items (stall/RV/product/custom) · Edit Dates (lengthen=Balance Due,
+shorten=Refund Owed) · Discount apply/remove.
+
+### FINDINGS SO FAR
+- **F1** (Med) Production build ships without `tools/` → wp-cli fatals (browser unaffected). Workaround applied.
+- **F2** (Low) refund-math smoke stale (`order_key` schema drift) — test only, not a bug.
+- **F3** 🔴 (HIGH) Map "Add New Customer" placeholder orders mis-priced: NO map surcharge,
+  no dates→1 night, sparse order. `ajax_stall_create_placeholder` uses base-rate-only pricer.
+- **F4** 🔴 (HIGH) Add Items: products + custom items inserted FLAT — no convenience fee/tax
+  (stalls/RV get it). Per Decision #1 this is a bug; must apply fee+tax to every added line.
+- **F5** Edit Dates: verify shorten=Refund Owed, lengthen=Balance Due, fee/tax recompute on delta.
+- **NEW** Cash-skips-fee (Decision #2) not yet built on the Paid Cash flow.
+- Charge calculator itself reads every input incl. Stay Packages + per-package early bird
+  (verified by code trace + green money smokes). Invoice email already itemizes + has a pay
+  button ("Review Invoice & Pay Now").
+
+### TASK TRACKER
+Active task list IDs #1–#13 (this session). Build a seeding+verification harness, then work
+`CHARGE-CHECKLIST.md` row by row: seed real orders across every input × scenario × surface,
+assert Σ(lines)+fee+tax−discount == charged total, fix display/recalc bugs, flag charge-math
+changes (F3/F4/cash) for Whitney sign-off before they go live.
+
+### OPEN (answered) DECISIONS NEEDING FIX-WORK
+- F3, F4, and cash-skips-fee all CHANGE charged amounts → implement, but get Whitney's
+  explicit OK on the resulting numbers before deploying. No version bump without approval.
+
+---
+
 ## ⚠️ CANONICAL STALL POPOVER OPTION SET (anti-drift guard — DO NOT let these diverge again)
 
 Both the By Location **List** popover and **Map** popover MUST expose the SAME options. This is the 3rd time they've drifted. When editing either, mirror the change in the other.
