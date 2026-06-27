@@ -5589,6 +5589,12 @@
 		// Map search box (top filter row) only applies to the Map view.
 		var mapSearchGroup = document.querySelector('.eem-sc-map-search-group');
 		if (mapSearchGroup) { mapSearchGroup.style.display = tab === 'map' ? '' : 'none'; }
+		// Customer roster sidebar is only used to drag-assign onto the spatial map,
+		// so it shows on the Map view only (Whitney 2026-06-27). On List / By Customer
+		// you assign inline, so the sidebar just takes space — hide it and let the
+		// main panel take full width.
+		var scSidebar = document.getElementById('eem-sc-sidebar');
+		if (scSidebar) { scSidebar.style.display = tab === 'map' ? '' : 'none'; }
 		// Keep the view <select> in sync (e.g. when state is set programmatically).
 		var viewSelect = document.getElementById('eem-sc-view-select');
 		if (viewSelect && viewSelect.value !== tab) { viewSelect.value = tab; }

@@ -10291,6 +10291,12 @@ a.eem-sc-mob-edit-btn:focus { background: #e8eef8; color: #0d1b3e; text-decorati
 	align-items: center;
 	flex-shrink: 0;
 }
+/* Show + View controls relocated onto the title row (2026-06-27 cleanup). */
+.eem-shell-page--stall-charts .eem-sc-pagehead-filters {
+	gap: 16px;
+	align-items: flex-end;
+	flex-wrap: wrap;
+}
 .eem-shell-page--stall-charts .eem-sc-btn-primary,
 .eem-shell-page--stall-charts button.eem-sc-btn-primary {
 	display: inline-flex;
@@ -10377,7 +10383,7 @@ a.eem-sc-mob-edit-btn:focus { background: #e8eef8; color: #0d1b3e; text-decorati
 .eem-shell-page--stall-charts .eem-sc-sidebar.collapsed { width: 48px; min-width: 48px; }
 .eem-shell-page--stall-charts .eem-sc-sidebar.collapsed .eem-sb-title,
 .eem-shell-page--stall-charts .eem-sc-sidebar.collapsed .eem-sb-search,
-.eem-shell-page--stall-charts .eem-sc-sidebar.collapsed .eem-sb-filters,
+.eem-shell-page--stall-charts .eem-sc-sidebar.collapsed .eem-sb-filters-collapse,
 .eem-shell-page--stall-charts .eem-sc-sidebar.collapsed .eem-sb-list { display: none; }
 
 .eem-shell-page--stall-charts .eem-sb-topbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #e2e8f4; flex-shrink: 0; }
@@ -10393,7 +10399,15 @@ a.eem-sc-mob-edit-btn:focus { background: #e8eef8; color: #0d1b3e; text-decorati
 .eem-shell-page--stall-charts input.eem-sb-search-input { width: 100%; padding: 7px 10px 7px 28px; border: 1px solid #d0daea; border-radius: 8px; font-size: 12.5px; color: #0d1b3e; background: #F7F9FC; outline: none; min-height: 0; margin: 0; box-shadow: none; }
 .eem-shell-page--stall-charts input.eem-sb-search-input:focus { border-color: #1668F2; box-shadow: 0 0 0 3px rgba(22,104,242,.1); }
 
-.eem-shell-page--stall-charts .eem-sb-filters { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #f0f4fb; flex-shrink: 0; }
+/* Collapsible Filters (default closed) — frees vertical space for the customer
+   list (2026-06-27). Native <details>/<summary>, no JS. */
+.eem-shell-page--stall-charts .eem-sb-filters-collapse { border-bottom: 1px solid #f0f4fb; flex-shrink: 0; }
+.eem-shell-page--stall-charts .eem-sb-filters-summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 9px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #64748b; user-select: none; }
+.eem-shell-page--stall-charts .eem-sb-filters-summary::-webkit-details-marker { display: none; }
+.eem-shell-page--stall-charts .eem-sb-filters-summary:hover { color: #1668F2; }
+.eem-shell-page--stall-charts .eem-sb-filters-chevron { width: 13px; height: 13px; transition: transform .15s; }
+.eem-shell-page--stall-charts .eem-sb-filters-collapse[open] .eem-sb-filters-chevron { transform: rotate(180deg); }
+.eem-shell-page--stall-charts .eem-sb-filters { display: flex; flex-direction: column; gap: 8px; padding: 4px 12px 12px; flex-shrink: 0; }
 .eem-shell-page--stall-charts .eem-sb-filter-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #94a3b8; margin-bottom: 4px; }
 .eem-shell-page--stall-charts select.eem-sb-filter-select { width: 100%; padding: 6px 24px 6px 8px; border: 1px solid #d0daea; border-radius: 7px; font-size: 12px; color: #0d1b3e; background-color: #fff; min-height: 0; margin: 0; box-shadow: none; }
 .eem-shell-page--stall-charts select.eem-sb-filter-select:focus { border-color: #1668F2; }
@@ -10402,7 +10416,8 @@ a.eem-sc-mob-edit-btn:focus { background: #e8eef8; color: #0d1b3e; text-decorati
 .eem-shell-page--stall-charts .eem-sb-list { flex: 1; overflow-y: auto; padding: 6px 0; }
 .eem-shell-page--stall-charts .eem-sb-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: #94a3b8; padding: 8px 14px 4px; display: flex; align-items: center; gap: 6px; }
 .eem-shell-page--stall-charts .eem-sb-section-label span { flex: 1; height: 1px; background: #f0f4fb; }
-.eem-shell-page--stall-charts .eem-sb-customer { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; border-left: 3px solid transparent; user-select: none; transition: background .1s; }
+.eem-shell-page--stall-charts .eem-sb-customer { display: flex; align-items: center; gap: 8px; padding: 6px 12px; cursor: pointer; border-left: 3px solid transparent; user-select: none; transition: background .1s; }
+.eem-shell-page--stall-charts .eem-sb-cust-name .eem-vip-star { color: #eab308; font-size: 12px; margin-right: 1px; }
 .eem-shell-page--stall-charts .eem-sb-customer:hover { background: #f5f8ff; border-left-color: #1668F2; }
 .eem-shell-page--stall-charts .eem-sb-customer.eem-sb-selected { background: #eff6ff; border-left-color: #1668F2; }
 .eem-shell-page--stall-charts .eem-sb-customer.assigned { opacity: .65; }

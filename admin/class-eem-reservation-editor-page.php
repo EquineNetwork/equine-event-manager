@@ -1451,6 +1451,13 @@ class EEM_Reservation_Editor_Page {
 			EEM_Reservation_Config::flush_cache( $reservation_id );
 		}
 
+		// ROADMAP v1 #12 — auto-save the built map to its venue's rolling "latest"
+		// layout so it's never lost even if the admin forgets the manual Save
+		// Layout. Best-effort: no-op when the reservation has no resolvable venue.
+		if ( class_exists( 'EEM_Venue' ) ) {
+			EEM_Venue::auto_save_reservation_layout( $reservation_id );
+		}
+
 		$per   = EEM_Stall_Map_Importer::barn_stall_counts( $snapshot );
 		$barns_out = array();
 		foreach ( $per as $name => $count ) {

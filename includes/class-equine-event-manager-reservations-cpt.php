@@ -874,6 +874,13 @@ class EEM_Reservations_CPT {
 		} else {
 			delete_post_meta( $post_id, '_en_reservation_shortcode' );
 		}
+
+		// ROADMAP v1 #12 — auto-save this reservation's layout to its venue's
+		// rolling "latest" copy so a built map/layout is never lost. Best-effort;
+		// no-op when there's no resolvable venue or no layout content yet.
+		if ( class_exists( 'EEM_Venue' ) ) {
+			EEM_Venue::auto_save_reservation_layout( $post_id );
+		}
 	}
 
 	/**
