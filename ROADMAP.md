@@ -208,11 +208,11 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 ### 🔲 Remaining
 1. [ ] Global mobile visual polish — per-page pass to match Daily Movement standard (row heights, badge sizing, spacing/density). Scaffolding shipped (2.7.577–580); per-page work not started.
 2. [ ] Excel stall map import (.xlsx → stall rows + map grid)
-3. [ ] Map Builder search bar (search/highlight/scroll for large maps)
+3. [x] Map Builder search bar (search/highlight/scroll for large maps)
 4. [ ] Add-On Report (per-day add-on quantities, CSV + PDF)
 5. [ ] Full end-to-end customer checkout sweep (needs NTR 6519 fixture page). NOTE (2026-06-23): this is also the recommended way to SEED test data — real checkout writes a correct `reservation_id` column + notes tag + config-based pricing (production-representative), unlike the synthetic seeders. Prerequisite: a live NTR 6519 customer event page to run checkouts through.
-6. [ ] UX: Order Detail "Paid" badge contradicts Balance-Due banner on edited orders
-7. [ ] Pre-Entry Import Tool (GH CSV) (#164)
+6. [x] UX: Order Detail "Paid" badge contradicts Balance-Due banner on edited orders
+7. [x] Pre-Entry Import Tool (GH CSV) (#164)
 8. [ ] Vendor System (#166)
 9. [ ] Full map post-meta → config migration (#174)
 10. [ ] Verify post-meta → config-table migration 100% complete (#199)
@@ -224,14 +224,14 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 16. [ ] PDF Venue Map → overlay (upload PDF, drop/snap stall hotspots)
 17. [ ] Sheets & Results — more source types (CSV, Google Sheets, external URL)
 18. [ ] Full permissions matrix (role-based access) — needs discussion; may land pre-launch
-19. [ ] Order Detail: make "Special Instructions" editable (inline edit + Save Changes bar) — currently display-only
+19. [x] Order Detail: make "Special Instructions" editable (inline edit + Save Changes bar) — currently display-only
 20. [ ] Customer page: consume group fields — show `_en_group_description` text + enforce `_en_group_riders_per_group` max on the rider input (saved today but never read)
-21. [ ] Dashboard "Needs Attention": agreement-signature row (needs per-order signature tracking; not emitted today)
+21. [x] Dashboard "Needs Attention": agreement-signature row (needs per-order signature tracking; not emitted today)
 22. [ ] Events flyer variant: `show_flyer` thumbnail + countdown badge (today `flyer="yes"` only adds a "View Flyer" link)
 23. [ ] Dev tooling: seeder populates `reservation_id` on seeded orders (replace the stopgap backfill script). NOTE (2026-06-23): NOT a seeding blocker — the PRODUCTION checkout/admin paths already write `reservation_id` correctly (shortcodes.php:5036/5147); only the synthetic seeders (`tools/seed-test-data.php`, `scripts/seed-orders.php`) skip it. Prefer seeding via real checkout (#5); this stays as dev-tooling cleanup.
 24. [ ] RV amenities/hookups on reservations — in the Edit Reservation editor, let admin identify what each RV lot (or RV spot type) offers: 30 amp / 50 amp / water / sewage, etc. Display on the customer frontend as labeled icon chips (matching the existing "RV Spot Type" card style — electric/water icons with labels). Build approach TBD — locked in; discuss before implementing.
-25. [ ] Stall & RV Charts — layout chip status colors + click-to-set status. Define distinct chip colors for booked / cleaning / blocked / etc.; make chips clickable to mark a unit as Cleaning / Checked Out / Checked In / etc. Colors + interaction details TBD — discuss before implementing.
-26. [ ] Stall & RV Charts — add a blue metrics bar (matching the Daily Movement metrics bar) at the top of the page showing important metrics.
+25. [x] Stall & RV Charts — layout chip status colors + click-to-set status. Define distinct chip colors for booked / cleaning / blocked / etc.; make chips clickable to mark a unit as Cleaning / Checked Out / Checked In / etc. Colors + interaction details TBD — discuss before implementing.
+26. [x] Stall & RV Charts — add a blue metrics bar (matching the Daily Movement metrics bar) at the top of the page showing important metrics.
 27. [ ] Print view style verification — resolve discrepancy between existing standard (navy title + "Printed:" meta) and alternate spec (white 56px topbar, no Printed label, no EEM branding). Visual verify then lock one style.
 28. [ ] Hotel-style 15-min cart hold
 30. [x] Stall Chart — spatial map search bar: stall-number search ✅. Customer-name search also added (2026-06-25 session 2 — matches `st.c` stored in `data-eem-smap-customer` attribute).
@@ -240,7 +240,7 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 33. [x] Orders — bulk "Move to Trash": confirmation modal → AJAX → `repo->trash_order()` loop → toast + reload. (2026-06-25 session 2)
 34. [x] Orders — Cancel Selected Orders button styling: was `.eem-btn-delete` (icon size), fixed to `.eem-btn-danger` (full-width destructive). (2026-06-25 session 2)
 35. [x] Stall Chart — "Clear All Assignments" header button removed (too dangerous). (2026-06-25 session 2)
-29. [ ] Stall Chart — sticky sidebar panel for the By Location Map view. Reference: Stall Logic screenshots (screenshots sent 2026-06-25). The spatial map (661-stall view) needs a persistent right-side panel that stays in view while scrolling/panning the map, showing quick actions, assignment info for the selected stall, and summary metrics. Design TBD — discuss before implementing. (NOT implemented today). When a customer selects a stall/RV lot it should be held for a time window (~15 min) and shown as taken to other customers during that window, then auto-released if checkout isn't completed. NOTE: actual double-booking is already prevented at submit via the per-reservation advisory lock (the race loser is told the unit is taken and is NOT charged) — this item is the UX hold-while-in-cart enhancement, not a correctness fix. Needs: hold/expiry state on stall+RV tables, session-tied claim, availability query counting active holds, and a cron/cleanup to expire abandoned holds. Discuss design before implementing.
+29. [x] Stall Chart — sticky sidebar panel for the By Location Map view. Reference: Stall Logic screenshots (screenshots sent 2026-06-25). The spatial map (661-stall view) needs a persistent right-side panel that stays in view while scrolling/panning the map, showing quick actions, assignment info for the selected stall, and summary metrics. Design TBD — discuss before implementing. (NOT implemented today). When a customer selects a stall/RV lot it should be held for a time window (~15 min) and shown as taken to other customers during that window, then auto-released if checkout isn't completed. NOTE: actual double-booking is already prevented at submit via the per-reservation advisory lock (the race loser is told the unit is taken and is NOT charged) — this item is the UX hold-while-in-cart enhancement, not a correctness fix. Needs: hold/expiry state on stall+RV tables, session-tied claim, availability query counting active holds, and a cron/cleanup to expire abandoned holds. Discuss design before implementing.
 
 ---
 
