@@ -222,7 +222,6 @@ listing:
 | `rv_max_per_customer` | `varchar(10)` | NULL | |
 | `stall_map_file_id` | `bigint` | `0` | |
 | `rv_lot_selection_enabled` | `tinyint(1)` | `0` | |
-| `rv_addons_enabled` | `tinyint(1)` | `0` | |
 | `stall_map_id` | `bigint` | `0` | |
 | `rv_lot_map_id` | `bigint` | `0` | |
 | `event_pre_entries_enabled` | `tinyint(1)` | `0` | |
@@ -239,7 +238,6 @@ listing:
 | `rv_lots` | Array of RV lot definition objects |
 | `general_addons` | Array of add-on config objects |
 | `rv_lot_zones` | Array of RV zone config objects |
-| `rv_addons` | Array of RV add-on config objects |
 | `stall_map` | Stall map geometry (grid cells + labels) |
 | `rv_map` | RV map geometry |
 | `event_pre_entries` | Array of pre-entry item configs |

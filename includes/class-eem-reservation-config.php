@@ -838,7 +838,6 @@ class EEM_Reservation_Config {
 			// File/map IDs.
 			'stall_map_file_id'              => 'bigint(20)',
 			'rv_lot_selection_enabled'        => 'tinyint(1)',
-			'rv_addons_enabled'              => 'tinyint(1)',
 			'stall_map_id'                   => 'bigint(20)',
 			'rv_lot_map_id'                  => 'bigint(20)',
 			'event_pre_entries_enabled'      => 'tinyint(1)',
@@ -864,7 +863,6 @@ class EEM_Reservation_Config {
 			'additional_shavings_products',
 			'required_documents',
 			'rv_lot_zones',
-			'rv_addons',
 			'stall_map',
 			'rv_map',
 			'event_pre_entries',

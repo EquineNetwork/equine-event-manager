@@ -102,8 +102,7 @@ Fields exposed on the form (each maps to a `post_meta` key, prefix `_en_`):
 - `_en_rv_lot_selection_enabled` (bool)
 - `_en_rv_lots` (array of `{name, nightly, weekend, inventory}`) — visible when lot selection enabled
 - `_en_rv_blocked_lots` (array of lot IDs) — visible when lot selection enabled
-- `_en_rv_addons_enabled` (bool) — when off, hides the RV add-ons table
-- `_en_rv_addons` (array of `{name, price}`)
+- _(RV add-ons removed — RV price variation is expressed via per-row/zone nightly surcharges, not optional bolt-on items)_
 
 **General Add-Ons** (collapsible + enable toggle)
 - `_en_addons_enabled` (bool)

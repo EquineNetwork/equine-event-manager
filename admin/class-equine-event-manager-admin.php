@@ -8855,7 +8855,6 @@ class EEM_Admin {
 		);
 		$data                     = $this->get_reservation_meta_values( $reservation_id );
 		$general_addon_sales      = array();
-		$rv_addon_sales           = array();
 		$rv_lot_sales             = array();
 		$required_shavings_sold   = 0;
 		$additional_shavings_sold = 0;
@@ -8885,16 +8884,6 @@ class EEM_Admin {
 				}
 
 				$general_addon_sales[ $addon_name ] += $quantity;
-			}
-
-			$rv_addon_labels = $this->get_order_rv_addon_labels( $order );
-
-			foreach ( $rv_addon_labels as $addon_label ) {
-				if ( ! isset( $rv_addon_sales[ $addon_label ] ) ) {
-					$rv_addon_sales[ $addon_label ] = 0;
-				}
-
-				$rv_addon_sales[ $addon_label ] += absint( isset( $order['rv_quantity'] ) ? $order['rv_quantity'] : 0 );
 			}
 
 			$rv_lot_name = $this->parse_rv_lot_name_from_notes( $notes );
@@ -8976,26 +8965,6 @@ class EEM_Admin {
 			);
 		}
 
-		foreach ( $data['rv_addons'] as $configured_addon ) {
-			if ( empty( $configured_addon['name'] ) ) {
-				continue;
-			}
-
-			$addon_label = sanitize_text_field( $configured_addon['name'] );
-
-			if ( ! isset( $rv_addon_sales[ $addon_label ] ) ) {
-				$rv_addon_sales[ $addon_label ] = 0;
-			}
-		}
-
-		foreach ( $rv_addon_sales as $addon_label => $quantity ) {
-			$product_rows[] = array(
-				'label'    => $addon_label,
-				'category' => __( 'RV Add-On', 'equine-event-manager' ),
-				'sold'     => $quantity,
-			);
-		}
-
 		foreach ( $data['rv_lots'] as $lot ) {
 			if ( empty( $lot['name'] ) ) {
 				continue;
@@ -9023,7 +8992,6 @@ class EEM_Admin {
 					'Stall Product'     => 10,
 					'Legacy Product'    => 20,
 					'RV Lot Selection'  => 30,
-					'RV Add-On'         => 40,
 					'General Add-On'    => 50,
 				);
 
@@ -9082,7 +9050,6 @@ class EEM_Admin {
 			'group_rider_deposit_enabled'     => ! empty( $cfg->get( 'group_rider_deposit_enabled' ) ) ? 1 : 0,
 			'group_rider_deposit_amount'      => (string) $cfg->get( 'group_rider_deposit_amount' ),
 			'general_addons'              => $cfg->get( 'general_addons' ),
-			'rv_addons'                   => $cfg->get( 'rv_addons' ),
 			'rv_lots'                     => $cfg->get( 'rv_lots' ),
 			'stall_inventory'             => $cfg->get( 'stall_inventory' ),
 			'rv_inventory'                => $cfg->get( 'rv_inventory' ),
@@ -9094,10 +9061,6 @@ class EEM_Admin {
 
 		if ( ! is_array( $data['rv_lots'] ) ) {
 			$data['rv_lots'] = array();
-		}
-
-		if ( ! is_array( $data['rv_addons'] ) ) {
-			$data['rv_addons'] = array();
 		}
 
 		return $data;
@@ -9684,13 +9647,6 @@ class EEM_Admin {
 					__( 'Arrival Date', 'equine-event-manager' )   => $this->format_reservation_date_label( $order['rv_arrival_date'] ),
 					__( 'Departure Date', 'equine-event-manager' ) => $this->format_reservation_date_label( $order['rv_departure_date'] ),
 				);
-
-				if ( ! empty( $order['rv_type'] ) ) {
-					$rv_detail_rows[] = array(
-						__( 'RV Add-Ons', 'equine-event-manager' ) => $this->get_rv_addon_definition_value( $order['rv_type'] ),
-						__( 'Subtotal', 'equine-event-manager' )   => $this->format_money( (float) $order['rv_subtotal'] ),
-					);
-				}
 
 				if ( ! empty( $assigned_rv_lot_list ) ) {
 					$rv_detail_rows[] = array(
@@ -10382,51 +10338,14 @@ class EEM_Admin {
 		$group_charge_total  = array_sum( wp_list_pluck( $group_charges, 'subtotal' ) );
 		$rv_quantity         = absint( $row['rv_qty'] );
 		$stay_type           = ! empty( $row['stay_type'] ) ? sanitize_key( $row['stay_type'] ) : 'nightly';
-		$stay_units          = $this->get_billable_stay_units( $row['arrival_date'], $row['departure_date'], $stay_type );
-		$base_subtotal       = $rv_quantity * (float) $row['unit_price'] * $stay_units;
-		$rv_addon_total      = max( 0, (float) $row['subtotal'] - $base_subtotal - $general_addon_total - $group_charge_total );
-		$rv_labels           = $this->get_rv_addon_labels_from_row_payload( $row );
-		$row_breakdown       = array();
-		$row_priced_total    = 0.0;
-		$reservation_id      = self::extract_reservation_id_from_notes( isset( $row['notes'] ) ? $row['notes'] : '' );
-		$reservation_meta    = $reservation_id ? $this->get_reservation_meta_values( $reservation_id ) : array( 'rv_addons' => array() );
 		$fees                = max( 0, (float) $row['total'] - (float) $row['subtotal'] );
+		// Full refundable RV reservation charge = the row subtotal minus the
+		// separately-itemized general add-on + group charges. This includes the
+		// premium-lot surcharge (RV add-ons are removed), so the surcharge is fully
+		// refundable on the single RV Reservation line rather than a separate item.
+		$rv_charge           = max( 0, (float) $row['subtotal'] - $general_addon_total - $group_charge_total );
 
-		foreach ( $rv_labels as $addon_label ) {
-			$rate = $this->get_named_rv_addon_price( isset( $reservation_meta['rv_addons'] ) ? $reservation_meta['rv_addons'] : array(), $addon_label );
-
-			if ( $rate <= 0 ) {
-				$row_breakdown[ $addon_label ] = array(
-					'label'    => $addon_label,
-					'subtotal' => 0.0,
-				);
-				continue;
-			}
-
-			$row_breakdown[ $addon_label ] = array(
-				'label'    => $addon_label,
-				'subtotal' => $rv_quantity * $rate * $stay_units,
-			);
-			$row_priced_total += $row_breakdown[ $addon_label ]['subtotal'];
-		}
-
-		if ( $rv_addon_total > 0 && ! empty( $row_breakdown ) ) {
-			if ( $row_priced_total > 0 ) {
-				$scale = $rv_addon_total / $row_priced_total;
-
-				foreach ( $row_breakdown as $addon_label => $addon_row ) {
-					$row_breakdown[ $addon_label ]['subtotal'] = $addon_row['subtotal'] * $scale;
-				}
-			} else {
-				$equal_share = $rv_addon_total / count( $row_breakdown );
-
-				foreach ( $row_breakdown as $addon_label => $addon_row ) {
-					$row_breakdown[ $addon_label ]['subtotal'] = $equal_share;
-				}
-			}
-		}
-
-		if ( $base_subtotal > 0 ) {
+		if ( $rv_charge > 0 ) {
 			$items[] = array(
 				'slug'        => 'rv-reservation',
 				'label'       => __( 'RV Reservation', 'equine-event-manager' ),
@@ -10437,16 +10356,7 @@ class EEM_Admin {
 					$this->format_reservation_date_label( $row['arrival_date'] ),
 					$this->format_reservation_date_label( $row['departure_date'] )
 				),
-				'amount'      => $base_subtotal,
-			);
-		}
-
-		foreach ( $row_breakdown as $index => $addon_row ) {
-			$items[] = array(
-				'slug'        => 'rv-addon-' . sanitize_title( $index ),
-				'label'       => sprintf( __( '%s Add-On', 'equine-event-manager' ), $addon_row['label'] ),
-				'description' => sprintf( _n( '%d RV spot', '%d RV spots', $rv_quantity, 'equine-event-manager' ), $rv_quantity ),
-				'amount'      => (float) $addon_row['subtotal'],
+				'amount'      => $rv_charge,
 			);
 		}
 
@@ -11962,18 +11872,16 @@ class EEM_Admin {
 		$support_phone       = trim( (string) $company_settings['support_phone'] );
 		$support_email       = trim( (string) $company_settings['support_email'] );
 		$stall_breakdown     = $this->get_order_stall_breakdown( $order );
-		$rv_addon_breakdown  = $this->get_order_rv_addon_breakdown( $order );
-		$rv_addon_total      = array_sum( wp_list_pluck( $rv_addon_breakdown, 'subtotal' ) );
-		$rv_base_subtotal    = max( 0, (float) $order['rv_subtotal'] - (float) $rv_addon_total );
+		// Premium surcharges are excluded from the canonical breakdown base; the
+		// customer receipt itemizes them as their own lines. Pull them via the
+		// canonical public helpers so this admin print receipt matches exactly and
+		// the RV base line excludes the premium (otherwise it folds in / mismatches).
+		$print_pricer          = new EEM_Shortcodes();
+		$stall_surcharge_total = $print_pricer->get_order_stall_surcharge_total( $order );
+		$rv_surcharge_total    = $print_pricer->get_order_rv_surcharge_total( $order );
+		$rv_base_subtotal    = max( 0, (float) $order['rv_subtotal'] - (float) $rv_surcharge_total );
 		$stall_nights        = $this->get_stay_nights_label( $order['stall_arrival_date'], $order['stall_departure_date'] );
 		$rv_nights           = $this->get_stay_nights_label( $order['rv_arrival_date'], $order['rv_departure_date'] );
-		$rv_addon_labels     = array();
-
-		if ( ! empty( $rv_addon_breakdown ) ) {
-			$rv_addon_labels = wp_list_pluck( $rv_addon_breakdown, 'label' );
-		} elseif ( ! empty( $order['rv_type'] ) ) {
-			$rv_addon_labels = array_filter( array_map( 'trim', explode( ',', $this->format_rv_type_label( $order['rv_type'] ) ) ) );
-		}
 
 		$footer_contacts         = array_filter(
 			array(
@@ -12039,6 +11947,18 @@ class EEM_Admin {
 				);
 			}
 
+			if ( (float) $stall_surcharge_total > 0 ) {
+				$stall_premium_divisor = max( 1, absint( $order['stall_quantity'] ) * max( 1, $stall_stay_units ) );
+				$line_items[]          = array(
+					'section'     => __( 'Stall Premium', 'equine-event-manager' ),
+					'description' => __( 'Premium Stalls', 'equine-event-manager' ),
+					'qty'         => absint( $order['stall_quantity'] ),
+					'units'       => $stall_nights,
+					'rate'        => $format_money( (float) $stall_surcharge_total / $stall_premium_divisor ),
+					'total'       => $format_money( $stall_surcharge_total ),
+				);
+			}
+
 			if ( (float) $stall_breakdown['required_shavings_subtotal'] > 0 ) {
 				$required_qty  = max( 1, absint( $order['required_shavings_qty'] ) );
 				$line_items[] = array(
@@ -12075,7 +11995,6 @@ class EEM_Admin {
 					array( 'label' => __( 'Nights', 'equine-event-manager' ), 'value' => $rv_nights ),
 					array( 'label' => __( 'RV Spots', 'equine-event-manager' ), 'value' => (string) absint( $order['rv_quantity'] ) ),
 					array( 'label' => __( 'Lot Selection', 'equine-event-manager' ), 'value' => $this->parse_rv_lot_name_from_notes( $order['notes'] ) ? $this->parse_rv_lot_name_from_notes( $order['notes'] ) : __( 'Not specified', 'equine-event-manager' ) ),
-					array( 'label' => __( 'RV Add-Ons', 'equine-event-manager' ), 'value' => ! empty( $rv_addon_labels ) ? implode( ', ', $rv_addon_labels ) : __( 'None', 'equine-event-manager' ) ),
 				),
 			);
 
@@ -12097,21 +12016,18 @@ class EEM_Admin {
 				);
 			}
 
-			foreach ( $rv_addon_breakdown as $addon_row ) {
-				if ( (float) $addon_row['subtotal'] <= 0 ) {
-					continue;
-				}
-
-				$rv_addon_divisor = max( 1, absint( $order['rv_quantity'] ) * max( 1, $rv_stay_units ) );
-				$line_items[]     = array(
-					'section'     => __( 'RV Add-On', 'equine-event-manager' ),
-					'description' => $addon_row['label'],
+			if ( (float) $rv_surcharge_total > 0 ) {
+				$rv_premium_divisor = max( 1, absint( $order['rv_quantity'] ) * max( 1, $rv_stay_units ) );
+				$line_items[]       = array(
+					'section'     => __( 'RV Premium', 'equine-event-manager' ),
+					'description' => __( 'Premium Lots', 'equine-event-manager' ),
 					'qty'         => absint( $order['rv_quantity'] ),
 					'units'       => $rv_nights,
-					'rate'        => $format_money( (float) $addon_row['subtotal'] / $rv_addon_divisor ),
-					'total'       => $format_money( $addon_row['subtotal'] ),
+					'rate'        => $format_money( (float) $rv_surcharge_total / $rv_premium_divisor ),
+					'total'       => $format_money( $rv_surcharge_total ),
 				);
 			}
+
 		}
 
 		foreach ( $general_addon_breakdown as $addon_row ) {
@@ -12685,10 +12601,6 @@ class EEM_Admin {
 									<?php if ( (float) $rv_base_subtotal > 0 ) : ?>
 										<tr><td><?php esc_html_e( 'RV Reservation', 'equine-event-manager' ); ?></td><td><?php echo esc_html( $format_money( $rv_base_subtotal ) ); ?></td></tr>
 									<?php endif; ?>
-									<?php foreach ( $rv_addon_breakdown as $addon_row ) : ?>
-										<?php if ( (float) $addon_row['subtotal'] <= 0 ) { continue; } ?>
-										<tr><td><?php echo esc_html( $addon_row['label'] ); ?></td><td><?php echo esc_html( $format_money( $addon_row['subtotal'] ) ); ?></td></tr>
-									<?php endforeach; ?>
 									<?php foreach ( $general_addon_breakdown as $addon_row ) : ?>
 										<tr><td><?php echo esc_html( $addon_row['label'] ); ?></td><td><?php echo esc_html( $format_money( $addon_row['subtotal'] ) ); ?></td></tr>
 									<?php endforeach; ?>
@@ -14104,34 +14016,6 @@ class EEM_Admin {
 	}
 
 	/**
-	 * Get an RV add-on definition payload for card rendering.
-	 *
-	 * @param string $rv_type Raw RV add-on value.
-	 * @return array|string
-	 */
-	private function get_rv_addon_definition_value( $rv_type ) {
-		$labels = array_filter( array_map( 'trim', explode( ',', $this->format_rv_type_label( $rv_type ) ) ) );
-
-		if ( empty( $labels ) ) {
-			return '';
-		}
-
-		if ( 1 === count( $labels ) ) {
-			return $labels[0];
-		}
-
-		$list_items = '';
-
-		foreach ( $labels as $label ) {
-			$list_items .= '<li>' . esc_html( $label ) . '</li>';
-		}
-
-		return array(
-			'html' => '<ul>' . $list_items . '</ul>',
-		);
-	}
-
-	/**
 	 * Format a reservation date for display.
 	 *
 	 * @param string $value Raw date value.
@@ -14462,8 +14346,20 @@ class EEM_Admin {
 	private function render_order_totals_table( $order ) {
 		$rows                     = array();
 		$stall_breakdown          = $this->get_order_stall_breakdown( $order );
-		$rv_addon_breakdown       = $this->get_order_rv_addon_breakdown( $order );
+		// Premium surcharges are excluded from the canonical breakdown's base (the
+		// customer receipt shows them as their own "Stall Premium" / "RV Premium"
+		// lines). Pull them via the canonical public helpers so these admin totals
+		// itemize the premium identically and the rows reconcile to the stored
+		// Total — otherwise a premium order's rows would silently undercount.
+		$pricer                = new EEM_Shortcodes();
+		$stall_surcharge_total = $pricer->get_order_stall_surcharge_total( $order );
+		$rv_surcharge_total    = $pricer->get_order_rv_surcharge_total( $order );
+
 		$rows[ __( 'Stall Subtotal', 'equine-event-manager' ) ] = $stall_breakdown['base_subtotal'];
+
+		if ( (float) $stall_surcharge_total > 0 ) {
+			$rows[ __( 'Stall Premium', 'equine-event-manager' ) ] = $stall_surcharge_total;
+		}
 
 		if ( $stall_breakdown['required_shavings_qty'] > 0 || $stall_breakdown['required_shavings_subtotal'] > 0 ) {
 			$rows[ __( 'Required Shavings', 'equine-event-manager' ) ] = $stall_breakdown['required_shavings_subtotal'];
@@ -14473,15 +14369,11 @@ class EEM_Admin {
 			$rows[ __( 'Additional Shavings', 'equine-event-manager' ) ] = $stall_breakdown['additional_shavings_subtotal'];
 		}
 
-		if ( ! empty( $rv_addon_breakdown ) ) {
-			$rv_base_subtotal = max( 0, (float) $order['rv_subtotal'] - array_sum( wp_list_pluck( $rv_addon_breakdown, 'subtotal' ) ) );
-			$rows[ __( 'RV Subtotal', 'equine-event-manager' ) ] = $rv_base_subtotal;
+		$rv_base_subtotal = max( 0, (float) $order['rv_subtotal'] - (float) $rv_surcharge_total );
+		$rows[ __( 'RV Subtotal', 'equine-event-manager' ) ] = $rv_base_subtotal;
 
-			foreach ( $rv_addon_breakdown as $addon_label => $addon_row ) {
-				$rows[ sprintf( __( '%s Add-On', 'equine-event-manager' ), $addon_row['label'] ) ] = $addon_row['subtotal'];
-			}
-		} else {
-			$rows[ __( 'RV Subtotal', 'equine-event-manager' ) ] = $order['rv_subtotal'];
+		if ( (float) $rv_surcharge_total > 0 ) {
+			$rows[ __( 'RV Premium', 'equine-event-manager' ) ] = $rv_surcharge_total;
 		}
 
 		$rows[ __( 'Non-Refundable Convenience Fee', 'equine-event-manager' ) ] = $order['fees'];
@@ -14514,278 +14406,14 @@ class EEM_Admin {
 	 * @return array
 	 */
 	private function get_order_stall_breakdown( $order ) {
-		$reservation_id               = ! empty( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0;
-		$required_price              = $reservation_id ? (float) get_post_meta( $reservation_id, 'required_shavings_price', true ) : 0.0;
-		$additional_price            = $reservation_id ? (float) get_post_meta( $reservation_id, 'additional_shavings_price', true ) : 0.0;
-		$required_shavings_qty       = 0;
-		$additional_shavings_qty     = 0;
-		$base_subtotal               = 0.0;
-		$required_shavings_subtotal  = 0.0;
-		$additional_shavings_subtotal = 0.0;
-		$stall_rows                  = $this->get_order_component_rows( $order, 'stall' );
-
-		foreach ( $stall_rows as $row ) {
-			$row_reservation_id         = self::extract_reservation_id_from_notes( isset( $row['notes'] ) ? $row['notes'] : '' );
-			$row_reservation_id         = $row_reservation_id ? $row_reservation_id : $reservation_id;
-			$row_required_price         = $row_reservation_id ? (float) get_post_meta( $row_reservation_id, 'required_shavings_price', true ) : $required_price;
-			$row_additional_price       = $row_reservation_id ? (float) get_post_meta( $row_reservation_id, 'additional_shavings_price', true ) : $additional_price;
-			$stall_quantity             = absint( $row['stall_qty'] ) + absint( $row['tack_stall_qty'] );
-			$row_required_qty           = absint( $row['required_shavings_qty'] );
-			$row_additional_qty         = absint( $row['additional_shavings_qty'] );
-			$stay_units                 = $this->get_billable_stay_units( $row['arrival_date'], $row['departure_date'], $row['stay_type'] );
-			$row_base_subtotal          = $stall_quantity * (float) $row['unit_price'] * $stay_units;
-			$row_required_subtotal      = $row_required_qty * $row_required_price;
-			$row_additional_subtotal    = $row_additional_qty * $row_additional_price;
-			$row_shavings_total         = max( 0, (float) $row['subtotal'] - $row_base_subtotal );
-			$row_priced_shavings_total  = $row_required_subtotal + $row_additional_subtotal;
-
-			if ( $row_shavings_total > 0 && ( $row_required_qty > 0 || $row_additional_qty > 0 ) ) {
-				if ( $row_priced_shavings_total > 0 ) {
-					$shavings_scale = $row_shavings_total / $row_priced_shavings_total;
-
-					$row_required_subtotal   *= $shavings_scale;
-					$row_additional_subtotal *= $shavings_scale;
-				} else {
-					$total_shavings_qty = $row_required_qty + $row_additional_qty;
-
-					if ( $total_shavings_qty > 0 ) {
-						$derived_per_bag = $row_shavings_total / $total_shavings_qty;
-
-						$row_required_subtotal   = $row_required_qty * $derived_per_bag;
-						$row_additional_subtotal = $row_additional_qty * $derived_per_bag;
-					}
-				}
-			}
-
-			$required_shavings_qty      += $row_required_qty;
-			$additional_shavings_qty    += $row_additional_qty;
-			$base_subtotal              += $row_base_subtotal;
-			$required_shavings_subtotal += $row_required_subtotal;
-			$additional_shavings_subtotal += $row_additional_subtotal;
-		}
-
-		if ( empty( $stall_rows ) ) {
-			$required_shavings_qty       = absint( $order['required_shavings_qty'] );
-			$additional_shavings_qty     = absint( $order['additional_shavings_qty'] );
-			$required_shavings_subtotal  = $required_shavings_qty * $required_price;
-			$additional_shavings_subtotal = $additional_shavings_qty * $additional_price;
-			$base_subtotal               = max( 0, (float) $order['stall_subtotal'] - $required_shavings_subtotal - $additional_shavings_subtotal );
-		}
-
-		$total_shavings_qty = $required_shavings_qty + $additional_shavings_qty;
-		$stored_stall_total = (float) $order['stall_subtotal'];
-		$derived_shavings_total = $required_shavings_subtotal + $additional_shavings_subtotal;
-
-		if ( $total_shavings_qty > 0 && $stored_stall_total > 0 ) {
-			$derived_base_subtotal = max( 0, $stored_stall_total - $derived_shavings_total );
-
-			if ( $derived_shavings_total <= 0 || $derived_base_subtotal > $base_subtotal + 0.01 ) {
-				$fallback_shavings_total = max( 0, $stored_stall_total - $base_subtotal );
-
-				if ( $fallback_shavings_total > 0 ) {
-					if ( $derived_shavings_total > 0 ) {
-						$shavings_scale = $fallback_shavings_total / $derived_shavings_total;
-
-						$required_shavings_subtotal   *= $shavings_scale;
-						$additional_shavings_subtotal *= $shavings_scale;
-					} elseif ( $required_shavings_qty > 0 && $additional_shavings_qty > 0 ) {
-						$required_ratio = $required_shavings_qty / $total_shavings_qty;
-
-						$required_shavings_subtotal   = $fallback_shavings_total * $required_ratio;
-						$additional_shavings_subtotal = $fallback_shavings_total - $required_shavings_subtotal;
-					} elseif ( $required_shavings_qty > 0 ) {
-						$required_shavings_subtotal   = $fallback_shavings_total;
-						$additional_shavings_subtotal = 0.0;
-					} elseif ( $additional_shavings_qty > 0 ) {
-						$required_shavings_subtotal   = 0.0;
-						$additional_shavings_subtotal = $fallback_shavings_total;
-					}
-				}
-			}
-		}
-
-		return array(
-			'base_subtotal'               => $base_subtotal,
-			'required_shavings_qty'       => $required_shavings_qty,
-			'required_shavings_subtotal'  => $required_shavings_subtotal,
-			'additional_shavings_qty'     => $additional_shavings_qty,
-			'additional_shavings_subtotal' => $additional_shavings_subtotal,
-		);
-	}
-
-	/**
-	 * Get a derived RV add-on subtotal breakdown for an order.
-	 *
-	 * @param array $order Order payload.
-	 * @return array
-	 */
-	private function get_order_rv_addon_breakdown( $order ) {
-		$breakdown = array();
-		$rv_rows   = $this->get_order_component_rows( $order, 'rv' );
-		$rv_base_subtotal = 0.0;
-
-		foreach ( $rv_rows as $row ) {
-			$reservation_id = self::extract_reservation_id_from_notes( isset( $row['notes'] ) ? $row['notes'] : '' );
-			$reservation_id = $reservation_id ? $reservation_id : ( ! empty( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0 );
-			$rv_labels      = $this->get_rv_addon_labels_from_row_payload( $row );
-			$rv_labels      = ! empty( $rv_labels ) ? $rv_labels : $this->get_order_rv_addon_labels( $order );
-			$rv_quantity    = absint( $row['rv_qty'] );
-
-			if ( empty( $rv_labels ) || $rv_quantity < 1 ) {
-				continue;
-			}
-
-			$stay_type  = ! empty( $row['stay_type'] ) ? sanitize_key( $row['stay_type'] ) : 'nightly';
-			$stay_units = $this->get_billable_stay_units( $row['arrival_date'], $row['departure_date'], $stay_type );
-			$row_base_subtotal = $rv_quantity * (float) $row['unit_price'] * $stay_units;
-			$row_addon_total   = max( 0, (float) $row['subtotal'] - $row_base_subtotal );
-			$row_priced_total  = 0.0;
-			$row_breakdown     = array();
-			$rv_base_subtotal += $row_base_subtotal;
-
-			$reservation_rv_addons = $reservation_id ? $this->get_reservation_meta_values( $reservation_id )['rv_addons'] : array();
-
-			foreach ( $rv_labels as $addon_label ) {
-				$rate = $this->get_named_rv_addon_price( $reservation_rv_addons, $addon_label );
-
-				if ( $rate <= 0 ) {
-					$row_breakdown[ $addon_label ] = array(
-						'label'    => $addon_label,
-						'subtotal' => 0.0,
-					);
-					continue;
-				}
-
-				$row_breakdown[ $addon_label ] = array(
-					'label'    => $addon_label,
-					'subtotal' => $rv_quantity * $rate * $stay_units,
-				);
-				$row_priced_total += $row_breakdown[ $addon_label ]['subtotal'];
-			}
-
-			if ( $row_addon_total > 0 && ! empty( $row_breakdown ) ) {
-				if ( $row_priced_total > 0 ) {
-					$addon_scale = $row_addon_total / $row_priced_total;
-
-					foreach ( $row_breakdown as $addon_label => $addon_row ) {
-						$row_breakdown[ $addon_label ]['subtotal'] = $addon_row['subtotal'] * $addon_scale;
-					}
-				} else {
-					$equal_share = $row_addon_total / count( $row_breakdown );
-
-					foreach ( $row_breakdown as $addon_label => $addon_row ) {
-						$row_breakdown[ $addon_label ]['subtotal'] = $equal_share;
-					}
-				}
-			}
-
-			foreach ( $row_breakdown as $addon_label => $addon_row ) {
-				if ( ! isset( $breakdown[ $addon_label ] ) ) {
-					$breakdown[ $addon_label ] = array(
-						'label'    => $addon_label,
-						'subtotal' => 0.0,
-					);
-				}
-
-				$breakdown[ $addon_label ]['subtotal'] += $addon_row['subtotal'];
-			}
-		}
-
-		if ( ! empty( $breakdown ) ) {
-			return $breakdown;
-		}
-
-		$reservation_id = ! empty( $order['reservation_id'] ) ? absint( $order['reservation_id'] ) : 0;
-		$rv_labels      = $this->get_order_rv_addon_labels( $order );
-		$stored_rv_total = (float) $order['rv_subtotal'];
-		$fallback_addon_total = max( 0, $stored_rv_total - $rv_base_subtotal );
-
-		if ( empty( $rv_labels ) ) {
-			return $breakdown;
-		}
-
-		$rv_quantity = absint( $order['rv_quantity'] );
-
-		if ( $rv_quantity < 1 && $fallback_addon_total <= 0 ) {
-			return $breakdown;
-		}
-
-		$stay_type  = ! empty( $order['rv_stay_type'] ) ? sanitize_key( $order['rv_stay_type'] ) : 'nightly';
-		$stay_units = $this->get_billable_stay_units( $order['rv_arrival_date'], $order['rv_departure_date'], $stay_type );
-		$priced_total = 0.0;
-
-		$reservation_rv_addons = $reservation_id ? $this->get_reservation_meta_values( $reservation_id )['rv_addons'] : array();
-
-		foreach ( $rv_labels as $addon_label ) {
-			$rate = $this->get_named_rv_addon_price( $reservation_rv_addons, $addon_label );
-
-			if ( $rate <= 0 ) {
-				$breakdown[ $addon_label ] = array(
-					'label'    => $addon_label,
-					'subtotal' => 0.0,
-				);
-				continue;
-			}
-
-			$breakdown[ $addon_label ] = array(
-				'label'    => $addon_label,
-				'subtotal' => $rv_quantity * $rate * $stay_units,
-			);
-			$priced_total += $breakdown[ $addon_label ]['subtotal'];
-		}
-
-		if ( $fallback_addon_total > 0 && ! empty( $breakdown ) ) {
-			if ( $priced_total > 0 ) {
-				$scale = $fallback_addon_total / $priced_total;
-
-				foreach ( $breakdown as $addon_label => $addon_row ) {
-					$breakdown[ $addon_label ]['subtotal'] = $addon_row['subtotal'] * $scale;
-				}
-			} else {
-				$equal_share = $fallback_addon_total / count( $breakdown );
-
-				foreach ( $breakdown as $addon_label => $addon_row ) {
-					$breakdown[ $addon_label ]['subtotal'] = $equal_share;
-				}
-			}
-		}
-
-		return $breakdown;
-	}
-
-	/**
-	 * Get the configured price for a saved RV add-on by name.
-	 *
-	 * @param array  $rv_addons Saved RV add-on rows.
-	 * @param string $addon_label Add-on label.
-	 * @return float
-	 */
-	private function get_named_rv_addon_price( $rv_addons, $addon_label ) {
-		$addon_label = sanitize_text_field( $addon_label );
-
-		foreach ( (array) $rv_addons as $addon ) {
-			if ( ! is_array( $addon ) || empty( $addon['name'] ) ) {
-				continue;
-			}
-
-			if ( sanitize_text_field( $addon['name'] ) !== $addon_label ) {
-				continue;
-			}
-
-			if ( isset( $addon['price'] ) ) {
-				return (float) $addon['price'];
-			}
-
-			if ( isset( $addon['nightly_rate'] ) ) {
-				return (float) $addon['nightly_rate'];
-			}
-
-			if ( isset( $addon['weekend_rate'] ) ) {
-				return (float) $addon['weekend_rate'];
-			}
-		}
-
-		return 0.0;
+		// DELEGATE to the canonical breakdown in EEM_Shortcodes so the admin
+		// Order Detail / print surfaces compute the stall base / required-shavings
+		// / additional-shavings split IDENTICALLY to the customer receipt + PDF +
+		// confirmation email. The previous admin-local copy used the legacy
+		// `additional_shavings_price × qty` model (and read unprefixed reservation
+		// meta that returned 0), so per-product additional shavings — the order
+		// #00009 case — diverged from the receipt. One implementation, one result.
+		return ( new EEM_Shortcodes() )->get_order_stall_breakdown( $order );
 	}
 
 	/**
@@ -14819,72 +14447,6 @@ class EEM_Admin {
 		$query        = $wpdb->prepare( "SELECT * FROM {$table_name} WHERE id IN ({$placeholders})", $row_ids );
 
 		return (array) $wpdb->get_results( $query, ARRAY_A );
-	}
-
-	/**
-	 * Get selected RV add-on labels from an order.
-	 *
-	 * @param array $order Order payload.
-	 * @return array
-	 */
-	private function get_order_rv_addon_labels( $order ) {
-		$raw = ! empty( $order['rv_type'] ) ? (string) $order['rv_type'] : '';
-
-		if ( '' === $raw && ! empty( $order['notes'] ) && preg_match( '/(?:^|\n)RV Add-Ons:\s*(.+)$/mi', (string) $order['notes'], $matches ) ) {
-			$raw = trim( $matches[1] );
-		}
-
-		if ( '' === $raw ) {
-			return array();
-		}
-
-		$raw_parts = preg_split( '/\s*,\s*/', trim( (string) $raw ) );
-		$labels    = array();
-
-		foreach ( (array) $raw_parts as $raw_part ) {
-			$raw_part = trim( (string) $raw_part );
-
-			if ( '' === $raw_part ) {
-				continue;
-			}
-
-			$labels[] = sanitize_text_field( $raw_part );
-		}
-
-		return array_values( array_unique( array_filter( $labels ) ) );
-	}
-
-	/**
-	 * Get selected RV add-on labels from a raw RV row payload.
-	 *
-	 * @param array $row Raw RV row.
-	 * @return array
-	 */
-	private function get_rv_addon_labels_from_row_payload( $row ) {
-		$raw = ! empty( $row['rv_type'] ) ? (string) $row['rv_type'] : '';
-
-		if ( '' === $raw && ! empty( $row['notes'] ) && preg_match( '/(?:^|\n)RV Add-Ons:\s*(.+)$/mi', (string) $row['notes'], $matches ) ) {
-			$raw = trim( $matches[1] );
-		}
-
-		if ( '' === $raw ) {
-			return array();
-		}
-
-		$raw_parts = preg_split( '/\s*,\s*/', trim( (string) $raw ) );
-		$labels    = array();
-
-		foreach ( (array) $raw_parts as $raw_part ) {
-			$raw_part = trim( (string) $raw_part );
-
-			if ( '' === $raw_part ) {
-				continue;
-			}
-
-			$labels[] = sanitize_text_field( $raw_part );
-		}
-
-		return array_values( array_unique( array_filter( $labels ) ) );
 	}
 
 	/**
