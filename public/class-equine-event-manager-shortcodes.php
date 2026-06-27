@@ -1605,7 +1605,8 @@ class EEM_Shortcodes {
 							$venue_agreement_url,
 							$is_admin_invoice,
 							$event_label,
-							$eem_os_sub
+							$eem_os_sub,
+							$reservation_id
 						);
 						?>
 					</div>
@@ -1748,7 +1749,7 @@ class EEM_Shortcodes {
 	 * @param bool   $is_admin_invoice           Whether this is the admin invoice experience.
 	 * @return string
 	 */
-	private function render_order_summary_sidebar( $data, $general_addon_options, $group_grounds_fee_enabled, $group_deposit_enabled, $venue_agreement_url, $is_admin_invoice, $event_label = '', $event_summary_sub = '' ) {
+	private function render_order_summary_sidebar( $data, $general_addon_options, $group_grounds_fee_enabled, $group_deposit_enabled, $venue_agreement_url, $is_admin_invoice, $event_label = '', $event_summary_sub = '', $reservation_id = 0 ) {
 		ob_start();
 		?>
 		<aside class="eem-reservation-workspace__rail order-sidebar">
@@ -1873,7 +1874,10 @@ class EEM_Shortcodes {
 					<?php
 					// 2.3.62 — Cancellation policy (per-reservation, inherits the event
 					// default). Shown on the customer checkout beneath the agreement.
-					$eem_cancellation = isset( $data['cancellation_policy_override'] ) ? trim( (string) $data['cancellation_policy_override'] ) : '';
+					// Resolver applies the enabled-gate + override→event-default fallback.
+					$eem_cancellation = $reservation_id > 0
+						? trim( (string) eem_resolve_cancellation_policy( absint( $reservation_id ) ) )
+						: ( isset( $data['cancellation_policy_override'] ) ? trim( (string) $data['cancellation_policy_override'] ) : '' );
 					if ( ! $is_admin_invoice && '' !== $eem_cancellation ) :
 						?>
 						<div class="eem-cancellation-policy">
@@ -6174,7 +6178,7 @@ RV Lot: " . $rv_lot['name'] );
 			'event_day'           => $event_day,
 			'support_phone'       => trim( (string) $company_settings['support_phone'] ),
 			'support_email'       => trim( (string) $company_settings['support_email'] ),
-			'cancellation_policy' => trim( (string) ( $reservation_data['cancellation_policy_override'] ?? '' ) ),
+			'cancellation_policy' => trim( (string) eem_resolve_cancellation_policy( absint( $order['reservation_id'] ?? 0 ) ) ),
 			'footer_legal'        => $customer_email
 				? sprintf(
 					/* translators: 1: recipient email, 2: order number. */
@@ -6470,7 +6474,7 @@ RV Lot: " . $rv_lot['name'] );
 			'amount_paid_val'     => $money( $receipt_amount_paid ),
 			'balance_due'         => $money( $receipt_balance_due ),
 			'has_balance'         => $receipt_has_balance,
-			'cancellation_policy' => trim( (string) ( $reservation_data['cancellation_policy_override'] ?? '' ) ),
+			'cancellation_policy' => trim( (string) eem_resolve_cancellation_policy( absint( $order['reservation_id'] ?? 0 ) ) ),
 			'support_phone'       => $support_phone ? $this->format_phone_label( $support_phone ) : '',
 			'support_email'       => $support_email,
 			// Refund/void status (empty string when a normal paid order).
