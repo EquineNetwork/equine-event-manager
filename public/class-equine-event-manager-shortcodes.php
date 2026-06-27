@@ -1217,6 +1217,26 @@ class EEM_Shortcodes {
 								</label>
 							</div>
 							<div class="eem-reservation-section__body">
+								<?php
+								// Admin-defined group names → customer dropdown (strict list,
+								// optional). Selecting one writes the "Group Name:" note the
+								// stall chart already reads for clustering + Show-by-group.
+								$group_name_options = isset( $data['group_names'] ) && is_array( $data['group_names'] ) ? array_values( array_filter( array_map( 'strval', $data['group_names'] ), static function ( $n ) { return '' !== trim( $n ); } ) ) : array();
+								if ( ! empty( $group_name_options ) ) :
+									?>
+									<div class="eem-reservation-grid eem-reservation-grid--single">
+										<label>
+											<span><?php esc_html_e( 'Group Name', 'equine-event-manager' ); ?></span>
+											<select name="group_name">
+												<option value=""><?php esc_html_e( '— Not part of a group —', 'equine-event-manager' ); ?></option>
+												<?php foreach ( $group_name_options as $gn_option ) : ?>
+													<option value="<?php echo esc_attr( $gn_option ); ?>"><?php echo esc_html( $gn_option ); ?></option>
+												<?php endforeach; ?>
+											</select>
+										</label>
+										<p class="eem-reservation-help"><?php esc_html_e( 'If you’re booking with a group, choose it here so we can stall your group together.', 'equine-event-manager' ); ?></p>
+									</div>
+								<?php endif; ?>
 								<p class="eem-reservation-help"><?php esc_html_e( 'This is a group reservation — we’ll capture the rider count and a first and last name for each rider. Switch the toggle off if you’re not booking for a group.', 'equine-event-manager' ); ?></p>
 								<div class="eem-group-reservation-fields" data-eem-group-fields hidden>
 									<div class="eem-product-list eem-product-list--group-reservation">

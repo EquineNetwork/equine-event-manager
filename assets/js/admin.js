@@ -7551,6 +7551,7 @@
 			meta.className = 'eem-smap-pop-meta';
 			var metaHtml = '';
 			if (st.n) { metaHtml += '<span class="eem-smap-pop-meta-order"><strong>Order:</strong> #' + String(st.n).replace(/[&<>"]/g, '') + '</span>'; }
+			if (st.g) { metaHtml += '<span class="eem-smap-pop-meta-group"><strong>Group:</strong> ' + String(st.g).replace(/[&<>"]/g, '') + '</span>'; }
 			var shav = parseInt(st.sh || 0, 10) || 0;
 			if (shav > 0) { metaHtml += '<span class="eem-smap-pop-meta-shav"><strong>Shavings:</strong> ' + shav + (shav === 1 ? ' bag' : ' bags') + '</span>'; }
 			if (metaHtml) { meta.innerHTML = metaHtml; bodyEl.appendChild(meta); }

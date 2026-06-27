@@ -72,6 +72,44 @@ eem_render_editor_field_row( array(
 	),
 ) );
 
+// 3.5b Group Names — admin-defined line-item list. Customers pick one from a
+// dropdown on the event page; admin clusters/filters by it on the stall chart.
+$group_names = isset( $data['group_names'] ) && is_array( $data['group_names'] ) ? $data['group_names'] : array();
+?>
+<div class="eem-addon-block">
+	<h4 class="eem-addon-block__title"><?php esc_html_e( 'Group Names', 'equine-event-manager' ); ?></h4>
+	<p class="eem-addon-block__help"><?php esc_html_e( 'Add a name for each group (e.g. a trainer or barn). Customers choose one of these when booking, so members of the same group can be stalled together.', 'equine-event-manager' ); ?></p>
+	<table class="eem-repeat-table">
+		<thead>
+			<tr>
+				<th><?php esc_html_e( 'Group Name', 'equine-event-manager' ); ?></th>
+				<th style="width:40px"></th>
+			</tr>
+		</thead>
+		<tbody id="eem-group-names-rows">
+			<?php
+			// Always show at least one editable row so the table is visible.
+			$gn_rows = ! empty( $group_names ) ? $group_names : array( '' );
+			foreach ( (array) $gn_rows as $idx => $gn ) :
+				$gn_name = is_array( $gn ) ? (string) ( $gn['name'] ?? '' ) : (string) $gn;
+				?>
+				<tr>
+					<td><input class="eem-repeat-input" type="text" name="en_reservation[group_names][<?php echo (int) $idx; ?>][name]" value="<?php echo esc_attr( $gn_name ); ?>" placeholder="<?php esc_attr_e( 'e.g. Smith, Johnson Performance Horses', 'equine-event-manager' ); ?>" /></td>
+					<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="reservation-editor-remove-repeating-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+				</tr>
+			<?php endforeach; ?>
+		</tbody>
+	</table>
+	<button class="eem-btn-add" type="button" data-eem-action="reservation-editor-add-repeating-row" data-eem-repeating-template="eem-group-names-row-template" data-eem-repeating-tbody="eem-group-names-rows">
+		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+		<?php esc_html_e( 'Add Group', 'equine-event-manager' ); ?>
+	</button>
+	<template id="eem-group-names-row-template"><tr>
+		<td><input class="eem-repeat-input" type="text" name="en_reservation[group_names][__index__][name]" value="" placeholder="<?php esc_attr_e( 'e.g. Smith, Johnson Performance Horses', 'equine-event-manager' ); ?>" /></td>
+		<td><button class="eem-btn-delete" type="button" aria-label="<?php esc_attr_e( 'Delete', 'equine-event-manager' ); ?>" data-eem-action="reservation-editor-remove-repeating-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button></td>
+	</tr></template>
+</div>
+<?php
 // 3.6 Grounds Fee — grouped: borderless toggle + hint + revealed amount.
 echo '<div class="eem-sched-group">';
 eem_render_editor_toggle_label_row( array(
