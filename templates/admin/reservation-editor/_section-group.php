@@ -51,29 +51,10 @@ $deposit_amt = isset( $data['group_rider_deposit_amount'] ) ? (float) $data['gro
 ?>
 <input type="hidden" name="en_reservation[group_reservations_enabled]" data-eem-section-enabled="group" value="<?php echo ! empty( $data['group_reservations_enabled'] ) ? '1' : '0'; ?>" />
 <?php
-// 3.4 Group Description (NEW meta key)
-eem_render_editor_field_row( array(
-	'label'        => __( 'Group Description', 'equine-event-manager' ),
-	'control_html' => sprintf(
-		'<textarea class="eem-field-textarea" name="en_reservation[group_description]" id="en_group_description" rows="3" placeholder="%s">%s</textarea>',
-		esc_attr__( 'Describe what a group reservation includes...', 'equine-event-manager' ),
-		esc_textarea( (string) ( $data['group_description'] ?? '' ) )
-	),
-) );
-
-// 3.5 Riders Per Group (NEW meta key). 2.3.82: defaults to blank = unlimited.
-eem_render_editor_field_row( array(
-	'label'        => __( 'Riders Per Group', 'equine-event-manager' ),
-	'label_sub'    => __( 'Maximum riders one customer can register. Blank = unlimited.', 'equine-event-manager' ),
-	'control_html' => sprintf(
-		'<input class="eem-field-input" name="en_reservation[group_riders_per_group]" id="en_group_riders_per_group" type="number" min="1" step="1" style="max-width:120px" value="%s" placeholder="%s" />',
-		esc_attr( (string) ( $data['group_riders_per_group'] ?? '' ) ),
-		esc_attr__( 'Unlimited', 'equine-event-manager' )
-	),
-) );
-
-// 3.5b Group Names — admin-defined line-item list. Customers pick one from a
-// dropdown on the event page; admin clusters/filters by it on the stall chart.
+// Group Names — admin-defined line-item list (first row of the section).
+// Customers pick one from a dropdown on the event page; admin clusters/filters
+// by it on the stall chart. (Group Description + Riders Per Group removed per
+// Whitney 2026-06-27 — not needed.)
 $group_names = isset( $data['group_names'] ) && is_array( $data['group_names'] ) ? $data['group_names'] : array();
 ?>
 <div class="eem-addon-block">
