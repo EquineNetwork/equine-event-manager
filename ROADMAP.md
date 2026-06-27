@@ -167,6 +167,44 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 ---
 
+## 🔍 Pre-Launch Audit Findings (2026-06-27)
+
+Findings from a 4-agent parallel audit (security, financial integrity, email/data, customer-facing/concurrency). Each item is a discrete to-do with a severity tag. **Items tagged `[PAYMENT]` overlap with the desktop session's payment audit — coordinate before fixing so the two sessions don't collide or contradict.** Nothing here is fixed yet; this is the catalog.
+
+**Overall health:** The plugin audited *well*. Money math is server-side and tamper-resistant, Stripe signature verification + amount binding are correct, MySQL advisory locks prevent stall double-booking, all AJAX handlers have nonce + capability checks, no card data is stored, file uploads are validated. The items below are the gaps worth closing before launch. (One "critical SQL injection" flagged by the security agent was verified a FALSE POSITIVE — `class-eem-stay-packages-repo.php:36` concatenates two separately-`prepare()`'d fragments, which is a safe pattern; no action needed.)
+
+### HIGH / MEDIUM
+
+A1. [ ] **[PAYMENT] Authorize.net response doesn't verify the charged amount** matches the server-calculated total. Stripe does this (`shortcodes.php:4648` compares intent amount to `round(total*100)`); the Auth.net path (`shortcodes.php:~8859`) only checks `responseCode === '1'` + presence of `transId`. Add a parallel amount-match assertion. **Severity: MEDIUM/HIGH.**
+
+A2. [ ] **CSV import hardening** (`class-eem-import-handler.php`). Three gaps: (a) no MIME-type validation — relies on `is_uploaded_file()` only, no extension/content-type check; (b) no file-size limit (large file → memory exhaustion during `fgetcsv`); (c) `$wpdb->last_error` echoed directly into the JSON response (lines ~338, ~373) — leaks schema on insert failure. Also consider CSV-injection neutralization (prefix cells starting with `=`, `+`, `-`, `@`) since imported values may later be re-exported. **Severity: MEDIUM.**
+
+A3. [ ] **No unsubscribe / opt-out for bulk notifications.** The Notifications-page bulk send (`class-eem-notifications-page.php:437`) and bulk Email Customers have no opt-out mechanism or preference flag. Transactional emails (confirmation, refund, payment, cancellation) legally don't need it, but bulk/marketing sends should. Decide: add a per-customer opt-out flag + unsubscribe link in bulk emails, or document that bulk send is admin-discretion only. **Severity: MEDIUM.**
+
+A4. [ ] **[PAYMENT] Authorize.net error_log dumps full payload** to `debug.log` (`shortcodes.php:~8864`, `wp_json_encode($payload)`). Gated behind `WP_DEBUG` so dev-only, but the payload may contain transaction details. Filter sensitive fields before logging. **Severity: MEDIUM (dev-only exposure).**
+
+A5. [ ] **[PAYMENT] Charge happens before order insert** (`shortcodes.php` checkout flow: payment at ~line 3260, order insert at ~3266). A crash between the two leaves the customer charged with no stall assigned (recoverable only via manual Stripe/Auth.net refund). The MySQL checkout lock + re-validation make double-booking impossible, but the charge-then-persist ordering is the one window where money and inventory can desync. Consider persisting a pending order first, or wrapping in a tighter try/catch that auto-voids the charge if the insert throws. **Severity: MEDIUM (rare crash window). Significant rework — discuss before tackling.**
+
+### LOW / HOUSEKEEPING
+
+A6. [ ] **[PAYMENT] Refund-notes amount regex preserves the minus sign** (`class-eem-refund-engine.php:56`, `preg_replace('/[^0-9.\-]/','',$value)`). A corrupt/edited notes line could yield a negative parsed amount. Already mitigated by a downstream `max(0.0, ...)` clamp, so low practical risk — drop the `\-` from the character class for belt-and-suspenders. **Severity: LOW (mitigated).**
+
+A7. [ ] **Order payment-status has no whitelist** (`class-equine-event-manager-orders-repository.php:~449`). `update_order_payment_details()` accepts any `sanitize_key()`'d string as a status — no validation against the known set (paid/pending/refunded/cancelled/partially_*). Requires an admin session + valid nonce to exploit, so low risk, but an explicit `in_array()` whitelist is cheap insurance against invalid states. **Severity: LOW.**
+
+A8. [ ] **Cart-hold cleanup relies on customer traffic, not cron.** `cleanup_expired()` (`class-eem-unit-holds-repo.php`) runs opportunistically on form submit / hold attempt. Queries already filter on `held_until > now` so stale rows are harmless to behavior, but the holds table can bloat on a quiet site. Add a WP-cron cleanup. **Severity: LOW (maintenance/storage only).**
+
+A9. [ ] **Admin BCC receipt send failure is unchecked** (`shortcodes.php:5809`). The customer confirmation checks its `WP_Error` return; the admin BCC copy doesn't, so a failed admin receipt is silent. Low impact (customer email is the one that matters) but worth a log line. **Severity: LOW.**
+
+A10. [ ] **Notifications-page bulk send isn't written to the activity log.** Other email channels (Email Customers, refund, payment) log via the `eem_email_sent` telemetry hook; the Notifications-page send (`class-eem-notifications-page.php:437`) has no activity-log entry. Add one (audience description + sent/failed counts) for send-history parity. **Severity: LOW.**
+
+A11. [ ] **`@move_uploaded_file()` error suppression** (`class-eem-order-documents.php:161`). Upload validation upstream is thorough (extension whitelist + `wp_check_filetype_and_ext` + size cap), so not a security hole — but the `@` masks failure diagnostics. Replace with an unsuppressed call + explicit error handling. **Severity: LOW (cosmetic).**
+
+A12. [ ] **Decide on payment-gateway key storage** (`equine_event_manager_payment_settings` in `wp_options`, plaintext). The security agent flagged this HIGH, but **plaintext-in-wp_options is standard WordPress practice** — virtually every gateway plugin does this, keys are behind `manage_options`, rendered as `type="password"`, and not exposed in page source / JS / REST. Closing it (env vars or at-rest encryption) is a real hardening step but a product decision, not a bug. Decide whether v1 wants it or defers to v2. **Severity: INFO / product decision.**
+
+A13. [ ] **Payment Reminder email template exists but has no automatic trigger** (`EEM_Email_Templates_Repo::PAYMENT_REMINDER`). It can only be sent manually via bulk email. Confirm this is intended (manual-only) or wire an automatic reminder for unpaid orders. **Severity: INFO / confirm intent.**
+
+---
+
 ## 📋 v2 — Post-launch
 
 1. [ ] QR Code Generator
