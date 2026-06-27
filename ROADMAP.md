@@ -139,11 +139,17 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 14. [ ] **Remove "X days" countdown chip** on the event-list flyer card. **BLOCKED** — needs Whitney's mockup before starting.
 
-15. [ ] **Restyle squished "Choose File" inputs** on Settings → Import/Export.
+15. [x] **Restyle squished "Choose File" inputs** on Settings → Import/Export. ✅ Done — custom `.eem-file-pick-*` styled picker; also removed subtitle text and Guidelines box from Import CSV card.
 
 16. [ ] **Import/Export: event-level dates not carried** into the imported reservation.
 
-17. [ ] **TEC event list template** — frontend event-list display for TEC-sourced events (part of the deferred frontend-lists work; scope/design TBD).
+17. [x] **Rounded border on list-page tables** — Events list, Customers list, and Term Categories pages all showed an extra rounded border at the bottom of the table. Fixed by wrapping in `.eem-list-card` and extending the CSS zeroing rule to `.eem-card > .eem-desktop-table`. ✅ Done.
+
+18. [x] **Daily Movement missing table footer** — DM page had no row count or visual closure below each arriving/departing group. Added `.eem-table-footer` row count via `render_group_footer()`. ✅ Done.
+
+19. [ ] **Audit all invoice/email templates for design-system parity** — Walk every transactional email template and the PDF receipt to verify typography, color tokens, button styles, and spacing all match the plugin design system (admin.css tokens). Flag any that use hardcoded colors, mismatched fonts, or off-spec button styles. Produce a summary of drift items and fix them.
+
+20. [ ] **TEC event list template** — frontend event-list display for TEC-sourced events (part of the deferred frontend-lists work; scope/design TBD).
 
 ---
 

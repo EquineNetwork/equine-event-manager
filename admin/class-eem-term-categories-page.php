@@ -368,6 +368,7 @@ class EEM_Term_Categories_Page {
 				</span>
 			</div>
 
+			<div class="eem-list-card">
 			<div class="eem-desktop-table">
 				<table class="eem-table eem-term-table">
 					<thead>
@@ -411,6 +412,7 @@ class EEM_Term_Categories_Page {
 					?>
 				</span>
 			</div>
+			</div><!-- /.eem-list-card -->
 		</div>
 		<?php
 	}

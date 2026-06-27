@@ -3800,14 +3800,17 @@ input.eem-file-pick-input {
    .eem-list-card wrapper (v2/secondary pages) still get a card around their
    table so it doesn't float bare on the #F7F9FC field. Pages WITH the explicit
    wrapper (Orders, Reservations) zero this out so there's no double border —
-   the wrapper owns the chrome and the inner table is flush. */
+   the wrapper owns the chrome and the inner table is flush.
+   Also applies when .eem-desktop-table is a direct child of .eem-card
+   (Customers page) — the outer card is the sole rounded container. */
 .eem-desktop-table {
 	background: var(--eem-surface);
 	border: 1px solid #e2e8f4;
 	border-radius: 10px;
 	overflow: hidden;
 }
-.eem-list-card > .eem-desktop-table {
+.eem-list-card > .eem-desktop-table,
+.eem-card > .eem-desktop-table {
 	border: none;
 	border-radius: 0;
 	overflow: visible;
