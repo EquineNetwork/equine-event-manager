@@ -1502,6 +1502,14 @@ class EEM_Orders_Repository {
 		// (+ marks occupancy); Pass 2 then persists it with no extra fill.
 		$this->assign_group_contiguous_stalls( $orders, $state, $stall_pool, $stall_map, isset( $config['barn_map'] ) ? (array) $config['barn_map'] : array() );
 
+		// Pass 1.6 (ROADMAP v1 #7) — keep a SINGLE order's multiple stalls together:
+		// seat each order still needing 2+ stalls in a contiguous run within one
+		// barn before the lowest-first fill, so one customer isn't split across the
+		// barn (e.g. 238 + 250). Runs AFTER the group pass so a travelling group's
+		// shared run takes precedence; falls through to scattered fill when no run
+		// is long enough.
+		$this->assign_order_contiguous_stalls( $orders, $state, $stall_pool, $stall_map, isset( $config['barn_map'] ) ? (array) $config['barn_map'] : array() );
+
 		// Pass 2 — fill each order's remaining need and persist.
 		foreach ( $orders as $index => $candidate ) {
 			$s = $state[ $index ];
@@ -1643,6 +1651,46 @@ class EEM_Orders_Repository {
 					$this->mark_chart_unit_occupied( $map, $label, $state[ $index ]['stall_dates'], $orders[ $index ]['order_key'] );
 					$state[ $index ]['stall_base'][] = $label;
 				}
+			}
+		}
+	}
+
+	/**
+	 * Seat a single order's multiple stalls in a contiguous run (ROADMAP v1 #7).
+	 *
+	 * For each order still needing 2+ stalls after the group-contiguous pass,
+	 * finds the first contiguous run of consecutive stall labels within one barn
+	 * long enough for the remaining need and assigns it (augmenting stall_base +
+	 * marking shared occupancy). When no single run is long enough the order is
+	 * left untouched and falls through to the normal lowest-first fill — so this
+	 * is a best-effort "keep them together" with a graceful scattered fallback,
+	 * never a hard failure.
+	 *
+	 * "Contiguous" matches the group helper: consecutive numeric labels sharing a
+	 * prefix in the same barn (5009→5010, A-01→A-02).
+	 *
+	 * @param array $orders   Grouped orders (sorted by creation order).
+	 * @param array $state    Per-index allocation state, mutated by reference.
+	 * @param array $pool     Available stall labels.
+	 * @param array $map      Shared occupancy map, mutated by reference.
+	 * @param array $barn_map label => barn name.
+	 * @return void
+	 */
+	private function assign_order_contiguous_stalls( array $orders, array &$state, array $pool, array &$map, array $barn_map ) {
+		foreach ( $orders as $index => $candidate ) {
+			$remaining = max( 0, (int) $state[ $index ]['stall_needed'] - count( $state[ $index ]['stall_base'] ) );
+			if ( $remaining < 2 ) {
+				continue; // 0–1 stall left: nothing to keep adjacent.
+			}
+
+			$run = $this->find_contiguous_stall_run( $pool, $map, $barn_map, $remaining, $state[ $index ]['stall_dates'] );
+			if ( count( $run ) < $remaining ) {
+				continue; // No run big enough — leave to the lowest-first fill.
+			}
+
+			foreach ( $run as $label ) {
+				$this->mark_chart_unit_occupied( $map, $label, $state[ $index ]['stall_dates'], $candidate['order_key'] );
+				$state[ $index ]['stall_base'][] = $label;
 			}
 		}
 	}
