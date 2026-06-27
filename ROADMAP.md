@@ -72,6 +72,8 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 15. [ ] **Import/Export: event-level dates not carried** into the imported reservation.
 
+16. [ ] **TEC event list template** — frontend event-list display for TEC-sourced events (part of the deferred frontend-lists work; scope/design TBD).
+
 ---
 
 ## 📋 v2 — Post-launch
