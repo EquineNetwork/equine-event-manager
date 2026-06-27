@@ -8,6 +8,20 @@
 
 ## 🔖 SESSION HANDOFF — 2026-06-27
 
+---
+
+## ⚠️ BRANCHES WAITING TO MERGE — DO THIS BEFORE NEXT PLUGIN UPDATE
+
+Before any version bump or release, these branches MUST be merged to `main` first:
+
+| Branch | PR | What's in it |
+|---|---|---|
+| `claude/page-styling-template-jwx3ez` | PR #36 | Import/Export styling; list-page rounded border fix (Events, Customers, Term Categories); Daily Movement footer; ROADMAP #15/#17/#18 done |
+
+**How to merge when ready:** Whitney approves → merge PR on GitHub → confirm `main` has the changes → then bump version as normal.
+
+---
+
 **Current state:** `main` at **v2.7.649**. All PRs (#6 – #9) merged. Branch `claude/festive-heisenberg-muha01` is up to date with main.
 
 **Verified live this session (rsnc.us, "Columbiana, OH – Northeast Circuit Finals"):**
