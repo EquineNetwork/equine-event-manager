@@ -7850,10 +7850,11 @@ class EEM_Admin {
 				<thead>
 					<tr>
 						<th><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></th>
-						<th class="eem-chart-date-from-col eem-sortable-col" data-sort-col="arrival" title="<?php esc_attr_e( 'Sort by arrival date', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Arrival', 'equine-event-manager' ); ?> <span class="eem-sort-icon" aria-hidden="true"></span></th>
-						<th class="eem-chart-date-to-col eem-sortable-col" data-sort-col="departure" title="<?php esc_attr_e( 'Sort by departure date', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Departure', 'equine-event-manager' ); ?> <span class="eem-sort-icon" aria-hidden="true"></span></th>
+						<th class="eem-chart-date-from-col eem-sortable-col" data-sort-col="arrival" title="<?php esc_attr_e( 'Sort by arrival date', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Arrival', 'equine-event-manager' ); ?> <span class="eem-sort-icon" aria-hidden="true">⇅</span></th>
+						<th class="eem-chart-date-to-col eem-sortable-col" data-sort-col="departure" title="<?php esc_attr_e( 'Sort by departure date', 'equine-event-manager' ); ?>"><?php esc_html_e( 'Departure', 'equine-event-manager' ); ?> <span class="eem-sort-icon" aria-hidden="true">⇅</span></th>
 						<?php // Columns always render; the Show segmented control toggles col-stall / col-rv visibility client-side. ?>
-						<th class="col-stall"<?php echo $show_stall ? '' : ' style="display:none"'; ?>><?php esc_html_e( 'Barn', 'equine-event-manager' ); ?></th>
+						<?php // Barn column dropped (Whitney 2026-06-27) — barn name now renders in
+						// small text under the stall numbers in the Stall # cell. ?>
 						<th class="col-stall"<?php echo $show_stall ? '' : ' style="display:none"'; ?>><?php esc_html_e( 'Stall #', 'equine-event-manager' ); ?></th>
 						<th class="col-rv"<?php echo $show_rv ? '' : ' style="display:none"'; ?>><?php esc_html_e( 'Lot Name', 'equine-event-manager' ); ?></th>
 						<th class="col-rv"<?php echo $show_rv ? '' : ' style="display:none"'; ?>><?php esc_html_e( 'RV Lot #', 'equine-event-manager' ); ?></th>
@@ -7955,8 +7956,7 @@ class EEM_Admin {
 							}
 							?>
 							<?php // Stall + RV columns always render; col-stall / col-rv classes let the Show control toggle them. ?>
-							<td class="col-stall eem-chart-barn-name"<?php echo $show_stall ? '' : ' style="display:none"'; ?>><?php echo ! empty( $eem_barns ) ? esc_html( implode( ', ', $eem_barns ) ) : '<span class="eem-chart-dash">—</span>'; ?></td>
-							<td class="col-stall eem-chart-stall-assignment"<?php echo $show_stall ? '' : ' style="display:none"'; ?>><?php echo ! empty( $row['stall_units'] ) ? wp_kses_post( $this->render_assignment_summary_chips( $row['stall_units'], 'stall' ) ) : '<span class="eem-chart-dash">—</span>'; ?><?php if ( ! empty( $row['tack_units'] ) ) : ?><div class="eem-chart-tack-note" title="<?php esc_attr_e( 'Tack stall(s)', 'equine-event-manager' ); ?>"><span class="eem-chart-tack-note__dot" aria-hidden="true"></span><?php echo esc_html( sprintf( /* translators: %s: comma-separated tack stall numbers */ __( 'Tack: %s', 'equine-event-manager' ), implode( ', ', array_map( 'strval', (array) $row['tack_units'] ) ) ) ); ?></div><?php endif; ?></td>
+							<td class="col-stall eem-chart-stall-assignment"<?php echo $show_stall ? '' : ' style="display:none"'; ?>><?php echo ! empty( $row['stall_units'] ) ? wp_kses_post( $this->render_assignment_summary_chips( $row['stall_units'], 'stall' ) ) : '<span class="eem-chart-dash">—</span>'; ?><?php if ( ! empty( $row['tack_units'] ) ) : ?><div class="eem-chart-tack-note" title="<?php esc_attr_e( 'Tack stall(s)', 'equine-event-manager' ); ?>"><span class="eem-chart-tack-note__dot" aria-hidden="true"></span><?php echo esc_html( sprintf( /* translators: %s: comma-separated tack stall numbers */ __( 'Tack: %s', 'equine-event-manager' ), implode( ', ', array_map( 'strval', (array) $row['tack_units'] ) ) ) ); ?></div><?php endif; ?><?php if ( ! empty( $eem_barns ) ) : ?><div class="eem-chart-stall-barn-sub"><?php echo esc_html( implode( ', ', $eem_barns ) ); ?></div><?php endif; ?></td>
 							<td class="col-rv eem-chart-lot-name"<?php echo $show_rv ? '' : ' style="display:none"'; ?>><?php echo ! empty( $eem_lot_zones ) ? esc_html( implode( ', ', $eem_lot_zones ) ) : '<span class="eem-chart-dash">—</span>'; ?></td>
 							<td class="col-rv eem-chart-rv-assignment"<?php echo $show_rv ? '' : ' style="display:none"'; ?>><?php echo ! empty( $row['rv_units'] ) ? wp_kses_post( $this->render_assignment_summary_chips( $row['rv_units'], 'rv' ) ) : '<span class="eem-chart-dash">—</span>'; ?></td>
 							<?php $eem_shav = isset( $row['shavings'] ) ? absint( $row['shavings'] ) : 0; ?>

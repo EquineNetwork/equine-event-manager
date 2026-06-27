@@ -10742,6 +10742,9 @@ a.eem-sc-mob-edit-btn:focus { background: #e8eef8; color: #0d1b3e; text-decorati
 }
 .eem-shell-page--stall-charts .eem-chart-barn-row td:first-child { padding-left: 20px; }
 .eem-shell-page--stall-charts .eem-chart-unit-num { font-weight: 700; color: #0d1b3e; }
+/* Barn name in small muted text under the stall numbers (By Customer), replacing
+   the standalone Barn column (Whitney 2026-06-27). */
+.eem-shell-page--stall-charts .eem-chart-stall-barn-sub { margin-top: 3px; font-size: 11px; font-weight: 500; color: #6b7280; }
 /* Location status cells — match the new badge style/shape (8px radius, 13px,
    7px/12px padding, min-height 36px; no dot), per Whitney 2026-06-20. */
 .eem-shell-page--stall-charts .eem-loc-cell {

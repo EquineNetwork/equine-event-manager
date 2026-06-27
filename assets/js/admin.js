@@ -6740,7 +6740,7 @@
 		var allTh = table.querySelectorAll('[data-sort-col]');
 		for (var i = 0; i < allTh.length; i++) {
 			var icon = allTh[i].querySelector('.eem-sort-icon');
-			if (icon) { icon.textContent = allTh[i] === th ? (dir === 'asc' ? ' ▲' : ' ▼') : ''; }
+			if (icon) { icon.textContent = allTh[i] === th ? (dir === 'asc' ? ' ▲' : ' ▼') : ' ⇅'; }
 		}
 		// Sort tbody rows by the chosen column.
 		var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr'));
