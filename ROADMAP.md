@@ -16,7 +16,7 @@ Before any version bump or release, these branches MUST be merged to `main` firs
 
 | Branch | PR | What's in it |
 |---|---|---|
-| `claude/page-styling-template-jwx3ez` | PR #36 | Import/Export styling; list-page rounded border fix (Events, Customers, Term Categories); Daily Movement footer; ROADMAP #15/#17/#18 done |
+| `claude/page-styling-template-jwx3ez` | PR #36 | Import/Export styling; list-page rounded border fix (Events, Customers, Term Categories); Daily Movement footer; invoice/refund/payment-received email restyle to design system; report PDF color tokens; ROADMAP #15/#17/#18/#19 done |
 
 **How to merge when ready:** Whitney approves → merge PR on GitHub → confirm `main` has the changes → then bump version as normal.
 
@@ -161,7 +161,7 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 18. [x] **Daily Movement missing table footer** — DM page had no row count or visual closure below each arriving/departing group. Added `.eem-table-footer` row count via `render_group_footer()`. ✅ Done.
 
-19. [ ] **Audit all invoice/email templates for design-system parity** — Walk every transactional email template and the PDF receipt to verify typography, color tokens, button styles, and spacing all match the plugin design system (admin.css tokens). Flag any that use hardcoded colors, mismatched fonts, or off-spec button styles. Produce a summary of drift items and fix them.
+19. [x] **Audit all invoice/email templates for design-system parity** ✅ Done. Confirmation email + PDF receipt were already on-brand. Fixed: Invoice email, Refund email, and Payment Received email (all used Arial font, `#111827` text, `#eef2f6` cards, `border-radius:24px`, near-black CTA button — completely off-brand). Restyled all three to match: IBM Plex Sans, `#0d1b3e` navy, `#1668F2` Electric Blue accent, `#F7F9FC` background, 8px radius, `#e2e8f4` borders. Also fixed minor color drift in report PDF (`#031B4E`/`#1d2327` → `#0d1b3e`, header border → Electric Blue `#1668F2`).
 
 20. [ ] **TEC event list template** — frontend event-list display for TEC-sourced events (part of the deferred frontend-lists work; scope/design TBD).
 

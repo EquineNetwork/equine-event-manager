@@ -31,17 +31,17 @@ $rows    = isset( $ctx['rows'] ) && is_array( $ctx['rows'] ) ? $ctx['rows'] : ar
 <title><?php echo esc_html( $title ); ?></title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'IBM Plex Sans','DejaVu Sans',Helvetica,Arial,sans-serif; color: #1d2327; font-size: 9.5px; }
+body { font-family: 'IBM Plex Sans','DejaVu Sans',Helvetica,Arial,sans-serif; color: #0d1b3e; font-size: 9.5px; }
 .sheet { padding: 8px 10px; }
 .r-logo { max-width: 160px; max-height: 38px; display: block; margin-bottom: 10px; }
-.r-title { font-family: 'IBM Plex Sans','DejaVu Sans',Arial,sans-serif; font-size: 17px; font-weight: 700; color: #031B4E; }
-.r-sub { font-size: 10px; color: #50575e; margin-top: 2px; }
-.r-gen { font-size: 9px; color: #8c8f94; margin-top: 2px; }
-.r-head { border-bottom: 2px solid #031B4E; padding-bottom: 12px; margin-bottom: 12px; }
-table { width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; }
-thead tr { background: #f3f4f5; }
-thead th { padding: 5px 6px; font-size: 9px; font-weight: 700; color: #1d2327; text-align: left; border-bottom: 1px solid #dcdcde; }
-tbody td { padding: 4px 6px; font-size: 9px; color: #1d2327; border-bottom: 1px solid #f0f0f1; vertical-align: top; }
+.r-title { font-family: 'IBM Plex Sans','DejaVu Sans',Arial,sans-serif; font-size: 17px; font-weight: 700; color: #0d1b3e; }
+.r-sub { font-size: 10px; color: #64748b; margin-top: 2px; }
+.r-gen { font-size: 9px; color: #94a3b8; margin-top: 2px; }
+.r-head { border-bottom: 2px solid #1668F2; padding-bottom: 12px; margin-bottom: 12px; }
+table { width: 100%; border-collapse: collapse; border: 1px solid #e2e8f4; }
+thead tr { background: #F7F9FC; }
+thead th { padding: 5px 6px; font-size: 9px; font-weight: 700; color: #0d1b3e; text-align: left; border-bottom: 1px solid #e2e8f4; }
+tbody td { padding: 4px 6px; font-size: 9px; color: #0d1b3e; border-bottom: 1px solid #f0f4fb; vertical-align: top; }
 tbody tr:nth-child(even) td { background: #f9f9f9; }
 .r-empty { padding: 14px; font-size: 11px; color: #50575e; text-align: center; }
 .r-foot { margin-top: 10px; font-size: 8.5px; color: #8c8f94; }
