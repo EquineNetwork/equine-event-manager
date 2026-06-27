@@ -9911,6 +9911,21 @@ body.destination-mode .eem-occ-pill--blocked { opacity: 0.5; pointer-events: non
 	height: 14px;
 	flex-shrink: 0;
 }
+.eem-sc-section-divider__label { display: inline-flex; align-items: center; }
+/* Check-in ring legend, relocated to the right edge of each section band
+   (2026-06-27). Reset the band's uppercase heading chrome back to normal body
+   text and push it to the far right with margin-left:auto. */
+.eem-sc-legend--inline {
+	margin-left: auto;
+	padding: 0;
+	font-family: var(--eem-font-ui);
+	font-size: 12px;
+	font-weight: 500;
+	letter-spacing: normal;
+	text-transform: none;
+	color: var(--eem-text-secondary);
+	gap: 4px 14px;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    STALL CHART LIST — 2026 redesign
@@ -10927,6 +10942,14 @@ textarea.eem-sc-note-textarea:focus { outline: none; border-color: #1668F2; box-
 	flex-wrap: wrap;
 	padding: 10px 20px;
 	border-bottom: 1px solid #f0f4fb;
+}
+/* Inline variant: quick-filter chips relocated into an existing toolbar row
+   (List bulk row + By Customer barn row) instead of their own band. Strip the
+   standalone padding/border and push to the right end of the row. */
+.eem-shell-page--stall-charts .eem-sc-quick-filters--inline {
+	margin-left: auto;
+	padding: 0;
+	border-bottom: 0;
 }
 .eem-shell-page--stall-charts .eem-sc-qf-label {
 	font-size: 11px; font-weight: 700; letter-spacing: 0.05em;

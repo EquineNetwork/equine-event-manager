@@ -6777,6 +6777,10 @@
 		// barn tabs). Only present in the customer panel; null elsewhere.
 		var custBarnSel = panel.querySelector('[data-eem-action="stall-chart-filter-cust-barn"]');
 		var custBarn = custBarnSel ? custBarnSel.value : 'all';
+		// Check-in status quick filter (By Customer). Active chip's data-status;
+		// 'all' = no filter. Rows carry data-checkin (occupied|checked_in|checked_out).
+		var custStatusChip = panel.querySelector('[data-eem-action="sc-cust-status-filter"].active');
+		var custStatus = custStatusChip ? (custStatusChip.getAttribute('data-status') || 'all') : 'all';
 		var rows = Array.prototype.slice.call(panel.querySelectorAll('[data-stall-chart-search]'));
 		var visible = 0;
 		rows.forEach(function (row) {
@@ -6798,7 +6802,8 @@
 					? rowBarns === ''
 					: ((' ' + rowBarns + ' ').indexOf(' ' + custBarn + ' ') !== -1);
 			}
-			var show = matchesSearch && matchesBarn && matchesGroup && matchesTack && matchesCustBarn && !row.classList.contains('eem-chart-barn-row');
+			var matchesCustStatus = custStatus === 'all' || (row.getAttribute('data-checkin') || 'occupied') === custStatus;
+			var show = matchesSearch && matchesBarn && matchesGroup && matchesTack && matchesCustBarn && matchesCustStatus && !row.classList.contains('eem-chart-barn-row');
 			row.hidden = !show;
 			if (show) visible++;
 		});
@@ -6819,6 +6824,17 @@
 			var ct = evb.target;
 			if (!ct || ct.getAttribute('data-eem-action') !== 'stall-chart-filter-cust-barn') return;
 			eemApplyStallChartFilter(ct.closest('.eem-stall-chart-tab-panel') || document.body);
+		});
+
+		// By Customer check-in status quick-filter chips — toggle active + re-run the
+		// shared panel filter so status ANDs with search + barn + group + tack.
+		document.addEventListener('click', function (evc) {
+			var chip = evc.target && evc.target.closest ? evc.target.closest('[data-eem-action="sc-cust-status-filter"]') : null;
+			if (!chip) return;
+			evc.preventDefault();
+			var panel = chip.closest('#eem-stall-chart-panel-customer') || chip.closest('.eem-stall-chart-tab-panel') || document.body;
+			panel.querySelectorAll('[data-eem-action="sc-cust-status-filter"]').forEach(function (c) { c.classList.toggle('active', c === chip); });
+			eemApplyStallChartFilter(panel);
 		});
 
 		// Order Notes card — save the editable admin note (Order Detail page).
