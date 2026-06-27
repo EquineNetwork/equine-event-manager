@@ -2675,6 +2675,26 @@ class EEM_Admin {
 	}
 
 	/**
+	 * Weekday-prefixed short date for the sidebar Arrival/Departure dropdowns
+	 * (e.g. "Thu, Jun 28"). The option VALUE stays the bare short date so it still
+	 * matches the customer cards' data-arrival/-departure attributes for filtering.
+	 *
+	 * @param string $ymd Y-m-d date.
+	 * @return string Weekday + short date, or '' when unparseable.
+	 */
+	private function eem_sb_weekday_date( string $ymd ): string {
+		$ymd = trim( $ymd );
+		if ( '' === $ymd ) {
+			return '';
+		}
+		$ts = strtotime( $ymd );
+		if ( false === $ts ) {
+			return '';
+		}
+		return date_i18n( 'D, M j', $ts );
+	}
+
+	/**
 	 * Whole-night count between two Y-m-d dates (departure − arrival).
 	 *
 	 * @param string $arrival   Arrival date.
@@ -2781,11 +2801,16 @@ class EEM_Admin {
 			<div class="eem-sb-search">
 				<div class="eem-sb-search-inner">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-					<input type="search" class="eem-sb-search-input" data-eem-sb-search placeholder="<?php esc_attr_e( 'Search customers…', 'equine-event-manager' ); ?>" />
+					<input type="search" class="eem-sb-search-input" data-eem-sb-search placeholder="<?php esc_attr_e( 'Search customers', 'equine-event-manager' ); ?>" />
 				</div>
 			</div>
 
-			<div class="eem-sb-filters">
+			<details class="eem-sb-filters-collapse">
+				<summary class="eem-sb-filters-summary">
+					<svg class="eem-sb-filters-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+					<?php esc_html_e( 'Filters', 'equine-event-manager' ); ?>
+				</summary>
+				<div class="eem-sb-filters">
 				<div>
 					<div class="eem-sb-filter-label"><?php esc_html_e( 'Assignment', 'equine-event-manager' ); ?></div>
 					<select class="eem-sb-filter-select" data-eem-sb-filter="assign">
@@ -2799,8 +2824,8 @@ class EEM_Admin {
 						<div class="eem-sb-filter-label"><?php esc_html_e( 'Arrival', 'equine-event-manager' ); ?></div>
 						<select class="eem-sb-filter-select" data-eem-sb-filter="arrival">
 							<option value=""><?php esc_html_e( 'Any', 'equine-event-manager' ); ?></option>
-							<?php foreach ( $arrivals as $arr_label ) : ?>
-								<option value="<?php echo esc_attr( $arr_label ); ?>"><?php echo esc_html( $arr_label ); ?></option>
+							<?php foreach ( $arrivals as $arr_raw => $arr_label ) : ?>
+								<option value="<?php echo esc_attr( $arr_label ); ?>"><?php echo esc_html( $this->eem_sb_weekday_date( (string) $arr_raw ) ); ?></option>
 							<?php endforeach; ?>
 						</select>
 					</div>
@@ -2808,8 +2833,8 @@ class EEM_Admin {
 						<div class="eem-sb-filter-label"><?php esc_html_e( 'Departure', 'equine-event-manager' ); ?></div>
 						<select class="eem-sb-filter-select" data-eem-sb-filter="departure">
 							<option value=""><?php esc_html_e( 'Any', 'equine-event-manager' ); ?></option>
-							<?php foreach ( $departures as $dep_label ) : ?>
-								<option value="<?php echo esc_attr( $dep_label ); ?>"><?php echo esc_html( $dep_label ); ?></option>
+							<?php foreach ( $departures as $dep_raw => $dep_label ) : ?>
+								<option value="<?php echo esc_attr( $dep_label ); ?>"><?php echo esc_html( $this->eem_sb_weekday_date( (string) $dep_raw ) ); ?></option>
 							<?php endforeach; ?>
 						</select>
 					</div>
@@ -2853,7 +2878,8 @@ class EEM_Admin {
 						</select>
 					</div>
 				<?php endif; ?>
-			</div>
+				</div>
+			</details>
 
 			<div class="eem-sb-list" data-eem-sb-list>
 				<div class="eem-sb-section-label" data-eem-sb-unassigned-label>
@@ -2893,16 +2919,6 @@ class EEM_Admin {
 		$nights  = $this->eem_sb_nights( (string) $r['stall_arrival'], (string) $r['stall_departure'] );
 		$stalls  = (int) ( isset( $r['stall_total'] ) ? $r['stall_total'] : count( (array) $r['stall_units'] ) );
 
-		// Avatar initials: first letter of the first two name tokens.
-		$tokens   = preg_split( '/[^A-Za-z]+/', $name_lf, -1, PREG_SPLIT_NO_EMPTY );
-		$initials = '';
-		foreach ( array_slice( (array) $tokens, 0, 2 ) as $tok ) {
-			$initials .= strtoupper( substr( $tok, 0, 1 ) );
-		}
-		if ( '' === $initials ) {
-			$initials = '?';
-		}
-
 		// Meta line: "Jun 26–28 · 2 nights · 3 stalls".
 		$meta_parts = array();
 		if ( '' !== $arr && '' !== $dep ) {
@@ -2926,9 +2942,8 @@ class EEM_Admin {
 			data-nights="<?php echo esc_attr( (string) $nights ); ?>"
 			data-stalls="<?php echo esc_attr( (string) $stalls ); ?>"
 			data-group="<?php echo esc_attr( trim( (string) ( isset( $r['group_name'] ) ? $r['group_name'] : '' ) ) ); ?>">
-			<div class="eem-sb-cust-avatar<?php echo $assigned ? ' assigned' : ''; ?>"><?php echo esc_html( $initials ); ?></div>
 			<div class="eem-sb-cust-info">
-				<span class="eem-sb-cust-name"><?php echo esc_html( $name_lf ); ?></span>
+				<span class="eem-sb-cust-name"><?php if ( ! empty( $r['is_vip'] ) ) : ?><span class="eem-vip-star" title="<?php esc_attr_e( 'VIP', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'VIP', 'equine-event-manager' ); ?>">★</span> <?php endif; ?><?php echo esc_html( $name_lf ); ?></span>
 				<span class="eem-sb-cust-meta"><?php echo esc_html( $meta ); ?></span>
 			</div>
 			<div class="eem-sb-cust-badges">
