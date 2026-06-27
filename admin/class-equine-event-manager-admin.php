@@ -14918,33 +14918,32 @@ class EEM_Admin {
 
 		ob_start();
 		?>
-		<div style="margin:0;padding:24px 16px;background:#F7F9FC;font-family:'IBM Plex Sans','Helvetica Neue',Helvetica,Arial,sans-serif;color:#0d1b3e;">
-			<div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(13,27,62,.08);">
-				<div style="background:#ffffff;padding:28px 36px;border-bottom:3px solid #1668F2;">
+		<div style="margin:0;padding:28px;background:#f5f7fb;font-family:Arial,sans-serif;color:#111827;">
+			<div style="max-width:680px;margin:0 auto;">
+				<div style="margin:0 0 18px;padding:28px 30px;background:#eef2f6;border:1px solid #d9e1ea;border-radius:24px;color:#111827;">
 					<?php if ( $company_logo_url ) : ?>
-						<img src="<?php echo esc_url( $company_logo_url ); ?>" alt="" style="max-width:160px;max-height:40px;display:block;margin-bottom:16px;object-fit:contain;">
+						<p style="margin:0 0 20px;"><img src="<?php echo esc_url( $company_logo_url ); ?>" alt="<?php esc_attr_e( 'Company logo', 'equine-event-manager' ); ?>" style="max-width:180px;max-height:54px;display:block;object-fit:contain;" /></p>
 					<?php endif; ?>
-					<div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-bottom:6px;"><?php esc_html_e( 'Reservation Invoice', 'equine-event-manager' ); ?></div>
-					<div style="font-size:22px;font-weight:700;color:#0d1b3e;line-height:1.2;letter-spacing:-.01em;"><?php echo esc_html( $event_label ); ?></div>
+					<div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Reservation Invoice', 'equine-event-manager' ); ?></div>
+					<h1 style="margin:10px 0 12px;font-size:30px;line-height:1.1;color:#111827;"><?php echo esc_html( $event_label ); ?></h1>
+					<p style="margin:0;font-size:16px;line-height:1.7;color:#111827;"><?php echo esc_html( sprintf( __( 'A payment link is ready for order #%s.', 'equine-event-manager' ), $order['order_number'] ) ); ?></p>
 				</div>
 
-				<div style="background:#ffffff;padding:28px 36px;">
-					<p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#0d1b3e;"><?php echo esc_html( sprintf( /* translators: %s: customer name. */ __( 'Hi %s, use the secure button below to review your reservation and complete payment.', 'equine-event-manager' ), $order['customer_name'] ) ); ?></p>
-					<p style="margin:0 0 24px;">
-						<a href="<?php echo esc_url( $payment_url ); ?>" style="display:inline-block;padding:12px 22px;border-radius:6px;background:#1668F2;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;"><?php esc_html_e( 'Review Invoice & Pay Now', 'equine-event-manager' ); ?></a>
-					</p>
-					<div style="border-top:1px solid #e2e8f4;padding-top:16px;">
+				<div style="margin:0 0 18px;padding:26px 28px;background:#eef2f6;border:1px solid #d9e1ea;border-radius:24px;color:#111827;">
+					<p style="margin:0 0 16px;font-size:16px;line-height:1.7;color:#111827;"><?php echo esc_html( sprintf( __( 'Hi %s, use the secure button below to review your reservation and complete payment.', 'equine-event-manager' ), $order['customer_name'] ) ); ?></p>
+					<p style="margin:0 0 22px;"><a href="<?php echo esc_url( $payment_url ); ?>" style="display:inline-block;padding:14px 22px;border-radius:12px;background:#111827;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;"><?php esc_html_e( 'Review Invoice & Pay Now', 'equine-event-manager' ); ?></a></p>
+					<div style="display:grid;gap:12px;">
 						<?php foreach ( $invoice_rows as $label => $value ) : ?>
-							<div style="display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid #f0f4fb;">
-								<span style="font-size:12px;font-weight:600;color:#64748b;"><?php echo esc_html( $label ); ?></span>
-								<strong style="font-size:13px;font-weight:700;color:#0d1b3e;text-align:right;"><?php echo esc_html( $value ); ?></strong>
+							<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;">
+								<span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php echo esc_html( $label ); ?></span>
+								<strong style="font-size:15px;color:#111827;text-align:right;"><?php echo esc_html( $value ); ?></strong>
 							</div>
 						<?php endforeach; ?>
 					</div>
 				</div>
 
 				<?php if ( ! empty( $support_chunks ) ) : ?>
-					<div style="background:#F7F9FC;border-top:1px solid #e2e8f4;padding:16px 36px;text-align:center;font-size:12.5px;color:#64748b;"><?php echo esc_html( implode( '  |  ', $support_chunks ) ); ?></div>
+					<p style="margin:0;padding:0 10px;text-align:center;color:#4b5563;font-size:13px;line-height:1.7;"><?php echo esc_html( implode( ' | ', $support_chunks ) ); ?></p>
 				<?php endif; ?>
 			</div>
 		</div>
@@ -14986,30 +14985,31 @@ class EEM_Admin {
 
 		ob_start();
 		?>
-		<div style="margin:0;padding:24px 16px;background:#F7F9FC;font-family:'IBM Plex Sans','Helvetica Neue',Helvetica,Arial,sans-serif;color:#0d1b3e;">
-			<div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(13,27,62,.08);">
-				<div style="background:#ffffff;padding:28px 36px;border-bottom:3px solid #1668F2;">
+		<div style="margin:0;padding:28px;background:#f5f7fb;font-family:Arial,sans-serif;color:#111827;">
+			<div style="max-width:680px;margin:0 auto;">
+				<div style="margin:0 0 18px;padding:28px 30px;background:#eef2f6;border:1px solid #d9e1ea;border-radius:24px;color:#111827;">
 					<?php if ( $company_logo_url ) : ?>
-						<img src="<?php echo esc_url( $company_logo_url ); ?>" alt="" style="max-width:160px;max-height:40px;display:block;margin-bottom:16px;object-fit:contain;">
+						<p style="margin:0 0 20px;"><img src="<?php echo esc_url( $company_logo_url ); ?>" alt="<?php esc_attr_e( 'Company logo', 'equine-event-manager' ); ?>" style="max-width:180px;max-height:54px;display:block;object-fit:contain;" /></p>
 					<?php endif; ?>
-					<div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-bottom:6px;"><?php esc_html_e( 'Refund Processed', 'equine-event-manager' ); ?></div>
-					<div style="font-size:22px;font-weight:700;color:#0d1b3e;line-height:1.2;letter-spacing:-.01em;"><?php echo esc_html( $event_label ); ?></div>
+					<div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Refund Processed', 'equine-event-manager' ); ?></div>
+					<h1 style="margin:10px 0 12px;font-size:30px;line-height:1.1;color:#111827;"><?php echo esc_html( $event_label ); ?></h1>
+					<p style="margin:0;font-size:16px;line-height:1.7;color:#111827;"><?php echo esc_html( sprintf( __( 'A refund has been processed for order #%s.', 'equine-event-manager' ), $order['order_number'] ) ); ?></p>
 				</div>
 
-				<div style="background:#ffffff;padding:28px 36px;">
-					<p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#0d1b3e;"><?php echo esc_html( sprintf( /* translators: %s: customer name. */ __( 'Hi %s, we\'ve refunded the amount below to your original payment method. Depending on your bank, it may take a few business days to appear.', 'equine-event-manager' ), $order['customer_name'] ) ); ?></p>
-					<div style="border-top:1px solid #e2e8f4;padding-top:16px;">
+				<div style="margin:0 0 18px;padding:26px 28px;background:#eef2f6;border:1px solid #d9e1ea;border-radius:24px;color:#111827;">
+					<p style="margin:0 0 16px;font-size:16px;line-height:1.7;color:#111827;"><?php echo esc_html( sprintf( __( 'Hi %s, we\'ve refunded the amount below to your original payment method. Depending on your bank, it may take a few business days to appear.', 'equine-event-manager' ), $order['customer_name'] ) ); ?></p>
+					<div style="display:grid;gap:12px;">
 						<?php foreach ( $rows as $label => $value ) : ?>
-							<div style="display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid #f0f4fb;">
-								<span style="font-size:12px;font-weight:600;color:#64748b;"><?php echo esc_html( $label ); ?></span>
-								<strong style="font-size:13px;font-weight:700;color:#0d1b3e;text-align:right;"><?php echo esc_html( $value ); ?></strong>
+							<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;">
+								<span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php echo esc_html( $label ); ?></span>
+								<strong style="font-size:15px;color:#111827;text-align:right;"><?php echo esc_html( $value ); ?></strong>
 							</div>
 						<?php endforeach; ?>
 					</div>
 				</div>
 
 				<?php if ( ! empty( $support_chunks ) ) : ?>
-					<div style="background:#F7F9FC;border-top:1px solid #e2e8f4;padding:16px 36px;text-align:center;font-size:12.5px;color:#64748b;"><?php echo esc_html__( 'Questions about your refund? Contact us:', 'equine-event-manager' ) . ' ' . esc_html( implode( '  |  ', $support_chunks ) ); ?></div>
+					<p style="margin:0;padding:0 10px;text-align:center;color:#4b5563;font-size:13px;line-height:1.7;"><?php echo esc_html__( 'Questions about your refund? Contact us:', 'equine-event-manager' ) . ' ' . esc_html( implode( ' | ', $support_chunks ) ); ?></p>
 				<?php endif; ?>
 			</div>
 		</div>
@@ -15274,30 +15274,31 @@ class EEM_Admin {
 
 		ob_start();
 		?>
-		<div style="margin:0;padding:24px 16px;background:#F7F9FC;font-family:'IBM Plex Sans','Helvetica Neue',Helvetica,Arial,sans-serif;color:#0d1b3e;">
-			<div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(13,27,62,.08);">
-				<div style="background:#ffffff;padding:28px 36px;border-bottom:3px solid #1668F2;">
+		<div style="margin:0;padding:28px;background:#f5f7fb;font-family:Arial,sans-serif;color:#111827;">
+			<div style="max-width:680px;margin:0 auto;">
+				<div style="margin:0 0 18px;padding:28px 30px;background:#eef2f6;border:1px solid #d9e1ea;border-radius:24px;color:#111827;">
 					<?php if ( $company_logo_url ) : ?>
-						<img src="<?php echo esc_url( $company_logo_url ); ?>" alt="" style="max-width:160px;max-height:40px;display:block;margin-bottom:16px;object-fit:contain;">
+						<p style="margin:0 0 20px;"><img src="<?php echo esc_url( $company_logo_url ); ?>" alt="<?php esc_attr_e( 'Company logo', 'equine-event-manager' ); ?>" style="max-width:180px;max-height:54px;display:block;object-fit:contain;" /></p>
 					<?php endif; ?>
-					<div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;margin-bottom:6px;"><?php esc_html_e( 'Payment Received', 'equine-event-manager' ); ?></div>
-					<div style="font-size:22px;font-weight:700;color:#0d1b3e;line-height:1.2;letter-spacing:-.01em;"><?php echo esc_html( $event_label ); ?></div>
+					<div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#15803d;"><?php esc_html_e( 'Payment Received', 'equine-event-manager' ); ?></div>
+					<h1 style="margin:10px 0 12px;font-size:30px;line-height:1.1;color:#111827;"><?php echo esc_html( $event_label ); ?></h1>
+					<p style="margin:0;font-size:16px;line-height:1.7;color:#111827;"><?php echo esc_html( sprintf( /* translators: %s: order number. */ __( 'Thank you — we\'ve received your payment for order #%s.', 'equine-event-manager' ), $order['order_number'] ) ); ?></p>
 				</div>
 
-				<div style="background:#ffffff;padding:28px 36px;">
-					<p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#0d1b3e;"><?php echo esc_html( sprintf( /* translators: %s: customer name. */ __( 'Hi %s, your payment is confirmed. Here are the details for your records.', 'equine-event-manager' ), $order['customer_name'] ) ); ?></p>
-					<div style="border-top:1px solid #e2e8f4;padding-top:16px;">
+				<div style="margin:0 0 18px;padding:26px 28px;background:#eef2f6;border:1px solid #d9e1ea;border-radius:24px;color:#111827;">
+					<p style="margin:0 0 16px;font-size:16px;line-height:1.7;color:#111827;"><?php echo esc_html( sprintf( /* translators: %s: customer name. */ __( 'Hi %s, your payment is confirmed. Here are the details for your records.', 'equine-event-manager' ), $order['customer_name'] ) ); ?></p>
+					<div style="display:grid;gap:12px;">
 						<?php foreach ( $rows as $label => $value ) : ?>
-							<div style="display:flex;justify-content:space-between;gap:16px;padding:8px 0;border-bottom:1px solid #f0f4fb;">
-								<span style="font-size:12px;font-weight:600;color:#64748b;"><?php echo esc_html( $label ); ?></span>
-								<strong style="font-size:13px;font-weight:700;color:#0d1b3e;text-align:right;"><?php echo esc_html( $value ); ?></strong>
+							<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;">
+								<span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php echo esc_html( $label ); ?></span>
+								<strong style="font-size:15px;color:#111827;text-align:right;"><?php echo esc_html( $value ); ?></strong>
 							</div>
 						<?php endforeach; ?>
 					</div>
 				</div>
 
 				<?php if ( ! empty( $support_chunks ) ) : ?>
-					<div style="background:#F7F9FC;border-top:1px solid #e2e8f4;padding:16px 36px;text-align:center;font-size:12.5px;color:#64748b;"><?php echo esc_html__( 'Questions? Contact us:', 'equine-event-manager' ) . ' ' . esc_html( implode( '  |  ', $support_chunks ) ); ?></div>
+					<p style="margin:0;padding:0 10px;text-align:center;color:#4b5563;font-size:13px;line-height:1.7;"><?php echo esc_html__( 'Questions? Contact us:', 'equine-event-manager' ) . ' ' . esc_html( implode( ' | ', $support_chunks ) ); ?></p>
 				<?php endif; ?>
 			</div>
 		</div>

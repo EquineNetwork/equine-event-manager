@@ -24,27 +24,6 @@ class EEM_Orders_Repository {
 	const NEXT_ORDER_NUMBER_OPTION = 'equine_event_manager_next_order_number';
 
 	/**
-	 * Canonical set of valid component payment-status slugs.
-	 *
-	 * Any write of a status outside this set is rejected (A7). Mirrors the
-	 * slugs actually produced across the repo: gateway charges write 'paid',
-	 * partial collection writes 'partially_paid', refund/cancel flows write
-	 * 'refunded' / 'partially_refunded' / 'cancelled', and new/unpaid orders
-	 * carry 'unpaid' / 'pending'.
-	 *
-	 * @var string[]
-	 */
-	const VALID_PAYMENT_STATUSES = array(
-		'paid',
-		'pending',
-		'unpaid',
-		'partially_paid',
-		'refunded',
-		'partially_refunded',
-		'cancelled',
-	);
-
-	/**
 	 * Cached grouped orders.
 	 *
 	 * @var array|null
@@ -468,14 +447,6 @@ class EEM_Orders_Repository {
 		// C6.D — capture pre-update status for the status_change funnel.
 		$old_status_slug = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
 		$new_status_slug = sanitize_key( $payment_status );
-
-		// A7 — reject any status outside the known set. Guards against an
-		// arbitrary status reaching the DB via the REST PUT /orders endpoint
-		// (or a compromised admin AJAX session), which would otherwise leave
-		// components in a state no downstream code knows how to render.
-		if ( ! in_array( $new_status_slug, self::VALID_PAYMENT_STATUSES, true ) ) {
-			return false;
-		}
 
 		$updated_any = false;
 
