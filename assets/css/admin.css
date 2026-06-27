@@ -10291,6 +10291,12 @@ a.eem-sc-mob-edit-btn:focus { background: #e8eef8; color: #0d1b3e; text-decorati
 	align-items: center;
 	flex-shrink: 0;
 }
+/* Show + View controls relocated onto the title row (2026-06-27 cleanup). */
+.eem-shell-page--stall-charts .eem-sc-pagehead-filters {
+	gap: 16px;
+	align-items: flex-end;
+	flex-wrap: wrap;
+}
 .eem-shell-page--stall-charts .eem-sc-btn-primary,
 .eem-shell-page--stall-charts button.eem-sc-btn-primary {
 	display: inline-flex;

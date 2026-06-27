@@ -2579,6 +2579,9 @@ class EEM_Admin {
 		$print_view_url = admin_url( 'admin.php?page=equine-event-manager-stall-chart-print&reservation_id=' . $reservation_id . '&view=' . ( 'customer' === $tab ? 'customer' : 'location' ) );
 		ob_start();
 		?>
+		<button class="eem-sc-btn-primary" type="button" data-eem-action="stall-chart-auto-assign-all" data-eem-confirm="<?php echo esc_attr__( 'Auto-assign every order to a stall/RV lot now?', 'equine-event-manager' ); ?>">
+			<?php esc_html_e( 'Generate Assignments', 'equine-event-manager' ); ?>
+		</button>
 		<button class="eem-sc-topbtn" type="button" data-eem-action="stall-chart-print" data-print-url="<?php echo esc_url( $print_view_url ); ?>" aria-label="<?php esc_attr_e( 'Print View', 'equine-event-manager' ); ?>">
 			<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
 			<span class="eem-sc-topbtn-label"><?php esc_html_e( 'Print View', 'equine-event-manager' ); ?></span>
@@ -2604,10 +2607,37 @@ class EEM_Admin {
 
 		<header class="eem-sc-pagehead">
 			<h1 class="eem-sc-pagehead-title" id="eem-header-event-name"><?php echo esc_html( $screen_title ); ?></h1>
-			<div class="eem-sc-pagehead-actions">
-				<button class="eem-sc-btn-primary" type="button" data-eem-action="stall-chart-auto-assign-all" data-eem-confirm="<?php echo esc_attr__( 'Auto-assign every order to a stall/RV lot now?', 'equine-event-manager' ); ?>">
-					<?php esc_html_e( 'Generate Assignments', 'equine-event-manager' ); ?>
-				</button>
+			<?php // Show + View controls live on the title row (Whitney 2026-06-27 cleanup) —
+			// Generate Assignments moved up to the breadcrumb bar next to Print View. ?>
+			<div class="eem-sc-pagehead-actions eem-sc-pagehead-filters">
+				<div class="eem-sc-fgroup">
+					<span class="eem-sc-flabel"><?php esc_html_e( 'Show', 'equine-event-manager' ); ?></span>
+					<div class="eem-sc-seg" role="group" aria-label="<?php esc_attr_e( 'Inventory', 'equine-event-manager' ); ?>">
+						<button type="button" class="eem-sc-seg-btn<?php echo 'stalls' === $inv ? ' active' : ''; ?>" data-eem-action="sc-inv-switch" data-inv="stalls"><?php esc_html_e( 'Stalls', 'equine-event-manager' ); ?></button>
+						<button type="button" class="eem-sc-seg-btn<?php echo 'rv' === $inv ? ' active' : ''; ?>" data-eem-action="sc-inv-switch" data-inv="rv"><?php esc_html_e( 'RV', 'equine-event-manager' ); ?></button>
+						<button type="button" class="eem-sc-seg-btn<?php echo 'all' === $inv ? ' active' : ''; ?>" data-eem-action="sc-inv-switch" data-inv="all"><?php esc_html_e( 'Both', 'equine-event-manager' ); ?></button>
+					</div>
+				</div>
+				<div class="eem-sc-fgroup">
+					<label class="eem-sc-flabel" for="eem-sc-view-select"><?php esc_html_e( 'View', 'equine-event-manager' ); ?></label>
+					<select id="eem-sc-view-select" class="eem-sc-select" data-eem-action="stall-chart-view-select">
+						<option value="customer" <?php selected( $tab, 'customer' ); ?>><?php esc_html_e( 'By Customer', 'equine-event-manager' ); ?></option>
+						<option value="list" <?php selected( $tab, 'list' ); ?>><?php esc_html_e( 'By Location — List', 'equine-event-manager' ); ?></option>
+						<?php if ( $has_any_map ) : ?>
+						<option value="map" <?php selected( $tab, 'map' ); ?>><?php esc_html_e( 'By Location — Map', 'equine-event-manager' ); ?></option>
+						<?php endif; ?>
+					</select>
+				</div>
+				<?php // Map search — only shown on the Map view (relocated from the old filter bar). ?>
+				<?php if ( $has_any_map ) : ?>
+				<div class="eem-sc-fgroup eem-sc-map-search-group"<?php echo 'map' === $tab ? '' : ' style="display:none"'; ?>>
+					<span class="eem-search-wrap">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+						<input type="search" class="eem-search-input" data-eem-smap-search-global placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Search stalls', 'equine-event-manager' ); ?>">
+					</span>
+					<span class="eem-smap-search-count" data-eem-smap-search-count-global aria-live="polite"></span>
+				</div>
+				<?php endif; ?>
 			</div>
 		</header>
 
@@ -3009,38 +3039,6 @@ class EEM_Admin {
 				<?php // Top KPI summary cards (Total/Available Stalls + RV) removed per
 				// Whitney 2026-06-25 — redundant with the at-a-glance map + counts. ?>
 
-				<!-- Filter bar: Show (segmented) + View (select). -->
-				<?php $eem_has_any_map = ( $has_stall_map || $has_rv_map ); ?>
-				<div class="eem-sc-filterbar">
-					<div class="eem-sc-fgroup">
-						<span class="eem-sc-flabel"><?php esc_html_e( 'Show', 'equine-event-manager' ); ?></span>
-						<div class="eem-sc-seg" role="group" aria-label="<?php esc_attr_e( 'Inventory', 'equine-event-manager' ); ?>">
-							<button type="button" class="eem-sc-seg-btn<?php echo 'stalls' === $inv ? ' active' : ''; ?>" data-eem-action="sc-inv-switch" data-inv="stalls"><?php esc_html_e( 'Stalls', 'equine-event-manager' ); ?></button>
-							<button type="button" class="eem-sc-seg-btn<?php echo 'rv' === $inv ? ' active' : ''; ?>" data-eem-action="sc-inv-switch" data-inv="rv"><?php esc_html_e( 'RV', 'equine-event-manager' ); ?></button>
-							<button type="button" class="eem-sc-seg-btn<?php echo 'all' === $inv ? ' active' : ''; ?>" data-eem-action="sc-inv-switch" data-inv="all"><?php esc_html_e( 'Both', 'equine-event-manager' ); ?></button>
-						</div>
-					</div>
-					<div class="eem-sc-fgroup">
-						<label class="eem-sc-flabel" for="eem-sc-view-select"><?php esc_html_e( 'View', 'equine-event-manager' ); ?></label>
-						<select id="eem-sc-view-select" class="eem-sc-select" data-eem-action="stall-chart-view-select">
-							<option value="customer" <?php selected( $tab, 'customer' ); ?>><?php esc_html_e( 'By Customer', 'equine-event-manager' ); ?></option>
-							<option value="list" <?php selected( $tab, 'list' ); ?>><?php esc_html_e( 'By Location — List', 'equine-event-manager' ); ?></option>
-							<?php if ( $eem_has_any_map ) : ?>
-							<option value="map" <?php selected( $tab, 'map' ); ?>><?php esc_html_e( 'By Location — Map', 'equine-event-manager' ); ?></option>
-							<?php endif; ?>
-						</select>
-					</div>
-					<?php // Map search lives here (top filter row, right) — only shown on the Map view. ?>
-					<?php if ( $eem_has_any_map ) : ?>
-					<div class="eem-sc-fgroup eem-sc-map-search-group"<?php echo 'map' === $tab ? '' : ' style="display:none"'; ?>>
-						<span class="eem-search-wrap">
-							<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-							<input type="search" class="eem-search-input" data-eem-smap-search-global placeholder="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Search stalls', 'equine-event-manager' ); ?>">
-						</span>
-						<span class="eem-smap-search-count" data-eem-smap-search-count-global aria-live="polite"></span>
-					</div>
-					<?php endif; ?>
-				</div>
 
 				<?php if ( empty( $grid['stall_rows'] ) && empty( $grid['rv_rows'] ) && ! $has_stall_map ) : ?>
 					<div class="eem-stall-chart-empty-card">
