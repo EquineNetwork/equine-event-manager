@@ -8,6 +8,32 @@
 
 ---
 
+## 🔖 SESSION HANDOFF — 2026-06-26 (live walkthrough, rsnc.us, "Columbiana, OH – Northeast Circuit Finals")
+
+> Live bug-by-bug walkthrough with Whitney. She verifies each fix live before it's checked off. **NEVER batch-mark done.**
+
+### ✅ Shipped this session — AWAITING LIVE VERIFY ON rsnc.us
+
+1. **Additional Shavings missing from customer event-page Order Summary** (commit `b8ae2d6`) — the customer-facing live-total JS never computed additional shavings, so the section-card subtotal AND the (absent) Order Summary line both read $0.00 while the server charged it on submit (preview undercharge). Fixed:
+   - `setTotal()` → `querySelectorAll` so a key shared by the section subtotal + the Order Summary row both update.
+   - Added an `additional_shavings_subtotal` Order Summary row (hidden until > 0).
+   - Added JS computation iterating `additional_shavings[…][qty] × [price]`, folded into the subtotal.
+   - File: `public/class-equine-event-manager-shortcodes.php`. **Still needs a version bump to reach rsnc.us for Whitney to verify live.**
+
+### ✅ Verified-correct this session (no code change needed)
+
+- **Order #00007 / #00008 totals** — manual order, 5 stalls × 4 nights, 1 tack stall. Full math confirmed correct: stalls $35 × 5 × 4 = $700 (tack billed at normal rate); required shavings 8 bags × $10 = $80 (tack stall correctly excluded → 4 non-tack × 2 bags); subtotal $780; 4% convenience fee $31.20; **Order Total $811.20**. ✓
+- **Edit Dates +1 night = $182.00** — confirmed correct: $35 × 5 stalls × 1 added night = $175 + 4% fee = $182. Matches Whitney's expected formula exactly. Required shavings correctly unchanged (flat, not per-night). ✓
+- **CRITICAL BUGS #5 + #6 appear resolved on #00008** — Required Shavings now renders as its own priced line ("8 bags × $10.00 = $80.00") inside the Stall Reservation card, no longer silently folded into the subtotal and no longer shown under Add-Ons at $0.00. **Whitney must still confirm on the originally-reported reservation_id 30884 before checking #5/#6 off below.**
+
+### ⏭️ Open / next
+
+- **Version bump + deploy** the Additional Shavings fix (`b8ae2d6`) so Whitney can verify it live on rsnc.us — pending her go-ahead.
+- **CRITICAL BUG #7** (Order Detail doesn't mark which assigned stall is the tack stall) — still open, not yet addressed.
+- Continue the live walkthrough; Whitney sends issues one at a time.
+
+---
+
 ## 🐛 CRITICAL BUGS — found 2026-06-26 (live rsnc.us, event "Columbiana, OH – Northeast Circuit Finals", reservation_id 30884)
 
 > Reported by Whitney from the live production site. Fix **one at a time**, Whitney verifies each before it's checked off.
@@ -236,6 +262,21 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 35. [x] Stall Chart — "Clear All Assignments" header button removed (too dangerous). (2026-06-25 session 2)
 29. [x] Stall Chart — sticky sidebar panel for the By Location Map view. Reference: Stall Logic screenshots (screenshots sent 2026-06-25). The spatial map (661-stall view) needs a persistent right-side panel that stays in view while scrolling/panning the map, showing quick actions, assignment info for the selected stall, and summary metrics. Design TBD — discuss before implementing. (NOT implemented today). When a customer selects a stall/RV lot it should be held for a time window (~15 min) and shown as taken to other customers during that window, then auto-released if checkout isn't completed. NOTE: actual double-booking is already prevented at submit via the per-reservation advisory lock (the race loser is told the unit is taken and is NOT charged) — this item is the UX hold-while-in-cart enhancement, not a correctness fix. Needs: hold/expiry state on stall+RV tables, session-tied claim, availability query counting active holds, and a cron/cleanup to expire abandoned holds. Discuss design before implementing.
 
+#### [Later] polish items (folded in from session handoffs / task list 2026-06-26)
+36. [ ] **[Later] Restyle the reservation "View Event" overview page** to match plugin design system.
+37. [ ] **[Later] Remove the "X days" countdown chip** on the event-list flyer card — BLOCKED: needs Whitney's mockup.
+38. [ ] **[Later] Restyle squished "Choose File" inputs** on Settings → Import/Export.
+39. [ ] **[Later] Import/Export: event-level dates not carried** into the imported reservation.
+
+#### CRITICAL BUGS (2026-06-26 live walkthrough — see top of file for full detail)
+40. [ ] Cancelling an order does NOT release its stall/RV assignments (bug #1).
+41. [ ] Cancelled/removed orders still appear in the chart "Assigned" roster (bug #2).
+42. [ ] Manage Stall Assignment allows over-assignment beyond paid qty (bug #3).
+43. [ ] No multi-select "Remove from stall" on the chart/map (bug #4).
+44. [ ] Required shavings folded into Stall Subtotal / shown under Add-Ons at $0.00 (bugs #5+#6) — appears resolved on #00008, needs verify on res 30884.
+45. [ ] Order Detail doesn't mark WHICH assigned stall is the tack stall (bug #7).
+46. [ ] Version-bump + deploy the Additional Shavings customer-page fix (commit `b8ae2d6`) for live verify on rsnc.us.
+
 ---
 
 ## 📋 v2 — Post-launch
@@ -249,9 +290,10 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 10. [ ] Orders list — per-page count control (let the admin choose how many orders show per screen; currently fixed at 25/page). Apply the same pattern to other list pages (Reservations, Customers) if it lands well.
 11. [ ] Excel stall map import (.xlsx → stall rows + map grid). (Moved from v1.)
 12. [ ] PDF Venue Map → overlay (upload PDF, drop/snap stall hotspots). (Moved from v1.)
+13. [ ] Bypass the "cleaning phase" on checkout. Today, checking a customer out auto-flags the stall **Cleaning** (→ Needs cleaning) before it returns to Available. Some venues don't clean between reservations and want the stall to go straight back to Available. SCOPE TBD — decide whether this is a per-reservation setting ("do these stalls get cleaned between reservations?") or a prompt in the check-out modal. Discuss before building.
 14. [ ] Upload .xlsx → Stall Grid (ZipArchive + SimpleXML; "Download Example Template" link). (Moved from v1.)
 15. [ ] Full permissions matrix (role-based access). (Moved from v1.)
-13. [ ] Bypass the "cleaning phase" on checkout. Today, checking a customer out auto-flags the stall **Cleaning** (→ Needs cleaning) before it returns to Available. Some venues don't clean between reservations and want the stall to go straight back to Available. SCOPE TBD — decide whether this is a per-reservation setting ("do these stalls get cleaned between reservations?") or a prompt in the check-out modal. Discuss before building.
+16. [ ] Stall-assignments CSV export (columns: Stall, Barn, Roper ID, Horse, Rider, Phone, Address, City, State, Zip, VIP) — deferred from the Stall Logic demo (2026-06-25 handoff).
 
 ---
 
