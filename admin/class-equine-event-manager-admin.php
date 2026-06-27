@@ -2611,37 +2611,43 @@ class EEM_Admin {
 		);
 		?>
 
-		<header class="eem-sc-pagehead">
-			<h1 class="eem-sc-pagehead-title" id="eem-header-event-name"><?php echo esc_html( $screen_title ); ?></h1>
-			<?php // Show + View controls live on the title row (Whitney 2026-06-27 cleanup) —
-			// Generate Assignments moved up to the breadcrumb bar next to Print View. ?>
+		<header class="eem-sc-pagehead eem-sc-pagehead--toolbar">
 			<?php
-			// Merged, stalls-first View switcher (Whitney 2026-06-27): ONE control
-			// replaces the old "Show" (Stalls/RV/Both) + "View" pair. Each button sets
-			// both the inventory AND the view in one tap. RV only appears when the
-			// reservation actually sells RV. Lands on Stall Map by default.
-			$eem_sc_rv_tab = $has_rv_map_early ? 'map' : 'list';
+			// Two-control toolbar (Whitney 2026-06-27): the big page title was dropped
+			// (the breadcrumb already names the event, so the H1 just repeated it a row
+			// lower and wasted vertical space). The merged View switcher was split back
+			// into TWO compact dropdowns — an inventory select (Stalls / RV / Both) and a
+			// view select (By Location Map / List / By Customer) — so EVERY combination
+			// stays reachable, including RV Map (which the single-button merge couldn't
+			// express). Both selects are left-aligned; the unified search fills the right
+			// end of the row. The two <select> elements reuse the existing delegated
+			// change handlers (sc-inv-select keeps the current view; stall-chart-view-select
+			// keeps the current inventory), so no new JS wiring is needed.
 			?>
-			<div class="eem-sc-pagehead-actions eem-sc-viewbar">
-				<div class="eem-sc-vswitch" role="group" aria-label="<?php esc_attr_e( 'View', 'equine-event-manager' ); ?>">
-					<?php if ( $has_stall_map ) : ?>
-					<button type="button" class="eem-sc-vbtn<?php echo ( 'map' === $tab && 'rv' !== $inv ) ? ' active' : ''; ?>" data-eem-action="sc-view-switch" data-inv="stalls" data-tab="map"><?php esc_html_e( 'Stall Map', 'equine-event-manager' ); ?></button>
-					<?php endif; ?>
-					<button type="button" class="eem-sc-vbtn<?php echo ( 'customer' === $tab ) ? ' active' : ''; ?>" data-eem-action="sc-view-switch" data-inv="all" data-tab="customer"><?php esc_html_e( 'By Customer', 'equine-event-manager' ); ?></button>
-					<button type="button" class="eem-sc-vbtn<?php echo ( 'list' === $tab && 'rv' !== $inv ) ? ' active' : ''; ?>" data-eem-action="sc-view-switch" data-inv="stalls" data-tab="list"><?php esc_html_e( 'Stall List', 'equine-event-manager' ); ?></button>
+			<div class="eem-sc-controls">
+				<select id="eem-sc-inv-select" class="eem-list-select eem-sc-control-select" data-eem-action="sc-inv-select" aria-label="<?php esc_attr_e( 'Show inventory', 'equine-event-manager' ); ?>">
+					<option value="stalls" <?php selected( $inv, 'stalls' ); ?>><?php esc_html_e( 'Stalls', 'equine-event-manager' ); ?></option>
 					<?php if ( $reservation_has_rv ) : ?>
-					<button type="button" class="eem-sc-vbtn eem-sc-vbtn--rv<?php echo ( 'rv' === $inv ) ? ' active' : ''; ?>" data-eem-action="sc-view-switch" data-inv="rv" data-tab="<?php echo esc_attr( $eem_sc_rv_tab ); ?>"><?php esc_html_e( 'RV', 'equine-event-manager' ); ?></button>
+					<option value="rv" <?php selected( $inv, 'rv' ); ?>><?php esc_html_e( 'RV', 'equine-event-manager' ); ?></option>
 					<?php endif; ?>
-				</div>
-				<?php // One unified search — carries the list/customer filter class AND the
-				// map global-search attr, so the matching delegated handler fires for
-				// whichever view is active. Replaces the three per-view search boxes. ?>
-				<span class="eem-search-wrap eem-sc-toolbar-search">
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-					<input type="search" id="eem-stall-chart-search" class="eem-search-input eem-stall-chart-search-input" data-eem-smap-search-global placeholder="<?php esc_attr_e( 'Search stalls or customers', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>">
-					<span class="eem-smap-search-count" data-eem-smap-search-count-global aria-live="polite"></span>
-				</span>
+					<option value="all" <?php selected( $inv, 'all' ); ?>><?php esc_html_e( 'Both', 'equine-event-manager' ); ?></option>
+				</select>
+				<select id="eem-sc-view-select" class="eem-list-select eem-sc-control-select" data-eem-action="stall-chart-view-select" aria-label="<?php esc_attr_e( 'View', 'equine-event-manager' ); ?>">
+					<?php if ( $has_any_map ) : ?>
+					<option value="map" <?php selected( $tab, 'map' ); ?>><?php esc_html_e( 'By Location — Map', 'equine-event-manager' ); ?></option>
+					<?php endif; ?>
+					<option value="list" <?php selected( $tab, 'list' ); ?>><?php esc_html_e( 'By Location — List', 'equine-event-manager' ); ?></option>
+					<option value="customer" <?php selected( $tab, 'customer' ); ?>><?php esc_html_e( 'By Customer', 'equine-event-manager' ); ?></option>
+				</select>
 			</div>
+			<?php // One unified search — carries the list/customer filter class AND the
+			// map global-search attr, so the matching delegated handler fires for
+			// whichever view is active. ?>
+			<span class="eem-search-wrap eem-sc-toolbar-search">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+				<input type="search" id="eem-stall-chart-search" class="eem-search-input eem-stall-chart-search-input" data-eem-smap-search-global placeholder="<?php esc_attr_e( 'Search stalls or customers', 'equine-event-manager' ); ?>" aria-label="<?php esc_attr_e( 'Search', 'equine-event-manager' ); ?>">
+				<span class="eem-smap-search-count" data-eem-smap-search-count-global aria-live="polite"></span>
+			</span>
 		</header>
 
 		<div class="eem-sc-content">
@@ -5292,16 +5298,19 @@ class EEM_Admin {
 			}
 			$start_ts = $start_raw ? strtotime( (string) $start_raw ) : 0;
 
-			// Event start/end as their own columns (noon-anchored so the calendar
-			// date can't roll back a day on non-UTC installs).
-			$eem_ev_start_raw = (string) get_post_meta( $rid, '_en_start_date', true );
-			$eem_ev_end_raw   = (string) get_post_meta( $rid, '_en_end_date', true );
+			// Event start/end as their own columns. Resolve from the source event
+			// (TEC / GEMS / native) via the canonical resolver — the reservation's
+			// own `_en_start_date` / `_en_end_date` are empty for sourced events, so
+			// reading them directly left these columns blank (Whitney 2026-06-27).
+			$eem_ev_fields    = EEM_Reservation_Source_Resolver::resolve_event_fields( $rid );
+			$eem_ev_start_raw = (string) $eem_ev_fields['start_date'];
+			$eem_ev_end_raw   = (string) $eem_ev_fields['end_date'];
 			$rows[] = array(
 				'id'            => $rid,
 				'title'         => get_the_title( $rid ),
 				'dates'         => $this->get_reservation_date_range_label( $rid ),
-				'event_start'   => '' !== $eem_ev_start_raw ? wp_date( 'M j, Y', strtotime( $eem_ev_start_raw . ' 12:00:00' ) ) : '',
-				'event_end'     => '' !== $eem_ev_end_raw ? wp_date( 'M j, Y', strtotime( $eem_ev_end_raw . ' 12:00:00' ) ) : '',
+				'event_start'   => $this->eem_format_event_date_cell( $eem_ev_start_raw ),
+				'event_end'     => $this->eem_format_event_date_cell( $eem_ev_end_raw ),
 				'barn_names'    => $barn_names,
 				'rv_zone_names' => $rv_zone_names,
 				'chart_status'  => $chart_status,
@@ -5512,6 +5521,27 @@ class EEM_Admin {
 	 * @param int $reservation_id Reservation post ID.
 	 * @return string
 	 */
+	/**
+	 * Format a resolved event date for the Stall & RV Charts list columns.
+	 *
+	 * Pure `Y-m-d` values are noon-anchored so a negative-UTC offset can't roll
+	 * the displayed calendar day back by one; values that already carry a time
+	 * component (ISO datetimes returned by the source resolver) are parsed as-is.
+	 *
+	 * @param string $raw Raw start/end date from the source resolver.
+	 * @return string Formatted "M j, Y", or '' when empty/unparseable.
+	 */
+	private function eem_format_event_date_cell( string $raw ): string {
+		$raw = trim( $raw );
+		if ( '' === $raw ) {
+			return '';
+		}
+		$ts = preg_match( '/^\d{4}-\d{2}-\d{2}$/', $raw )
+			? strtotime( $raw . ' 12:00:00' )
+			: strtotime( $raw );
+		return $ts ? wp_date( 'M j, Y', $ts ) : '';
+	}
+
 	private function get_reservation_date_range_label( $reservation_id ) {
 		$start_date = (string) get_post_meta( $reservation_id, '_en_start_date', true );
 		$end_date   = (string) get_post_meta( $reservation_id, '_en_end_date', true );

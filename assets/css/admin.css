@@ -10291,6 +10291,20 @@ a.eem-sc-mob-edit-btn:focus { background: #e8eef8; color: #0d1b3e; text-decorati
 	align-items: center;
 	flex-shrink: 0;
 }
+/* Two-control toolbar header (2026-06-27): big H1 dropped; inventory + view
+   <select>s sit left, unified search right. The selects reuse .eem-list-select
+   (already excluded from admin-legacy !important blocks) so no cascade fight. */
+.eem-shell-page--stall-charts .eem-sc-pagehead--toolbar {
+	align-items: center;
+}
+.eem-shell-page--stall-charts .eem-sc-controls {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+}
+.eem-shell-page--stall-charts .eem-sc-controls select.eem-sc-control-select {
+	min-width: 0;
+}
 /* Show + View controls relocated onto the title row (2026-06-27 cleanup). */
 .eem-shell-page--stall-charts .eem-sc-pagehead-filters {
 	gap: 16px;
