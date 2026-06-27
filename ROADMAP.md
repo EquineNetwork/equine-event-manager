@@ -55,7 +55,7 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 3. [ ] **Full end-to-end customer checkout sweep** — run a real checkout on the NTR 6519 fixture page. Also the recommended way to seed test data (real checkout writes correct `reservation_id` + notes tag + config-based pricing).
 
-4. [x] **Full map post-meta → config migration** — stall/RV map snapshots now dual-write to the config table + post-meta; reads are config-first with post-meta fallback + lazy backfill. Shipped 2.7.652 — **awaiting Whitney staging spot-check** (load a stall map, save it, confirm the chart renders). Config-table branch couldn't be exercised on the SQLite harness (table_exists uses MySQL-only SHOW TABLES).
+4. [x] **Full map post-meta → config migration** — stall/RV map snapshots dual-write to the config table + post-meta; reads are config-first with post-meta fallback + lazy backfill. Shipped 2.7.652. ✅ **verified by Whitney 2026-06-27.**
 
 5. [ ] **Postmeta → relational de-coupling Phase 1** — remaining gaps: map snapshots, hybrid blocked-units reads, events/venues/producers/divisions editors still on post-meta. Audit plan: `docs/POSTMETA-AUDIT.md`.
 
