@@ -1643,68 +1643,6 @@ class EEM_Reservations_CPT {
 	}
 
 	/**
-	 * Validate stall chart ranges so overlapping unit numbers cannot be saved.
-	 *
-	 * @param array  $blocks Configured block ranges.
-	 * @param string $unit_type_label Human-readable unit type label.
-	 * @return string[]
-	 */
-	private function validate_chart_block_ranges( $blocks, $unit_type_label ) {
-		$errors = array();
-		$ranges = array();
-
-		foreach ( (array) $blocks as $block ) {
-			if ( ! is_array( $block ) ) {
-				continue;
-			}
-
-			$label = isset( $block['label'] ) ? sanitize_text_field( $block['label'] ) : '';
-			$start = isset( $block['start'] ) ? absint( $block['start'] ) : 0;
-			$end   = isset( $block['end'] ) ? absint( $block['end'] ) : 0;
-
-			if ( '' === $label || ! $start || ! $end ) {
-				continue;
-			}
-
-			$ranges[] = array(
-				'label' => $label,
-				'start' => min( $start, $end ),
-				'end'   => max( $start, $end ),
-			);
-		}
-
-		usort(
-			$ranges,
-			function ( $left, $right ) {
-				if ( $left['start'] === $right['start'] ) {
-					return $left['end'] <=> $right['end'];
-				}
-
-				return $left['start'] <=> $right['start'];
-			}
-		);
-
-		for ( $index = 1; $index < count( $ranges ); $index++ ) {
-			$previous = $ranges[ $index - 1 ];
-			$current  = $ranges[ $index ];
-
-			if ( $current['start'] <= $previous['end'] ) {
-				$errors[] = sprintf(
-					/* translators: 1: unit type, 2: previous block label, 3: previous range, 4: current block label, 5: current range */
-					__( 'Stall Assignments %1$s ranges cannot overlap. "%2$s" (%3$s) conflicts with "%4$s" (%5$s).', 'equine-event-manager' ),
-					$unit_type_label,
-					$previous['label'],
-					$previous['start'] . '-' . $previous['end'],
-					$current['label'],
-					$current['start'] . '-' . $current['end']
-				);
-			}
-		}
-
-		return $errors;
-	}
-
-	/**
 	 * Get saved meta values with defaults.
 	 *
 	 * Public since C7.C.1.1 — see sanitize_meta_submission() docblock
@@ -3369,44 +3307,6 @@ class EEM_Reservations_CPT {
 		}
 
 		return date( 'Y-m-d', $timestamp );
-	}
-
-	/**
-	 * Format saved datetime for datetime-local inputs.
-	 *
-	 * @param string $value Saved datetime or legacy time value.
-	 * @param string $fallback_value Optional fallback date for legacy time-only values.
-	 * @return string
-	 */
-	private function format_datetime_for_input( $value, $fallback_value = '' ) {
-		if ( ! $value ) {
-			return '';
-		}
-
-		$raw_value = trim( (string) $value );
-		$timestamp = strtotime( $raw_value );
-
-		if ( false !== $timestamp && preg_match( '/^\d{4}-\d{2}-\d{2}/', $raw_value ) ) {
-			return date( 'Y-m-d\TH:i', $timestamp );
-		}
-
-		if ( '' !== $fallback_value ) {
-			$fallback_timestamp = strtotime( (string) $fallback_value );
-
-			if ( false !== $fallback_timestamp && false !== $timestamp ) {
-				return date( 'Y-m-d', $fallback_timestamp ) . 'T' . date( 'H:i', $timestamp );
-			}
-		}
-
-		if ( false !== $timestamp && ! preg_match( '/^\d{4}-\d{2}-\d{2}/', $raw_value ) ) {
-			return '';
-		}
-
-		if ( false === $timestamp ) {
-			return '';
-		}
-
-		return date( 'Y-m-d\TH:i', $timestamp );
 	}
 
 	/**

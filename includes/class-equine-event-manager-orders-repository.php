@@ -2334,52 +2334,6 @@ class EEM_Orders_Repository {
 	}
 
 	/**
-	 * Allocate units from a pool across a date range.
-	 *
-	 * @param array  $pool Available pool.
-	 * @param array  $map Occupancy map by reference.
-	 * @param array  $dates Occupied date keys.
-	 * @param int    $needed Required count.
-	 * @param array  $preferred Preferred/manual units.
-	 * @param string $order_key Order key.
-	 * @return array
-	 */
-	private function allocate_chart_units( $pool, &$map, $dates, $needed, $preferred, $order_key ) {
-		$assigned = array();
-
-		foreach ( (array) $preferred as $unit ) {
-			if ( count( $assigned ) >= $needed ) {
-				break;
-			}
-
-			if ( in_array( $unit, $pool, true ) && $this->chart_unit_is_available( $map, $unit, $dates ) ) {
-				$assigned[] = $unit;
-				$this->mark_chart_unit_occupied( $map, $unit, $dates, $order_key );
-			}
-		}
-
-		foreach ( (array) $pool as $unit ) {
-			if ( count( $assigned ) >= $needed ) {
-				break;
-			}
-
-			if ( in_array( $unit, $assigned, true ) ) {
-				continue;
-			}
-
-			if ( $this->chart_unit_is_available( $map, $unit, $dates ) ) {
-				$assigned[] = $unit;
-				$this->mark_chart_unit_occupied( $map, $unit, $dates, $order_key );
-			}
-		}
-
-		return array(
-			'assigned'   => $assigned,
-			'unassigned' => max( 0, $needed - count( $assigned ) ),
-		);
-	}
-
-	/**
 	 * Check whether a chart unit is available for all occupied dates.
 	 *
 	 * @param array  $map Occupancy map.

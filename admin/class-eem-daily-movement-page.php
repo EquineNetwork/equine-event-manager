@@ -523,39 +523,6 @@ class EEM_Daily_Movement_Page {
 	}
 
 	/**
-	 * Render the stat cards strip.
-	 *
-	 * @param array $totals Aggregated totals.
-	 * @return void
-	 */
-	private static function render_stat_cards( array $totals ): void {
-		?>
-		<div class="eem-dm-stats">
-			<div class="eem-stat-card">
-				<div class="eem-stat-card-label"><?php esc_html_e( 'Arriving', 'equine-event-manager' ); ?></div>
-				<div class="eem-stat-card-num" style="color: #15803d;"><?php echo (int) $totals['arriving']; ?></div>
-			</div>
-			<div class="eem-stat-card">
-				<div class="eem-stat-card-label"><?php esc_html_e( 'Departing', 'equine-event-manager' ); ?></div>
-				<div class="eem-stat-card-num" style="color: #a16207;"><?php echo (int) $totals['departing']; ?></div>
-			</div>
-			<div class="eem-stat-card">
-				<div class="eem-stat-card-label"><?php esc_html_e( 'Checked In', 'equine-event-manager' ); ?></div>
-				<div class="eem-stat-card-num" style="color: #1d4ed8;"><?php echo (int) $totals['checked_in']; ?></div>
-			</div>
-			<div class="eem-stat-card">
-				<div class="eem-stat-card-label"><?php esc_html_e( 'Not Yet Checked In', 'equine-event-manager' ); ?></div>
-				<div class="eem-stat-card-num" style="color: #dc2626;"><?php echo (int) $totals['not_yet_checked_in']; ?></div>
-			</div>
-			<div class="eem-stat-card">
-				<div class="eem-stat-card-label"><?php esc_html_e( 'Shavings Required', 'equine-event-manager' ); ?></div>
-				<div class="eem-stat-card-num" style="color: #7c3aed;"><?php echo (int) $totals['shavings']; ?> <span style="font-size: 14px; font-weight: 500; color: #64748b;"><?php esc_html_e( 'bags', 'equine-event-manager' ); ?></span></div>
-			</div>
-		</div>
-		<?php
-	}
-
-	/**
 	 * Render the toolbar: reservation selector + date dropdown.
 	 *
 	 * @param WP_Post[] $reservations   Available reservations.
@@ -953,51 +920,6 @@ class EEM_Daily_Movement_Page {
 			} );
 		} )();
 		</script>
-		<?php
-	}
-
-	/**
-	 * Render the at-a-glance multi-day movement overview panel.
-	 *
-	 * Mirrors the Stall Chart print view's "Daily Movement" block — one column
-	 * per date with ↓ Arriving / ↑ Departing counts — so on-the-ground staff get
-	 * a single-glance picture of the whole event's turnover above the detail
-	 * tables. Only worth showing when there are multiple dates.
-	 *
-	 * @param array[] $reports Per-date movement reports.
-	 * @return void
-	 */
-	private static function render_movement_overview( array $reports ): void {
-		?>
-		<div class="eem-dm-overview">
-			<div class="eem-dm-overview-grid">
-				<?php foreach ( $reports as $report ) :
-					$s = isset( $report['summary'] ) ? $report['summary'] : array();
-				?>
-					<?php
-						$arr = (int) ( $s['arriving'] ?? 0 );
-						$dep = (int) ( $s['departing'] ?? 0 );
-					?>
-					<div class="eem-dm-overview-day">
-						<div class="eem-dm-overview-date">
-							<?php echo esc_html( $report['date_display'] ?? $report['date'] ); ?>
-						</div>
-						<div class="eem-dm-overview-vals">
-							<span class="eem-dm-stat eem-dm-stat--arr<?php echo 0 === $arr ? ' is-zero' : ''; ?>">
-								<span class="eem-dm-stat-icon" aria-hidden="true">&darr;</span>
-								<span class="eem-dm-stat-num"><?php echo esc_html( number_format_i18n( $arr ) ); ?></span>
-								<span class="eem-dm-stat-label"><?php esc_html_e( 'Arriving', 'equine-event-manager' ); ?></span>
-							</span>
-							<span class="eem-dm-stat eem-dm-stat--dep<?php echo 0 === $dep ? ' is-zero' : ''; ?>">
-								<span class="eem-dm-stat-icon" aria-hidden="true">&uarr;</span>
-								<span class="eem-dm-stat-num"><?php echo esc_html( number_format_i18n( $dep ) ); ?></span>
-								<span class="eem-dm-stat-label"><?php esc_html_e( 'Departing', 'equine-event-manager' ); ?></span>
-							</span>
-						</div>
-					</div>
-				<?php endforeach; ?>
-			</div>
-		</div>
 		<?php
 	}
 

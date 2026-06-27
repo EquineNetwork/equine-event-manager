@@ -848,41 +848,6 @@ class EEM_Reservation_Editor_Page {
 	}
 
 	/**
-	 * Count RV lot zones that are actually defined (have a non-empty name).
-	 *
-	 * @param array<int, mixed> $zones Raw posted zones (eem_rv_zones).
-	 * @return int Number of named zones.
-	 */
-	private static function count_valid_zones( array $zones ): int {
-		$n = 0;
-		foreach ( $zones as $zone ) {
-			if ( is_array( $zone ) && '' !== trim( (string) ( $zone['name'] ?? '' ) ) ) {
-				$n++;
-			}
-		}
-		return $n;
-	}
-
-	/**
-	 * Count RV lot rows that BOTH define a usable range AND are assigned to a zone.
-	 * Rows without a zone_id are unavailable to customers, so only zoned usable rows
-	 * produce bookable lots.
-	 *
-	 * @param array<int, mixed> $rows Raw posted RV rows (eem_rv_rows).
-	 * @return int Number of usable, zone-assigned rows.
-	 */
-	private static function count_usable_rows_with_zone( array $rows ): int {
-		$n = 0;
-		foreach ( $rows as $row ) {
-			if ( ! is_array( $row ) || '' === trim( (string) ( $row['zone_id'] ?? '' ) ) ) {
-				continue;
-			}
-			$n += self::count_usable_rows( array( $row ) );
-		}
-		return $n;
-	}
-
-	/**
 	 * Dispatch a section key to its body partial and return the rendered HTML.
 	 *
 	 * @param string                              $key

@@ -189,60 +189,6 @@ class EEM_Dashboard_Page {
 	}
 
 	/**
-	 * Range filter `<select>` — change-handler in admin.js reloads with
-	 * `?range=<key>` (full-page reload, no AJAX) per kickoff decision E.
-	 *
-	 * @param string $current
-	 * @return void
-	 */
-	private static function render_range_filter( $current ) {
-		$options = EEM_Dashboard_Repo::range_options();
-		?>
-		<div class="eem-dashboard-range-bar">
-			<span class="eem-dashboard-range-label"><?php esc_html_e( 'Showing metrics for', 'equine-event-manager' ); ?></span>
-			<select class="eem-dashboard-range-select" data-eem-action="dashboard-range-change">
-				<?php foreach ( $options as $key => $label ) : ?>
-					<option value="<?php echo esc_attr( $key ); ?>"<?php selected( $key, $current ); ?>><?php echo esc_html( $label ); ?></option>
-				<?php endforeach; ?>
-			</select>
-		</div>
-		<?php
-	}
-
-	/**
-	 * 4-card KPI grid with colored top borders.
-	 *
-	 * @param array<int, array<string, mixed>> $cards
-	 * @return void
-	 */
-	private static function render_kpi_grid( array $cards ) {
-		?>
-		<div class="eem-dashboard-kpi-grid">
-			<?php foreach ( $cards as $card ) :
-				$icon_key = isset( $card['icon'] ) ? (string) $card['icon'] : '';
-			?>
-				<div class="eem-dashboard-kpi-card eem-dashboard-kpi-card--<?php echo esc_attr( $card['border'] ); ?>">
-					<div class="eem-dashboard-kpi-label">
-						<span><?php echo esc_html( $card['label'] ); ?></span>
-						<?php if ( '' !== $icon_key ) : echo EEM_Dashboard_Icons::svg( $icon_key ); endif; ?>
-					</div>
-					<div class="eem-dashboard-kpi-value"><?php echo esc_html( $card['value'] ); ?></div>
-					<div class="eem-dashboard-kpi-sub">
-						<?php if ( ! empty( $card['sub_pre'] ) ) : ?>
-							<span class="<?php echo esc_attr( 'eem-dashboard-kpi-tone--' . ( $card['sub_tone'] ?? '' ) ); ?>"><?php echo esc_html( $card['sub_pre'] ); ?></span><?php echo esc_html( $card['sub_post'] ?? '' ); ?>
-						<?php elseif ( ! empty( $card['sub_tone'] ) ) : ?>
-							<span class="<?php echo esc_attr( 'eem-dashboard-kpi-tone--' . $card['sub_tone'] ); ?>"><?php echo esc_html( $card['sub'] ); ?></span>
-						<?php else : ?>
-							<?php echo esc_html( $card['sub'] ); ?>
-						<?php endif; ?>
-					</div>
-				</div>
-			<?php endforeach; ?>
-		</div>
-		<?php
-	}
-
-	/**
 	 * Upcoming Reservations card with up to 5 rows.
 	 *
 	 * @param array<int, array<string, mixed>> $rows
