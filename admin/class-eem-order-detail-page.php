@@ -832,6 +832,16 @@ class EEM_Order_Detail_Page {
 				<?php endif; ?>
 				<tr class="eem-detail-table__subtotal"><td><?php esc_html_e( 'Stall Subtotal', 'equine-event-manager' ); ?></td><td><?php echo esc_html( '$' . number_format_i18n( $subtotal, 2 ) ); ?></td></tr>
 			</table>
+			<?php
+			// Show the Assigned Stall Units block only for NUMBERED stall inventory
+			// (specific stalls to assign). Bulk/Quantity-only → nothing to manage,
+			// so the whole block + button are hidden (Whitney 2026-06-27).
+			$stalls_configured = $res_id > 0 && class_exists( 'EEM_Reservations_CPT' )
+				&& EEM_Reservations_CPT::section_enabled( $res_id, 'stalls_enabled' )
+				&& class_exists( 'EEM_Reservation_Config' )
+				&& 'numbered' === (string) EEM_Reservation_Config::for( $res_id )->get( 'stall_inventory_type' );
+			?>
+			<?php if ( $stalls_configured ) : ?>
 			<div class="eem-stall-assignment">
 				<div class="eem-stall-assignment__label"><?php esc_html_e( 'Assigned Stall Units', 'equine-event-manager' ); ?></div>
 				<?php if ( '' !== $assigned ) : ?>
@@ -854,7 +864,9 @@ class EEM_Order_Detail_Page {
 				// has stall inventory configured — otherwise the chart is a dead-end
 				// "No facility map / no units" page (Whitney 2026-06-20).
 				$stalls_configured = $res_id > 0 && class_exists( 'EEM_Reservations_CPT' )
-					&& EEM_Reservations_CPT::section_enabled( $res_id, 'stalls_enabled' );
+					&& EEM_Reservations_CPT::section_enabled( $res_id, 'stalls_enabled' )
+					&& class_exists( 'EEM_Reservation_Config' )
+					&& 'numbered' === (string) EEM_Reservation_Config::for( $res_id )->get( 'stall_inventory_type' );
 				?>
 				<?php if ( '' !== $charts_url && $stalls_configured ) : ?>
 					<div class="eem-stall-assignment__action">
@@ -866,6 +878,7 @@ class EEM_Order_Detail_Page {
 					</div>
 				<?php endif; ?>
 			</div>
+				<?php endif; ?>
 		</div>
 		<?php
 	}
@@ -1046,7 +1059,18 @@ class EEM_Order_Detail_Page {
 				)
 				: '';
 			?>
-			<?php if ( '' !== $rv_charts_url ) : ?>
+			<?php
+			// Only show the Assigned RV Lots block when RV uses MAPPED inventory —
+			// i.e. specific lots exist to assign. Bulk/Quantity reservations have no
+			// lots to manage, so the block + "Assign RV Lots" button are hidden
+			// entirely (Whitney 2026-06-27): "I don't want them clicking that button
+			// trying to manage assignments when they're not even turned on."
+			$rv_mapped = $rv_res_id > 0 && class_exists( 'EEM_Reservations_CPT' )
+				&& EEM_Reservations_CPT::section_enabled( $rv_res_id, 'rv_enabled' )
+				&& class_exists( 'EEM_Reservation_Config' )
+				&& 'mapped' === (string) EEM_Reservation_Config::for( $rv_res_id )->get( 'rv_inventory_type' );
+			?>
+			<?php if ( '' !== $rv_charts_url && $rv_mapped ) : ?>
 				<?php $assigned_rv = $this->extract_assigned_rv_lots( $order ); ?>
 				<div class="eem-stall-assignment">
 					<div class="eem-stall-assignment__label"><?php esc_html_e( 'Assigned RV Lots', 'equine-event-manager' ); ?></div>
@@ -1055,21 +1079,13 @@ class EEM_Order_Detail_Page {
 							<span class="eem-stall-assignment__badge"><?php echo esc_html( $assigned_rv ); ?></span>
 						</div>
 					<?php endif; ?>
-					<?php
-					// Only offer the assign/manage button when the reservation has RV
-					// inventory configured (Whitney 2026-06-20).
-					$rv_configured = $rv_res_id > 0 && class_exists( 'EEM_Reservations_CPT' )
-						&& EEM_Reservations_CPT::section_enabled( $rv_res_id, 'rv_enabled' );
-					?>
-					<?php if ( $rv_configured ) : ?>
-						<div class="eem-stall-assignment__action">
-							<a class="eem-btn eem-btn-electric" href="<?php echo esc_url( $rv_charts_url ); ?>"><?php
-								echo '' !== $assigned_rv
-									? esc_html__( 'Manage RV Assignment', 'equine-event-manager' )
-									: esc_html__( 'Assign RV Lots', 'equine-event-manager' );
-							?></a>
-						</div>
-					<?php endif; ?>
+					<div class="eem-stall-assignment__action">
+						<a class="eem-btn eem-btn-electric" href="<?php echo esc_url( $rv_charts_url ); ?>"><?php
+							echo '' !== $assigned_rv
+								? esc_html__( 'Manage RV Assignment', 'equine-event-manager' )
+								: esc_html__( 'Assign RV Lots', 'equine-event-manager' );
+						?></a>
+					</div>
 				</div>
 			<?php endif; ?>
 		</div>
