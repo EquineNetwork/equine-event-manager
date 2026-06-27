@@ -11974,13 +11974,6 @@ class EEM_Admin {
 		$rv_base_subtotal    = max( 0, (float) $order['rv_subtotal'] - (float) $rv_addon_total - (float) $rv_surcharge_total );
 		$stall_nights        = $this->get_stay_nights_label( $order['stall_arrival_date'], $order['stall_departure_date'] );
 		$rv_nights           = $this->get_stay_nights_label( $order['rv_arrival_date'], $order['rv_departure_date'] );
-		$rv_addon_labels     = array();
-
-		if ( ! empty( $rv_addon_breakdown ) ) {
-			$rv_addon_labels = wp_list_pluck( $rv_addon_breakdown, 'label' );
-		} elseif ( ! empty( $order['rv_type'] ) ) {
-			$rv_addon_labels = array_filter( array_map( 'trim', explode( ',', $this->format_rv_type_label( $order['rv_type'] ) ) ) );
-		}
 
 		$footer_contacts         = array_filter(
 			array(
@@ -12094,7 +12087,6 @@ class EEM_Admin {
 					array( 'label' => __( 'Nights', 'equine-event-manager' ), 'value' => $rv_nights ),
 					array( 'label' => __( 'RV Spots', 'equine-event-manager' ), 'value' => (string) absint( $order['rv_quantity'] ) ),
 					array( 'label' => __( 'Lot Selection', 'equine-event-manager' ), 'value' => $this->parse_rv_lot_name_from_notes( $order['notes'] ) ? $this->parse_rv_lot_name_from_notes( $order['notes'] ) : __( 'Not specified', 'equine-event-manager' ) ),
-					array( 'label' => __( 'RV Add-Ons', 'equine-event-manager' ), 'value' => ! empty( $rv_addon_labels ) ? implode( ', ', $rv_addon_labels ) : __( 'None', 'equine-event-manager' ) ),
 				),
 			);
 
