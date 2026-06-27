@@ -3161,10 +3161,6 @@ class EEM_Admin {
 								<button type="button" class="eem-sc-qf-chip" data-eem-action="sc-quick-filter" data-status="cleaning"><?php esc_html_e( 'Needs cleaning', 'equine-event-manager' ); ?></button>
 								<button type="button" class="eem-sc-qf-chip" data-eem-action="sc-quick-filter" data-status="available"><?php esc_html_e( 'Available', 'equine-event-manager' ); ?></button>
 								<button type="button" class="eem-sc-qf-chip" data-eem-action="sc-quick-filter" data-status="blocked"><?php esc_html_e( 'Blocked', 'equine-event-manager' ); ?></button>
-								<a class="eem-sc-dm-link" href="<?php echo esc_url( admin_url( 'admin.php?page=' . EEM_Daily_Movement_Page::MENU_SLUG . '&reservation_id=' . (int) $reservation_id ) ); ?>">
-									<?php esc_html_e( 'View Daily Movement', 'equine-event-manager' ); ?>
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-								</a>
 							</div>
 
 							<?php // #3 — check-in ring legend (assigned cells are ringed by arrival status). ?>
@@ -3185,10 +3181,6 @@ class EEM_Admin {
 							?>
 							<!-- STALL SECTION: hidden when inv=rv -->
 							<div id="eem-sc-loc-stalls" data-inv-section="stalls"<?php echo 'rv' === $inv ? ' style="display:none"' : ''; ?>>
-								<div class="eem-sc-auto-note">
-									<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><polyline points="21 4 21 9 16 9"/></svg>
-									<span><?php echo wp_kses( __( 'When a customer is checked out, their stall is automatically flagged <strong>Cleaning</strong> and appears under <strong>Needs cleaning</strong>.', 'equine-event-manager' ), array( 'strong' => array() ) ); ?></span>
-								</div>
 								<?php if ( $eem_show_section_dividers ) : ?>
 									<div class="eem-sc-section-divider">
 										<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
