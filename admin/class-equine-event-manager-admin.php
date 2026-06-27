@@ -11964,7 +11964,14 @@ class EEM_Admin {
 		$stall_breakdown     = $this->get_order_stall_breakdown( $order );
 		$rv_addon_breakdown  = $this->get_order_rv_addon_breakdown( $order );
 		$rv_addon_total      = array_sum( wp_list_pluck( $rv_addon_breakdown, 'subtotal' ) );
-		$rv_base_subtotal    = max( 0, (float) $order['rv_subtotal'] - (float) $rv_addon_total );
+		// Premium surcharges are excluded from the canonical breakdown base; the
+		// customer receipt itemizes them as their own lines. Pull them via the
+		// canonical public helpers so this admin print receipt matches exactly and
+		// the RV base line excludes the premium (otherwise it folds in / mismatches).
+		$print_pricer          = new EEM_Shortcodes();
+		$stall_surcharge_total = $print_pricer->get_order_stall_surcharge_total( $order );
+		$rv_surcharge_total    = $print_pricer->get_order_rv_surcharge_total( $order );
+		$rv_base_subtotal    = max( 0, (float) $order['rv_subtotal'] - (float) $rv_addon_total - (float) $rv_surcharge_total );
 		$stall_nights        = $this->get_stay_nights_label( $order['stall_arrival_date'], $order['stall_departure_date'] );
 		$rv_nights           = $this->get_stay_nights_label( $order['rv_arrival_date'], $order['rv_departure_date'] );
 		$rv_addon_labels     = array();
@@ -12039,6 +12046,18 @@ class EEM_Admin {
 				);
 			}
 
+			if ( (float) $stall_surcharge_total > 0 ) {
+				$stall_premium_divisor = max( 1, absint( $order['stall_quantity'] ) * max( 1, $stall_stay_units ) );
+				$line_items[]          = array(
+					'section'     => __( 'Stall Premium', 'equine-event-manager' ),
+					'description' => __( 'Premium Stalls', 'equine-event-manager' ),
+					'qty'         => absint( $order['stall_quantity'] ),
+					'units'       => $stall_nights,
+					'rate'        => $format_money( (float) $stall_surcharge_total / $stall_premium_divisor ),
+					'total'       => $format_money( $stall_surcharge_total ),
+				);
+			}
+
 			if ( (float) $stall_breakdown['required_shavings_subtotal'] > 0 ) {
 				$required_qty  = max( 1, absint( $order['required_shavings_qty'] ) );
 				$line_items[] = array(
@@ -12094,6 +12113,18 @@ class EEM_Admin {
 					'units'       => $rv_nights,
 					'rate'        => $format_money( (float) $rv_base_subtotal / $rv_unit_divisor ),
 					'total'       => $format_money( $rv_base_subtotal ),
+				);
+			}
+
+			if ( (float) $rv_surcharge_total > 0 ) {
+				$rv_premium_divisor = max( 1, absint( $order['rv_quantity'] ) * max( 1, $rv_stay_units ) );
+				$line_items[]       = array(
+					'section'     => __( 'RV Premium', 'equine-event-manager' ),
+					'description' => __( 'Premium Lots', 'equine-event-manager' ),
+					'qty'         => absint( $order['rv_quantity'] ),
+					'units'       => $rv_nights,
+					'rate'        => $format_money( (float) $rv_surcharge_total / $rv_premium_divisor ),
+					'total'       => $format_money( $rv_surcharge_total ),
 				);
 			}
 
@@ -14463,7 +14494,20 @@ class EEM_Admin {
 		$rows                     = array();
 		$stall_breakdown          = $this->get_order_stall_breakdown( $order );
 		$rv_addon_breakdown       = $this->get_order_rv_addon_breakdown( $order );
+		// Premium surcharges are excluded from the canonical breakdown's base (the
+		// customer receipt shows them as their own "Stall Premium" / "RV Premium"
+		// lines). Pull them via the canonical public helpers so these admin totals
+		// itemize the premium identically and the rows reconcile to the stored
+		// Total — otherwise a premium order's rows would silently undercount.
+		$pricer                = new EEM_Shortcodes();
+		$stall_surcharge_total = $pricer->get_order_stall_surcharge_total( $order );
+		$rv_surcharge_total    = $pricer->get_order_rv_surcharge_total( $order );
+
 		$rows[ __( 'Stall Subtotal', 'equine-event-manager' ) ] = $stall_breakdown['base_subtotal'];
+
+		if ( (float) $stall_surcharge_total > 0 ) {
+			$rows[ __( 'Stall Premium', 'equine-event-manager' ) ] = $stall_surcharge_total;
+		}
 
 		if ( $stall_breakdown['required_shavings_qty'] > 0 || $stall_breakdown['required_shavings_subtotal'] > 0 ) {
 			$rows[ __( 'Required Shavings', 'equine-event-manager' ) ] = $stall_breakdown['required_shavings_subtotal'];
@@ -14473,15 +14517,25 @@ class EEM_Admin {
 			$rows[ __( 'Additional Shavings', 'equine-event-manager' ) ] = $stall_breakdown['additional_shavings_subtotal'];
 		}
 
+		$rv_addon_total = array_sum( wp_list_pluck( $rv_addon_breakdown, 'subtotal' ) );
 		if ( ! empty( $rv_addon_breakdown ) ) {
-			$rv_base_subtotal = max( 0, (float) $order['rv_subtotal'] - array_sum( wp_list_pluck( $rv_addon_breakdown, 'subtotal' ) ) );
+			$rv_base_subtotal = max( 0, (float) $order['rv_subtotal'] - $rv_addon_total - (float) $rv_surcharge_total );
 			$rows[ __( 'RV Subtotal', 'equine-event-manager' ) ] = $rv_base_subtotal;
+
+			if ( (float) $rv_surcharge_total > 0 ) {
+				$rows[ __( 'RV Premium', 'equine-event-manager' ) ] = $rv_surcharge_total;
+			}
 
 			foreach ( $rv_addon_breakdown as $addon_label => $addon_row ) {
 				$rows[ sprintf( __( '%s Add-On', 'equine-event-manager' ), $addon_row['label'] ) ] = $addon_row['subtotal'];
 			}
 		} else {
-			$rows[ __( 'RV Subtotal', 'equine-event-manager' ) ] = $order['rv_subtotal'];
+			$rv_base_subtotal = max( 0, (float) $order['rv_subtotal'] - (float) $rv_surcharge_total );
+			$rows[ __( 'RV Subtotal', 'equine-event-manager' ) ] = $rv_base_subtotal;
+
+			if ( (float) $rv_surcharge_total > 0 ) {
+				$rows[ __( 'RV Premium', 'equine-event-manager' ) ] = $rv_surcharge_total;
+			}
 		}
 
 		$rows[ __( 'Non-Refundable Convenience Fee', 'equine-event-manager' ) ] = $order['fees'];
