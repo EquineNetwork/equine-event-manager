@@ -471,37 +471,6 @@ class EEM_Event_Editor_Page {
 		return (string) ob_get_clean();
 	}
 
-	/**
-	 * Link Reservation card body (reservation-setup picker).
-	 *
-	 * @param array<string,mixed> $d Event data.
-	 * @return string
-	 */
-	private static function body_reservation( array $d ): string {
-		$reservations = get_posts( array(
-			'post_type'   => EEM_Reservations_CPT::POST_TYPE,
-			'post_status' => array( 'publish', 'draft' ),
-			'numberposts' => 200,
-			'orderby'     => 'title',
-			'order'       => 'ASC',
-		) );
-		ob_start();
-		?>
-		<div class="eem-field-row">
-			<div class="eem-field-label"><?php esc_html_e( 'Reservation Setup', 'equine-event-manager' ); ?><div class="eem-field-label-sub"><?php esc_html_e( 'Choose or create', 'equine-event-manager' ); ?></div></div>
-			<div class="eem-field-control">
-				<select class="eem-field-select" name="en_event[reservation_id]" data-eem-choices data-eem-choices-search="<?php esc_attr_e( 'Search reservations…', 'equine-event-manager' ); ?>">
-					<option value="0"><?php esc_html_e( 'No linked reservation', 'equine-event-manager' ); ?></option>
-					<?php foreach ( $reservations as $r ) : ?>
-						<option value="<?php echo esc_attr( (string) $r->ID ); ?>" <?php selected( $d['linked_res_id'], $r->ID ); ?>><?php echo esc_html( get_the_title( $r->ID ) ); ?></option>
-					<?php endforeach; ?>
-				</select>
-				<span class="eem-field-hint"><?php esc_html_e( 'Choose an existing reservation setup to render its booking flow on this event page.', 'equine-event-manager' ); ?></span>
-			</div>
-		</div>
-		<?php
-		return (string) ob_get_clean();
-	}
 
 	/**
 	 * Render the right rail (Publish / Categories / Featured Image / progress).

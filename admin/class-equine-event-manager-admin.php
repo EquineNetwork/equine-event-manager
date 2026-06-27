@@ -638,22 +638,6 @@ class EEM_Admin {
 		$submenu[ self::MENU_SLUG ] = array_values( array_merge( $ordered, $existing ) );
 	}
 
-	/**
-	 * Check whether a submenu item already exists for a given slug.
-	 *
-	 * @param array<int, array<int, string>> $items Menu items.
-	 * @param string                         $slug  Target slug.
-	 * @return bool
-	 */
-	private function submenu_contains_slug( $items, $slug ) {
-		foreach ( $items as $item ) {
-			if ( isset( $item[2] ) && $slug === $item[2] ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
 
 	/**
 	 * Redirect native event admin screens back to Settings when the feature is off.
@@ -5484,54 +5468,6 @@ class EEM_Admin {
 		return $out;
 	}
 
-	/**
-	 * Get reservations that can launch Stall Assignments.
-	 *
-	 * @deprecated 2.3.25 Use get_stall_charts_list_data() for the list page.
-	 *   Retained for any external callers.
-	 * @return array<int, array<string, mixed>>
-	 */
-	private function get_stall_assignment_reservations() {
-		$query = new WP_Query(
-			array(
-				'post_type'      => 'en_reservation',
-				'post_status'    => array( 'publish', 'draft', 'future', 'pending', 'private' ),
-				'posts_per_page' => 100,
-				'orderby'        => 'title',
-				'order'          => 'ASC',
-				'fields'         => 'ids',
-			)
-		);
-
-		if ( empty( $query->posts ) || ! is_array( $query->posts ) ) {
-			return array();
-		}
-
-		$reservations = array();
-
-		foreach ( $query->posts as $reservation_id ) {
-			$reservation_id = absint( $reservation_id );
-			if ( $reservation_id <= 0 ) {
-				continue;
-			}
-
-			$config = $this->get_stall_chart_config( $reservation_id );
-			$has_stall_assignments = ! empty( $config['enabled'] ) || ! empty( $config['stall_units'] ) || ! empty( $config['rv_lot_names'] );
-
-			if ( ! $has_stall_assignments ) {
-				continue;
-			}
-
-			$date_label = $this->get_reservation_date_range_label( $reservation_id );
-			$reservations[] = array(
-				'id'    => $reservation_id,
-				'title' => get_the_title( $reservation_id ),
-				'dates' => $date_label ? $date_label : __( 'Dates not set yet', 'equine-event-manager' ),
-			);
-		}
-
-		return $reservations;
-	}
 
 	/**
 	 * Get a friendly reservation date range label.
@@ -5581,37 +5517,6 @@ class EEM_Admin {
 		return wp_date( 'F j, Y', strtotime( $date_value ) );
 	}
 
-	/**
-	 * Render dashboard recent order view counts.
-	 *
-	 * @param int    $total_order_count Total order count.
-	 * @param int    $filtered_order_count Filtered order count.
-	 * @param string $event_filter Active event filter.
-	 * @return void
-	 */
-	private function render_dashboard_orders_views( $total_order_count, $filtered_order_count, $event_filter ) {
-		?>
-		<ul class="subsubsub">
-			<li class="all">
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=' . self::MENU_SLUG ) ); ?>" class="<?php echo '' === $event_filter ? 'current' : ''; ?>">
-					<?php esc_html_e( 'All', 'equine-event-manager' ); ?>
-					<span class="count">(<?php echo esc_html( number_format_i18n( $total_order_count ) ); ?>)</span>
-				</a>
-				<?php if ( '' !== $event_filter ) : ?>
-					<span class="separator"> | </span>
-				<?php endif; ?>
-			</li>
-			<?php if ( '' !== $event_filter ) : ?>
-				<li class="current">
-					<span class="current">
-						<?php esc_html_e( 'Filtered', 'equine-event-manager' ); ?>
-						<span class="count">(<?php echo esc_html( number_format_i18n( $filtered_order_count ) ); ?>)</span>
-					</span>
-				</li>
-			<?php endif; ?>
-		</ul>
-		<?php
-	}
 
 	/**
 	 * Render the reports page.
@@ -8843,49 +8748,6 @@ class EEM_Admin {
 		exit;
 	}
 
-	/**
-	 * Render import result notice when present.
-	 *
-	 * @return void
-	 */
-	private function render_import_tec_events_notice() {
-		$imported = isset( $_GET['imported'] ) ? absint( wp_unslash( $_GET['imported'] ) ) : 0;
-		$existing = isset( $_GET['existing'] ) ? absint( wp_unslash( $_GET['existing'] ) ) : 0;
-		$error    = isset( $_GET['error'] ) ? absint( wp_unslash( $_GET['error'] ) ) : 0;
-
-		if ( ! $imported && ! $existing && ! $error ) {
-			return;
-		}
-
-		$parts = array();
-
-		if ( $imported ) {
-			$parts[] = sprintf(
-				/* translators: %d: number of imported events. */
-				_n( '%d event imported.', '%d events imported.', $imported, 'equine-event-manager' ),
-				$imported
-			);
-		}
-
-		if ( $existing ) {
-			$parts[] = sprintf(
-				/* translators: %d: number of already imported events. */
-				_n( '%d event was already imported.', '%d events were already imported.', $existing, 'equine-event-manager' ),
-				$existing
-			);
-		}
-
-		if ( $error ) {
-			$parts[] = sprintf(
-				/* translators: %d: number of failed imports. */
-				_n( '%d event failed to import.', '%d events failed to import.', $error, 'equine-event-manager' ),
-				$error
-			);
-		}
-		?>
-		<div class="notice notice-info is-dismissible" role="status"><p><?php echo esc_html( implode( ' ', $parts ) ); ?></p></div>
-		<?php
-	}
 
 	/**
 	 * Build the reservation overview dataset.

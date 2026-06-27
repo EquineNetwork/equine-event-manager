@@ -4293,42 +4293,6 @@ class EEM_Events {
 		return array_slice( $bullets, 0, 6 );
 	}
 
-	/**
-	 * Format event body content without recursing through the shared event filter.
-	 *
-	 * @param string $content_raw Raw post content.
-	 * @return string
-	 */
-	private function format_event_body_content( $content_raw ) {
-		$content_raw = preg_replace( '/\[(equine_event_manager_event|equine_event_manager_events|equine_event_manager_event_reservation|en_reservation|en_stall_reservation_form|en_rv_reservation_form)\b[^\]]*\]/i', '', (string) $content_raw );
-		$content_raw = preg_replace( '#<style\b[^>]*>.*?</style>#is', '', (string) $content_raw );
-		$content_raw = preg_replace( '#<script\b[^>]*>.*?</script>#is', '', (string) $content_raw );
-		$content_raw = trim( (string) $content_raw );
-
-		if ( '' === $content_raw ) {
-			return '';
-		}
-
-		// Drop self-referential template markup or reservation assets if they were pasted into event content.
-		if ( preg_match( '/(?:eem-event-spotlight|eem-event-hero|eem-event-app-card|\.eem-reservation-form-wrap\b|\.eem-event-details-card\b|var\s+enStripeForms\b|initializeReservationForms\b)/i', $content_raw ) ) {
-			return '';
-		}
-
-		$content_html = do_shortcode( $content_raw );
-		$content_html = preg_replace( '#<style\b[^>]*>.*?</style>#is', '', (string) $content_html );
-		$content_html = preg_replace( '#<script\b[^>]*>.*?</script>#is', '', (string) $content_html );
-		$content_html = trim( wp_kses_post( (string) $content_html ) );
-
-		if ( '' === $content_html ) {
-			return '';
-		}
-
-		if ( preg_match( '/<(p|ul|ol|li|blockquote|h[1-6]|div|figure|img|table|hr|br)\b/i', $content_html ) ) {
-			return $content_html;
-		}
-
-		return wpautop( $content_html );
-	}
 
 	/**
 	 * Get producer details for the frontend event view.

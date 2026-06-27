@@ -86,59 +86,6 @@ class EEM_Reports_Repo {
 	}
 
 	/**
-	 * Whether an order's created date falls within [from, to] (inclusive).
-	 *
-	 * @param array  $order Grouped order.
-	 * @param string $from  Y-m-d or ''.
-	 * @param string $to    Y-m-d or ''.
-	 * @return bool
-	 */
-	private function order_in_date_range( array $order, string $from, string $to ): bool {
-		if ( '' === $from && '' === $to ) {
-			return true;
-		}
-		$created = isset( $order['created_at'] ) ? substr( (string) $order['created_at'], 0, 10 ) : '';
-		if ( '' === $created ) {
-			return true;
-		}
-		if ( '' !== $from && $created < $from ) {
-			return false;
-		}
-		if ( '' !== $to && $created > $to ) {
-			return false;
-		}
-		return true;
-	}
-
-	/**
-	 * Whether an order matches a status filter slug (Paid/Unpaid/etc.).
-	 *
-	 * @param array  $order  Grouped order.
-	 * @param string $status Status slug from the filter.
-	 * @return bool
-	 */
-	private function order_matches_status( array $order, string $status ): bool {
-		$slug = isset( $order['status_slug'] ) && '' !== $order['status_slug']
-			? sanitize_key( $order['status_slug'] )
-			: sanitize_key( isset( $order['payment_status'] ) ? $order['payment_status'] : '' );
-
-		// Normalize a few synonyms so the filter dropdown matches stored values.
-		$aliases = array(
-			'paid'         => array( 'paid', 'completed', 'complete' ),
-			'unpaid'       => array( 'unpaid', 'pending' ),
-			'invoice_sent' => array( 'invoice_sent', 'invoice-sent', 'invoiced' ),
-			'partial'      => array( 'partial', 'partially_paid', 'partially-paid' ),
-			'refunded'     => array( 'refunded', 'partially_refunded' ),
-			'cancelled'    => array( 'cancelled', 'canceled', 'void' ),
-		);
-
-		if ( isset( $aliases[ $status ] ) ) {
-			return in_array( $slug, $aliases[ $status ], true );
-		}
-		return $slug === $status;
-	}
-
-	/**
 	 * Build a single report dataset by slug.
 	 *
 	 * @param string $slug    Report slug (one of self::REPORTS).
