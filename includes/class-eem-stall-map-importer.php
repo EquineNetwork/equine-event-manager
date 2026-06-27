@@ -140,7 +140,7 @@ class EEM_Stall_Map_Importer {
 		if ( class_exists( 'EEM_Reservation_Config' ) && EEM_Reservation_Config::table_exists() ) {
 			$cfg = EEM_Reservation_Config::for( $reservation_id )->get( self::config_key_for_meta( $meta_key ) );
 			if ( is_array( $cfg ) && ! empty( $cfg ) ) {
-				return $cfg;
+				return self::sanitize_snapshot( $cfg );
 			}
 		}
 
@@ -150,10 +150,57 @@ class EEM_Stall_Map_Importer {
 				EEM_Reservation_Config::for( $reservation_id )->set( self::config_key_for_meta( $meta_key ), $snap )->save();
 				EEM_Reservation_Config::flush_cache( $reservation_id );
 			}
-			return $snap;
+			return self::sanitize_snapshot( $snap );
 		}
 
-		return is_array( $snap ) ? $snap : array();
+		return is_array( $snap ) ? self::sanitize_snapshot( $snap ) : array();
+	}
+
+	/**
+	 * Coerce a snapshot to a safe, iterable shape so a malformed/corrupted map
+	 * (e.g. barns or grid stored as a non-array) can never fatal the chart render.
+	 * Non-array barns/rows/cells are dropped/normalized; every other top-level key
+	 * (zones, meta, etc.) is preserved untouched. Defensive only — a well-formed
+	 * snapshot passes through unchanged.
+	 *
+	 * @param mixed $snap Raw snapshot from storage.
+	 * @return array Safe snapshot with an always-iterable `barns` → `grid` → cells shape.
+	 */
+	private static function sanitize_snapshot( $snap ): array {
+		if ( ! is_array( $snap ) ) {
+			return array();
+		}
+		if ( ! isset( $snap['barns'] ) ) {
+			return $snap;
+		}
+		if ( ! is_array( $snap['barns'] ) ) {
+			$snap['barns'] = array();
+			return $snap;
+		}
+		$clean_barns = array();
+		foreach ( $snap['barns'] as $barn ) {
+			if ( ! is_array( $barn ) ) {
+				continue;
+			}
+			if ( isset( $barn['grid'] ) ) {
+				$grid       = is_array( $barn['grid'] ) ? $barn['grid'] : array();
+				$clean_grid = array();
+				foreach ( $grid as $row ) {
+					if ( ! is_array( $row ) ) {
+						continue;
+					}
+					$clean_row = array();
+					foreach ( $row as $cell ) {
+						$clean_row[] = is_array( $cell ) ? $cell : array();
+					}
+					$clean_grid[] = $clean_row;
+				}
+				$barn['grid'] = $clean_grid;
+			}
+			$clean_barns[] = $barn;
+		}
+		$snap['barns'] = $clean_barns;
+		return $snap;
 	}
 
 	/**
