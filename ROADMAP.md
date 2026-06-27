@@ -44,6 +44,7 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 ### Awaiting Whitney verification
 - [ ] **#8 — Stall popover icon/style parity.** Map popover shipped with same icons as List popover. Click a stall on the spatial map → confirm popover shows customer name header, Order # + Shavings line, action icons match List.
+- [ ] **Group Names feature — VERIFY LATER (not in use yet).** Shipped 2.7.650 + branch follow-ups. Verify when groups are actually used: (1) admin adds names in the editor Group Names table (Description + Riders Per Group removed; Group Names is the only field); (2) customer event page shows the strict-list Group dropdown; (3) assign/change/remove group from the map popover; (4) sidebar Groups filter (shown only when groups enabled); (5) group shows on order detail. Editor-cleanup commit `1bc0432` is on the branch and NOT yet merged to main / deployed — bump + merge when ready to verify.
 
 ### Active (tackle one at a time)
 
