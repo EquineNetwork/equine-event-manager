@@ -6469,6 +6469,23 @@ RV Lot: " . $rv_lot['name'] );
 			);
 		}
 
+		// Event pre-entries — itemized so they're never silently folded into the
+		// subtotal on the receipt/email (parity with the charge).
+		foreach ( $this->extract_pre_entry_breakdown_from_notes( $order['notes'] ) as $pe_row ) {
+			if ( (float) $pe_row['subtotal'] <= 0 ) {
+				continue;
+			}
+			$pe_qty = max( 1, absint( $pe_row['quantity'] ) );
+			$line_items[] = array(
+				'section' => __( 'Pre-Entry', 'equine-event-manager' ),
+				'desc'    => (string) $pe_row['label'],
+				'qty'     => (string) $pe_qty,
+				'units'   => __( 'entry', 'equine-event-manager' ),
+				'rate'    => $rate( (float) $pe_row['subtotal'], $pe_qty ),
+				'total'   => '$' . number_format_i18n( (float) $pe_row['subtotal'], 2 ),
+			);
+		}
+
 		if ( $include_fee && (float) $order['fees'] > 0 ) {
 			$line_items[] = array(
 				'section' => __( 'Fee', 'equine-event-manager' ),
@@ -7398,6 +7415,37 @@ RV Lot: " . $rv_lot['name'] );
 			}
 		}
 
+		return $results;
+	}
+
+	/**
+	 * Extract Event Pre-Entry charge rows from stored order notes.
+	 *
+	 * Mirrors the general add-on / group-charge extractors so pre-entries (which
+	 * are charged + folded into the order subtotal at checkout) get their own
+	 * receipt/email line instead of being silently absorbed into the subtotal.
+	 * Notes format (written at checkout): "Pre-Entry: {title} | Qty: {n} | Subtotal: ${x}".
+	 *
+	 * @param string $notes Raw notes value.
+	 * @return array<int, array{label:string, quantity:int, subtotal:float}>
+	 */
+	private function extract_pre_entry_breakdown_from_notes( $notes ) {
+		$results = array();
+		if ( preg_match_all( '/(?:^|\n)Pre-Entry:\s*(.+?)\s*\|\s*Qty:\s*(\d+)\s*\|\s*Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi', (string) $notes, $matches, PREG_SET_ORDER ) ) {
+			foreach ( $matches as $match ) {
+				$label    = sanitize_text_field( trim( $match[1] ) );
+				$quantity = absint( $match[2] );
+				$subtotal = (float) str_replace( ',', '', trim( $match[3] ) );
+				if ( '' === $label || $quantity <= 0 ) {
+					continue;
+				}
+				$results[] = array(
+					'label'    => $label,
+					'quantity' => $quantity,
+					'subtotal' => $subtotal,
+				);
+			}
+		}
 		return $results;
 	}
 

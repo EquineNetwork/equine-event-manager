@@ -72,7 +72,11 @@ $wpdb->insert( $table, array(
 	'payment_gateway'         => 'stripe',
 	'order_number'            => $onum,
 	'transaction_id'          => 'SEED-PARITY',
-	'notes'                   => "Assigned Stall Units: 285, 286\nTack Stalls: 285",
+	'notes'                   => "Assigned Stall Units: 285, 286\nTack Stalls: 285\n"
+		. "Add-On: Hay Bale | Qty: 2 | Per: bale | Subtotal: \$30.00\n"
+		. "Group Charge: Rider Grounds Fee | Qty: 3 | Rate: \$20.00 | Subtotal: \$60.00\n"
+		. "Group Charge: Rider Deposit | Qty: 3 | Rate: \$50.00 | Subtotal: \$150.00\n"
+		. "Pre-Entry: Stall Cleaning | Qty: 2 | Subtotal: \$50.00",
 	'created_at'              => '2026-06-01 00:00:00',
 ) );
 $chk( $wpdb->insert_id > 0, 'seeded stall order ($320 = 280 stalls + 20 req + 20 add shavings)' );
@@ -110,6 +114,14 @@ if ( is_array( $order ) ) {
 	}
 	$chk( in_array( 'Required Shavings', $descs, true ), 'receipt line items include Required Shavings' );
 	$chk( in_array( 'Additional Shavings', $descs, true ), 'receipt line items include Additional Shavings (the #00009 regression)' );
+
+	// Notes-derived charge lines must ALL itemize (no silent fold into subtotal).
+	$by_desc = array();
+	foreach ( $items as $it ) { $by_desc[ (string) $it['desc'] ] = $money( $it['total'] ); }
+	$chk( isset( $by_desc['Hay Bale'] ) && $approx( $by_desc['Hay Bale'], 30.0 ), 'receipt includes General Add-On "Hay Bale" = $30' );
+	$chk( isset( $by_desc['Rider Grounds Fee'] ) && $approx( $by_desc['Rider Grounds Fee'], 60.0 ), 'receipt includes Group "Rider Grounds Fee" = $60' );
+	$chk( isset( $by_desc['Rider Deposit'] ) && $approx( $by_desc['Rider Deposit'], 150.0 ), 'receipt includes Group "Rider Deposit" = $150' );
+	$chk( isset( $by_desc['Stall Cleaning'] ) && $approx( $by_desc['Stall Cleaning'], 50.0 ), 'receipt includes Pre-Entry "Stall Cleaning" = $50 (pre-entry line gap fix)' );
 
 	// INVARIANT: stall-section line items reconcile to the stall subtotal — no
 	// dollar silently dropped from the receipt.
