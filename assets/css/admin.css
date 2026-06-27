@@ -5261,8 +5261,11 @@ body.eem-shell-page--order-detail .eem-page-body {
 }
 
 .eem-detail-table td {
-	padding: 9px 14px;
-	font-size: 13px;
+	/* Key/value card (not a DM-style data list): match the app-wide 14px text
+	   for consistency and nudge the padding up for tap comfort, but stay a touch
+	   denser than the DM data rows since these are label/value pairs. */
+	padding: 11px 14px;
+	font-size: 14px;
 	vertical-align: top;
 }
 
@@ -10673,9 +10676,10 @@ a.eem-sc-mob-edit-btn:focus { background: #e8eef8; color: #0d1b3e; text-decorati
 .eem-shell-page--stall-charts .eem-cust-chart-table th:last-child,
 .eem-shell-page--stall-charts .eem-cust-chart-table td:last-child { padding-right: 20px; }
 .eem-shell-page--stall-charts .eem-cust-chart-table td {
-	font-size: 13px;
+	/* Density matched to the Daily Movement baseline (Whitney 2026-06-27). */
+	font-size: 14px;
 	color: #0d1b3e;
-	padding: 12px 16px;
+	padding: 14px 16px;
 	border-bottom: 1px solid #f0f4fb;
 	vertical-align: middle;
 	white-space: nowrap;
