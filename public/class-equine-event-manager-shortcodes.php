@@ -4741,8 +4741,8 @@ class EEM_Shortcodes {
 		$shavings_stall_qty            = max( 0, $stall_qty_total - $tack_stall_count );
 		$rv_unit_price                 = ! empty( $data['rv_lot_selection_enabled'] ) && '' !== (string) $submission['rv_lot'] ? $this->get_rv_lot_rate( $data, $submission['rv_lot'], $submission['rv_stay_type'] ) : $this->get_current_rate( $data, 'rv', $submission['rv_stay_type'] );
 		$rv_night_count                = $this->get_billable_stay_units( $submission['rv_arrival_date'], $submission['rv_departure_date'], $submission['rv_stay_type'] );
-		$required_shavings             = ! empty( $data['required_shavings_enabled'] ) ? $shavings_stall_qty * absint( $data['required_shavings_per_stall'] ) : 0;
-		$required_shavings_subtotal    = $required_shavings * (float) $data['required_shavings_price'];
+		$required_shavings             = ! empty( $data['required_shavings_enabled'] ) ? $shavings_stall_qty * absint( $data['required_shavings_per_stall'] ?? 0 ) : 0;
+		$required_shavings_subtotal    = $required_shavings * (float) ( $data['required_shavings_price'] ?? 0 );
 
 		$stall_unit_price = 0.0;
 		$stall_night_count = 0;
