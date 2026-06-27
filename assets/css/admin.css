@@ -14129,10 +14129,11 @@ select.eem-dm-select:focus {
 .eem-dm-table {
 	width: 100%;
 	min-width: 750px;
-	/* Fixed layout so the nth-child column widths are authoritative and IDENTICAL
-	   across every day-section's separate table — auto layout sizes each table to
-	   its own content, misaligning columns between sections. */
-	table-layout: fixed;
+	/* Content-sized columns so nothing truncates — cells grow to fit and the wrap
+	   scrolls horizontally on narrow screens instead of collapsing/ellipsising the
+	   Order # or Notes (Whitney 2026-06-27). The nth-child widths below act as
+	   minimum hints; real content expands the column. */
+	table-layout: auto;
 	border-collapse: collapse;
 	background: #fff;
 }
@@ -14151,7 +14152,8 @@ select.eem-dm-select:focus {
 .eem-dm-table th:nth-child(6), .eem-dm-table td:nth-child(6) { width: 80px; text-align: center; }
 .eem-dm-table th:nth-child(7), .eem-dm-table td:nth-child(7) { width: 150px; }
 .eem-dm-table th:nth-child(8), .eem-dm-table td:nth-child(8) { width: 60px; min-width: 60px; text-align: center; }
-.eem-dm-table td { overflow: hidden; text-overflow: ellipsis; }
+/* No truncation — never collapse cell content; the wrap scrolls instead. */
+.eem-dm-table td { overflow: visible; }
 /* Status cell hosts the dropdown menu — must not clip it. */
 .eem-dm-table td.eem-dm-cell-status { overflow: visible; }
 .eem-dm-table thead th {
