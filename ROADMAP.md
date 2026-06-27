@@ -149,7 +149,7 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 **Bigger builds — discuss before starting**
 - [ ] Vendor System
 - [ ] RV amenities/hookups on reservations (30amp/50amp/water/sewage per lot)
-- [ ] Hotel-style 15-min cart hold (UX only — double-booking already prevented at submit)
+- [x] Hotel-style 15-min cart hold (UX only — double-booking already prevented at submit) — shipped 2.7.648, verified live 2026-06-27
 - [ ] Full permissions matrix (role-based access)
 
 ---
@@ -252,7 +252,7 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 25. [x] Stall & RV Charts — layout chip status colors + click-to-set status. Define distinct chip colors for booked / cleaning / blocked / etc.; make chips clickable to mark a unit as Cleaning / Checked Out / Checked In / etc. Colors + interaction details TBD — discuss before implementing.
 26. [x] Stall & RV Charts — add a blue metrics bar (matching the Daily Movement metrics bar) at the top of the page showing important metrics.
 27. [ ] Print view style verification — resolve discrepancy between existing standard (navy title + "Printed:" meta) and alternate spec (white 56px topbar, no Printed label, no EEM branding). Visual verify then lock one style.
-28. [ ] Hotel-style 15-min cart hold
+28. [x] Hotel-style 15-min cart hold — session-based (no login), held shows grey "Taken", 15-min window, auto-release/checkout-release. Shipped 2.7.648, verified live by Whitney 2026-06-27.
 48. [ ] **Map drag-and-drop assignment (v1).** On the By Location — Map view, drag a customer from the left sidebar onto a stall chip to assign them. If the customer has multiple stalls, a confirm popup asks which stall number(s) to assign. Office/desktop-focused (not optimized for mobile — secretaries assigning in the office). Important for v1.
 30. [x] Stall Chart — spatial map search bar: stall-number search ✅. Customer-name search also added (2026-06-25 session 2 — matches `st.c` stored in `data-eem-smap-customer` attribute).
 31. [x] Stall Chart — spatial map assign popover "Add new customer": button, AJAX create-placeholder, map refresh all working. Styling + stopPropagation + network-error fixes landed in 2026-06-25 session 2.
