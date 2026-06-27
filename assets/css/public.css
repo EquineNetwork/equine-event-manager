@@ -1305,6 +1305,16 @@
 	gap: 6px;
 	padding: 6px 0;
 }
+/* #36 — a stall another shopper is mid-booking, greyed live as "Taken". */
+.eem-event-page .picker-stall.eem-held-taken {
+	opacity: .45;
+	pointer-events: none;
+}
+/* #36 — soft inline notice when a pick is rejected (taken by someone else). */
+.eem-event-page .eem-hold-note {
+	color: #b45309;
+	font-weight: 600;
+}
 .eem-event-page .picker-stall-row.back-to-back {
 	flex-direction: column;
 	gap: 4px;

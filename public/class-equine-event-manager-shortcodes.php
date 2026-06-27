@@ -270,6 +270,14 @@ class EEM_Shortcodes {
 		foreach ( array_keys( $this->get_stall_assignment_occupancy_map( $reservation_id, $data ) ) as $eem_occ ) {
 			$stall_picker_reserved[ (string) $eem_occ ] = true;
 		}
+		// #36 — merge active in-cart holds so a unit another shopper is mid-booking
+		// renders greyed ("Taken") on first paint; the client heartbeat then keeps
+		// it live and un-greys the viewer's own picks.
+		if ( class_exists( 'EEM_Unit_Holds_Repo' ) ) {
+			foreach ( EEM_Unit_Holds_Repo::held_units( $reservation_id, 'stall' ) as $eem_held ) {
+				$stall_picker_reserved[ (string) $eem_held ] = true;
+			}
+		}
 		$stall_selection_context    = array();
 		$rv_default_lot             = '';
 		$stall_default_stay_type    = array_key_first( $stall_stay_type_options );
@@ -533,6 +541,10 @@ class EEM_Shortcodes {
 					class="eem-reservation-form"
 					method="post"
 					action="<?php echo esc_url( $form_action_url ); ?>"
+					<?php // #36 — in-cart hold config: AJAX url + nonce + reservation id. ?>
+					data-eem-reservation-id="<?php echo esc_attr( (string) (int) $reservation_id ); ?>"
+					data-eem-hold-url="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>"
+					data-eem-hold-nonce="<?php echo esc_attr( wp_create_nonce( 'eem_hold' ) ); ?>"
 					data-stall-nightly-rate="<?php echo esc_attr( $this->get_current_rate( $data, 'stall', 'nightly' ) ); ?>"
 					data-stall-weekend-rate="<?php echo esc_attr( $this->get_current_rate( $data, 'stall', 'weekend' ) ); ?>"
 					data-stall-weekly-rate="<?php echo esc_attr( $this->get_current_rate( $data, 'stall', 'weekly' ) ); ?>"
@@ -967,6 +979,12 @@ class EEM_Shortcodes {
 												$eem_rv_reserved = array();
 												foreach ( array_keys( $this->get_stall_assignment_occupancy_map( (int) $reservation_id, $data, 'rv' ) ) as $eem_rl ) {
 													$eem_rv_reserved[ (string) $eem_rl ] = true;
+												}
+												// #36 — merge active in-cart RV holds (see stall picker note).
+												if ( class_exists( 'EEM_Unit_Holds_Repo' ) ) {
+													foreach ( EEM_Unit_Holds_Repo::held_units( (int) $reservation_id, 'rv' ) as $eem_rv_held ) {
+														$eem_rv_reserved[ (string) $eem_rv_held ] = true;
+													}
 												}
 												$eem_rv_blocked = array();
 												foreach ( array_merge(
@@ -1569,6 +1587,122 @@ class EEM_Shortcodes {
 						?>
 					</div>
 				</form>
+				<?php // #36 — in-cart hold manager: watches the current stall/RV selection,
+				// claims a 15-min hold per picked unit, releases on deselect, and on a
+				// 7s heartbeat greys units other shoppers are holding ("Taken"). Pure UX
+				// layer; hard double-booking is still prevented by the submit-time lock. ?>
+				<script>
+				(function(){
+					var form = document.querySelector('.eem-reservation-form');
+					if (!form) { return; }
+					var URL = form.getAttribute('data-eem-hold-url');
+					var NONCE = form.getAttribute('data-eem-hold-nonce');
+					var RID = form.getAttribute('data-eem-reservation-id');
+					if (!URL || !NONCE || !RID) { return; }
+					var TOKEN;
+					try { TOKEN = localStorage.getItem('eem_hold_session'); } catch (e) {}
+					if (!TOKEN) {
+						TOKEN = 'eh-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+						try { localStorage.setItem('eem_hold_session', TOKEN); } catch (e) {}
+					}
+					var FIELDS = { stall: 'preferred_stall_units[]', rv: 'preferred_rv_lots[]' };
+					var mine = { stall: {}, rv: {} };
+					// Carry the session token on the checkout POST so the server can drop
+					// this session's holds once the units become a real order.
+					var hid = document.createElement('input');
+					hid.type = 'hidden'; hid.name = 'eem_hold_session'; hid.value = TOKEN;
+					form.appendChild(hid);
+					var note = document.createElement('p');
+					note.className = 'eem-reservation-help eem-hold-note';
+					note.setAttribute('role', 'status');
+					note.hidden = true;
+					form.insertBefore(note, form.firstChild);
+					function esc(u){ return (window.CSS && CSS.escape) ? CSS.escape(u) : String(u).replace(/"/g, '\\"'); }
+					function val(name){ var el = form.querySelector('[name="' + name + '"]'); return el ? el.value : ''; }
+					function dates(section){ return section === 'rv' ? { a: val('rv_arrival_date'), d: val('rv_departure_date') } : { a: val('stall_arrival_date'), d: val('stall_departure_date') }; }
+					function selected(section){
+						var out = {};
+						form.querySelectorAll('input[name="' + FIELDS[section] + '"]').forEach(function(el){
+							if (el.type === 'checkbox' && !el.checked) { return; }
+							var v = (el.value || '').trim(); if (v) { out[v] = 1; }
+						});
+						return out;
+					}
+					function post(action, section, unit, cb){
+						var fd = new FormData();
+						fd.append('action', action); fd.append('nonce', NONCE); fd.append('reservation_id', RID);
+						fd.append('section', section); fd.append('session_token', TOKEN);
+						if (unit != null) { fd.append('unit', unit); }
+						var dt = dates(section); fd.append('arrival', dt.a || ''); fd.append('departure', dt.d || '');
+						fetch(URL, { method: 'POST', credentials: 'same-origin', body: fd })
+							.then(function(r){ return r.json().catch(function(){ return { success: false }; }); })
+							.then(function(j){ if (cb) { cb(j); } }).catch(function(){ if (cb) { cb({ success: false }); } });
+					}
+					function deselect(section, unit){
+						form.querySelectorAll('input[name="' + FIELDS[section] + '"]').forEach(function(el){
+							if ((el.value || '').trim() !== unit) { return; }
+							if (el.type === 'checkbox') { if (el.checked) { el.checked = false; el.dispatchEvent(new Event('change', { bubbles: true })); } }
+							else if (el.parentNode) { el.parentNode.removeChild(el); }
+						});
+						var cell = document.querySelector('.eem-map-stall[data-unit="' + esc(unit) + '"]');
+						if (cell) { cell.classList.remove('is-sel'); }
+					}
+					function grey(section, unit){
+						var cell = document.querySelector('.eem-map-stall[data-unit="' + esc(unit) + '"]');
+						if (cell && cell.getAttribute('data-status') === 'available') { cell.setAttribute('data-status', 'reserved'); cell.classList.add('is-reserved'); cell.classList.remove('is-sel'); }
+						form.querySelectorAll('input[name="' + FIELDS[section] + '"]').forEach(function(el){
+							if ((el.value || '').trim() !== unit || el.type !== 'checkbox') { return; }
+							el.disabled = true; var w = el.closest('.picker-stall'); if (w) { w.classList.add('eem-held-taken'); }
+						});
+					}
+					function showNote(msg){ if (!msg) { return; } note.textContent = msg; note.hidden = false; setTimeout(function(){ note.hidden = true; }, 5000); }
+					function syncSection(section){
+						var sel = selected(section);
+						Object.keys(sel).forEach(function(u){
+							if (mine[section][u]) { return; }
+							mine[section][u] = 1;
+							post('eem_hold_unit', section, u, function(j){
+								if (!j || !j.success) {
+									delete mine[section][u];
+									deselect(section, u); grey(section, u);
+									showNote((j && j.data && j.data.message) ? j.data.message : 'That spot was just taken.');
+								}
+							});
+						});
+						Object.keys(mine[section]).forEach(function(u){
+							if (sel[u]) { return; }
+							delete mine[section][u];
+							post('eem_release_unit', section, u, null);
+						});
+					}
+					function heartbeat(section){
+						post('eem_hold_heartbeat', section, null, function(j){
+							if (!j || !j.success || !j.data) { return; }
+							var sel = selected(section);
+							(j.data.held || []).forEach(function(u){ if (!sel[u]) { grey(section, u); } });
+						});
+					}
+					function tick(){ ['stall', 'rv'].forEach(function(s){ syncSection(s); heartbeat(s); }); }
+					var deb;
+					form.addEventListener('change', function(){ clearTimeout(deb); deb = setTimeout(function(){ ['stall', 'rv'].forEach(syncSection); }, 300); });
+					setTimeout(tick, 1500);
+					setInterval(tick, 7000);
+					window.addEventListener('pagehide', function(){
+						['stall', 'rv'].forEach(function(s){
+							Object.keys(mine[s]).forEach(function(u){
+								try {
+									if (navigator.sendBeacon) {
+										var fd = new FormData();
+										fd.append('action', 'eem_release_unit'); fd.append('nonce', NONCE); fd.append('reservation_id', RID);
+										fd.append('section', s); fd.append('unit', u); fd.append('session_token', TOKEN);
+										navigator.sendBeacon(URL, fd);
+									}
+								} catch (e) {}
+							});
+						});
+					});
+				})();
+				</script>
 			<?php endif; ?>
 		</div>
 		<?php
@@ -3107,6 +3241,17 @@ class EEM_Shortcodes {
 
 		if ( empty( $insert_result['success'] ) ) {
 			return $this->render_notice( __( 'We could not save this reservation request. Please try again.', 'equine-event-manager' ), 'error' );
+		}
+
+		// #36 — the picked units are now a real order; drop this session's in-cart
+		// holds so they don't linger as "Taken" for the next 15 min, and tidy any
+		// lapsed rows.
+		if ( class_exists( 'EEM_Unit_Holds_Repo' ) ) {
+			$eem_hold_session = isset( $_POST['eem_hold_session'] ) ? sanitize_text_field( wp_unslash( $_POST['eem_hold_session'] ) ) : '';
+			if ( '' !== $eem_hold_session ) {
+				EEM_Unit_Holds_Repo::release_session( (int) $reservation_id, $eem_hold_session );
+			}
+			EEM_Unit_Holds_Repo::cleanup_expired();
 		}
 
 		if ( empty( $insert_result['duplicate'] ) && ! empty( $insert_result['submission_token'] ) && $is_send_link ) {
