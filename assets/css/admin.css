@@ -9369,6 +9369,7 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
 .eem-smap-stall.eem-smap-highlight { outline: 2px solid var(--eem-amber, #E8A33D); outline-offset: -1px; z-index: 2; }
 /* "Add new customer" option in the assign popover. */
 .eem-smap-pop-row--add-new { color: var(--eem-electric, #1668F2); font-weight: 700; border-top: 1px solid var(--eem-line, #d9e2ec); margin-top: 4px; padding-top: 6px; }
+.eem-smap-pop-row--add-new svg { color: var(--eem-electric, #1668F2); }
 /* Order # + Shavings meta line on the assigned/tack map popover. */
 .eem-smap-pop-meta { display: flex; flex-direction: column; gap: 2px; padding: 6px 4px 8px; font-size: 12.5px; color: var(--eem-text-secondary, #50575e); border-bottom: 1px solid var(--eem-line, #d9e2ec); margin-bottom: 4px; }
 .eem-smap-pop-meta strong { color: var(--eem-text-primary, #1d2327); font-weight: 600; }
@@ -9408,7 +9409,12 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
 .eem-smap-pop-body { padding: 6px; }
 .eem-smap-pop-row { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; padding: 9px 12px; border-radius: var(--eem-radius); font-size: 13px; font-weight: 500; color: #1d2327; cursor: pointer; text-align: left; font-family: inherit; }
 .eem-smap-pop-row:hover { background: #f6f7f7; }
+/* Leading icons — mirror the List popover (.eem-stall-chart-cell-menu-btn svg)
+   so the Map and List popovers look identical. */
+.eem-smap-pop-row svg { width: 13px; height: 13px; flex-shrink: 0; color: #6B7A99; }
+.eem-smap-pop-row:hover svg { color: #1668F2; }
 .eem-smap-pop-row.danger { color: #b91c1c; }
+.eem-smap-pop-row.danger svg { color: #b91c1c; }
 .eem-smap-pop-row.danger:hover { background: #fef2f2; }
 .eem-smap-pop-search { width: 100%; padding: 8px; border: 1px solid var(--eem-line, #d9e2ec); border-radius: var(--eem-radius, 3px); font-size: 13px; margin-bottom: 6px; }
 .eem-smap-pop-list { max-height: 180px; overflow: auto; }
