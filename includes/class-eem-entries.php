@@ -369,7 +369,7 @@ class EEM_Entries {
 					<?php foreach ( $entrants as $row ) :
 						$ekey        = (string) $row['order_key'];
 						$order       = ( '' !== $ekey && class_exists( 'EEM_Orders_Repository' ) ) ? ( new EEM_Orders_Repository() )->get_order( $ekey ) : null;
-						$ord_no      = ( is_array( $order ) && ! empty( $order['order_number'] ) ) ? sprintf( '#%05d', (int) $order['order_number'] ) : '—';
+						$ord_no      = ( is_array( $order ) && ! empty( $order['order_number'] ) ) ? EEM_Formatter::format_order_number( $order['order_number'] ) : '—';
 						$ord_url     = ( '' !== $ekey && class_exists( 'EEM_Orders_List_Page' ) ) ? EEM_Orders_List_Page::order_detail_url( $ekey ) : '';
 						$profile_url = class_exists( 'EEM_Orders_List_Page' ) ? EEM_Orders_List_Page::customer_profile_url( (string) $row['email'] ) : '';
 						$customer    = '' !== (string) $row['customer_name'] ? (string) $row['customer_name'] : (string) $row['email'];
@@ -439,7 +439,7 @@ class EEM_Entries {
 				<?php foreach ( $entrants as $row ) :
 					$ekey        = (string) $row['order_key'];
 					$order       = ( '' !== $ekey && class_exists( 'EEM_Orders_Repository' ) ) ? ( new EEM_Orders_Repository() )->get_order( $ekey ) : null;
-					$ord_no      = ( is_array( $order ) && ! empty( $order['order_number'] ) ) ? sprintf( '#%05d', (int) $order['order_number'] ) : '';
+					$ord_no      = ( is_array( $order ) && ! empty( $order['order_number'] ) ) ? EEM_Formatter::format_order_number( $order['order_number'] ) : '';
 					$ord_url     = ( '' !== $ekey && class_exists( 'EEM_Orders_List_Page' ) ) ? EEM_Orders_List_Page::order_detail_url( $ekey ) : '';
 					$profile_url = class_exists( 'EEM_Orders_List_Page' ) ? EEM_Orders_List_Page::customer_profile_url( (string) $row['email'] ) : '';
 					$customer    = '' !== (string) $row['customer_name'] ? (string) $row['customer_name'] : (string) $row['email'];
@@ -1651,7 +1651,7 @@ a{text-decoration:none;color:inherit}
           <?php foreach ( $entrants as $row ) :
             $ekey   = (string) $row['order_key'];
             $order  = ( '' !== $ekey && class_exists( 'EEM_Orders_Repository' ) ) ? ( new EEM_Orders_Repository() )->get_order( $ekey ) : null;
-            $ord_no = ( is_array( $order ) && ! empty( $order['order_number'] ) ) ? sprintf( '#%05d', (int) $order['order_number'] ) : '—';
+            $ord_no = ( is_array( $order ) && ! empty( $order['order_number'] ) ) ? EEM_Formatter::format_order_number( $order['order_number'] ) : '—';
             $st     = (string) $row['status'];
             $st_lbl = isset( $status_labels[ $st ] ) ? $status_labels[ $st ] : ucfirst( $st );
           ?>

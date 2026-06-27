@@ -544,10 +544,8 @@ class EEM_Customer_Profile_Page {
 	 * @return string
 	 */
 	private static function order_number_display( string $number ): string {
-		if ( class_exists( 'EEM_Orders_List_Page' ) && method_exists( 'EEM_Orders_List_Page', 'format_order_number_display' ) ) {
-			return EEM_Orders_List_Page::format_order_number_display( $number );
-		}
-		return is_numeric( $number ) ? sprintf( '#%05d', (int) $number ) : '#' . $number;
+		// Canonical logic in EEM_Formatter (one source of truth).
+		return EEM_Formatter::format_order_number( $number );
 	}
 
 	/**

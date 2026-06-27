@@ -4870,7 +4870,7 @@ class EEM_Admin {
 						elseif ( 'checked_out' === $ci ) { $ci_cls = 'pv-occ-ci-out'; $ci_lbl = __( 'Checked Out', 'equine-event-manager' ); }
 						elseif ( 'occupied' === $ci ) { $ci_cls = 'pv-occ-ci-pending'; $ci_lbl = __( 'Pending Arrival', 'equine-event-manager' ); }
 						else { $ci_cls = 'pv-occ-ci-avail'; $ci_lbl = __( 'Available', 'equine-event-manager' ); }
-						$or_num = ! empty( $or['order_number'] ) ? sprintf( '#%05d', (int) $or['order_number'] ) : '&mdash;';
+						$or_num = ! empty( $or['order_number'] ) ? EEM_Formatter::format_order_number( $or['order_number'] ) : '&mdash;';
 						$arr = '' !== (string) ( $or['stall_arrival'] ?? '' ) ? (string) $or['stall_arrival'] : (string) ( $or['rv_arrival'] ?? '' );
 						$dep = '' !== (string) ( $or['stall_departure'] ?? '' ) ? (string) $or['stall_departure'] : (string) ( $or['rv_departure'] ?? '' );
 						// Weekday-prefixed, year-less format ("Thu, June 25") to match the
@@ -6051,11 +6051,8 @@ class EEM_Admin {
 		if ( '' === $order_number ) {
 			return '—';
 		}
-		// Preserve a leading alpha source-prefix (e.g. "IMP-" on imported orders).
-		if ( preg_match( '/^([A-Za-z]+)-?(\d+)$/', $order_number, $m ) ) {
-			return sprintf( '%s-%05d', strtoupper( $m[1] ), (int) $m[2] );
-		}
-		return is_numeric( $order_number ) ? sprintf( '#%05d', (int) $order_number ) : '#' . $order_number;
+		// Canonical logic in EEM_Formatter (one source of truth).
+		return EEM_Formatter::format_order_number( $order_number );
 	}
 
 	/**

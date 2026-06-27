@@ -227,7 +227,7 @@ class EEM_REST_Orders_Controller extends EEM_REST_Controller {
 	private function shape_order( array $order ): array {
 		return array(
 			'order_key'        => $order['order_key'],
-			'order_number'     => sprintf( '#%05d', (int) $order['order_number'] ),
+			'order_number'     => EEM_Formatter::format_order_number( $order['order_number'] ),
 			'event_name'       => $order['event_name'],
 			'event_dates'      => $order['event_dates'],
 			'customer_name'    => $order['customer_name'],

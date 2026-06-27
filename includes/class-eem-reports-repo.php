@@ -194,7 +194,7 @@ class EEM_Reports_Repo {
 		$event_dates   = array();
 		foreach ( $this->get_filtered_orders( $filters ) as $o ) {
 			$rows[] = array(
-				sprintf( '#%05d', absint( $o['order_number'] ) ),
+				EEM_Formatter::format_order_number( $o['order_number'] ),
 				(string) ( $o['customer_name'] ?? '' ),
 				(string) ( $o['email'] ?? '' ),
 				(string) ( $o['phone'] ?? '' ),
@@ -332,7 +332,7 @@ class EEM_Reports_Repo {
 			$total    = (float) ( $o['total'] ?? 0 );
 			$rows[]   = array(
 				substr( (string) ( $o['created_at'] ?? '' ), 0, 10 ),
-				sprintf( '#%05d', absint( $o['order_number'] ) ),
+				EEM_Formatter::format_order_number( $o['order_number'] ),
 				(string) ( $o['reservation_title'] ?? ( $o['event_name'] ?? '' ) ),
 				(string) ( $o['payment_gateway'] ?? '' ),
 				(string) ( $o['status_label'] ?? ( $o['payment_status'] ?? '' ) ),
@@ -1308,7 +1308,7 @@ class EEM_Reports_Repo {
 				}
 				$amount_val = '' !== $amount ? (float) preg_replace( '/[^0-9.\-]/', '', $amount ) : (float) ( $comp['total'] ?? 0 );
 				$rows[]     = array(
-					sprintf( '#%05d', absint( $o['order_number'] ) ),
+					EEM_Formatter::format_order_number( $o['order_number'] ),
 					substr( (string) ( $comp['refunded_at'] ?? ( $o['created_at'] ?? '' ) ), 0, 10 ),
 					(string) ( $o['reservation_title'] ?? ( $o['event_name'] ?? '' ) ),
 					(string) ( $o['customer_name'] ?? '' ),
