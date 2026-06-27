@@ -14618,3 +14618,13 @@ input.eem-pkg-price-input:focus { box-shadow: none; }
 		min-height: var(--eem-tap-min);
 	}
 }
+
+/* Modals on phones: trim the wasted overlay padding, let any modal use the full
+   width, and cap the card height so the body scrolls internally instead of the
+   card running off-screen (M6 modal sweep). */
+@media (max-width: 600px) {
+	.eem-modal { padding: 14px 10px; }
+	.eem-modal-card,
+	.eem-modal-card--wide { max-width: 100%; max-height: calc(100vh - 28px); }
+	.eem-modal-body { overflow-y: auto; }
+}
