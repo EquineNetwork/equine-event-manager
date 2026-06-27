@@ -2941,6 +2941,46 @@ a.eem-settings-nav-item:focus {
 	gap: 0;
 }
 
+/* Styled file input — hides the native browser "Choose File" button and
+   replaces it with an eem-btn-secondary chip + filename text. */
+.eem-file-pick-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	cursor: pointer;
+}
+.eem-file-pick-btn {
+	display: inline-flex;
+	align-items: center;
+	padding: 6px 14px;
+	border: 1px solid var(--eem-border);
+	border-radius: var(--eem-radius);
+	background: #fff;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--eem-text);
+	white-space: nowrap;
+	transition: border-color 0.15s, background 0.15s;
+}
+.eem-file-pick-label:hover .eem-file-pick-btn {
+	border-color: var(--eem-electric);
+	background: #f0f4ff;
+	color: var(--eem-electric);
+}
+.eem-file-pick-name {
+	font-size: 13px;
+	color: var(--eem-text-muted);
+}
+input.eem-file-pick-input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+}
+
 /* Save bar — flat strip at the bottom of the settings card per mockup
    line 155: padding 16px 28px, border-top only (divider from last
    section), var(--eem-bg-alt) fill, no radius/shadow, no sticky.
