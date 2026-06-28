@@ -39,6 +39,8 @@ class EEM_Activator {
 		self::create_order_payments_table();
 		if ( class_exists( 'EEM_Unit_Holds_Repo' ) ) {
 			EEM_Unit_Holds_Repo::create_table();
+			// A8 — schedule the hourly expired-holds sweep (idempotent).
+			EEM_Unit_Holds_Repo::schedule_cleanup();
 		}
 		if ( class_exists( 'EEM_Division_Entries' ) ) {
 			EEM_Division_Entries::create_table();

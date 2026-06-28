@@ -39,6 +39,45 @@ class EEM_Unit_Holds_Repo {
 	const HOLD_MINUTES = 15;
 
 	/**
+	 * WP-cron hook that runs the hourly expired-holds sweep (A8).
+	 *
+	 * Cleanup was previously opportunistic only (on form submit / hold attempt),
+	 * so a quiet site could let lapsed rows accumulate. This scheduled sweep keeps
+	 * the table bounded regardless of traffic. Queries already ignore expired rows,
+	 * so this is purely housekeeping.
+	 *
+	 * @var string
+	 */
+	const CRON_HOOK = 'eem_unit_holds_cleanup';
+
+	/**
+	 * Ensure the recurring cleanup event is scheduled. Idempotent — safe to call
+	 * on every activation / version-change upgrade. Runs hourly.
+	 *
+	 * @return void
+	 */
+	public static function schedule_cleanup(): void {
+		if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
+			wp_schedule_event( time() + HOUR_IN_SECONDS, 'hourly', self::CRON_HOOK );
+		}
+	}
+
+	/**
+	 * Remove the recurring cleanup event. Called on plugin deactivation so we
+	 * don't leave an orphaned cron entry behind.
+	 *
+	 * @return void
+	 */
+	public static function unschedule_cleanup(): void {
+		$timestamp = wp_next_scheduled( self::CRON_HOOK );
+		if ( $timestamp ) {
+			wp_unschedule_event( $timestamp, self::CRON_HOOK );
+		}
+		// Belt-and-suspenders: clear any duplicate occurrences too.
+		wp_clear_scheduled_hook( self::CRON_HOOK );
+	}
+
+	/**
 	 * Fully-qualified table name.
 	 *
 	 * @return string

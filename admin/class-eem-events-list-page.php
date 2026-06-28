@@ -178,8 +178,10 @@ class EEM_Events_List_Page {
 		) );
 
 		self::render_toolbar( $search, $status, $counts, $producer, $producer_options, $total );
+		echo '<div class="eem-list-card">';
 		self::render_table( $page_rows, $orderby, $order, $status, $search, $producer );
 		self::render_footer( $total, $paged, $pages, $status, $orderby, $order, $search, $producer );
+		echo '</div>';
 
 		eem_render_page_close();
 	}

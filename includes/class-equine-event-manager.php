@@ -251,6 +251,9 @@ class EEM_Plugin {
 	public function run() {
 		add_action( 'init', array( 'EEM_Activator', 'maybe_upgrade' ) );
 		add_action( 'init', array( 'EEM_Activator', 'maybe_refresh_runtime_rewrite_rules' ), 30 );
+		// A8 — hourly WP-cron sweep of expired cart holds (the event itself is
+		// scheduled on activation; this binds the handler that runs when it fires).
+		add_action( EEM_Unit_Holds_Repo::CRON_HOOK, array( 'EEM_Unit_Holds_Repo', 'cleanup_expired' ) );
 		add_action( 'init', array( $this->reservations_cpt, 'register_post_type' ) );
 		// Entries feature (v1): CPT + admin under Orders, reservation-linked.
 		EEM_Entries::register();

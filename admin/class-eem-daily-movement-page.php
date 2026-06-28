@@ -636,11 +636,13 @@ class EEM_Daily_Movement_Page {
 			<?php if ( ! empty( $report['arriving'] ) ) : ?>
 				<h4 class="eem-dm-group-heading eem-dm-group-heading--arriving"><span class="eem-dm-group-icon" aria-hidden="true">↓</span><?php esc_html_e( 'Arriving', 'equine-event-manager' ); ?></h4>
 				<?php self::render_table( $report['arriving'], $order_map, 'arriving' ); ?>
+				<?php self::render_group_footer( count( $report['arriving'] ), 'arriving' ); ?>
 			<?php endif; ?>
 
 			<?php if ( ! empty( $report['departing'] ) ) : ?>
 				<h4 class="eem-dm-group-heading eem-dm-group-heading--departing"><span class="eem-dm-group-icon" aria-hidden="true">↑</span><?php esc_html_e( 'Departing', 'equine-event-manager' ); ?></h4>
 				<?php self::render_table( $report['departing'], $order_map, 'departing' ); ?>
+				<?php self::render_group_footer( count( $report['departing'] ), 'departing' ); ?>
 			<?php endif; ?>
 		</div>
 		<?php
@@ -733,6 +735,24 @@ class EEM_Daily_Movement_Page {
 				<?php endforeach; ?>
 			</tbody>
 		</table>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render a row-count footer strip for a movement table group.
+	 *
+	 * @param int    $count  Number of rows in the group.
+	 * @param string $context 'arriving' or 'departing'.
+	 * @return void
+	 */
+	private static function render_group_footer( int $count, string $context ): void {
+		$label = 'arriving' === $context
+			? _n( '%s arriving', '%s arriving', $count, 'equine-event-manager' )
+			: _n( '%s departing', '%s departing', $count, 'equine-event-manager' );
+		?>
+		<div class="eem-table-footer eem-dm-group-footer">
+			<span class="eem-table-footer-info"><?php echo esc_html( sprintf( $label, number_format_i18n( $count ) ) ); ?></span>
 		</div>
 		<?php
 	}

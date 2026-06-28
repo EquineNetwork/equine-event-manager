@@ -110,6 +110,64 @@ if ( ! function_exists( 'eem_match_stay_package_dates' ) ) {
 class EEM_Import_Handler {
 
 	/**
+	 * Maximum accepted upload size for CSV / JSON imports, in bytes (A2).
+	 *
+	 * @var int
+	 */
+	const MAX_UPLOAD_BYTES = 5242880; // 5 MB.
+
+	/**
+	 * Validate an uploaded import file before it is read (A2).
+	 *
+	 * Confirms the entry is a genuine HTTP upload, is within the size cap, and
+	 * carries an allowed extension. Returns the verified tmp path on success or
+	 * a WP_Error describing the rejection. Centralizes the checks the CSV and
+	 * JSON upload handlers previously each did partially (tmp_name + is_uploaded_file
+	 * only — no size or extension gate).
+	 *
+	 * @param array<string,mixed> $file_entry   A single $_FILES[...] entry.
+	 * @param string[]            $allowed_exts Lowercase extensions to accept, e.g. array( 'csv' ).
+	 * @return string|WP_Error Verified uploaded tmp-file path, or WP_Error on rejection.
+	 */
+	private static function validate_upload_file( array $file_entry, array $allowed_exts ) {
+		if ( empty( $file_entry ) || UPLOAD_ERR_OK !== (int) ( $file_entry['error'] ?? UPLOAD_ERR_NO_FILE ) ) {
+			return new WP_Error( 'eem_upload_error', __( 'No file uploaded or upload error.', 'equine-event-manager' ) );
+		}
+
+		$tmp = isset( $file_entry['tmp_name'] ) ? sanitize_text_field( $file_entry['tmp_name'] ) : '';
+		if ( '' === $tmp || ! is_uploaded_file( $tmp ) ) {
+			return new WP_Error( 'eem_upload_invalid', __( 'Invalid upload.', 'equine-event-manager' ) );
+		}
+
+		$size = (int) ( $file_entry['size'] ?? 0 );
+		if ( $size <= 0 || $size > self::MAX_UPLOAD_BYTES ) {
+			return new WP_Error(
+				'eem_upload_too_large',
+				sprintf(
+					/* translators: %d: maximum upload size in megabytes. */
+					__( 'The file is empty or larger than the %d MB import limit.', 'equine-event-manager' ),
+					(int) round( self::MAX_UPLOAD_BYTES / 1048576 )
+				)
+			);
+		}
+
+		$name = isset( $file_entry['name'] ) ? sanitize_file_name( (string) $file_entry['name'] ) : '';
+		$ext  = strtolower( (string) pathinfo( $name, PATHINFO_EXTENSION ) );
+		if ( ! in_array( $ext, array_map( 'strtolower', $allowed_exts ), true ) ) {
+			return new WP_Error(
+				'eem_upload_bad_type',
+				sprintf(
+					/* translators: %s: comma-separated list of accepted file extensions. */
+					__( 'Unsupported file type. Accepted: %s.', 'equine-event-manager' ),
+					strtoupper( implode( ', ', $allowed_exts ) )
+				)
+			);
+		}
+
+		return $tmp;
+	}
+
+	/**
 	 * Handle the CSV upload and preview AJAX request.
 	 *
 	 * Parses the uploaded CSV, returns rows for preview before committing.
@@ -122,13 +180,11 @@ class EEM_Import_Handler {
 		}
 		check_ajax_referer( 'eem_import_csv', '_wpnonce' );
 
-		if ( empty( $_FILES['csv_file'] ) || UPLOAD_ERR_OK !== (int) $_FILES['csv_file']['error'] ) {
-			wp_send_json_error( array( 'message' => __( 'No file uploaded or upload error.', 'equine-event-manager' ) ), 400 );
-		}
-
-		$file = sanitize_text_field( $_FILES['csv_file']['tmp_name'] );
-		if ( ! is_uploaded_file( $file ) ) {
-			wp_send_json_error( array( 'message' => __( 'Invalid upload.', 'equine-event-manager' ) ), 400 );
+		// A2 — validate the upload (genuine upload + size cap + .csv extension)
+		// before reading a single byte.
+		$file = self::validate_upload_file( isset( $_FILES['csv_file'] ) ? (array) $_FILES['csv_file'] : array(), array( 'csv' ) );
+		if ( is_wp_error( $file ) ) {
+			wp_send_json_error( array( 'message' => $file->get_error_message() ), 400 );
 		}
 
 		$rows    = array();
@@ -335,7 +391,14 @@ class EEM_Import_Handler {
 				) );
 
 				if ( false === $insert_result ) {
-					$errors[] = sprintf( 'Row %d (%s): stall insert failed — %s', $i + 2, $customer_name, $wpdb->last_error );
+					// A2 — don't surface $wpdb->last_error (leaks schema/query
+					// structure); report the row with a generic message.
+					$errors[] = sprintf(
+						/* translators: 1: CSV row number, 2: customer name. */
+						__( 'Row %1$d (%2$s): stall insert failed.', 'equine-event-manager' ),
+						$i + 2,
+						$customer_name
+					);
 					continue;
 				}
 			}
@@ -370,7 +433,13 @@ class EEM_Import_Handler {
 				) );
 
 				if ( false === $insert_result ) {
-					$errors[] = sprintf( 'Row %d (%s): RV insert failed — %s', $i + 2, $customer_name, $wpdb->last_error );
+					// A2 — generic message; do not echo $wpdb->last_error.
+					$errors[] = sprintf(
+						/* translators: 1: CSV row number, 2: customer name. */
+						__( 'Row %1$d (%2$s): RV insert failed.', 'equine-event-manager' ),
+						$i + 2,
+						$customer_name
+					);
 					continue;
 				}
 			}
@@ -589,13 +658,11 @@ class EEM_Import_Handler {
 		}
 		check_ajax_referer( 'eem_import_csv', '_wpnonce' );
 
-		if ( empty( $_FILES['json_file'] ) || UPLOAD_ERR_OK !== (int) $_FILES['json_file']['error'] ) {
-			wp_send_json_error( array( 'message' => __( 'No file uploaded or upload error.', 'equine-event-manager' ) ), 400 );
-		}
-
-		$file = sanitize_text_field( $_FILES['json_file']['tmp_name'] );
-		if ( ! is_uploaded_file( $file ) ) {
-			wp_send_json_error( array( 'message' => __( 'Invalid upload.', 'equine-event-manager' ) ), 400 );
+		// A2 — validate the upload (genuine upload + size cap + .json extension)
+		// before reading it.
+		$file = self::validate_upload_file( isset( $_FILES['json_file'] ) ? (array) $_FILES['json_file'] : array(), array( 'json' ) );
+		if ( is_wp_error( $file ) ) {
+			wp_send_json_error( array( 'message' => $file->get_error_message() ), 400 );
 		}
 
 		$json = file_get_contents( $file );
