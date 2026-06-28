@@ -14950,7 +14950,7 @@ class EEM_Admin {
 				<div style="background:#ffffff;padding:28px 36px;">
 					<p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#0d1b3e;"><?php echo esc_html( sprintf( /* translators: %s: customer name. */ __( 'Hi %s, use the secure button below to review your reservation and complete payment.', 'equine-event-manager' ), $order['customer_name'] ) ); ?></p>
 					<p style="margin:0 0 24px;">
-						<a href="<?php echo esc_url( $payment_url ); ?>" style="display:inline-block;padding:12px 22px;border-radius:6px;background:#1668F2;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;"><?php esc_html_e( 'Review Invoice & Pay Now', 'equine-event-manager' ); ?></a>
+						<a href="<?php echo esc_url( $payment_url ); ?>" style="display:inline-block;padding:12px 22px;border-radius:6px;background:#1668F2;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;"><?php esc_html_e( 'Click here to pay', 'equine-event-manager' ); ?></a>
 					</p>
 					<div style="border-top:1px solid #e2e8f4;padding-top:16px;">
 						<?php foreach ( $invoice_rows as $label => $value ) : ?>

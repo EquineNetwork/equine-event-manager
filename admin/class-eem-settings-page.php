@@ -523,7 +523,7 @@ class EEM_Settings_Page {
 				</header>
 				<div class="eem-card-body">
 					<p class="eem-field-hint" style="margin-bottom:14px;">
-						<?php esc_html_e( 'Default sales tax applied at checkout. Each reservation can override this in its own settings (Edit Reservation, ported in C7).', 'equine-event-manager' ); ?>
+						<?php esc_html_e( 'Default sales tax applied at checkout. Each reservation can override this in its own settings (Edit Reservation).', 'equine-event-manager' ); ?>
 					</p>
 					<div class="eem-field-row">
 						<label class="eem-field-label" for="eem-tax-apply"><?php esc_html_e( 'Apply Tax', 'equine-event-manager' ); ?></label>

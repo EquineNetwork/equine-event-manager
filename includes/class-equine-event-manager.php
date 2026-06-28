@@ -121,7 +121,10 @@ require_once EQUINE_EVENT_MANAGER_PATH . 'includes/api/class-eem-rest-api.php';
 // 2.3.25 — WP-CLI demo data seeder. Loaded only in CLI context; the file
 // self-guards against being loaded outside WP_CLI and registers the
 // `wp eem seed_demo` command via WP_CLI::add_command().
-if ( defined( 'WP_CLI' ) && WP_CLI ) {
+// F1: the production build strips tools/, so guard the require with file_exists()
+// — otherwise every wp-cli command fatals on a deployed build (the dev tools are
+// only present in the repo, not the packaged plugin).
+if ( defined( 'WP_CLI' ) && WP_CLI && file_exists( EQUINE_EVENT_MANAGER_PATH . 'tools/seed-demo-data.php' ) ) {
 	require_once EQUINE_EVENT_MANAGER_PATH . 'tools/seed-demo-data.php';
 }
 
