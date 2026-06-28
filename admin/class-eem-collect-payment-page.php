@@ -602,10 +602,17 @@ class EEM_Collect_Payment_Page {
 	 * @return void
 	 */
 	private static function print_authorize_charge_assets( string $order_key ): void {
+		// #46: Accept.js config so the admin charge can tokenize the card in the
+		// browser when the gateway is set up for it (gated off otherwise).
+		$an  = ( new EEM_Shortcodes() )->get_active_authorize_net_configuration();
 		$cfg = array(
-			'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
-			'orderKey' => $order_key,
-			'nonce'    => wp_create_nonce( 'eem_collect_payment_' . $order_key ),
+			'ajaxUrl'     => admin_url( 'admin-ajax.php' ),
+			'orderKey'    => $order_key,
+			'nonce'       => wp_create_nonce( 'eem_collect_payment_' . $order_key ),
+			'useAcceptjs' => ! empty( $an['use_acceptjs'] ),
+			'clientKey'   => (string) $an['client_key'],
+			'apiLogin'    => (string) $an['api_login'],
+			'acceptUrl'   => (string) $an['acceptjs_url'],
 		);
 		?>
 		<script>
@@ -616,25 +623,14 @@ class EEM_Collect_Payment_Page {
 			var btn   = document.getElementById( 'eem-cp-an-charge-btn' );
 			var errEl = document.getElementById( 'eem-cp-charge-error' );
 			if ( ! btn || ! errEl ) { return; }
+			if ( cfg.useAcceptjs ) { var as = document.createElement( 'script' ); as.src = cfg.acceptUrl; as.async = true; document.head.appendChild( as ); }
 			function val( id ) { var el = document.getElementById( id ); return el ? el.value.replace( /[^0-9]/g, '' ) : ''; }
 			function body( obj ) { var p = new URLSearchParams(); Object.keys( obj ).forEach( function ( k ) { p.set( k, obj[ k ] ); } ); return p; }
-			btn.addEventListener( 'click', function () {
-				errEl.textContent = '';
-				var num = val( 'eem-cp-an-number' ), mm = val( 'eem-cp-an-exp-month' ), yy = val( 'eem-cp-an-exp-year' ), cvc = val( 'eem-cp-an-cvc' );
-				if ( num.length < 13 || num.length > 19 || ! mm || ! yy || cvc.length < 3 ) {
-					errEl.textContent = 'Enter a complete card number, expiration date, and security code.';
-					return;
-				}
+			function charge( fields ) {
 				btn.disabled = true;
-				fetch( cfg.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body( {
-					action: 'eem_collect_payment_authorize_charge',
-					_wpnonce: cfg.nonce,
-					order_key: cfg.orderKey,
-					authorize_card_number: num,
-					authorize_exp_month: mm,
-					authorize_exp_year: yy,
-					authorize_card_code: cvc
-				} ) } )
+				var base = { action: 'eem_collect_payment_authorize_charge', _wpnonce: cfg.nonce, order_key: cfg.orderKey };
+				Object.keys( fields ).forEach( function ( k ) { base[ k ] = fields[ k ]; } );
+				fetch( cfg.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body( base ) } )
 					.then( function ( r ) { return r.json(); } )
 					.then( function ( j ) {
 						if ( j && j.success ) {
@@ -645,6 +641,31 @@ class EEM_Collect_Payment_Page {
 						}
 					} )
 					.catch( function ( e ) { errEl.textContent = e.message; btn.disabled = false; } );
+			}
+			btn.addEventListener( 'click', function () {
+				errEl.textContent = '';
+				var num = val( 'eem-cp-an-number' ), mm = val( 'eem-cp-an-exp-month' ), yy = val( 'eem-cp-an-exp-year' ), cvc = val( 'eem-cp-an-cvc' );
+				if ( num.length < 13 || num.length > 19 || ! mm || ! yy || cvc.length < 3 ) {
+					errEl.textContent = 'Enter a complete card number, expiration date, and security code.';
+					return;
+				}
+				if ( cfg.useAcceptjs ) {
+					if ( ! window.Accept || typeof window.Accept.dispatchData !== 'function' ) { errEl.textContent = 'Secure payment library is still loading — try again in a moment.'; return; }
+					btn.disabled = true;
+					window.Accept.dispatchData( {
+						authData: { clientKey: cfg.clientKey, apiLoginID: cfg.apiLogin },
+						cardData: { cardNumber: num, month: mm, year: yy, cardCode: cvc }
+					}, function ( response ) {
+						if ( ! response || ! response.messages || response.messages.resultCode === 'Error' ) {
+							errEl.textContent = ( response && response.messages && response.messages.message && response.messages.message[0] ) ? response.messages.message[0].text : 'We could not verify the card.';
+							btn.disabled = false;
+							return;
+						}
+						charge( { authorize_opaque_descriptor: response.opaqueData.dataDescriptor, authorize_opaque_value: response.opaqueData.dataValue } );
+					} );
+				} else {
+					charge( { authorize_card_number: num, authorize_exp_month: mm, authorize_exp_year: yy, authorize_card_code: cvc } );
+				}
 			} );
 		})();
 		</script>

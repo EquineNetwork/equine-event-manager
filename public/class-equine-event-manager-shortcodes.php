@@ -1578,6 +1578,66 @@ class EEM_Shortcodes {
 									</div>
 								</div>
 								<p class="eem-reservation-help eem-payment-card-help"><?php esc_html_e( 'Enter your card details to process this payment through Authorize.net.', 'equine-event-manager' ); ?></p>
+								<?php if ( ! empty( $authorize_net_config['use_acceptjs'] ) ) : ?>
+									<input type="hidden" name="authorize_opaque_descriptor" id="eem-opaque-descriptor-<?php echo esc_attr( $reservation_id ); ?>" value="" />
+									<input type="hidden" name="authorize_opaque_value" id="eem-opaque-value-<?php echo esc_attr( $reservation_id ); ?>" value="" />
+									<p class="eem-reservation-help eem-payment-card-secure"><?php esc_html_e( 'Your card is encrypted in your browser and never touches our server.', 'equine-event-manager' ); ?></p>
+									<script>
+									( function () {
+										var RID = <?php echo wp_json_encode( (string) $reservation_id ); ?>;
+										var CFG = {
+											clientKey: <?php echo wp_json_encode( (string) $authorize_net_config['client_key'] ); ?>,
+											apiLogin:  <?php echo wp_json_encode( (string) $authorize_net_config['api_login'] ); ?>,
+											acceptUrl: <?php echo wp_json_encode( (string) $authorize_net_config['acceptjs_url'] ); ?>
+										};
+										var num = document.getElementById( 'eem-authorize-card-number-' + RID );
+										if ( ! num ) { return; }
+										var form = num.closest( 'form' );
+										if ( ! form ) { return; }
+										var s = document.createElement( 'script' );
+										s.src = CFG.acceptUrl; s.async = true; document.head.appendChild( s );
+										var mm = document.getElementById( 'eem-authorize-exp-month-' + RID );
+										var yy = document.getElementById( 'eem-authorize-exp-year-' + RID );
+										var cvc = document.getElementById( 'eem-authorize-card-code-' + RID );
+										var dd = document.getElementById( 'eem-opaque-descriptor-' + RID );
+										var dv = document.getElementById( 'eem-opaque-value-' + RID );
+										var tokenized = false;
+										function fail( msg ) {
+											var help = form.querySelector( '.eem-payment-card-help' );
+											if ( help ) { help.textContent = msg; help.classList.add( 'eem-reservation-help--error' ); }
+										}
+										form.addEventListener( 'submit', function ( e ) {
+											if ( tokenized ) { return; }
+											if ( ! num.value || ! num.getAttribute( 'name' ) ) { return; }
+											e.preventDefault();
+											e.stopImmediatePropagation();
+											if ( ! window.Accept || typeof window.Accept.dispatchData !== 'function' ) {
+												fail( <?php echo wp_json_encode( __( 'Secure payment library is still loading — please try again in a moment.', 'equine-event-manager' ) ); ?> );
+												return;
+											}
+											window.Accept.dispatchData( {
+												authData: { clientKey: CFG.clientKey, apiLoginID: CFG.apiLogin },
+												cardData: { cardNumber: num.value.replace( /\D/g, '' ), month: mm ? mm.value : '', year: yy ? yy.value : '', cardCode: cvc ? cvc.value : '' }
+											}, function ( response ) {
+												if ( ! response || ! response.messages || response.messages.resultCode === 'Error' ) {
+													var m = ( response && response.messages && response.messages.message && response.messages.message[0] ) ? response.messages.message[0].text : '';
+													fail( m || <?php echo wp_json_encode( __( 'We could not verify your card. Please check the details and try again.', 'equine-event-manager' ) ); ?> );
+													return;
+												}
+												dd.value = response.opaqueData.dataDescriptor;
+												dv.value = response.opaqueData.dataValue;
+												// Strip the raw-card field NAMES so the PAN/CVV never post to the server.
+												num.removeAttribute( 'name' );
+												if ( mm ) { mm.removeAttribute( 'name' ); }
+												if ( yy ) { yy.removeAttribute( 'name' ); }
+												if ( cvc ) { cvc.removeAttribute( 'name' ); }
+												tokenized = true;
+												if ( form.requestSubmit ) { form.requestSubmit(); } else { form.submit(); }
+											} );
+										}, true );
+									} )();
+									</script>
+								<?php endif; ?>
 							<?php else : ?>
 								<p class="eem-reservation-help eem-reservation-help--error"><?php esc_html_e( 'Authorize.net card entry is not available yet because your API Login ID and Transaction Key are not configured in Settings.', 'equine-event-manager' ); ?></p>
 							<?php endif; ?>
@@ -7539,6 +7599,8 @@ RV Lot: " . $rv_lot['name'] );
 		$event_label      = ! empty( $order['reservation_title'] ) ? $order['reservation_title'] : $order['event_name'];
 		$gateway          = $this->get_invoice_order_gateway( $order );
 		$stripe_config    = $this->get_active_stripe_configuration();
+		$authorize_config = $this->get_active_authorize_net_configuration();
+		$authnet_acceptjs = 'authorize_net' === $gateway && ! empty( $authorize_config['use_acceptjs'] );
 		$support_chunks   = array_filter(
 			array(
 				! empty( $company_settings['support_phone'] ) ? $this->format_phone_label( $company_settings['support_phone'] ) : '',
@@ -7554,6 +7616,9 @@ RV Lot: " . $rv_lot['name'] );
 			<title><?php echo esc_html( sprintf( __( 'Invoice #%s', 'equine-event-manager' ), $order['order_number'] ) ); ?></title>
 			<?php if ( 'stripe' === $gateway && ! empty( $stripe_config['publishable_key'] ) ) : ?>
 				<script src="https://js.stripe.com/v3/"></script>
+			<?php endif; ?>
+			<?php if ( $authnet_acceptjs ) : ?>
+				<script src="<?php echo esc_url( $authorize_config['acceptjs_url'] ); ?>" async></script>
 			<?php endif; ?>
 			<?php echo $this->invoice_page_style_block(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static literal style markup. ?>
 		</head>
@@ -7614,8 +7679,59 @@ RV Lot: " . $rv_lot['name'] );
 										</div>
 									</div>
 								<?php endif; ?>
+								<?php if ( $authnet_acceptjs ) : ?>
+									<input type="hidden" name="authorize_opaque_descriptor" value="" />
+									<input type="hidden" name="authorize_opaque_value" value="" />
+								<?php endif; ?>
 								<button type="submit" id="eem-invoice-submit" style="width:100%;margin-top:18px;padding:16px 20px;border:0;border-radius:12px;background:#111827;color:#fff;font-size:16px;font-weight:700;cursor:pointer;"><?php echo esc_html( sprintf( __( 'Pay %s', 'equine-event-manager' ), $this->format_money( (float) $order['total'] ) ) ); ?></button>
 							</form>
+							<?php if ( $authnet_acceptjs ) : ?>
+								<script>
+								( function () {
+									var form = document.getElementById( 'eem-invoice-payment-form' );
+									if ( ! form ) { return; }
+									var CFG = { clientKey: <?php echo wp_json_encode( (string) $authorize_config['client_key'] ); ?>, apiLogin: <?php echo wp_json_encode( (string) $authorize_config['api_login'] ); ?> };
+									var num = form.querySelector( '[name="authorize_card_number"]' );
+									var mm = form.querySelector( '[name="authorize_exp_month"]' );
+									var yy = form.querySelector( '[name="authorize_exp_year"]' );
+									var cvc = form.querySelector( '[name="authorize_card_code"]' );
+									var dd = form.querySelector( '[name="authorize_opaque_descriptor"]' );
+									var dv = form.querySelector( '[name="authorize_opaque_value"]' );
+									var err = document.getElementById( 'eem-invoice-card-error' );
+									if ( ! num ) { return; }
+									var tokenized = false;
+									function fail( msg ) { if ( err ) { err.style.display = 'block'; err.textContent = msg; } }
+									form.addEventListener( 'submit', function ( e ) {
+										if ( tokenized ) { return; }
+										if ( ! num.value || ! num.getAttribute( 'name' ) ) { return; }
+										e.preventDefault();
+										e.stopImmediatePropagation();
+										if ( ! window.Accept || typeof window.Accept.dispatchData !== 'function' ) {
+											fail( <?php echo wp_json_encode( __( 'Secure payment library is still loading — please try again in a moment.', 'equine-event-manager' ) ); ?> );
+											return;
+										}
+										window.Accept.dispatchData( {
+											authData: { clientKey: CFG.clientKey, apiLoginID: CFG.apiLogin },
+											cardData: { cardNumber: num.value.replace( /\D/g, '' ), month: mm ? mm.value : '', year: yy ? yy.value : '', cardCode: cvc ? cvc.value : '' }
+										}, function ( response ) {
+											if ( ! response || ! response.messages || response.messages.resultCode === 'Error' ) {
+												var m = ( response && response.messages && response.messages.message && response.messages.message[0] ) ? response.messages.message[0].text : '';
+												fail( m || <?php echo wp_json_encode( __( 'We could not verify your card. Please check the details and try again.', 'equine-event-manager' ) ); ?> );
+												return;
+											}
+											dd.value = response.opaqueData.dataDescriptor;
+											dv.value = response.opaqueData.dataValue;
+											num.removeAttribute( 'name' );
+											if ( mm ) { mm.removeAttribute( 'name' ); }
+											if ( yy ) { yy.removeAttribute( 'name' ); }
+											if ( cvc ) { cvc.removeAttribute( 'name' ); }
+											tokenized = true;
+											if ( form.requestSubmit ) { form.requestSubmit(); } else { form.submit(); }
+										} );
+									}, true );
+								} )();
+								</script>
+							<?php endif; ?>
 						<?php else : ?>
 							<div style="margin-top:20px;padding:16px;border-radius:8px;background:#eef2f6;border:1px solid #d9e1ea;color:#111827;"><?php esc_html_e( 'This invoice has already been paid.', 'equine-event-manager' ); ?></div>
 						<?php endif; ?>
@@ -9141,7 +9257,7 @@ RV Lot: " . $rv_lot['name'] );
 	 * @param array|null $payment_settings Optional settings array.
 	 * @return array
 	 */
-	private function get_active_authorize_net_configuration( $payment_settings = null ) {
+	public function get_active_authorize_net_configuration( $payment_settings = null ) {
 		$payment_settings = is_array( $payment_settings ) ? $payment_settings : $this->get_payment_settings();
 		$authorize_net    = wp_parse_args(
 			$payment_settings['authorize_net'],
