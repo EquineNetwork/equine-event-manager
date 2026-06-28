@@ -3040,7 +3040,15 @@ class EEM_Orders_Repository {
 		$created_timestamp = isset( $row['created_at'] ) ? gmdate( 'Y-m-d H:i:s', strtotime( $row['created_at'] ) ) : '';
 		$reservation_id    = $this->extract_reservation_id_from_notes( isset( $row['notes'] ) ? $row['notes'] : '' );
 
-		return implode(
+		// 4.1c (#60): mix a per-site secret salt into the composite fallback so a
+		// hypothetical tokenless row can't yield a brute-forceable order_key (the
+		// fallback fields — event / name / email / phone / timestamp — are all
+		// knowable). The salt is a stored per-site random value, so the key stays
+		// DETERMINISTIC across an order's rows (same composite → same key) while
+		// being unguessable without DB access. Defense-in-depth only: every real
+		// order now carries a Submission token (forward fix + migration 042) and so
+		// never reaches this branch — but tokenless rows can no longer leak docs.
+		return $this->group_key_salt() . '|' . implode(
 			'|',
 			array(
 				sanitize_key( isset( $row['event_source'] ) ? $row['event_source'] : '' ),
@@ -3053,6 +3061,24 @@ class EEM_Orders_Repository {
 				absint( $reservation_id ),
 			)
 		);
+	}
+
+	/**
+	 * Per-site secret salt for the composite group-key fallback (#60).
+	 *
+	 * Lazily generated once and stored in the `eem_group_key_salt` option, so it is
+	 * stable across requests + rows (keeping the fallback key deterministic) yet
+	 * absent from anything an attacker could enumerate. Never exposed to output.
+	 *
+	 * @return string 64-char hex salt.
+	 */
+	private function group_key_salt(): string {
+		$salt = get_option( 'eem_group_key_salt', '' );
+		if ( ! is_string( $salt ) || 32 > strlen( $salt ) ) {
+			$salt = bin2hex( random_bytes( 32 ) );
+			update_option( 'eem_group_key_salt', $salt, false );
+		}
+		return $salt;
 	}
 
 	/**
