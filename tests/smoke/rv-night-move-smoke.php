@@ -76,9 +76,11 @@ $check( 'handler picks RV component + labels', false !== strpos( $admin_src, "\$
 $check( 'handler writes the RV night map for rv moves', false !== strpos( $admin_src, 'update_order_rv_night_map( $order_key, $serialized )' ) );
 $check( 'handler validates against the RV lot pools', false !== strpos( $admin_src, "\$config['blocked_rv_lots']" ) && false !== strpos( $admin_src, "\$config['rv_lot_names']" ) );
 $check( 'matrix render emits data-kind on pills + available cells', 2 <= substr_count( $admin_src, 'data-kind="<?php echo esc_attr( $kind ); ?>"' ) );
-// Whitespace-normalized so the call-signature match survives re-alignment. (0e fix.)
+// Whitespace-normalized so the call-signature match survives re-alignment, and
+// matched only up to the kind + reservation_id args so it tolerates trailing
+// params added later (e.g. the $render_secondary_column flag on the stall call).
 $admin_src_n = preg_replace( '/[ \t]+/', ' ', $admin_src );
-$check( 'matrix callers pass stall + rv kinds', false !== strpos( $admin_src_n, "array(), 'stall', (int) \$reservation_id )" ) && false !== strpos( $admin_src_n, "\$rv_zone_map, 'rv', (int) \$reservation_id )" ) );
+$check( 'matrix callers pass stall + rv kinds', false !== strpos( $admin_src_n, "'stall', (int) \$reservation_id" ) && false !== strpos( $admin_src_n, "'rv', (int) \$reservation_id" ) );
 $check( 'grid overlay applies the RV Lot Night Map', false !== strpos( $admin_src, "get_order_component_note_value( \$order, 'rv', 'RV Lot Night Map' )" ) );
 
 $check( 'JS captures the pill kind', false !== strpos( $js_src, "window._scActiveKind      = pill.getAttribute('data-kind') || 'stall'" ) );
