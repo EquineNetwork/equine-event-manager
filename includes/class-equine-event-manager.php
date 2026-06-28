@@ -12,6 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-formatter.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-secret-store.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-orders-repository.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-order-adjustments-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-order-payments-repo.php';
@@ -253,6 +254,11 @@ class EEM_Plugin {
 	 * Register WordPress hooks.
 	 */
 	public function run() {
+		// At-rest encryption for the payment-gateway secret credentials (#20).
+		// Registered first so the option read/write filters are active before any
+		// request handler reads or saves the payment settings.
+		EEM_Secret_Store::init();
+
 		add_action( 'init', array( 'EEM_Activator', 'maybe_upgrade' ) );
 		add_action( 'init', array( 'EEM_Activator', 'maybe_refresh_runtime_rewrite_rules' ), 30 );
 		// A8 — hourly WP-cron sweep of expired cart holds (the event itself is
