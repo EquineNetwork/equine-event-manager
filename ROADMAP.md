@@ -123,6 +123,20 @@ resolved on 671); Order Detail totals + receipt totals.
 - ✅ **Payment-link/invoice email button** → "Click here to pay" — DONE (was "Review Invoice & Pay Now"); invoice layout + totals verified.
 - ✅ **Remove dev/stub UI references** — DONE ("ported in C7" stripped from Settings → Payments tax help).
 
+### 🔍 SHIP-READINESS AUDIT (2026-06-28, independent fresh-eyes review of 2.7.673)
+Full document: `SHIP-READINESS-AUDIT.md` (verdict: genuinely good plugin, ~7/10 today → ~9/10
+sellable with Tier 1–3 work). **Every item is now tracked as its own task (#26–#57).** Highlights:
+- **Already addressed since 2.7.673:** 2.1 (charge-before-insert / retry double-charge) largely
+  solved by P3 in 2.7.674; 2.6 (F10 et al deployed) done; 6.3 (tools/ guard) done.
+- **Top NEW money find — task #26 (2.4):** per-row % fee rounding diverges stored vs charged total
+  by a cent on multi-row orders → can strand a correctly-charged customer marked unpaid. Fix = once-
+  per-order rounded-share + remainder (same as tax / flat-fee F7). **Highest priority.**
+- **Trivial ship-blockers:** #27 delete `_eem_oc.php` (ships to installs), #40 export-ignore leaked .md.
+- **Distribution decision (#38):** WordPress.org (remove GitHub self-updater) vs self-hosted/premium
+  (keep it — current model). Gates the readme.txt + updater work.
+- Tier 2 concurrency (#28–#31), Tier 4 security (#32, #46–#48), Tier 5 UX (#49–#53), Tier 6 process
+  (#54–#55), Tier 3 bloat/slim-down (#40–#45).
+
 ### DEFERRED TO-DOS (Whitney 2026-06-27 — capture, do later)
 - **Settings IA: new "Taxes & Fees" tab.** Move the Convenience Fee + Tax Rate sections out of
   Settings → Payments into a NEW tab named **"Taxes & Fees"**, positioned directly below the Payments
