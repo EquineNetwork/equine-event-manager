@@ -1710,15 +1710,15 @@ class EEM_Order_Detail_Page {
 	}
 
 	/**
-	 * Special Instructions card — full-width below the 2-col grid.
+	 * Special Requests card — full-width below the 2-col grid.
 	 *
-	 * Inline-editable: the reservation's `_en_special_instructions` meta is
-	 * surfaced in a textarea with a Save Changes bar, saved over AJAX via
-	 * `eem_special_instructions_set`. The value is reservation-level (it applies
-	 * to every order on the reservation), so the hint flags that scope. Falls
-	 * back to a read-only em-dash when there is no reservation to key against.
+	 * READ-ONLY: shows the customer's own free-text request from checkout ("put me
+	 * on an end row", etc.), parsed from the order's notes — the same value on the
+	 * receipt and the Stall & RV Charts "Special Requests" column. Admins don't
+	 * author or edit it (the old per-reservation `_en_special_instructions` editable
+	 * field + its AJAX writer were removed in the 3.5 dead-code sweep).
 	 *
-	 * @param int $reservation_id
+	 * @param array $order Grouped order payload (reads $order['notes']).
 	 * @return void
 	 */
 	private function render_special_requests_card( array $order ): void {

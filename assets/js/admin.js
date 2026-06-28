@@ -6871,40 +6871,6 @@
 			});
 		});
 
-		// Special Instructions card — save the reservation-level instructions
-		// (Order Detail page). Posts to eem_special_instructions_set; the value is
-		// reservation meta so it applies to every order on the reservation.
-		document.addEventListener('click', function (ev) {
-			var btn = ev.target && ev.target.closest ? ev.target.closest('[data-eem-action="order-instructions-save"]') : null;
-			if (!btn) return;
-			ev.preventDefault();
-			var card = btn.closest('.eem-order-instructions');
-			if (!card) return;
-			var ta = card.querySelector('.eem-order-instructions__input');
-			var status = card.querySelector('.eem-order-notes__status');
-			var fd = new FormData();
-			fd.append('action', 'eem_special_instructions_set');
-			fd.append('reservation_id', card.getAttribute('data-reservation-id') || '');
-			fd.append('_wpnonce', card.getAttribute('data-nonce') || '');
-			fd.append('text', ta ? ta.value : '');
-			btn.disabled = true;
-			if (status) { status.textContent = ''; }
-			fetch(card.getAttribute('data-ajax-url') || window.ajaxurl, {
-				method: 'POST', credentials: 'same-origin', body: fd
-			}).then(function (r) { return r.json(); }).then(function (resp) {
-				btn.disabled = false;
-				if (resp && resp.success) {
-					if (window.EEM && window.EEM.showSaveToast) { window.EEM.showSaveToast('Special instructions saved'); }
-					else if (status) { status.textContent = 'Saved'; }
-				} else if (status) {
-					status.textContent = (resp && resp.data && resp.data.message) || 'Could not save.';
-				}
-			}).catch(function () {
-				btn.disabled = false;
-				if (status) { status.textContent = 'Could not save.'; }
-			});
-		});
-
 		// Stall chart event typeahead input
 	document.addEventListener('input', function (ev) {
 		var t = ev.target;

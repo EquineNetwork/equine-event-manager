@@ -128,7 +128,6 @@ class EEM_Admin {
 		add_action( 'wp_ajax_eem_order_check_status', array( $this, 'ajax_order_check_status' ) );
 		add_action( 'wp_ajax_eem_order_checkin_set', array( $this, 'ajax_order_checkin_set' ) );
 		add_action( 'wp_ajax_eem_order_admin_note_set', array( $this, 'ajax_order_admin_note_set' ) );
-		add_action( 'wp_ajax_eem_special_instructions_set', array( $this, 'ajax_special_instructions_set' ) );
 		add_action( 'wp_ajax_eem_stall_cell_status_set', array( $this, 'ajax_stall_cell_status_set' ) );
 		add_action( 'wp_ajax_eem_stall_bulk_status_set', array( $this, 'ajax_stall_bulk_status_set' ) );
 		add_action( 'wp_ajax_eem_toggle_tack_stall', array( $this, 'ajax_toggle_tack_stall' ) );
@@ -7111,47 +7110,6 @@ class EEM_Admin {
 		wp_send_json_success( array(
 			'note'     => $note,
 			'has_note' => '' !== $note,
-		) );
-	}
-
-	/**
-	 * AJAX: save the reservation's Special Instructions from the Order Detail page.
-	 *
-	 * The value is reservation-level (`_en_special_instructions` post meta), so the
-	 * edit applies to every order on the reservation. Logged to the activity log as
-	 * a SPECIAL_INSTRUCTIONS_EDITED event for the reservation.
-	 *
-	 * @return void
-	 */
-	public function ajax_special_instructions_set(): void {
-		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
-		check_ajax_referer( 'eem_special_instructions_' . $reservation_id, '_wpnonce' );
-
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'equine-event-manager' ) ), 403 );
-		}
-		if ( $reservation_id <= 0 || 'en_reservation' !== get_post_type( $reservation_id ) ) {
-			wp_send_json_error( array( 'message' => __( 'Missing reservation reference.', 'equine-event-manager' ) ), 400 );
-		}
-
-		$text = isset( $_POST['text'] ) ? sanitize_textarea_field( wp_unslash( $_POST['text'] ) ) : '';
-		update_post_meta( $reservation_id, '_en_special_instructions', $text );
-
-		if ( class_exists( 'EEM_Activity_Log' ) ) {
-			EEM_Activity_Log::write(
-				EEM_Activity_Log::SPECIAL_INSTRUCTIONS_EDITED,
-				array( 'reservation_id' => $reservation_id ),
-				array(
-					'reservation_id' => $reservation_id,
-					'actor_type'     => 'admin',
-					'actor_id'       => get_current_user_id(),
-				)
-			);
-		}
-
-		wp_send_json_success( array(
-			'text'     => $text,
-			'has_text' => '' !== $text,
 		) );
 	}
 
