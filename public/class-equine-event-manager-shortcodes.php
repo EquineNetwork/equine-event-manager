@@ -5498,6 +5498,19 @@ class EEM_Shortcodes {
 		$notes = trim( $submission['notes'] . "\n\n" . $billing_notes . "\n" . $agreement_notes . $general_addon_notes . $pre_entry_notes . $group_reservation_notes . $group_name_note_line . "\nInvoice Type: " . $invoice_type_note . $show_bill_note_line . "\nReservation setup ID: " . absint( $reservation_id ) . "\nSubmission token: " . $submission_token );
 		$created       = current_time( 'mysql' );
 
+		// F7 fix: a FLAT convenience fee is a per-ORDER charge, not per-row. The
+		// calculator (calculate_submission_totals) bills it once on the whole order
+		// subtotal, but a naive per-row calculate_convenience_fee() returns the full
+		// flat amount for EVERY component row — double-charging multi-component
+		// (stall + RV, or split stall) orders so the stored total exceeds the actual
+		// charge. Mirror the tax pattern (apply once, on the first inserted row):
+		// carry the authoritative single fee and place it entirely on the first row,
+		// $0 on the rest. Percentage fees stay per-row (proportional → already sum to
+		// the order total exactly), so this only changes flat-fee behavior.
+		$eem_fee_cfg            = class_exists( 'EEM_Settings_Repo' ) ? EEM_Settings_Repo::get_convenience_fee() : array( 'apply' => false, 'type' => 'none' );
+		$eem_fee_is_flat        = ! empty( $eem_fee_cfg['apply'] ) && 'flat' === ( isset( $eem_fee_cfg['type'] ) ? $eem_fee_cfg['type'] : '' );
+		$eem_flat_fee_remaining = $eem_fee_is_flat ? (float) $totals['fees'] : 0.0;
+
 		if ( $has_stall_order ) {
 			$stall_table       = $wpdb->prefix . 'en_stall_reservations';
 			$required_shavings = $totals['required_shavings_qty'];
@@ -5551,7 +5564,13 @@ class EEM_Shortcodes {
 				if ( 0 === $si_row_idx ) {
 					$row_subtotal += $stall_addon_extra + $stall_group_extra;
 				}
-				$row_fee = $this->calculate_convenience_fee( $row_subtotal, $data );
+				// F7: flat fee once on the first inserted row; percentage stays per-row.
+				if ( $eem_fee_is_flat ) {
+					$row_fee                = $eem_flat_fee_remaining;
+					$eem_flat_fee_remaining = 0.0;
+				} else {
+					$row_fee = $this->calculate_convenience_fee( $row_subtotal, $data );
+				}
 				$row_tax = ( 0 === $si_row_idx ) ? (float) $eem_stall_tax : 0.0;
 
 				$inserted = false !== $wpdb->insert(
@@ -5622,7 +5641,15 @@ class EEM_Shortcodes {
 			$rv_table      = $wpdb->prefix . 'en_rv_reservations';
 			$rv_unit_price = $totals['rv_unit_price'];
 			$rv_subtotal   = $totals['rv_subtotal'] + ( 'rv' === $attach_general_addons_to ? (float) $totals['general_addons_subtotal'] : 0.0 ) + ( 'rv' === $attach_group_charges_to ? (float) $totals['group_subtotal'] : 0.0 );
-			$rv_fee        = $this->calculate_convenience_fee( $rv_subtotal, $data );
+			// F7: flat fee once per order — if a stall row already took it,
+			// $eem_flat_fee_remaining is now 0, so an RV row on a stall+RV order adds
+			// nothing; an RV-only order's first row takes the whole flat fee.
+			if ( $eem_fee_is_flat ) {
+				$rv_fee                 = $eem_flat_fee_remaining;
+				$eem_flat_fee_remaining = 0.0;
+			} else {
+				$rv_fee        = $this->calculate_convenience_fee( $rv_subtotal, $data );
+			}
 
 			$rv_notes = $notes;
 			$rv_lot = ! empty( $data['rv_lot_selection_enabled'] ) && '' !== (string) $submission['rv_lot'] ? $this->get_rv_lot( $data, $submission['rv_lot'] ) : null;

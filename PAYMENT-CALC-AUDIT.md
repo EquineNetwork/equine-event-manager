@@ -297,7 +297,18 @@ map tab+zone surcharges, multi-product, discounts.
 caches per-instance — use a fresh repo per reload; (c) reserve_order_number repeats within
 one CLI request (object-cache quirk; not a production path).
 
-### F7 — FLAT convenience fee double-charged on multi-component orders (MEDIUM)
+### ✅ F7 — FIXED 2026-06-27 (on Local, awaiting sign-off + deploy)
+**Fix:** `insert_reservation_orders()` now treats a FLAT convenience fee as a per-ORDER charge
+(once), mirroring the tax pattern. Before the component loops it reads the fee config; if the
+type is `flat`, it carries the authoritative single fee (`$totals['fees']`) and places it
+entirely on the FIRST inserted row, $0 on every subsequent stall/RV row. Percentage fees are
+untouched (per-row proportional → already sum to the order total exactly). The actual charge
+never changed — this reconciles the STORED rows to the already-correct charge.
+**Verified:** capstone harness now **101/101** (was 100/101 — scenario 7 flat $25 stall+RV was
+the only failure). Promoted to a permanent suite smoke: `charge-reconcile-allsurfaces-smoke.php`.
+Percentage config (Whitney's live 4%) was already correct and stays correct.
+
+### F7 (original finding) — FLAT convenience fee double-charged on multi-component orders (MEDIUM)
 **File:** `public/class-equine-event-manager-shortcodes.php` `insert_reservation_orders()`
 line ~5476: `$row_fee = $this->calculate_convenience_fee( $row_subtotal, $data );` — computed
 PER component row. For a PERCENTAGE fee this is linear and correct (4%·stall + 4%·rv =

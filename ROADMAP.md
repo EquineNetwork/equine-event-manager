@@ -100,8 +100,9 @@ resolved on 671); Order Detail totals + receipt totals.
   stored unit_price×nights ≠ stored subtotal (CSV imports w/ custom stay labels, e.g. "Thursday-Sunday"
   → line $285 above a correct $137 total). NOT an overcharge; Order Detail + totals correct; checkout
   orders unaffected. Fix: receipt line items from stored amounts.
-- **F7** 🟡 MEDIUM — FLAT convenience fee double-charged on multi-component (stall+RV) orders. % is
-  linear so the current 4% config is safe. Fix: flat fee once per order.
+- **F7** ✅ FIXED 2026-06-27 (Local, awaiting sign-off + deploy) — FLAT convenience fee was stored
+  once per component row (double on stall+RV). Now applied once per order (first row), mirroring the
+  tax pattern; percentage untouched. Capstone harness 101/101 (`charge-reconcile-allsurfaces-smoke.php`).
 - **F1** 🟡 MEDIUM — production build ships without `tools/` → wp-cli fatals (browser unaffected).
   Fix: include `tools/` in build or guard the require with `file_exists()`. (Workaround applied on Local.)
 - **F2** (Low, NOT a bug) refund-math smoke stale (`order_key` schema drift) — test drift only.
