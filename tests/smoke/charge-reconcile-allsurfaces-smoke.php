@@ -103,6 +103,12 @@ $scenarios = array(
 		'sub' => array( 'stall_qty' => 2, 'stall_stay_type' => 'nightly', 'stall_arrival_date' => '2026-08-19', 'stall_departure_date' => '2026-08-21',
 			'group_reservation_enabled' => 1, 'group_rider_count' => 3 ),
 		'lines' => array( 'Stall Res.', 'Group Res.' ) ),
+	// F10 guard: pre-entries must persist onto the order (charge == stored).
+	array( 'label' => 'Stall + Pre-Entries (4 × $15 = $60)', 'fee' => 'percentage',
+		'data' => array( 'event_pre_entries_enabled' => 1, 'event_pre_entries' => array( array( 'title' => 'Early Entry', 'price' => 15.0, 'inventory' => 0, 'max_per_customer' => 0 ) ) ),
+		'sub' => array( 'stall_qty' => 2, 'stall_stay_type' => 'nightly', 'stall_arrival_date' => '2026-08-19', 'stall_departure_date' => '2026-08-21',
+			'pre_entry_0_qty' => 4 ),
+		'lines' => array( 'Stall Res.', 'Pre-Entry' ) ),
 	array( 'label' => 'RV base (2×$45×3n)', 'fee' => 'percentage', 'data' => array(),
 		'sub' => array( 'rv_qty' => 2, 'rv_stay_type' => 'nightly', 'rv_arrival_date' => '2026-08-19', 'rv_departure_date' => '2026-08-22' ),
 		'lines' => array( 'RV Res.' ) ),

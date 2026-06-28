@@ -5357,13 +5357,20 @@ class EEM_Shortcodes {
 		$has_stall_order = ( $status['stalls_open'] && $this->has_stall_selection( $submission, $data, $status ) ) || ( ! empty( $status['shavings_open'] ) && $submission['additional_shavings_qty'] > 0 );
 		$has_rv_order    = $status['rv_open'] && $submission['rv_qty'] > 0;
 		$has_group_fees  = ! empty( $totals['group_subtotal'] );
+		$has_pre_entries = ! empty( $totals['pre_entries_subtotal'] );
 		$attach_general_addons_to = $has_stall_order ? 'stall' : 'rv';
 		$attach_group_charges_to  = $has_stall_order ? 'stall' : 'rv';
+		// F10: pre-entry charges (pre_entries_subtotal) must be PERSISTED onto a
+		// component row's subtotal like add-ons / group fees, or the stored order
+		// total under-records by the pre-entry amount + its fee (the customer is
+		// charged $totals['total'] but the order saves without the pre-entries).
+		$attach_pre_entries_to    = $has_stall_order ? 'stall' : 'rv';
 
-		if ( $has_group_fees && ! $has_stall_order && ! $has_rv_order ) {
+		if ( ( $has_group_fees || $has_pre_entries ) && ! $has_stall_order && ! $has_rv_order ) {
 			$has_stall_order          = true;
 			$attach_general_addons_to = 'stall';
 			$attach_group_charges_to  = 'stall';
+			$attach_pre_entries_to    = 'stall';
 		}
 
 		// CLEANUP #9 — split the aggregate tax (`$totals['tax']`) across the stall +
@@ -5377,10 +5384,12 @@ class EEM_Shortcodes {
 		// before — all the tax lands on the one component that exists.
 		$eem_stall_tax_base = (float) $totals['stall_subtotal']
 			+ ( 'stall' === $attach_general_addons_to ? (float) $totals['general_addons_subtotal'] : 0.0 )
-			+ ( 'stall' === $attach_group_charges_to ? (float) $totals['group_subtotal'] : 0.0 );
+			+ ( 'stall' === $attach_group_charges_to ? (float) $totals['group_subtotal'] : 0.0 )
+			+ ( 'stall' === $attach_pre_entries_to ? (float) $totals['pre_entries_subtotal'] : 0.0 );
 		$eem_rv_tax_base = (float) $totals['rv_subtotal']
 			+ ( 'rv' === $attach_general_addons_to ? (float) $totals['general_addons_subtotal'] : 0.0 )
-			+ ( 'rv' === $attach_group_charges_to ? (float) $totals['group_subtotal'] : 0.0 );
+			+ ( 'rv' === $attach_group_charges_to ? (float) $totals['group_subtotal'] : 0.0 )
+			+ ( 'rv' === $attach_pre_entries_to ? (float) $totals['pre_entries_subtotal'] : 0.0 );
 		$eem_total_tax = (float) $totals['tax'];
 		$eem_base_sum  = $eem_stall_tax_base + $eem_rv_tax_base;
 		if ( $has_stall_order && $has_rv_order && $eem_base_sum > 0 ) {
@@ -5555,14 +5564,15 @@ class EEM_Shortcodes {
 				);
 			}
 
-			$stall_addon_extra  = 'stall' === $attach_general_addons_to ? (float) $totals['general_addons_subtotal'] : 0.0;
-			$stall_group_extra  = 'stall' === $attach_group_charges_to ? (float) $totals['group_subtotal'] : 0.0;
+			$stall_addon_extra     = 'stall' === $attach_general_addons_to ? (float) $totals['general_addons_subtotal'] : 0.0;
+			$stall_group_extra     = 'stall' === $attach_group_charges_to ? (float) $totals['group_subtotal'] : 0.0;
+			$stall_pre_entry_extra = 'stall' === $attach_pre_entries_to ? (float) $totals['pre_entries_subtotal'] : 0.0;
 			$stall_row_count    = count( $stall_items_to_insert );
 
 			foreach ( $stall_items_to_insert as $si_row_idx => $si_row ) {
 				$row_subtotal = $si_row['subtotal'];
 				if ( 0 === $si_row_idx ) {
-					$row_subtotal += $stall_addon_extra + $stall_group_extra;
+					$row_subtotal += $stall_addon_extra + $stall_group_extra + $stall_pre_entry_extra;
 				}
 				// F7: flat fee once on the first inserted row; percentage stays per-row.
 				if ( $eem_fee_is_flat ) {
@@ -5640,7 +5650,7 @@ class EEM_Shortcodes {
 		if ( $has_rv_order ) {
 			$rv_table      = $wpdb->prefix . 'en_rv_reservations';
 			$rv_unit_price = $totals['rv_unit_price'];
-			$rv_subtotal   = $totals['rv_subtotal'] + ( 'rv' === $attach_general_addons_to ? (float) $totals['general_addons_subtotal'] : 0.0 ) + ( 'rv' === $attach_group_charges_to ? (float) $totals['group_subtotal'] : 0.0 );
+			$rv_subtotal   = $totals['rv_subtotal'] + ( 'rv' === $attach_general_addons_to ? (float) $totals['general_addons_subtotal'] : 0.0 ) + ( 'rv' === $attach_group_charges_to ? (float) $totals['group_subtotal'] : 0.0 ) + ( 'rv' === $attach_pre_entries_to ? (float) $totals['pre_entries_subtotal'] : 0.0 );
 			// F7: flat fee once per order — if a stall row already took it,
 			// $eem_flat_fee_remaining is now 0, so an RV row on a stall+RV order adds
 			// nothing; an RV-only order's first row takes the whole flat fee.
@@ -6822,6 +6832,12 @@ RV Lot: " . $rv_lot['name'] );
 			foreach ( $this->extract_group_charge_breakdown_from_notes( $order['notes'] ) as $group_row ) {
 				$group_total += (float) $group_row['subtotal'];
 			}
+			// F10: pre-entry charges are now persisted onto the stall row subtotal and
+			// render as their own receipt line, so subtract them from the base too.
+			$pre_entry_total = 0.0;
+			foreach ( $this->extract_pre_entry_breakdown_from_notes( $order['notes'] ) as $pe_row ) {
+				$pre_entry_total += (float) $pe_row['subtotal'];
+			}
 			$base_subtotal = max(
 				0.0,
 				$rows_subtotal_total
@@ -6830,6 +6846,7 @@ RV Lot: " . $rv_lot['name'] );
 					- $this->get_order_stall_surcharge_total( $order )
 					- $addons_total
 					- $group_total
+					- $pre_entry_total
 			);
 		}
 

@@ -83,6 +83,12 @@ Summary** (every charge has a row incl. Additional Shavings — your original "m
 resolved on 671); Order Detail totals + receipt totals.
 
 ### FINDINGS (functional / math / scale — F-series)
+- **F10** 🔴 CRITICAL ✅ FIXED 2026-06-27 (Local, awaiting sign-off + deploy) — pre-entries were CHARGED
+  to the customer at checkout but DROPPED from the stored order (insert never attached
+  `pre_entries_subtotal` to a component row, unlike add-ons/group). A $140 stall + $60 pre-entries order
+  charged $208 but saved as $145.60 — $62.40 under-recorded, wrong balance/refunds. Found during the
+  "keep auditing surfaces" pass. Fix: attach pre-entries to the row + tax base; subtract in the receipt
+  breakdown. Capstone harness now 110/110 with a dedicated pre-entry scenario.
 - **F6** 🚨 CRITICAL — order system capped at the **250 most-recent rows** (`get_component_rows`
   `LIMIT 250`). Every single-order lookup (Order Detail, Add Items, Edit Dates, Collect Payment,
   refunds, receipts, confirmation email, payment link) AND **Reports revenue + Dashboard revenue

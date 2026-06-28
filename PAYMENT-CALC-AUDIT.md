@@ -345,9 +345,27 @@ every order. Add-ons + group always attach to the stall component when stalls ex
 recompute would be $285 → line now reads $137, Σlines reconciles). Capstone harness still **101/101**
 — normal/checkout orders compute the identical base (stored = recompute for them), so nothing
 regressed. Only imports change, and only for the better.
-**NOTE (separate finding, flagged for follow-up):** pre-entry charges (`pre_entries_subtotal`) are
-in the charged total but do NOT appear to be added to any stored component-row subtotal in
-`insert_reservation_orders` — needs a dedicated reconciliation check (see audit tail).
+**NOTE:** this F8 audit surfaced a SEPARATE, more serious bug — pre-entry charges were not stored
+on the order at all. See **F10** below (also FIXED).
+
+### 🔴 F10 — CRITICAL (found + FIXED 2026-06-27): pre-entries charged to the customer but DROPPED from the stored order
+**Discovered while auditing surfaces (Whitney's "keep auditing" pass).** `insert_reservation_orders`
+attaches general add-ons + group fees onto a component row's stored subtotal, but **never attached
+`pre_entries_subtotal`**. So when a customer buys pre-entries on the event page:
+- They are CHARGED `$totals['total']` (includes pre-entries + fee on pre-entries) — correct at the gateway.
+- But the order SAVES without the pre-entries — stored total under-records by the pre-entry amount AND its fee.
+**Proof (probe, $140 stall + $60 pre-entries, 4% fee):** CHARGE total $208 (fee $8 on $200); STORED
+total **$145.60** (stall only $140, fee $5.60 on $140) — a **$62.40 shortfall**, and the receipt showed
+three disagreeing numbers (lines $205.60, stored $145.60, charge $208).
+**Fix:** mirror the add-on/group attach pattern — `$attach_pre_entries_to` (stall when stalls exist,
+else RV; forced to stall in the group/pre-entry-only fallback). Pre-entries are added to the chosen
+component row's stored subtotal + the tax base, and subtracted out in `get_order_stall_breakdown` (so
+the base line stays correct and the pre-entry line isn't double-counted).
+**Verified:** probe now reconciles ($208 == $208, fee $8 on $200, receipt lines $140 + $60 + $8 = $208).
+Capstone harness **110/110** with a new dedicated pre-entry scenario (charge == stored == Σ lines + tax).
+F8 (6/6) + F9 (14/14) unaffected.
+**Impact if shipped:** any site selling pre-entries would have under-recorded revenue + wrong balances/
+refunds on every pre-entry order. Exactly the "nothing is messed" class — caught pre-launch.
 
 ### F8 (original finding) — 🟡 MEDIUM (DOWNGRADED after browser+render verify): receipt LINE ITEMS diverge on IMPORTED orders only
 **CORRECTED SCOPE — not an overcharge, not Order Detail, not the totals:**
