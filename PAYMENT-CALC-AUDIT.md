@@ -367,6 +367,30 @@ F8 (6/6) + F9 (14/14) unaffected.
 **Impact if shipped:** any site selling pre-entries would have under-recorded revenue + wrong balances/
 refunds on every pre-entry order. Exactly the "nothing is messed" class — caught pre-launch.
 
+### ✅ REFUND PATH — verified correct for the new pricing inputs (2026-06-27)
+`EEM_Refund_Engine::get_component_remaining_refundable_amount()` caps refunds at the stored
+component `total` (not a line-item recompute), so the F7/F8/F10 storage fixes flow straight
+through. **Probe:** a PAID pre-entry order ($140 stall + $60 pre-entries + $8 fee) now reports
+**$208 max refundable** = exactly what the customer paid. (Pre-F10 it would have capped at
+$145.60 — a latent UNDER-refund, the flip side of the under-record.) No refund-side change
+needed; refunds are correct by construction once storage is correct.
+
+### ✅ F11 — FIXED 2026-06-27 (on Local, awaiting sign-off + deploy): FLAT fee per-row double on post-creation edits
+**Found while hardening the write paths (Whitney's "bombproof" pass).** F7 fixed the per-row
+flat-fee double at checkout-INSERT time, but the same naive recompute lived in the post-creation
+edit paths: `add_component_quantity()` (Add Items → add stall/RV qty) and `handle_ajax_edit_dates()`
+(Edit Dates lengthen/shorten). `calculate_convenience_fee()` returns the flat amount for ANY
+subtotal, so recomputing a row's fee on edit would stamp the flat fee onto a $0 non-fee-bearing
+row — adding a SECOND flat fee when you bump the RV row of a stall+RV order, add a new RV to a
+flat-fee stall order, or edit dates on the non-fee row.
+**Fix:** in all three branches, a FLAT fee is left untouched on edit (the order keeps its single
+flat fee from insert); a brand-new component carries $0 flat fee. Percentage fees keep recomputing
+per-row (proportional → always sum to the order total). **Percentage was never affected** — this is
+flat-fee-only, and percentage is Whitney's config (verified bombproof end-to-end).
+**Verified:** `f11-flat-fee-once-smoke.php` 5/5 (stall+RV bump, new-component add — order fee stays
+$25 once); percentage paths green (`order-edit-math` 9/9). Now flat fee is once-per-order across ALL
+write paths: insert (F7) + add-qty + edit-dates (F11).
+
 ### F8 (original finding) — 🟡 MEDIUM (DOWNGRADED after browser+render verify): receipt LINE ITEMS diverge on IMPORTED orders only
 **CORRECTED SCOPE — not an overcharge, not Order Detail, not the totals:**
 - Admin **Order Detail = CORRECT** (uses stored `stall_subtotal`; #IMP-90697 shows $137 ✓).

@@ -83,6 +83,10 @@ Summary** (every charge has a row incl. Additional Shavings — your original "m
 resolved on 671); Order Detail totals + receipt totals.
 
 ### FINDINGS (functional / math / scale — F-series)
+- **F11** ✅ FIXED 2026-06-27 (Local, awaiting sign-off + deploy) — FLAT convenience fee was
+  re-doubled per-row on POST-creation edits (Add Items qty + Edit Dates), the same class F7 fixed at
+  insert time. Now flat is left once-per-order across all write paths (insert + add-qty + edit-dates);
+  percentage unaffected (and is Whitney's config). Verified `f11-flat-fee-once-smoke.php` 5/5.
 - **F10** 🔴 CRITICAL ✅ FIXED 2026-06-27 (Local, awaiting sign-off + deploy) — pre-entries were CHARGED
   to the customer at checkout but DROPPED from the stored order (insert never attached
   `pre_entries_subtotal` to a component row, unlike add-ons/group). A $140 stall + $60 pre-entries order

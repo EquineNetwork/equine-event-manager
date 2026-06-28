@@ -10883,7 +10883,10 @@ class EEM_Admin {
 				$old_sub    = (float) $r['subtotal'];
 				$new_sub    = max( 0.0, round( $old_sub - $row_cut, 2 ) );
 				$old_fee    = isset( $r['convenience_fee'] ) ? (float) $r['convenience_fee'] : 0.0;
-				$new_fee    = round( $calc_fee( $new_sub ), 2 );
+				// F11: a FLAT fee doesn't scale with nights and is per-ORDER (see F7),
+				// so leave it untouched — recomputing would stamp the flat amount onto a
+				// $0 non-fee-bearing row. Percentage shrinks with the smaller subtotal.
+				$new_fee    = ( 'flat' === $fee_type ) ? $old_fee : round( $calc_fee( $new_sub ), 2 );
 				$fee_cut    = round( $old_fee - $new_fee, 2 );
 				// tax_rate is stored as a percent (e.g. 7 for 7%), so divide by 100.
 				$tax_cut    = $tax_rate > 0 ? round( $row_cut * ( $tax_rate / 100 ), 2 ) : 0.0;
@@ -10909,7 +10912,9 @@ class EEM_Admin {
 				$old_sub    = (float) $r['subtotal'];
 				$new_sub    = round( $old_sub + $row_add, 2 );
 				$old_fee    = isset( $r['convenience_fee'] ) ? (float) $r['convenience_fee'] : 0.0;
-				$new_fee    = round( $calc_fee( $new_sub ), 2 );
+				// F11: see the shorten branch — a flat fee is per-order and
+				// night-invariant, so leave it untouched; only percentage grows.
+				$new_fee    = ( 'flat' === $fee_type ) ? $old_fee : round( $calc_fee( $new_sub ), 2 );
 				$fee_add    = round( $new_fee - $old_fee, 2 );
 				// tax_rate is stored as a percent (e.g. 7 for 7%), so divide by 100.
 				$tax_add    = $tax_rate > 0 ? round( $row_add * ( $tax_rate / 100 ), 2 ) : 0.0;

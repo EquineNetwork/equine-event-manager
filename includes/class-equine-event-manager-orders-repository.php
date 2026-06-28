@@ -913,7 +913,10 @@ class EEM_Orders_Repository {
 				return false;
 			}
 			$new_subtotal = (float) $row['subtotal'] + $added_subtotal;
-			$new_fee      = $calc_fee( $new_subtotal );
+			// F11: a FLAT convenience fee is per-ORDER, not per-row (see F7) — adding
+			// quantity must NOT add another flat fee. Keep this row's existing flat fee
+			// as-is; only a percentage fee grows with the larger subtotal.
+			$new_fee      = ( 'flat' === $fee_type ) ? (float) $row['convenience_fee'] : $calc_fee( $new_subtotal );
 			$new_tax      = (float) $row['tax'] + $added_tax;
 			$ok           = $this->update_component_fields(
 				$section,
@@ -945,7 +948,10 @@ class EEM_Orders_Repository {
 			return false;
 		}
 
-		$new_fee   = $calc_fee( $added_subtotal );
+		// F11: a brand-new component on a FLAT-fee order carries $0 fee — the order's
+		// single flat fee already lives on the original component (see F7). Percentage
+		// fees are per-row proportional, so they compute on the added subtotal.
+		$new_fee   = ( 'flat' === $fee_type ) ? 0.0 : $calc_fee( $added_subtotal );
 		$sister_notes = (string) ( $sister_row['notes'] ?? '' );
 		$token        = $this->extract_submission_token_from_notes( $sister_notes );
 		$rid          = $this->extract_reservation_id_from_notes( $sister_notes );
