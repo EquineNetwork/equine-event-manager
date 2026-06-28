@@ -429,11 +429,14 @@ class EEM_Admin {
 		// DS-1.A: Google Fonts (IBM Plex Sans) — admin.css's
 		// `--eem-font-display` and `--eem-font-ui` CSS vars reference
 		// this by name. `display=swap` avoids FOIT on slow connections.
+		// #39: IBM Plex Sans is now vendored locally (assets/fonts/ + eem-fonts.css)
+		// so the plugin never calls fonts.googleapis.com. Handle kept ('eem-google-
+		// fonts') because eem-admin declares it as a dependency.
 		wp_enqueue_style(
 			'eem-google-fonts',
-			'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap',
+			EQUINE_EVENT_MANAGER_URL . 'assets/css/eem-fonts.css',
 			array(),
-			null
+			EQUINE_EVENT_MANAGER_VERSION
 		);
 
 		// Phase 3 rebuild (tokenized) — loaded first so legacy rules can

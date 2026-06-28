@@ -33,9 +33,10 @@ $c   = function ( $key, $default = '' ) use ( $ctx ) {
 <head>
 <meta charset="UTF-8">
 <title><?php echo esc_html( sprintf( /* translators: %s: order number, e.g. #00020. */ __( 'Order Receipt %s', 'equine-event-manager' ), $c( 'order_number' ) ) ); ?></title>
-<!-- Web (hosted) view loads the brand fonts; Dompdf ignores this and falls back
-     to DejaVu Sans (bundled). Brand-exact PDF fonts are bundled in C12 increment 3. -->
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Web (hosted) view loads the brand fonts from the LOCAL vendored copy (#39 — no
+     fonts.googleapis.com call); Dompdf ignores this and falls back to DejaVu Sans
+     (bundled). Brand-exact PDF fonts are bundled in C12 increment 3. -->
+<link href="<?php echo esc_url( EQUINE_EVENT_MANAGER_URL . 'assets/css/eem-fonts.css' ); ?>" rel="stylesheet">
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'IBM Plex Sans','DejaVu Sans','Helvetica Neue',Helvetica,Arial,sans-serif; color: #0d1b3e; background: #fff; font-size: 12.5px; line-height: 1.5; }

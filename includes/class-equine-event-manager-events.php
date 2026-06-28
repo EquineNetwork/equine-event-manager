@@ -2852,11 +2852,12 @@ class EEM_Events {
 	 * @return void
 	 */
 	public static function render_frontend_styles() {
+		// #39: IBM Plex Sans vendored locally — no fonts.googleapis.com call.
 		wp_enqueue_style(
 			'eem-google-fonts',
-			'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap',
+			EQUINE_EVENT_MANAGER_URL . 'assets/css/eem-fonts.css',
 			array(),
-			null
+			EQUINE_EVENT_MANAGER_VERSION
 		);
 		wp_enqueue_style(
 			'eem-public',

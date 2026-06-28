@@ -564,7 +564,7 @@ class EEM_Reports_Page {
 			<meta charset="<?php bloginfo( 'charset' ); ?>">
 			<meta name="viewport" content="width=device-width, initial-scale=1">
 			<title><?php echo esc_html( $doc_title ); ?></title>
-			<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+			<link href="<?php echo esc_url( EQUINE_EVENT_MANAGER_URL . 'assets/css/eem-fonts.css' ); ?>" rel="stylesheet">
 			<style>
 				*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 				body{font-family:'IBM Plex Sans',sans-serif;color:#0d1b3e;background:#fff;font-size:14px;line-height:1.5}
