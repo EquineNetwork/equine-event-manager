@@ -91,6 +91,10 @@ update_post_meta( $rid, '_en_rv_rows', array(
 	array( 'name' => 'Row 1', 'layout' => 'one_sided', 'zone_id' => '0', 'first' => 'A1', 'last' => 'A8' ),
 ) );
 
+// #55: mirror the _en_* post-meta seed into the config table the editor reads.
+require_once __DIR__ . '/_editor-seed.php';
+eem_smoke_setup_editor( $rid );
+
 $_GET = array( 'page' => 'equine-event-manager-reservation-editor', 'reservation_id' => $rid );
 ob_start();
 EEM_Reservation_Editor_Page::render();

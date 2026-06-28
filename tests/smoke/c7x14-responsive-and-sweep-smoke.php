@@ -131,6 +131,10 @@ register_shutdown_function( static function () use ( $rid_14 ) {
 	}
 } );
 
+// #55: mirror the _en_* post-meta seed into the config table the editor reads.
+require_once __DIR__ . '/_editor-seed.php';
+eem_smoke_setup_editor( $rid_14 );
+
 $_GET['reservation_id'] = $rid_14;
 ob_start(); EEM_Reservation_Editor_Page::render(); $html = (string) ob_get_clean();
 $_GET = array();
