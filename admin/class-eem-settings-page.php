@@ -45,6 +45,7 @@ class EEM_Settings_Page {
 			'communications' => array( 'label' => __( 'Communications', 'equine-event-manager' ),  'icon' => 'email-alt' ),
 			'shortcodes'     => array( 'label' => __( 'Shortcodes', 'equine-event-manager' ),      'icon' => 'editor-code' ),
 			'payments'       => array( 'label' => __( 'Payments', 'equine-event-manager' ),        'icon' => 'money-alt' ),
+			'taxes-fees'     => array( 'label' => __( 'Taxes & Fees', 'equine-event-manager' ),    'icon' => 'money-alt' ),
 			'addons'         => array( 'label' => __( 'Add-Ons', 'equine-event-manager' ),         'icon' => 'admin-plugins' ),
 			'import-export'  => array( 'label' => __( 'Import / Export', 'equine-event-manager' ), 'icon' => 'upload' ),
 			'danger'         => array( 'label' => __( 'Uninstall', 'equine-event-manager' ),       'icon' => 'warning' ),
@@ -436,38 +437,20 @@ class EEM_Settings_Page {
 	 *
 	 * @return void
 	 */
-	private function render_payments_panel() {
-		$tax     = EEM_Settings_Repo::get_tax();
-		$fee     = EEM_Settings_Repo::get_convenience_fee();
-		$payment = wp_parse_args(
-			get_option( 'equine_event_manager_payment_settings', array() ),
-			array(
-				'selected_gateway' => 'stripe',
-				'stripe'           => array(),
-				'authorize_net'    => array(),
-			)
-		);
-		$payment['stripe']        = wp_parse_args( $payment['stripe'], array(
-			'mode'                   => 'test',
-			'test_publishable_key'   => '',
-			'test_secret_key'        => '',
-			'live_publishable_key'   => '',
-			'live_secret_key'        => '',
-			'webhook_signing_secret' => '',
-		) );
-		$payment['authorize_net'] = wp_parse_args( $payment['authorize_net'], array(
-			'mode'                 => 'test',
-			'test_api_login'       => '',
-			'test_transaction_key' => '',
-			'live_api_login'       => '',
-			'live_transaction_key' => '',
-		) );
-
-		$active = in_array( $payment['selected_gateway'], array( 'stripe', 'authorize_net' ), true ) ? $payment['selected_gateway'] : 'stripe';
+	/**
+	 * Taxes & Fees panel (#24) — the global Convenience Fee + default Tax Rate,
+	 * split out of the Payments tab so money-policy config and payment-processor
+	 * config live on separate tabs. Saves via save_taxes_fees_panel().
+	 *
+	 * @return void
+	 */
+	private function render_taxes_fees_panel() {
+		$tax = EEM_Settings_Repo::get_tax();
+		$fee = EEM_Settings_Repo::get_convenience_fee();
 		?>
-		<form class="eem-settings-form" data-eem-settings-form data-eem-panel="payments" method="post" action="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>">
+		<form class="eem-settings-form" data-eem-settings-form data-eem-panel="taxes-fees" method="post" action="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>">
 			<input type="hidden" name="action" value="eem_save_settings" />
-			<input type="hidden" name="panel" value="payments" />
+			<input type="hidden" name="panel" value="taxes-fees" />
 			<?php wp_nonce_field( 'eem_settings_save', 'nonce' ); ?>
 
 			<section class="eem-card">
@@ -554,6 +537,45 @@ class EEM_Settings_Page {
 					</div>
 				</div>
 			</section>
+
+			<div class="eem-settings-save-bar">
+				<button type="submit" class="eem-btn eem-btn-electric"><?php esc_html_e( 'Save Changes', 'equine-event-manager' ); ?></button>
+			</div>
+		</form>
+		<?php
+	}
+
+	private function render_payments_panel() {
+		$payment = wp_parse_args(
+			get_option( 'equine_event_manager_payment_settings', array() ),
+			array(
+				'selected_gateway' => 'stripe',
+				'stripe'           => array(),
+				'authorize_net'    => array(),
+			)
+		);
+		$payment['stripe']        = wp_parse_args( $payment['stripe'], array(
+			'mode'                   => 'test',
+			'test_publishable_key'   => '',
+			'test_secret_key'        => '',
+			'live_publishable_key'   => '',
+			'live_secret_key'        => '',
+			'webhook_signing_secret' => '',
+		) );
+		$payment['authorize_net'] = wp_parse_args( $payment['authorize_net'], array(
+			'mode'                 => 'test',
+			'test_api_login'       => '',
+			'test_transaction_key' => '',
+			'live_api_login'       => '',
+			'live_transaction_key' => '',
+		) );
+
+		$active = in_array( $payment['selected_gateway'], array( 'stripe', 'authorize_net' ), true ) ? $payment['selected_gateway'] : 'stripe';
+		?>
+		<form class="eem-settings-form" data-eem-settings-form data-eem-panel="payments" method="post" action="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>">
+			<input type="hidden" name="action" value="eem_save_settings" />
+			<input type="hidden" name="panel" value="payments" />
+			<?php wp_nonce_field( 'eem_settings_save', 'nonce' ); ?>
 
 			<section class="eem-card">
 				<header class="eem-card-header">
@@ -1439,6 +1461,10 @@ class EEM_Settings_Page {
 				$errors = $this->save_payments_panel( $payload );
 				break;
 
+			case 'taxes-fees':
+				$errors = $this->save_taxes_fees_panel( $payload );
+				break;
+
 			case 'integrations':
 				$errors = $this->save_integrations_panel( $payload );
 				break;
@@ -1588,7 +1614,14 @@ class EEM_Settings_Page {
 	 * @param array $payload Expected: { tax: {...}, selected_gateway: 'stripe'|'authorize_net', stripe: {...}, authorize_net: {...} }
 	 * @return array<int, string>
 	 */
-	private function save_payments_panel( array $payload ) {
+	/**
+	 * Taxes & Fees save (#24) — global Convenience Fee + default Tax Rate, split
+	 * out of save_payments_panel so the two tabs persist independently.
+	 *
+	 * @param array $payload
+	 * @return array<int, string>
+	 */
+	private function save_taxes_fees_panel( array $payload ) {
 		$errors = array();
 
 		if ( isset( $payload['tax'] ) && is_array( $payload['tax'] ) ) {
@@ -1602,6 +1635,12 @@ class EEM_Settings_Page {
 				$errors[] = 'convenience_fee';
 			}
 		}
+
+		return $errors;
+	}
+
+	private function save_payments_panel( array $payload ) {
+		$errors = array();
 
 		$current = wp_parse_args(
 			get_option( 'equine_event_manager_payment_settings', array() ),
