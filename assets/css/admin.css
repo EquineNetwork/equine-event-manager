@@ -449,41 +449,6 @@ body.eem-shell-page a:active,
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Welcome bar (Dashboard — DASH-1)
-   Dark navy strip with greeting + primary CTAs.
-   ───────────────────────────────────────────────────────────── */
-.eem-welcome-bar {
-	background: var(--eem-navy);
-	border-radius: var(--eem-radius);
-	padding: 18px 24px;
-	margin-bottom: 14px;
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: var(--eem-space-4);
-	flex-wrap: wrap;
-}
-
-.eem-welcome-greeting {
-	font-family: var(--eem-font-display);
-	font-size: 18px;
-	font-weight: 700;
-	color: var(--eem-text-on-navy);
-	margin-bottom: 3px;
-}
-
-.eem-welcome-sub {
-	font-size: 13px;
-	color: var(--eem-text-on-navy-soft);
-}
-
-.eem-welcome-actions {
-	display: flex;
-	gap: var(--eem-space-2);
-	flex-wrap: wrap;
-}
-
-/* ─────────────────────────────────────────────────────────────
    Responsive — mobile
    ───────────────────────────────────────────────────────────── */
 @media (max-width: 767px) {
@@ -498,32 +463,8 @@ body.eem-shell-page a:active,
 		width: 100%;
 	}
 
-	.eem-welcome-bar {
-		padding: 14px;
-		flex-direction: column;
-		align-items: flex-start;
-		gap: var(--eem-space-3);
-	}
-
-	.eem-welcome-greeting {
-		font-size: 16px;
-	}
-
-	.eem-welcome-actions {
-		width: 100%;
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: var(--eem-space-2);
-	}
-
 	.eem-breadcrumb-logo img {
 		height: 28px;
-	}
-}
-
-@media (max-width: 390px) {
-	.eem-welcome-actions {
-		grid-template-columns: 1fr;
 	}
 }
 
@@ -1247,8 +1188,6 @@ a.eem-btn-add:hover {
 	line-height: 1.5;
 }
 .eem-stall-map-ok { color: var(--eem-good, #16A34A); font-weight: 700; }
-.eem-stall-map-err { color: #b93742; font-weight: 600; }
-.eem-stall-map-pending { color: var(--eem-muted, #5f6f85); }
 .eem-stall-map-barns { color: var(--eem-muted, #5f6f85); margin-left: 6px; }
 
 .eem-field-row:first-child {
@@ -1610,66 +1549,6 @@ input.eem-price-input:focus {
 	}
 }
 
-/* ═════════════════════════════════════════════════════════════════════════
-   C1.3 — List + table patterns
-   Toolbar, table, sortable headers, mobile cards, meatballs, pagination.
-   Used by: Reservations list, Orders list, Stall Charts list, Reports
-   history, Activity Log table.
-   ═════════════════════════════════════════════════════════════════════════ */
-
-/* ─────────────────────────────────────────────────────────────
-   List toolbar — filters + search + count above the table
-   ───────────────────────────────────────────────────────────── */
-.eem-toolbar {
-	background: var(--eem-bg-alt);
-	border-bottom: 1px solid #dcdcde;
-}
-
-.eem-toolbar-row {
-	padding: 10px 18px;
-	display: flex;
-	align-items: center;
-	gap: var(--eem-space-2);
-	flex-wrap: wrap;
-}
-
-.eem-toolbar-row + .eem-toolbar-row {
-	border-top: 1px solid var(--eem-border-soft);
-	padding-top: 9px;
-	padding-bottom: 9px;
-}
-
-.eem-toolbar-left {
-	display: flex;
-	align-items: center;
-	gap: var(--eem-space-2);
-	flex: 1;
-	flex-wrap: wrap;
-}
-
-.eem-toolbar-right {
-	display: flex;
-	align-items: center;
-	gap: var(--eem-space-2);
-	flex-shrink: 0;
-}
-
-.eem-toolbar-label {
-	font-size: 11px;
-	font-weight: 700;
-	letter-spacing: 0.07em;
-	text-transform: uppercase;
-	color: var(--eem-text-muted);
-	white-space: nowrap;
-}
-
-.eem-list-count {
-	font-size: 13px;
-	color: #50575e;
-	white-space: nowrap;
-	margin-left: auto;
-}
-
 /* Search input — magnifier icon + text input */
 .eem-search-wrap {
 	position: relative;
@@ -1922,38 +1801,6 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	opacity: 0.3;
 }
 
-/* Common cell helpers (data formatters) */
-.eem-cell-order-num {
-	font-weight: 700;
-	color: var(--eem-navy);
-	font-size: 13px;
-	white-space: nowrap;
-}
-
-.eem-cell-customer {
-	font-weight: 500;
-}
-
-.eem-cell-event {
-	color: #50575e;
-	max-width: 200px;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
-.eem-cell-date {
-	color: var(--eem-text-muted);
-	white-space: nowrap;
-	font-size: 13px;
-}
-
-.eem-cell-amount {
-	font-weight: 700;
-	color: var(--eem-navy);
-	white-space: nowrap;
-}
-
 /* ─────────────────────────────────────────────────────────────
    Row actions cell — icon buttons + meatballs menu
    ───────────────────────────────────────────────────────────── */
@@ -1961,52 +1808,6 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	display: flex;
 	align-items: center;
 	gap: 5px;
-}
-
-.eem-action-icon-btn {
-	width: 30px;
-	height: 30px;
-	border-radius: 7px;
-	border: 1.5px solid #e2e8f4;
-	background: var(--eem-surface);
-	color: #94a3b8;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	cursor: pointer;
-	padding: 0;
-}
-
-.eem-action-icon-btn:hover {
-	border-color: var(--eem-electric);
-	color: var(--eem-electric);
-}
-
-.eem-action-icon-btn svg {
-	width: 13px;
-	height: 13px;
-}
-
-.eem-meatballs-btn {
-	width: 30px;
-	height: 30px;
-	border-radius: 7px;
-	border: 1.5px solid #e2e8f4;
-	background: var(--eem-surface);
-	color: #94a3b8;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	cursor: pointer;
-	font-size: 16px;
-	letter-spacing: 1px;
-	line-height: 1;
-	padding: 0;
-}
-
-.eem-meatballs-btn:hover {
-	border-color: var(--eem-electric);
-	color: var(--eem-electric);
 }
 
 /* Meatballs dropdown panel */
@@ -2093,12 +1894,6 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	background: #fef2f2;
 }
 
-.eem-row-dd-divider {
-	height: 1px;
-	background: var(--eem-border-soft);
-	margin: 0;
-}
-
 /* ─────────────────────────────────────────────────────────────
    Pagination
    ───────────────────────────────────────────────────────────── */
@@ -2114,11 +1909,6 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	background: transparent;
 	flex-wrap: wrap;
 	gap: var(--eem-space-2);
-}
-
-.eem-pagination-info {
-	font-size: 13px;
-	color: #50575e;
 }
 
 .eem-pagination-controls {
@@ -2259,12 +2049,6 @@ th.sorted-desc .eem-sort-icon span:first-child {
 		padding: 12px 14px;
 	}
 
-	.eem-toolbar-row {
-		flex-wrap: wrap;
-		gap: var(--eem-space-2);
-		padding: 10px 12px;
-	}
-
 	.eem-list-select {
 		width: 100%;
 	}
@@ -2303,52 +2087,9 @@ th.sorted-desc .eem-sort-icon span:first-child {
 		padding: 10px 14px;
 	}
 
-	.eem-meatballs-btn {
-		width: 44px;
-		height: 44px;
-	}
-
 	:where(.eem-page) :where(button, [type="button"], [type="submit"], [type="reset"], a.eem-btn, .eem-btn, select, input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]), textarea, .eem-filter-tab, .eem-pagination-btn) {
 		min-height: 44px;
 	}
-}
-
-.eem-pwa-install {
-	position: fixed;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	background: var(--eem-navy, #0a1628);
-	color: #fff;
-	padding: 12px 16px;
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	z-index: 999999;
-	font-size: 14px;
-	box-shadow: 0 -2px 8px rgba(0,0,0,0.15);
-}
-
-.eem-pwa-install span {
-	flex: 1;
-}
-
-.eem-pwa-install-btn {
-	flex-shrink: 0;
-}
-
-.eem-pwa-install-dismiss {
-	background: none;
-	border: none;
-	color: #fff;
-	font-size: 20px;
-	cursor: pointer;
-	padding: 4px 8px;
-	opacity: 0.7;
-}
-
-.eem-pwa-install-dismiss:hover {
-	opacity: 1;
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
@@ -2385,10 +2126,6 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	overflow: hidden;
 	display: flex;
 	flex-direction: column;
-}
-
-.eem-modal-card--wide {
-	max-width: 1000px;
 }
 
 .eem-modal-head {
@@ -2475,50 +2212,7 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	}
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Mobile sticky drawer (EVT-1) — customer-facing event page only
-   Bottom-pinned strip with "Total Due" + "Review & Pay" button.
-   Hidden on desktop.
-   ───────────────────────────────────────────────────────────── */
-.eem-mobile-drawer {
-	display: none;
-}
-
 @media (max-width: 767px) {
-	.eem-mobile-drawer {
-		display: flex;
-		position: fixed;
-		bottom: 0;
-		left: 0;
-		right: 0;
-		background: var(--eem-surface);
-		border-top: 1px solid #dcdcde;
-		padding: 12px 16px;
-		z-index: var(--eem-z-sticky);
-		gap: var(--eem-space-3);
-		align-items: center;
-		box-shadow: 0 -4px 16px rgba(3, 27, 78, 0.1);
-	}
-
-	.eem-mobile-drawer-total {
-		flex: 1;
-		min-width: 0;
-	}
-
-	.eem-mobile-drawer-label {
-		font-size: 11px;
-		font-weight: 700;
-		letter-spacing: 0.07em;
-		text-transform: uppercase;
-		color: var(--eem-text-secondary);
-	}
-
-	.eem-mobile-drawer-amount {
-		font-family: var(--eem-font-display);
-		font-size: 18px;
-		font-weight: 700;
-		color: var(--eem-navy);
-	}
 
 	.eem-mobile-drawer .eem-btn {
 		flex-shrink: 0;
@@ -2537,57 +2231,8 @@ th.sorted-desc .eem-sort-icon span:first-child {
 	display: inline-block;
 }
 
-.eem-dropdown-panel {
-	display: none;
-	position: absolute;
-	top: calc(100% + 4px);
-	right: 0;
-	background: var(--eem-surface);
-	border: 1px solid var(--eem-border-card);
-	border-radius: var(--eem-radius);
-	box-shadow: var(--eem-shadow-dropdown);
-	min-width: 200px;
-	z-index: var(--eem-z-dropdown);
-	overflow: hidden;
-}
-
 .eem-dropdown.open .eem-dropdown-panel {
 	display: block;
-}
-
-.eem-dropdown-item {
-	display: flex;
-	align-items: center;
-	gap: 9px;
-	padding: 9px 14px;
-	font-size: 13px;
-	color: var(--eem-text);
-	cursor: pointer;
-	border-bottom: 1px solid var(--eem-border-soft);
-	white-space: nowrap;
-	background: transparent;
-	border-left: none;
-	border-right: none;
-	border-top: none;
-	font-family: var(--eem-font-ui);
-	width: 100%;
-	text-align: left;
-	text-decoration: none;
-}
-
-.eem-dropdown-item:last-child {
-	border-bottom: none;
-}
-
-.eem-dropdown-item:hover {
-	background: #f6f7f7;
-}
-
-.eem-dropdown-item svg {
-	width: 13px;
-	height: 13px;
-	color: var(--eem-text-secondary);
-	flex-shrink: 0;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -2725,10 +2370,6 @@ th.sorted-desc .eem-sort-icon span:first-child {
 
 .eem-destination-banner.open {
 	display: flex;
-}
-
-.eem-destination-banner-message {
-	flex: 1;
 }
 
 .eem-destination-banner strong {
@@ -2997,11 +2638,6 @@ input.eem-file-pick-input {
 	border-radius: 0;
 	position: static;
 	box-shadow: none;
-}
-
-.eem-settings-save-hint {
-	font-size: 12px;
-	color: var(--eem-text-secondary);
 }
 
 /* Inside the settings shell, .eem-card sections flatten to the
@@ -3919,18 +3555,6 @@ a.eem-status-tab.is-active {
 	gap: 8px;
 	flex-shrink: 0;
 }
-
-/* Events list toolbar wraps its controls in a <form>; make that form the flex
-   row (it would otherwise default to display:block and stack the producer
-   filter, search field, and button vertically). */
-.eem-events-toolbar-form {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	flex-wrap: wrap;
-	width: 100%;
-	margin: 0;
-}
 /* Producer dropdown is compact (not full-width) — matches the Orders/Reservations
    left-side filter controls. */
 .eem-events-toolbar-form .eem-list-toolbar-left { flex: 0 0 auto; }
@@ -4327,18 +3951,6 @@ a.eem-orders-count:hover {
 	display: flex;
 	align-items: center;
 	gap: 5px;
-}
-
-/* Stall Chart icon variant (cyan tint per mockup line 120). */
-.eem-action-icon-btn--stall-chart {
-	color: #0e7490;
-	border-color: #a5f3fc;
-	background: #ecfeff;
-}
-
-.eem-action-icon-btn--stall-chart:hover {
-	background: #cffafe;
-	color: #0e7490;
 }
 
 /* Meatballs ··· button. Shares geometry with .eem-action-icon-btn but the
@@ -4936,17 +4548,6 @@ a.eem-btn-ghost:hover {
 	pointer-events: none;
 }
 
-.eem-row-dd-tag {
-	margin-left: auto;
-	font-size: 10px;
-	font-weight: 700;
-	color: var(--eem-text-muted);
-	letter-spacing: 0.05em;
-	padding: 1px 5px;
-	background: var(--eem-bg-alt);
-	border-radius: 8px;
-}
-
 /* Danger variant on dropdown menu items (Move to Trash). */
 .eem-row-dd-item--danger {
 	color: var(--eem-danger);
@@ -5398,19 +4999,6 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
 	font-weight: 700;
 }
 
-.eem-stall-assignment__none {
-	color: var(--eem-text-muted);
-	font-weight: 500;
-	font-style: italic;
-}
-
-.eem-stall-assignment__note {
-	font-size: 12px;
-	color: var(--eem-text-secondary);
-	margin-top: 6px;
-	font-style: italic;
-}
-
 /* Tack-stall indicator under the assigned-units line (Bug #7): which of the
    assigned stalls is the tack stall. Amber chip so it reads as a distinct
    call-out without competing with the navy unit badges. */
@@ -5827,11 +5415,6 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
 	font-size: 14px;
 	font-weight: 600;
 	color: var(--eem-text-primary);
-}
-.eem-order-notes__text {
-	font-size: 13.5px;
-	color: var(--eem-text-primary);
-	line-height: 1.6;
 }
 .eem-order-notes__input {
 	width: 100%;
@@ -6503,24 +6086,6 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
 	background: #EEF4FF;
 }
 
-/* DS-1.A.1: mockup preview is now an `<iframe srcdoc>` instead of an
-   inline-injected `<div>` of mockup body HTML. Root cause of the
-   DS-1.A regression: the mockup HTML carries its own `<style>` block
-   inline, and once injected into the live admin DOM, those rules
-   (targeting generic selectors like `body`, `.wp-content`) cascaded
-   out and broke the surrounding WP admin chrome. Iframe gives a hard
-   CSS/JS boundary for free and makes future mockup re-imports zero-
-   touch on this stub. `sandbox="allow-same-origin"` defense-in-depth
-   in the renderer. */
-.eem-mockup-preview {
-	width: 100%;
-	height: 80vh;
-	border: 1px dashed var(--eem-border);
-	border-radius: var(--eem-radius);
-	background: #fff;
-	display: block;
-}
-
 /* ═════════════════════════════════════════════════════════════════════════
    DS-1.B — Admin Dashboard
    Renders against .mockups/dashboard_page.html. Em-dash placeholders for
@@ -6560,114 +6125,6 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
    sets 15px — revert to 14px per mockup). Card link: mockup 12px (global is 12.5px). */
 .eem-shell-page--dashboard .eem-card-link {
 	font-size: 12px;
-}
-
-/* Range filter bar */
-.eem-dashboard-range-bar {
-	display: flex;
-	align-items: center;
-	justify-content: flex-end;
-	margin: 0 0 14px;
-	gap: 10px;
-	flex-wrap: wrap;
-}
-.eem-dashboard-range-label {
-	font-size: 12.5px;
-	font-weight: 600;
-	color: #50575e;
-}
-/* C7.X.15 Issue 5 — `select.` prefix ties WP core forms.css; same
-   fix as input. prefix on form-control inputs at C7.X.13. Dashboard
-   "Last 30 days" select was rendering with WP-core's `min-height:
-   42px; border-radius: 12px; border-width: 1.5px;` overrides until
-   the prefix landed. */
-select.eem-dashboard-range-select {
-	/* C7.X.17 Issue B: old padding-top/bottom (7px) left WP core's
-	   line-height:2.71 bleeding through → computed 51px. Fix: explicit
-	   line-height:normal + reduced padding + min-height token so height
-	   matches .eem-toolbar-select at 29px. */
-	margin: 0;
-	min-height: var(--eem-select-height);
-	padding: 4px 32px 4px 12px;
-	border: 1px solid var(--eem-control-border);
-	border-radius: var(--eem-radius);
-	background: var(--eem-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238c8f94' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
-	font-size: 13px;
-	font-weight: 500;
-	font-family: var(--eem-font-ui);
-	line-height: normal;
-	color: var(--eem-text);
-	cursor: pointer;
-	outline: none;
-	appearance: none;
-}
-select.eem-dashboard-range-select:focus {
-	border-color: var(--eem-electric);
-	box-shadow: var(--eem-focus-ring);
-}
-
-/* KPI metric grid + colored top borders (DEC-4) */
-.eem-dashboard-kpi-grid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-	gap: 12px;
-	margin-bottom: 18px;
-}
-.eem-dashboard-kpi-card {
-	background: var(--eem-surface);
-	border: 1px solid #e5e7eb;
-	border-radius: var(--eem-radius);
-	padding: 16px 18px;
-	position: relative;
-	overflow: hidden;
-}
-.eem-dashboard-kpi-card::before {
-	content: '';
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	height: 3px;
-}
-.eem-dashboard-kpi-card--blue::before   { background: var(--eem-electric); }
-.eem-dashboard-kpi-card--orange::before { background: #c2410c; }
-.eem-dashboard-kpi-card--green::before  { background: #15803d; }
-.eem-dashboard-kpi-card--red::before    { background: #b91c1c; }
-.eem-dashboard-kpi-card--purple::before { background: #7c3aed; }
-.eem-dashboard-kpi-label {
-	font-size: 12.5px;
-	font-weight: 600;
-	color: #50575e;
-	margin-bottom: 8px;
-}
-.eem-dashboard-kpi-value {
-	font-family: var(--eem-font-display);
-	font-size: 28px;
-	font-weight: 700;
-	color: var(--eem-navy);
-	margin-bottom: 4px;
-	letter-spacing: -0.01em;
-}
-.eem-dashboard-kpi-sub {
-	font-size: 12px;
-	color: #50575e;
-}
-.eem-dashboard-kpi-tone--up   { color: #15803d; font-weight: 600; }
-.eem-dashboard-kpi-tone--down { color: #b91c1c; font-weight: 600; }
-.eem-dashboard-kpi-tone--warn { color: #c2410c; font-weight: 600; }
-.eem-dashboard-kpi-tone--flat { color: #6B7A99; font-weight: 600; }
-
-/* DS-1.B.1: KPI label inner layout — text on left, icon on right.
-   Mockup line 68 — `display:flex; justify-content:space-between`. */
-.eem-dashboard-kpi-label {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-}
-.eem-dashboard-kpi-label svg {
-	width: 14px;
-	height: 14px;
-	color: var(--eem-text-muted);
 }
 
 /* Body grid (1fr + 320px side) — mockup line 57: grid-template-columns:1fr 320px; gap:16px */
@@ -7012,11 +6469,6 @@ a.eem-dashboard-qa-btn:focus {
 	color: var(--eem-navy);
 	line-height: 1.3;
 }
-.eem-dashboard-qa-sub {
-	font-size: 11.5px;
-	color: #50575e;
-	margin-top: 2px;
-}
 
 /* This Week */
 .eem-dashboard-tw-body {
@@ -7068,9 +6520,6 @@ a.eem-dashboard-qa-btn:focus {
 
 /* Responsive */
 @media (max-width: 1024px) {
-	/* Dashboard-body padding comes from the GLOBAL grouped field rule at every
-	   breakpoint — only the responsive grid columns are page-specific here. */
-	.eem-dashboard-kpi-grid { grid-template-columns: repeat(2, 1fr); }
 	.eem-dashboard-grid { grid-template-columns: 1fr; }
 	.eem-dashboard-side {
 		display: grid;
@@ -7079,16 +6528,12 @@ a.eem-dashboard-qa-btn:focus {
 	}
 }
 @media (max-width: 767px) {
-	.eem-dashboard-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-	.eem-dashboard-kpi-card { padding: 12px 14px; }
-	.eem-dashboard-kpi-value { font-size: 22px; }
 	.eem-dashboard-grid { grid-template-columns: 1fr; gap: 10px; }
 	.eem-dashboard-side { display: flex; flex-direction: column; gap: 10px; }
 	.eem-dashboard-quick-actions { padding: 10px; }
 	.eem-dashboard-qa-btn { padding: 10px; }
 	.eem-dashboard-qa-icon { width: 28px; height: 28px; }
 	.eem-dashboard-qa-label { font-size: 12.5px; }
-	.eem-dashboard-qa-sub { display: none; }
 	.eem-dashboard-res-row { grid-template-columns: 1fr; gap: 8px; padding: 12px 14px; }
 	.eem-dashboard-res-right { display: flex; align-items: center; gap: 16px; width: 100%; text-align: left; }
 	.eem-dashboard-res-orders { font-size: 18px; }
@@ -7101,12 +6546,9 @@ a.eem-dashboard-qa-btn:focus {
 	.eem-dashboard-attention-icon { width: 28px; height: 28px; }
 	.eem-dashboard-attention-title { font-size: 12.5px; }
 	.eem-dashboard-attention-desc { font-size: 11.5px; }
-	.eem-dashboard-range-bar { justify-content: space-between; }
 }
 @media (max-width: 390px) {
-	.eem-dashboard-kpi-grid { grid-template-columns: 1fr; }
 	.eem-dashboard-quick-actions { grid-template-columns: 1fr; }
-	.eem-dashboard-kpi-value { font-size: 24px; }
 }
 
 /* ═════════════════════════════════════════════════════════════════════════
@@ -7193,32 +6635,6 @@ a.eem-dashboard-qa-btn:focus {
 	font-size: 12.5px;
 	color: var(--eem-text-secondary);
 	margin-top: 4px;
-}
-.eem-reservation-editor-meta-label {
-	font-weight: 700;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-	font-size: 11px;
-	color: var(--eem-text-muted);
-}
-.eem-reservation-editor-meta-value {
-	color: var(--eem-text);
-	font-weight: 500;
-}
-.eem-reservation-editor-meta-value--missing {
-	color: var(--eem-text-muted);
-	font-style: italic;
-}
-.eem-reservation-editor-meta-sep {
-	color: var(--eem-text-muted);
-}
-/* C7.B.1: placeholder for the C7.B.2 modal launcher. Disabled-looking
-   text label, no click handler yet. */
-.eem-reservation-editor-meta-change-placeholder {
-	color: var(--eem-text-muted);
-	font-style: italic;
-	cursor: not-allowed;
-	opacity: 0.7;
 }
 
 /* Section-card chrome — shared across all 10 sections */
@@ -7366,18 +6782,6 @@ a.eem-dashboard-qa-btn:focus {
 .eem-toggle--on::after  { transform: translateX(20px); }
 .eem-toggle--off::after { transform: translateX(0); }
 
-/* C7.B.1 placeholder strip for the eventual save bar (C7.B.2). */
-.eem-reservation-editor-savebar-placeholder {
-	padding: 12px 18px;
-	background: var(--eem-bg-alt);
-	border: 1px dashed var(--eem-border);
-	border-radius: var(--eem-radius);
-	color: var(--eem-text-secondary);
-	font-size: 13px;
-	font-style: italic;
-	text-align: center;
-}
-
 /* Not-found state */
 .eem-reservation-editor-not-found {
 	padding: 24px 18px;
@@ -7411,30 +6815,6 @@ a.eem-section-header:focus {
 	.eem-enable-toggle__label { display: none; }
 	.eem-section-body { padding: 12px 14px; }
 	.eem-reservation-editor-meta-line { font-size: 12px; gap: 6px; }
-}
-
-/* ═════════════════════════════════════════════════════════════════════════
-   C7.B.2 — Save bar + Linked Event modal
-   Save bar is sticky-bottom (Decision A) on a navy band (Decision B).
-   Shared component — Order Detail consumes the same partial in C7.F
-   (Decision J). Anchor umbrella discipline applied (DS-1.A.1 lesson).
-   ═════════════════════════════════════════════════════════════════════════ */
-
-/* Promoted meta-line "(change linked event)" link. Anchor-umbrella
-   chains per DS-1.A.1 discipline — the `a.` prefix wins specificity
-   vs `.eem-page a` (0,1,1). */
-.eem-reservation-editor-meta-change-link,
-a.eem-reservation-editor-meta-change-link,
-a.eem-reservation-editor-meta-change-link:link,
-a.eem-reservation-editor-meta-change-link:visited,
-a.eem-reservation-editor-meta-change-link:hover,
-a.eem-reservation-editor-meta-change-link:focus {
-	color: var(--eem-electric);
-	text-decoration: none;
-	font-weight: 600;
-}
-a.eem-reservation-editor-meta-change-link:hover {
-	color: var(--eem-electric-hover);
 }
 
 /* Save bar — fixed-bottom WHITE strip with subtle top border.
@@ -7483,11 +6863,6 @@ a.eem-reservation-editor-meta-change-link:hover {
 @media (max-width: 782px) {
 	.eem-save-bar { left: 0; padding: 10px 14px; }
 }
-.eem-save-bar__primary {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
 
 /* Mobile: stack buttons + give primary visual weight via order */
 @media (max-width: 767px) {
@@ -7496,25 +6871,8 @@ a.eem-reservation-editor-meta-change-link:hover {
 		align-items: stretch;
 		gap: 8px;
 	}
-	.eem-save-bar__primary {
-		flex-direction: column-reverse;
-		align-items: stretch;
-	}
 	.eem-save-bar__primary .eem-btn { width: 100%; justify-content: center; }
 	.eem-save-bar .eem-btn-secondary { width: 100%; justify-content: center; }
-}
-
-/* Linked Event modal — source-mode picker (segmented control) +
-   typeahead picker + feed URL input + error region. Built on C1.4
-   .eem-modal chrome (already shipped). */
-.eem-modal-linked-event__source-row {
-	margin-bottom: 4px;
-}
-.eem-modal-linked-event__source-picker {
-	display: flex;
-	gap: 6px;
-	margin-top: 6px;
-	flex-wrap: wrap;
 }
 .eem-source-mode-btn {
 	flex: 1;
@@ -7539,25 +6897,8 @@ a.eem-reservation-editor-meta-change-link:hover {
 	color: var(--eem-electric);
 	font-weight: 600;
 }
-
-.eem-event-typeahead-wrap {
-	position: relative;
-}
 .eem-event-typeahead-input {
 	width: 100%;
-}
-.eem-event-typeahead-results {
-	position: absolute;
-	top: calc(100% + 4px);
-	left: 0;
-	right: 0;
-	background: var(--eem-surface);
-	border: 1px solid var(--eem-border-card);
-	border-radius: var(--eem-radius);
-	box-shadow: var(--eem-shadow-dropdown);
-	max-height: 280px;
-	overflow-y: auto;
-	z-index: calc(var(--eem-z-modal) + 10);
 }
 .eem-event-typeahead-result {
 	display: block;
@@ -7747,7 +7088,6 @@ a.eem-reservation-editor-meta-change-link:hover {
 	color: var(--eem-text);
 	font-weight: 500;
 }
-.eem-inline-amt { margin-top: 10px; }
 
 /* Fee-mode pill triplet (None / Flat / Percentage). Mockup line 158. */
 .eem-fee-modes {
@@ -7777,55 +7117,6 @@ a.eem-reservation-editor-meta-change-link:hover {
 	background: var(--eem-electric);
 	color: #fff;
 	font-weight: 600;
-}
-
-/* Percentage input variant — % symbol on RIGHT (mockup line 164).
-   Inverts .eem-price-wrap which puts $ on the LEFT. */
-/* Suffix variant of the locked affix design — % sits in a blue navy segment
-   on the right. */
-.eem-pct-wrap {
-	display: flex;
-	align-items: center;
-	max-width: 160px;
-	height: var(--eem-select-height);
-	box-sizing: border-box;
-	border: 1px solid var(--eem-control-border);
-	border-radius: var(--eem-radius);
-	background: #fff;
-	overflow: hidden;
-}
-.eem-pct-wrap:focus-within {
-	border-color: var(--eem-electric);
-	box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12);
-}
-input.eem-pct-input {
-	margin: 0;
-	padding: 0 12px;
-	height: 100%;
-	border: none;
-	border-radius: 0;
-	font-size: 13.5px;
-	font-family: inherit;
-	color: var(--eem-text);
-	background: transparent;
-	min-width: 0;
-	flex: 1;
-	outline: none;
-}
-input.eem-pct-input:focus {
-	box-shadow: none;
-}
-.eem-pct-symbol {
-	padding: 0 11px;
-	height: 100%;
-	background: #f0f4fb;
-	border: none;
-	border-left: 1px solid var(--eem-control-border);
-	font-size: 13px;
-	color: var(--eem-navy);
-	font-weight: 600;
-	display: flex;
-	align-items: center;
 }
 
 /* Mobile responsive — collapse field-row grid to stacked, narrow
@@ -8192,9 +7483,6 @@ a.eem-btn-preview:hover { background: #EEF4FF; border-color: var(--eem-electric)
 .eem-btn-manage-layout { padding: 8px 16px; border: 1px solid #c3c4c7; border-radius: var(--eem-radius); font-size: 13px; font-weight: 600; font-family: inherit; color: var(--eem-text); background: #fff; cursor: not-allowed; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; position: relative; opacity: 0.65; text-decoration: none; }
 .eem-btn-manage-layout svg { width: 13px; height: 13px; color: var(--eem-text-muted); }
 .eem-btn-manage-layout::after { content: 'C8'; position: absolute; top: -6px; right: -6px; background: #8c8f94; color: #fff; font-size: 9px; font-weight: 700; padding: 1px 4px; border-radius: 8px; letter-spacing: 0.05em; }
-
-/* ── RV Lot Zones (mockup line 183) ── */
-.eem-zone-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
 .eem-zone-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #8c8f94; border-radius: var(--eem-radius); background: #fff; flex-wrap: wrap; }
 .eem-zone-color-swatch { width: 18px; height: 18px; border-radius: var(--eem-radius); flex-shrink: 0; border: 1px solid rgba(3, 27, 78, 0.15); cursor: default; }
 /* C7.X.14 — `input.` prefix ties WP core forms.css; same fix as
@@ -8202,8 +7490,6 @@ a.eem-btn-preview:hover { background: #EEF4FF; border-color: var(--eem-electric)
 /* C7.X.15 Issue 3 + 4 — margin: 0 resets WP core forms.css margin; border-radius uses --eem-radius-sm (3px) for tighter repeating-table chrome. */
 input.eem-zone-name-input { margin: 0; flex: 1 1 180px; min-width: 140px; padding: 7px 10px; border: 1px solid #8c8f94; border-radius: var(--eem-radius-sm); font-size: 13px; font-family: inherit; color: var(--eem-text); outline: none; background: #fff; }
 input.eem-zone-name-input:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
-.eem-zone-price-group { display: flex; align-items: center; gap: 8px; }
-.eem-zone-price-label { font-size: 11px; font-weight: 600; color: var(--eem-text-muted); white-space: nowrap; }
 .eem-zone-price-wrap { display: flex; align-items: stretch; overflow: hidden; border-radius: var(--eem-radius); }
 .eem-zone-price-sym { padding: 7px 9px; background: #f3f4f5; border: 1px solid #8c8f94; border-right: none; border-radius: var(--eem-radius) 0 0 var(--eem-radius); font-size: 12.5px; color: var(--eem-text-muted); font-weight: 600; display: flex; align-items: center; }
 /* C7.X.13 — `input.` prefix ties WP core forms.css; see audit-trail
@@ -8211,20 +7497,12 @@ input.eem-zone-name-input:focus { border-color: var(--eem-electric); box-shadow:
 /* C7.X.15 Issue 3 + 4 — see input.eem-zone-name-input comment above. */
 input.eem-zone-price-in { margin: 0; width: 80px; padding: 7px 9px; border: 1px solid #8c8f94; border-radius: 0 var(--eem-radius-sm) var(--eem-radius-sm) 0; font-size: 13px; font-family: inherit; color: var(--eem-text); outline: none; background: #fff; }
 input.eem-zone-price-in:focus { border-color: var(--eem-electric); box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.12); }
-.eem-zone-delete-btn { width: 30px; height: 30px; border-radius: var(--eem-radius); border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.eem-zone-delete-btn svg { width: 13px; height: 13px; }
-.eem-zone-delete-btn:hover { background: #fee2e2; }
-.eem-zone-add-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px dashed #c3c4c7; border-radius: var(--eem-radius); font-size: 13px; font-weight: 600; font-family: inherit; color: var(--eem-text); background: #fff; cursor: pointer; align-self: flex-start; }
-.eem-zone-add-btn:hover { border-color: var(--eem-electric); color: var(--eem-electric); border-style: solid; }
-.eem-zone-add-btn svg { width: 13px; height: 13px; color: var(--eem-electric); }
 
 
 /* ── Add-on block (title → help → table layout) ── */
 .eem-addon-block { margin-top: 16px; padding: 16px; background: var(--eem-bg-muted); border-radius: var(--eem-radius); }
-.eem-addon-block__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .eem-addon-block__title { margin: 0; font-size: 14px; font-weight: 600; color: var(--eem-navy); }
 .eem-addon-block__help { margin: 2px 0 0; font-size: 12px; color: var(--eem-text-muted); }
-.eem-addon-block__hint { margin: 0 0 8px; font-size: 12px; color: var(--eem-text-muted); line-height: 1.5; }
 
 /* ── Repeating rows (add-ons tables — restyled to match package-row pattern) ── */
 .eem-repeat-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; margin-bottom: 10px; }
@@ -8237,15 +7515,6 @@ input.eem-zone-price-in:focus { border-color: var(--eem-electric); box-shadow: 0
 .eem-switch input:checked + .eem-switch-track { background: #1668F2; }
 .eem-switch input:checked + .eem-switch-track::after { transform: translateX(16px); }
 .eem-switch input:focus-visible + .eem-switch-track { outline: 2px solid #1668F2; outline-offset: 2px; }
-/* Per-add-on zone pills (RV add-ons) — click-to-toggle styled checkboxes; none
-   checked = all zones. Cleaner than a native multi-select (no ⌘/Ctrl-click). */
-.eem-zone-pills { display: flex; flex-wrap: wrap; gap: 5px; }
-.eem-zone-pill { display: inline-flex; cursor: pointer; }
-.eem-zone-pill input { position: absolute; opacity: 0; width: 0; height: 0; }
-.eem-zone-pill span { display: inline-block; padding: 4px 11px; border-radius: 999px; border: 1.5px solid var(--eem-border, #D9E2F2); background: #fff; color: var(--eem-text-secondary, #6B7A99); font-size: 12px; font-weight: 600; line-height: 1.4; user-select: none; transition: background .12s, border-color .12s, color .12s; }
-.eem-zone-pill:hover span { border-color: var(--eem-electric, #1668F2); color: var(--eem-navy, #031B4E); }
-.eem-zone-pill input:checked + span { background: var(--eem-electric, #1668F2); border-color: var(--eem-electric, #1668F2); color: #fff; }
-.eem-zone-pill input:focus-visible + span { outline: 2px solid var(--eem-electric, #1668F2); outline-offset: 2px; }
 .eem-repeat-table thead { background: transparent; }
 /* Header aligns to the input cells below (padding-left 0) + house navy uppercase. */
 .eem-repeat-table thead th { padding: 0 8px 6px 0; font-size: 12px; font-weight: 600; color: var(--eem-navy); text-align: left; white-space: nowrap; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -8320,21 +7589,6 @@ input.eem-repeat-price-in:focus { box-shadow: none; }
 	/* On mobile, hide the status badge in the sticky save bar (mockup line 285) */
 	.eem-sticky-save-status { display: none; }
 	.eem-sticky-save-meta { display: none; }
-}
-
-/* ════════════════════════════════════════════════════════════════════
-   C8 — Event-anchor header, Inventory Mode, Computed inventory display
-   Ported from .mockups/edit_reservation_page.html <style> block.
-   ════════════════════════════════════════════════════════════════════ */
-
-/* ── Event-anchor header ── */
-.eem-header-display {
-	display: flex;
-	flex-direction: row;
-	align-items: center;
-	justify-content: space-between;
-	flex-wrap: wrap;
-	gap: 12px;
 }
 .eem-plugin-header-meta {
 	font-size: 13px;
@@ -8546,37 +7800,6 @@ input.eem-event-search-input:focus {
 	gap: 10px;
 	margin-bottom: 12px;
 }
-.eem-side-block {
-	flex: 1 1 260px;
-	min-width: 240px;
-	border: 1px solid #D9E2F2;
-	background: #fff;
-	border-radius: var(--eem-radius, 3px);
-	padding: 10px 12px;
-}
-.eem-side-block-label {
-	font-size: 10px;
-	font-weight: 700;
-	letter-spacing: .09em;
-	text-transform: uppercase;
-	color: var(--eem-electric);
-	margin-bottom: 8px;
-	display: flex;
-	align-items: center;
-	gap: 6px;
-}
-.eem-side-block-label::before {
-	content: '';
-	width: 10px;
-	height: 10px;
-	border-radius: 2px;
-	background: var(--eem-electric);
-}
-.eem-side-block-row {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 10px;
-}
 .eem-side-block-row .eem-row-card-field { flex: 1 1 100px; min-width: 90px; }
 .eem-row-card-field {
 	display: flex;
@@ -8762,7 +7985,6 @@ input.eem-event-search-input:focus {
 	line-height: 32px;
 }
 #eem-rv-mapped-content .eem-zone-price-in { border: none; width: 70px; }
-#eem-rv-mapped-content .eem-zone-add-btn { border: 1.5px dashed #D9E2F2; border-radius: 6px; margin-bottom: 14px; }
 
 /* Nested field-rows inside mapped content: stacked label-above-control */
 #eem-stall-mapped-content .eem-field-row,
@@ -8901,37 +8123,6 @@ input.eem-event-search-input:focus {
 
 /* ── Stats bar ── */
 .eem-stall-chart-body { padding: 18px 22px 40px; background: #fff; }
-/* Daily Movement bar — matches the Daily Movement page overview (pale-blue
-   band, navy title, per-date columns with electric-blue ↓↑ arrows). */
-/* Full-bleed: cancel the .eem-stall-chart-body 18px/22px padding so the bar
-   spans edge-to-edge and sits flush under the header (matches the DM page). */
-.eem-stall-chart-dm-bar { background: #f8fafc; border: 0; border-bottom: 1px solid #d9e2f2; border-radius: 0; padding: 16px 22px; margin: -18px -22px 18px; }
-.eem-stall-chart-dm-title { font-family: var(--eem-font-display); font-size: 13px; font-weight: 700; color: #031b4e; margin-bottom: 12px; }
-.eem-stall-chart-dm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
-.eem-scd-date { font-size: 13px; font-weight: 700; color: #031b4e; margin-bottom: 5px; }
-.eem-scd-vals span { display: block; font-size: 12.5px; font-weight: 600; line-height: 1.7; color: #1d2327; }
-.eem-scd-arr { color: #15803d; }
-.eem-scd-dep { color: #b45309; }
-
-/* Stats row inside the Daily Movement bar (Stall Units / RV Lots / Orders) */
-.eem-stall-chart-dm-stats { display: flex; flex-wrap: wrap; gap: 10px; }
-.eem-scs-card { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #d9e2f2; border-radius: 6px; padding: 10px 14px; }
-.eem-scs-icon { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 6px; background: #e6eefc; color: #1668f2; font-size: 16px; line-height: 1; }
-.eem-scs-num { font-family: var(--eem-font-display); font-size: 22px; font-weight: 700; color: #031b4e; line-height: 1; }
-.eem-scs-label { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #64748b; margin-left: 2px; }
-.eem-scs-oversold { color: #b91c1c; }
-
-.eem-stall-chart-stats-bar { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
-.eem-stall-chart-stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: var(--eem-radius); padding: 14px 18px; }
-.eem-stall-chart-stat-label { font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: #8c8f94; margin-bottom: 8px; }
-.eem-stall-chart-stat-value { font-family: var(--eem-font-display); font-size: 28px; font-weight: 700; color: #031B4E; }
-.eem-stall-chart-stat-daily { font-size: 13px; color: #4a5a7a; line-height: 1.8; }
-.eem-stall-chart-stat-daily span { font-weight: 600; color: #031B4E; }
-.eem-stall-chart-stat-card--wide { /* spans extra width naturally in 1.4fr column */ }
-
-/* ── Action bar ── */
-.eem-stall-chart-action-bar { background: #fff; border: 1px solid #e5e7eb; border-radius: var(--eem-radius); padding: 12px 18px; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.eem-stall-chart-action-bar-btns { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; flex: 1; }
 .eem-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--eem-radius); font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap; border: 1px solid; text-decoration: none; }
 .eem-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
 .eem-btn--primary { background: #1668F2; color: #fff; border-color: #1668F2; }
@@ -8957,34 +8148,11 @@ a.eem-btn--ghost:focus    { color: #1d2327; }
 /* Transparent wrapper — no inner card chrome, no overflow clip, so the search
    bar + table inside can bleed full-width to match the Show/View bar above. */
 .eem-stall-chart-view-tabs-card { background: transparent; border: 0; border-radius: 0; overflow: visible; margin: 0; }
-/* Full-width view selector bar (By Customer / By Location – List / – Map). */
-.eem-stall-chart-view-bar { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #dcdcde; background: #f8fafc; }
-.eem-stall-chart-view-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #64748b; }
-.eem-stall-chart-view-select { min-width: 230px; }
-/* Filter bar below the Daily Movement bar — Show + View dropdowns side by side
-   (matches the Daily Movement page's Reservation/Date filter bar). */
-.eem-stall-chart-filter-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 18px; background: #f0f4fb; border-bottom: 1px solid #dcdcde; padding: 14px 22px; margin: -18px -22px 0; }
-.eem-scf-group { display: flex; flex-direction: column; gap: 5px; }
-.eem-scf-group .eem-stall-chart-view-select { min-width: 200px; }
-/* Action buttons pushed to the end of the filter row, bottom-aligned with the dropdowns. */
-.eem-scf-actions { margin-left: auto; display: flex; gap: 10px; }
 /* Second header action (Edit Reservation) sits to the right of Change Event. */
 .eem-header-actions { display: flex; gap: 10px; }
 .eem-stall-chart-view-tabs { display: flex; gap: 0; background: #fff; padding: 0 18px; }
-.eem-stall-chart-view-tab { padding: 14px 22px 12px; font-size: 14px; font-weight: 600; color: #6B7A99; cursor: pointer; border-bottom: 3px solid transparent; font-family: inherit; transition: color .15s, border-color .15s; display: flex; align-items: center; gap: 8px; background: none; border-left: none; border-right: none; border-top: none; }
-.eem-stall-chart-view-tab:hover { color: #031B4E; }
-.eem-stall-chart-view-tab.active { color: #1668F2; border-bottom-color: #1668F2; }
-/* Kill the WP-core button focus ring that made the active tab read as a big
-   bordered button; keep an accessible underline-only focus cue. */
-.eem-stall-chart-view-tab:focus { outline: none; box-shadow: none; }
-.eem-stall-chart-view-tab:focus-visible { color: #1668F2; border-bottom-color: #1668F2; }
-.eem-stall-chart-view-tab svg { width: 14px; height: 14px; }
 .eem-chart-date-cell { font-size: 13px; color: #50575e; white-space: nowrap; }
 .eem-stall-chart-tab-panel { display: block; }
-
-/* ── Help / tip banner ── */
-.eem-stall-chart-help { display: flex; align-items: center; gap: 10px; padding: 11px 18px; background: #F0F4FB; border-bottom: 1px solid #D9E2F2; font-size: 13px; color: #031B4E; }
-.eem-stall-chart-help svg { width: 14px; height: 14px; color: #1668F2; flex-shrink: 0; }
 
 /* ── Filter row ── */
 .eem-stall-chart-filter-row { padding: 12px 22px; margin: 0 -22px; border-top: 0; border-bottom: 1px solid #dcdcde; background: #f0f4fb; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
@@ -8999,16 +8167,11 @@ select.eem-field-select--auto { width: auto; }
 .eem-stall-chart-barn-tab { padding: 6px 14px; border-radius: var(--eem-radius); font-size: 12.5px; font-weight: 500; color: #1d2327; cursor: pointer; border: 1px solid #c3c4c7; background: #fff; font-family: inherit; }
 .eem-stall-chart-barn-tab:hover { background: #f6f7f7; border-color: #8c8f94; }
 .eem-stall-chart-barn-tab.active { background: #1668F2; color: #fff; border-color: #1668F2; }
-/* Reusable filter-row search: fixed-width box pinned to the right end of the row.
-   Locked style — reuse on other admin list pages (margin-left:auto pushes it last). */
-.eem-stall-chart-filter-search { position: relative; flex: 0 0 auto; margin-left: auto; width: 300px; max-width: 100%; min-width: 200px; }
-.eem-stall-chart-filter-search svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; color: #8c8f94; }
 .eem-stall-chart-search-input { width: 100%; padding: 6px 10px 6px 25px; border: 1px solid #8c8f94; border-radius: var(--eem-radius); font-size: 13px; font-family: inherit; color: #1d2327; background: #fff; outline: none; }
 .eem-stall-chart-search-input:focus { border-color: #1668F2; box-shadow: 0 0 0 2px rgba(22,104,242,.12); }
 /* Scoped (0,2,0) guard — prevents any higher-context rule from collapsing the
    icon-to-text gap. Icon right edge lands at ~22px; 44px gives a 22px clearance. */
 .eem-stall-chart-filter-search .eem-stall-chart-search-input { padding-left: 25px; }
-.eem-stall-chart-filter-hint { font-size: 12px; color: #8c8f94; white-space: nowrap; }
 .eem-stall-chart-empty-note {
 	font-size: 14px;
 	font-weight: 500;
@@ -9101,7 +8264,6 @@ tr.eem-chart-barn-row td { background: #fdf4e7; padding: 9px 22px; font-size: 12
 .eem-vip-star { color: #E0A800; font-size: 11px; line-height: 1; margin-right: 2px; flex-shrink: 0; }
 /* #3 check-in legend (above the By-Location list). */
 .eem-sc-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; padding: 10px; font-size: 12.5px; color: var(--eem-text-secondary); }
-.eem-sc-legend__label { font-weight: 700; color: var(--eem-text-primary); }
 .eem-sc-legend__item { display: inline-flex; align-items: center; gap: 6px; }
 .eem-sc-legend-ring { width: 13px; height: 13px; border-radius: 3px; background: #eaf1fe; box-sizing: border-box; display: inline-block; }
 .eem-sc-legend-ring--pending { box-shadow: inset 0 0 0 2px #ef4444; }
@@ -9134,23 +8296,6 @@ tr.eem-chart-barn-row td { background: #fdf4e7; padding: 9px 22px; font-size: 12
 .eem-block-night { display: flex; align-items: center; gap: 9px; font-size: 14px; color: var(--eem-text-primary); cursor: pointer; }
 .eem-block-night input { margin: 0; width: 16px; height: 16px; }
 .eem-chart-block-name { color: #50575e; font-size: 13px; white-space: nowrap; }
-.eem-chart-cell-wrap { display: flex; justify-content: center; }
-
-/* By-Location Status / Customer columns (date-independent occupancy). */
-.eem-chart-status-cell, .eem-chart-customer-cell { font-size: 13px; white-space: nowrap; }
-.eem-chart-status {
-	display: inline-block;
-	padding: 2px 10px;
-	border-radius: 999px;
-	font-size: 12px;
-	font-weight: 600;
-	border: 1px solid transparent;
-}
-.eem-chart-status--occupied { background: #EFF4FF; color: #1668F2; border-color: #c7dafe; }
-.eem-chart-status--available { background: #F0FDF4; color: #15803d; border-color: #bbf7d0; }
-.eem-chart-status--blocked { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
-.eem-chart-customer-cell { color: #1d2327; font-weight: 600; }
-.eem-chart-customer-empty { color: #a7aaad; font-weight: 400; }
 
 /* #219 — Order-context assignment banner + clickable Available pills. */
 /* Assign-mode banner — full-bleed, bold electric so it clearly signals the
@@ -9192,36 +8337,15 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
 	padding: 6px 16px;
 	font-size: 13px;
 }
-
-/* ── Occupancy pills ── */
-.eem-occ-pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 11px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; border: 1px solid; font-family: inherit; }
 .eem-occ-pill--reserved { position: relative; background: #EEF4FF; color: #1668F2; border-color: #c0d8ff; cursor: pointer; transition: filter .12s, box-shadow .12s; }
 .eem-occ-pill--reserved:hover { filter: brightness(.96); box-shadow: 0 1px 4px rgba(22,104,242,.18); }
 .eem-occ-chevron { width: 11px; height: 11px; color: #1668F2; opacity: .3; transition: opacity .12s; flex-shrink: 0; }
 .eem-occ-pill--reserved:hover .eem-occ-chevron { opacity: 1; }
-.eem-occ-pill--available { background: #F0FDF4; color: #15803d; border-color: #bbf7d0; }
-.eem-occ-pill--blocked { background: #FEF2F2; color: #b91c1c; border-color: #fecaca; }
-/* Suggested (auto-proposed, NOT saved) placement — a dashed amber "draft" look
-   so admins can tell it apart from a solid, saved assignment. Becomes a normal
-   solid --reserved pill once Generate Assignments / a manual move persists it. */
-.eem-occ-pill--suggested { background: #FFF8EC; color: #92600A; border-style: dashed; border-color: #E5A823; font-style: italic; }
 .eem-occ-pill--suggested .eem-occ-chevron { color: #92600A; }
-/* Unsaved auto-suggested layout banner (above the chart card). */
-/* Full-bleed: cancel the .eem-stall-chart-body 22px side padding (matches the
-   .eem-stall-chart-dm-bar pattern) so the notice spans edge-to-edge with no
-   border or outer gap. */
-.eem-stall-chart-unsaved-banner { display: flex; align-items: flex-start; gap: 10px; margin: 0 -22px 0px; padding: 12px 22px; background: #FFF8EC; border: none; border-radius: 0; font-size: 13px; line-height: 1.5; color: #6B4A0A; }
-.eem-stall-chart-unsaved-banner svg { width: 16px; height: 16px; color: #E5A823; flex-shrink: 0; margin-top: 1px; }
-.eem-stall-chart-unsaved-banner strong { color: #6B4A0A; }
 /* Inline link-style button (e.g. "Generate Assignments" inside the banner copy).
    Color-only affordance — no underline, per the universal hover convention. */
 .eem-link-btn { display: inline; padding: 0; border: 0; background: none; color: #1668F2; font: inherit; font-weight: 600; cursor: pointer; }
 .eem-link-btn:hover, .eem-link-btn:focus { color: #0d52cc; }
-
-/* V1 Scenario F: special-requests indicator on a reserved pill (hover the pill
-   for the native tooltip; the amber dot is the at-a-glance cue). */
-.eem-occ-pill__note-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--eem-warn-accent); flex-shrink: 0; }
-.eem-occ-pill--has-note { border-color: var(--eem-warn-border); }
 /* V1 #5 + D2: labeled badges straddling the pill's top border — clearer than
    stacked color signals (amber-fill + dots). "Tack" is amber; "Group" uses the
    per-group color set inline via --eem-group-color, so the same group reads as
@@ -9229,7 +8353,6 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
 .eem-occ-pill__badges { position: absolute; top: -10px; left: 8px; display: inline-flex; gap: 3px; z-index: 2; pointer-events: none; }
 .eem-occ-badge { font-size: 8.5px; font-weight: 800; line-height: 1; letter-spacing: .04em; text-transform: uppercase; padding: 2px 5px; border-radius: var(--eem-radius); color: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .18); }
 .eem-occ-badge--tack { background: var(--eem-warn-text, #b45309); }
-.eem-occ-badge--group { background: var(--eem-group-color, #475569); }
 
 /* ── Customer night count table ── */
 .eem-cust-chart-table tbody tr { border-bottom: 1px solid #dcdcde; }
@@ -9261,13 +8384,6 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
 /* Per-order check-in status column (synced with Daily Movement). */
 .eem-chart-status-col { white-space: nowrap; }
 .eem-cust-chart-table td.eem-chart-checkin-cell { overflow: visible; }
-/* V1 Scenario F: special-requests note under the customer name (by-customer view). */
-.eem-chart-cust-note { margin-top: 3px; font-size: 11.5px; line-height: 1.4; color: var(--eem-warn-text); background: var(--eem-warn-bg); border-left: 2px solid var(--eem-warn-border); border-radius: 0 var(--eem-radius) var(--eem-radius) 0; padding: 3px 8px; max-width: 280px; }
-.eem-chart-cust-note__label { font-weight: 700; }
-/* V1 D2: Group Name — chip under the customer name + the "Show by group" toggle. */
-.eem-chart-cust-group { margin-top: 3px; }
-.eem-chart-cust-group__chip { display: inline-flex; align-items: center; gap: 5px; max-width: 220px; padding: 1px 9px; font-size: 11px; font-weight: 700; color: var(--eem-electric); background: var(--eem-info-bg); border: 1px solid var(--eem-group-color, var(--eem-info-border)); border-radius: 999px; overflow: hidden; white-space: nowrap; vertical-align: top; }
-.eem-chart-cust-group__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--eem-group-color, var(--eem-electric)); flex-shrink: 0; }
 .eem-stall-chart-group-toggle { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--eem-border-card); border-radius: var(--eem-radius); background: #fff; color: var(--eem-text); font-size: 12.5px; font-weight: 600; font-family: inherit; cursor: pointer; white-space: nowrap; }
 .eem-stall-chart-group-toggle svg { width: 14px; height: 14px; }
 .eem-stall-chart-group-toggle:hover { background: var(--eem-bg-hover); border-color: var(--eem-electric); color: var(--eem-electric); }
@@ -9281,21 +8397,12 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
 .eem-stall-chart-menu-group strong { font-weight: 700; color: var(--eem-navy); }
 .eem-stall-chart-menu-shavings { display: block; margin-top: 6px; font-size: 11.5px; color: var(--eem-text); }
 .eem-stall-chart-menu-shavings strong { font-weight: 700; color: #6d28d9; }
-.eem-chart-order-link { color: #031B4E; font-weight: 600; font-size: 12.5px; text-decoration: none; }
-.eem-chart-order-link:hover { color: #1668F2; }
-.eem-chart-night-count { text-align: center; font-weight: 600; color: #8c8f94; }
-.eem-chart-night-count--has { background: #EEF4FF; border-radius: var(--eem-radius); color: #1668F2; }
 .eem-chart-stall-assignment { font-size: 13px; color: #031B4E; font-weight: 500; }
 .eem-chart-rv-assignment { font-size: 13px; color: #6d28d9; font-weight: 500; }
 .eem-chart-dash { color: #8c8f94; }
 /* #17: bags-of-shavings badge in By Customer (purple, matches Daily Movement). */
 .eem-chart-shavings-col { white-space: nowrap; }
 .eem-chart-shavings-badge { display: inline-flex; align-items: center; padding: 1px 9px; font-size: 11.5px; font-weight: 700; color: #6d28d9; background: #f3e8ff; border: 1px solid #e3d0fb; border-radius: 999px; white-space: nowrap; }
-
-/* ── RV Lot Occupancy card ── */
-.eem-stall-chart-content-card { background: #fff; border: 1px solid #e5e7eb; border-radius: var(--eem-radius); overflow: hidden; margin-bottom: 14px; }
-.eem-stall-chart-content-card-header { padding: 14px 18px; border-bottom: 1px solid #dcdcde; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.eem-stall-chart-content-card-title { font-family: var(--eem-font-display); font-size: 16px; font-weight: 700; color: #031B4E; }
 
 /* ── Assignment Issues card ── */
 .eem-stall-chart-issues-card { background: #fff; border: 1px solid #e5e7eb; border-radius: var(--eem-radius); overflow: hidden; margin-bottom: 14px; }
@@ -9335,27 +8442,6 @@ body.eem-assign-mode .eem-chart-status--available.eem-assign-pending[data-eem-ac
  * .mockups/stall_map_admin.html; rendered client-side by EEM.renderStallMaps().
  * ────────────────────────────────────────────────────────────────────────── */
 .eem-smap { --eem-smap-chip: 40px; --eem-smap-gap: 4px; padding: 0 18px 4px; }
-/* Full-bleed light-blue band (matches the Daily Movement bar). Bleeds to the card
-   edge: -40px cancels .eem-smap's 18px side padding + the chart body's 22px, then
-   22px padding pulls the text back in line with the section-divider header above. */
-.eem-smap-barn-stats { display: flex; flex-wrap: wrap; gap: 10px 28px; padding: 14px 22px; margin: 0 -40px 12px; background: #f0f4fb; border-bottom: 1px solid #d9e2f2; }
-.eem-smap-barn-stat { flex: 1 1 200px; background: transparent; border: 0; border-radius: 0; padding: 0; }
-.eem-smap-barn-stat-name { font-weight: 700; color: var(--eem-navy, #031B4E); font-size: 13px; margin-bottom: 6px; }
-/* Metric row styled like the Daily Movement summary: navy bold text with a small
-   status-colored dot before each figure. */
-.eem-smap-barn-stat-nums { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 13px; }
-.eem-smap-stat { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--eem-navy, #031B4E); white-space: nowrap; }
-.eem-smap-stat strong { font-weight: 700; }
-.eem-smap-stat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.eem-smap-stat-dot--total { background: #6B7A99; }
-.eem-smap-stat-dot--avail { background: #15803d; }
-.eem-smap-stat-dot--assigned { background: #1668F2; }
-.eem-smap-stat-dot--tack { background: #b45309; }
-.eem-smap-stat-dot--blocked { background: #b91c1c; }
-.eem-smap-stat-avail strong { color: #16A34A; }
-.eem-smap-stat-resv strong { color: #2b4a78; }
-.eem-smap-stat-tack strong { color: #B5790F; }
-.eem-smap-stat-block strong { color: #6b7280; }
 /* Barn tab row: tabs on the left, zoom control pinned to the right. */
 .eem-smap-barn-row { display: flex; align-items: flex-end; justify-content: space-between; padding: 10px 0 0; min-width: 0; max-width: 100%; }
 .eem-smap-barn-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -9503,54 +8589,21 @@ input.eem-group-manage-input { flex: 0 1 280px; margin: 0; padding: 7px 10px; bo
 
 /* ── Empty state ── */
 .eem-stall-chart-empty-card { padding: 18px 22px; background: #fff; border: 1px solid #e5e7eb; border-radius: var(--eem-radius); margin-bottom: 14px; }
-
-/* ── Responsive ── */
-@media (max-width: 960px) {
-	.eem-stall-chart-stats-bar { grid-template-columns: 1fr 1fr; }
-}
 @media (max-width: 767px) {
 	.eem-stall-chart-body { padding: 12px; }
-	.eem-stall-chart-unsaved-banner { margin: 0 -12px 12px; padding: 12px; }
-	.eem-stall-chart-stats-bar { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-	.eem-stall-chart-stat-card { padding: 10px 12px; }
-	.eem-stall-chart-stat-value { font-size: 22px; }
 	.eem-stall-chart-view-tabs { overflow-x: auto; flex-wrap: nowrap; }
-	.eem-stall-chart-view-tab { padding: 10px 16px; font-size: 12.5px; }
 	.eem-stall-chart-filter-row { flex-wrap: wrap; align-items: stretch; padding: 10px 12px; gap: 8px; }
 	/* Let the Barn + Zone dropdowns share one row on phones instead of stacking. */
 	#eem-sc-barn-tabs, #eem-sc-zone-tabs { flex: 1 1 45%; min-width: 0; }
 	#eem-sc-barn-tabs .eem-loc-barn-select, #eem-sc-zone-tabs .eem-loc-barn-select { width: 100%; min-width: 0; }
-	/* Mobile chart body padding is 12px (not 22px), so the summary band bleeds
-	   18px (smap) + 12px (body) = 30px to reach the card edge. */
-	.eem-smap-barn-stats { margin: 0 -30px 12px; }
-	/* Search spans its own row; the group/tack toggles share the next row. */
-	.eem-stall-chart-filter-search { flex: 1 1 100%; }
 	.eem-stall-chart-group-toggle { flex: 1 1 0; min-width: 0; justify-content: center; padding: 8px 6px; font-size: 11.5px; gap: 4px; white-space: nowrap; }
 	.eem-stall-chart-barn-tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
 	.eem-stall-chart-barn-tab { flex-shrink: 0; }
-	.eem-stall-chart-filter-search { max-width: 100%; }
-	.eem-stall-chart-filter-hint { display: none; }
-	.eem-stall-chart-action-bar { flex-direction: column; align-items: stretch; }
-	.eem-stall-chart-action-bar-btns { flex-wrap: wrap; }
 
 	/* Header action buttons (Change Event / Edit Reservation) drop to their own
 	   full-width row under the title. */
 	.eem-header-actions { width: 100%; }
 	.eem-header-actions .eem-header-action-change { flex: 1; text-align: center; }
-
-	/* DM bar tracks the 12px mobile gutter (not the 22px desktop bleed). */
-	.eem-stall-chart-dm-bar { margin: -12px -12px 18px; padding: 14px 12px; }
-	/* Daily Movement day cards: 3 per row on mobile (matches the DM page). */
-	.eem-stall-chart-dm-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
-	/* Metric cards: 2 per row instead of one overflowing strip. */
-	.eem-scs-card { flex: 1 1 calc(50% - 5px); }
-
-	/* Show + View dropdowns share one row (50/50); the Generate/Print actions
-	   wrap to a full-width row below. */
-	.eem-stall-chart-filter-bar { flex-wrap: wrap; align-items: stretch; gap: 12px; margin: -12px -12px 0; padding: 12px; }
-	.eem-scf-group { flex: 1 1 calc(50% - 6px); min-width: 0; }
-	.eem-scf-group .eem-stall-chart-view-select { min-width: 0; width: 100%; }
-	.eem-scf-actions { flex: 1 1 100%; margin-left: 0; }
 	.eem-scf-actions .eem-btn { flex: 1; justify-content: center; }
 
 	/* Search toolbar + full-bleed table track the 12px mobile gutter so content
@@ -9565,24 +8618,6 @@ input.eem-group-manage-input { flex: 0 1 280px; margin: 0; padding: 7px 10px; bo
 	.eem-cust-chart-table .eem-chart-cust-link { white-space: nowrap; }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Stall & RV Charts — LIST PAGE (2.3.25)
-   Mockup: .mockups/stall_charts_page.html
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* Subtitle under the h1 */
-.eem-sc-list-subtitle {
-	font-size: 13px;
-	color: var(--eem-text-secondary);
-	line-height: 1.45;
-	margin-top: 3px;
-}
-
-/* Status tabs override — sits between header and toolbar (no bottom margin) */
-.eem-sc-status-tabs {
-	border-bottom: 1px solid var(--eem-border);
-}
-
 /* Toolbar */
 .eem-sc-list-toolbar {
 	padding: 12px 18px;
@@ -9595,53 +8630,10 @@ input.eem-group-manage-input { flex: 0 1 280px; margin: 0; padding: 7px 10px; bo
 }
 .eem-list-toolbar-left  { display: flex; align-items: center; gap: 8px; flex: 1; flex-wrap: wrap; }
 .eem-list-toolbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.eem-list-count         { font-size: 13px; color: var(--eem-text-secondary); white-space: nowrap; }
-
-/* Desktop table wrapper */
-.eem-sc-list-desktop { overflow-x: auto; }
-
-/* Table */
-.eem-sc-list-table { width: 100%; border-collapse: collapse; }
-.eem-sc-list-table thead tr { border-bottom: 1px solid var(--eem-border); background: #f8fafc; }
-.eem-sc-list-table thead th {
-	padding: 11px 14px;
-	font-size: 12px;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
-	color: var(--eem-navy);
-	text-align: left;
-	white-space: nowrap;
-}
-.eem-sc-list-table tbody tr { border-bottom: 1px solid #f0f0f1; }
-.eem-sc-list-table tbody tr:last-child { border-bottom: none; }
-.eem-sc-list-table tbody tr:hover { background: #f6f7f7; }
-.eem-sc-list-table td { padding: 14px; font-size: 13.5px; color: var(--eem-navy); vertical-align: middle; }
 
 /* Hidden row (search / tab filtering) */
 .eem-sc-list-table tr.eem-sc-hidden,
 .eem-sc-mobile-card.eem-sc-hidden { display: none; }
-
-/* Reservation name cell */
-a.eem-sc-res-name {
-	font-weight: 700;
-	color: var(--eem-navy);
-	font-size: 14px;
-	display: block;
-	text-decoration: none;
-}
-a.eem-sc-res-name:hover { color: var(--eem-electric); }
-.eem-sc-res-dates { font-size: 12.5px; color: var(--eem-text-secondary); margin-top: 2px; }
-
-/* Stats row inside name cell */
-.eem-sc-chart-stats { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 3px; }
-.eem-sc-chart-stat  { font-size: 12px; color: var(--eem-text-secondary); display: flex; align-items: center; gap: 4px; }
-.eem-sc-stat-dot    { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-
-/* Availability column — label+bold-count stats, tone-colored to match theme.
-   available = green, reserved = electric blue, blocked = slate gray,
-   none = muted (no count). Replaces the old dot-color legend. */
-.eem-sc-availability { display: flex; flex-wrap: wrap; gap: 14px; }
 .eem-sc-avail-stat {
 	font-size: 12.5px;
 	color: var(--eem-text-secondary);
@@ -9656,79 +8648,6 @@ a.eem-sc-res-name:hover { color: var(--eem-electric); }
 .eem-sc-avail-stat--reserved  strong { color: var(--eem-electric); }
 .eem-sc-avail-stat--blocked   strong { color: #b91c1c; }
 .eem-sc-avail-stat--none { color: var(--eem-text-secondary); font-style: italic; }
-
-/* Empty dash placeholder */
-.eem-sc-empty-dash { color: var(--eem-text-secondary); font-size: 13px; }
-
-/* Barn/RV zone tag chips */
-.eem-sc-barn-tags { display: flex; gap: 5px; flex-wrap: wrap; }
-.eem-sc-barn-tag {
-	padding: 3px 9px;
-	border-radius: var(--eem-radius);
-	font-size: 11.5px;
-	font-weight: 600;
-	background: #F0F4FB;
-	color: var(--eem-navy);
-	border: 1px solid #D9E2F2;
-}
-.eem-sc-rv-lot-tag {
-	padding: 3px 9px;
-	border-radius: var(--eem-radius);
-	font-size: 11.5px;
-	font-weight: 600;
-	background: #F5F3FF;
-	color: #6d28d9;
-	border: 1px solid #ddd6fe;
-	display: inline-block;
-}
-
-/* Chart status badge */
-.eem-sc-chart-status {
-	display: inline-flex;
-	align-items: center;
-	gap: 5px;
-	font-size: 11px;
-	font-weight: 700;
-	letter-spacing: .04em;
-	text-transform: uppercase;
-	padding: 3px 10px;
-	border-radius: 12px;
-	white-space: nowrap;
-	line-height: 1.5;
-}
-.eem-sc-chart-status::before {
-	content: '';
-	width: 6px;
-	height: 6px;
-	border-radius: 50%;
-	flex-shrink: 0;
-}
-.eem-sc-chart-status--configured { background: #F0FDF4; color: #15803d; border: 1px solid #bbf7d0; }
-.eem-sc-chart-status--configured::before { background: #22c55e; }
-.eem-sc-chart-status--partial    { background: #FFFBEB; color: #b45309; border: 1px solid #fde68a; }
-.eem-sc-chart-status--partial::before    { background: #f59e0b; }
-.eem-sc-chart-status--empty      { background: #f3f4f5; color: #52525b; border: 1px solid var(--eem-border); }
-.eem-sc-chart-status--empty::before      { background: #94a3b8; }
-
-/* Action buttons */
-.eem-sc-actions-cell { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.eem-sc-action-btn {
-	display: inline-flex;
-	align-items: center;
-	gap: 5px;
-	padding: 6px 12px;
-	border-radius: var(--eem-radius);
-	font-size: 12.5px;
-	font-weight: 600;
-	cursor: pointer;
-	white-space: nowrap;
-	border: 1px solid;
-	text-decoration: none;
-}
-.eem-sc-action-btn--primary { background: var(--eem-electric); color: #fff; border-color: var(--eem-electric); }
-.eem-sc-action-btn--primary:hover { background: #1257d1; border-color: #1257d1; color: #fff; }
-.eem-sc-action-btn--ghost   { background: #fff; color: var(--eem-navy); border-color: var(--eem-border); }
-.eem-sc-action-btn--ghost:hover   { background: #f6f7f7; color: var(--eem-navy); }
 /* Anchor-button specificity fix (DS-1.A.1 pattern): `.eem-page a { color: var(--eem-electric) }`
    is (0,1,1) and beats `.eem-sc-action-btn--primary { color: #fff }` at (0,1,0).
    Adding the element prefix `a.` raises both variants to (0,1,1) and cascade
@@ -9737,34 +8656,12 @@ a.eem-sc-action-btn--primary,
 a.eem-sc-action-btn--primary:link,
 a.eem-sc-action-btn--primary:visited,
 a.eem-sc-action-btn--primary:hover   { color: #fff; }
-a.eem-sc-action-btn--ghost,
-a.eem-sc-action-btn--ghost:link,
-a.eem-sc-action-btn--ghost:visited,
-a.eem-sc-action-btn--ghost:hover     { color: var(--eem-navy); }
-
-/* Empty state */
-.eem-sc-list-empty {
-	padding: 40px 24px;
-	text-align: center;
-	color: var(--eem-text-secondary);
-}
-.eem-sc-list-empty p { margin-bottom: 16px; }
-
-/* Mobile cards */
-.eem-sc-list-mobile { display: none; padding: 12px 14px; }
 .eem-sc-mobile-card {
 	background: #fff;
 	border: 1px solid var(--eem-border);
 	border-radius: var(--eem-radius);
 	padding: 14px;
 	margin-bottom: 8px;
-}
-.eem-sc-mob-card-top {
-	display: flex;
-	justify-content: space-between;
-	align-items: flex-start;
-	margin-bottom: 6px;
-	gap: 8px;
 }
 a.eem-sc-mob-res-name {
 	font-size: 14px;
@@ -9774,20 +8671,9 @@ a.eem-sc-mob-res-name {
 	display: block;
 }
 a.eem-sc-mob-res-name:hover { color: var(--eem-electric); }
-.eem-sc-mob-card-body   { margin-bottom: 10px; }
-.eem-sc-mob-card-dates  { font-size: 12.5px; color: var(--eem-text-secondary); margin-bottom: 6px; }
-.eem-sc-mob-card-bottom {
-	display: flex;
-	align-items: center;
-	justify-content: flex-start;
-	gap: 8px;
-	flex-wrap: wrap;
-}
 
 /* ── Responsive ── */
 @media ( max-width: 767px ) {
-	.eem-sc-list-desktop { display: none; }
-	.eem-sc-list-mobile  { display: block; }
 	.eem-sc-list-toolbar { flex-direction: column; align-items: stretch; padding: 10px 12px; }
 	.eem-list-toolbar-left { flex-direction: column; }
 	.eem-search-wrap { max-width: 100%; min-width: unset; }
@@ -9853,7 +8739,6 @@ th.sortable { cursor: pointer; white-space: nowrap; }
 .destination-banner__cancel { background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.4); color: #fff; border-radius: var(--eem-radius); padding: 5px 14px; cursor: pointer; font-size: 13px; font-family: inherit; }
 .destination-banner__cancel:hover { background: rgba(255,255,255,.28); }
 body.destination-mode { padding-top: 48px; }
-body.destination-mode .eem-occ-pill--available { outline: 2px dashed #1668F2; outline-offset: -2px; cursor: pointer; animation: eem-pulse-avail 1.4s ease-in-out infinite; }
 body.destination-mode .eem-occ-pill--reserved,
 body.destination-mode .eem-occ-pill--blocked { opacity: 0.5; pointer-events: none; }
 @keyframes eem-pulse-avail { 0%, 100% { box-shadow: 0 0 0 2px #1668F2; } 50% { box-shadow: 0 0 0 4px rgba(22,104,242,.45); } }
@@ -9869,46 +8754,6 @@ body.destination-mode .eem-occ-pill--blocked { opacity: 0.5; pointer-events: non
 .scope-radio:hover { border-color: #1668F2; }
 .scope-modal-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 20px; border-top: 1px solid #dcdcde; padding-top: 16px; }
 .scope-modal__error { color: #b91c1c; font-size: 13px; flex: 1; }
-
-/* ═══════════════════════════════════════════════════════════════════════════
-/* ─────────────────────────────────────────────────────────────
-   Stall Chart Detail — inventory toggle + zone tabs (2.3.38)
-   ───────────────────────────────────────────────────────────── */
-
-.eem-sc-inv-bar {
-	padding: 14px 18px 0;
-	background: #fff;
-	display: flex;
-	align-items: center;
-	gap: 12px;
-}
-
-.eem-sc-inv-toggle {
-	display: inline-flex;
-	border: 1px solid var(--eem-border);
-	border-radius: var(--eem-radius);
-	overflow: hidden;
-}
-
-.eem-sc-inv-btn {
-	padding: 7px 18px;
-	font-size: 13px;
-	font-weight: 600;
-	font-family: var(--eem-font-body);
-	color: var(--eem-text);
-	background: #fff;
-	border: none;
-	border-right: 1px solid var(--eem-border);
-	cursor: pointer;
-	transition: background .12s, color .12s;
-	line-height: 1;
-}
-.eem-sc-inv-btn:last-child { border-right: none; }
-.eem-sc-inv-btn:hover { background: var(--eem-bg-secondary); }
-.eem-sc-inv-btn.active {
-	background: var(--eem-electric);
-	color: #fff;
-}
 
 /* RV zone filter tabs — same visual language as barn tabs */
 .eem-stall-chart-zone-tabs {
@@ -10114,7 +8959,6 @@ select.eem-sc-date-select:focus { outline: none; border-color: #1668F2; box-shad
 a.eem-sc-res-link { font-size: 14px; font-weight: 700; color: #0d1b3e; display: block; text-decoration: none; }
 a.eem-sc-res-link:hover,
 a.eem-sc-res-link:focus { color: #1668F2; text-decoration: none; }
-.eem-sc-res-dates { font-size: 12px; color: #64748b; margin-top: 2px; }
 
 /* Availability stats */
 .eem-sc-avail-stats { display: flex; flex-wrap: wrap; gap: 14px; }
@@ -10132,27 +8976,6 @@ a.eem-sc-res-link:focus { color: #1668F2; text-decoration: none; }
 	font-size: 12px;
 	color: #94a3b8;
 	font-style: italic;
-}
-
-/* Tag chips */
-.eem-sc-tags { display: flex; gap: 5px; flex-wrap: wrap; }
-.eem-sc-barn-tag {
-	padding: 3px 9px;
-	border-radius: 6px;
-	font-size: 11px;
-	font-weight: 600;
-	background: #f0f5ff;
-	color: #1668F2;
-	border: 1px solid #d0e0fb;
-}
-.eem-sc-rv-tag {
-	padding: 3px 9px;
-	border-radius: 6px;
-	font-size: 11px;
-	font-weight: 600;
-	background: #f5f3ff;
-	color: #6d28d9;
-	border: 1px solid #ddd6fe;
 }
 .eem-sc-cell-muted { color: #94a3b8; font-size: 13px; }
 
@@ -10177,7 +9000,6 @@ a.eem-sc-mob-res-name {
 a.eem-sc-mob-res-name:hover,
 a.eem-sc-mob-res-name:focus { color: #1668F2; text-decoration: none; }
 .eem-sc-mob-dates { font-size: 12px; color: #64748b; margin-bottom: 10px; }
-.eem-sc-mob-tags  { margin-bottom: 8px; }
 .eem-sc-mob-avail { margin-bottom: 12px; }
 a.eem-sc-mob-edit-btn,
 a.eem-sc-mob-edit-btn:link,
@@ -11567,35 +10389,9 @@ input.eem-slug-input:focus {
 	color: var(--eem-slate, #64748b);
 }
 
-/* Pencil icon button — borderless, icon-only, sits flush next to h1. */
-.eem-pencil-btn {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	background: none;
-	border: none;
-	padding: 4px;
-	cursor: pointer;
-	color: var(--eem-muted);
-	opacity: 0;
-	transition: opacity 0.15s ease, color 0.15s ease;
-	flex-shrink: 0;
-	line-height: 1;
-}
-
 .eem-res-name-view:hover .eem-pencil-btn,
 .eem-pencil-btn:focus {
 	opacity: 1;
-}
-
-.eem-pencil-btn:hover {
-	color: var(--eem-electric);
-	opacity: 1;
-}
-
-.eem-pencil-btn svg {
-	width: 16px;
-	height: 16px;
 }
 
 /* Inline edit form — revealed by JS when pencil is clicked. */
@@ -11627,48 +10423,9 @@ input.eem-res-name-inline-input:focus {
 	box-shadow: 0 0 0 2px rgba(22, 104, 242, 0.15);
 }
 
-/* ─────────────────────────────────────────────────────────────
-   2.3.43 — FIX 3: WP-native hover row-action text links
-   ─────────────────────────────────────────────────────────── */
-
-/* Row actions — hidden by default, revealed on tr:hover. */
-.eem-row-actions {
-	visibility: hidden;
-	font-size: 12px;
-	color: var(--eem-muted);
-	margin-top: 4px;
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	flex-wrap: wrap;
-	white-space: nowrap;
-}
-
 tr:hover .eem-row-actions,
 .eem-table tr:focus-within .eem-row-actions {
 	visibility: visible;
-}
-
-.eem-row-actions a {
-	color: var(--eem-electric);
-	font-size: 12px;
-}
-
-.eem-row-actions a:hover {
-	color: var(--eem-electric-dark, var(--eem-electric));
-}
-
-.eem-row-action-sep {
-	color: var(--eem-border);
-	user-select: none;
-}
-
-.eem-row-action-danger a {
-	color: var(--eem-danger);
-}
-
-.eem-row-action-danger a:hover {
-	color: var(--eem-danger);
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -11703,24 +10460,14 @@ tr:hover .eem-row-actions,
 .eem-card-title { font-family:'IBM Plex Sans',sans-serif; font-size:14px; font-weight:700; color:#0d1b3e; }
 .eem-card-subtitle { font-size:12.5px; color:#50575e; margin-top:10px; line-height:1.45; }
 .eem-card-body { padding:16px 18px; }
-.eem-card-zip { border:1px solid #c0d8ff; background:#F0F4FB; margin-bottom:18px; }
 .eem-card-zip .eem-card-header { background:transparent; border-bottom:1px solid #c0d8ff; }
-.eem-zip-controls { display:flex; flex-wrap:wrap; align-items:stretch; gap:0; }
-select.eem-zip-select { flex:1; min-width:240px; padding:9px 32px 9px 12px; border:1px solid #8c8f94; border-radius:var(--eem-radius) 0 0 var(--eem-radius); border-right:none; font-size:13.5px; color:#1d2327; background:#fff; appearance:none; cursor:pointer; margin:0; /* C7.X.15 Issue 3 — reset WP core forms.css margin:0 1px */ }
 .eem-btn-zip { background:#1668F2; color:#fff; border:1px solid #1668F2; border-radius:0 var(--eem-radius) var(--eem-radius) 0; padding:9px 18px; font-size:13.5px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
 .eem-btn-zip:hover { background:#1257d1; border-color:#1257d1; }
 .eem-btn-zip svg { width:13px; height:13px; }
-.eem-filters-applied-pill { font-size:11px; background:#EEF4FF; color:#1668F2; border:1px solid #c0d8ff; padding:3px 9px; border-radius:10px; font-weight:600; display:inline-block; vertical-align:middle; }
-.eem-filter-grid { display:grid; grid-template-columns:1fr 1.4fr 1fr; gap:14px; margin-bottom:14px; }
 .eem-filter-group { display:flex; flex-direction:column; gap:5px; }
 .eem-filter-label { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.04em; color:var(--eem-navy,#031B4E); }
 select.eem-filter-select, input.eem-filter-input { box-sizing:border-box; height:var(--eem-select-height); min-height:var(--eem-select-height); padding:0 12px; border:1px solid #8c8f94; border-radius:var(--eem-radius); font-size:13.5px; color:#1d2327; background:#fff; width:100%; margin:0; /* C7.X.15 Issue 3 — reset WP core forms.css margin:0 1px */ }
 select.eem-filter-select { padding-right:32px; appearance:none; cursor:pointer; }
-.eem-daterange-inputs { display:flex; align-items:center; gap:8px; }
-.eem-daterange-sep { font-size:12px; color:#50575e; flex-shrink:0; }
-.eem-filter-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding-top:10px; border-top:1px solid #f0f0f1; }
-.eem-filter-reset { color:#50575e; font-size:12.5px; font-weight:600; }
-.eem-filter-reset:hover { color:#1668F2; }
 /* Reports filter card: two full-bleed blue rows (row 1 = Reservation + Order
    status; row 2 = Date range + Reset/Apply). The form sits directly in the
    bordered card (no card-body) so the rows bleed edge-to-edge. Locked 2026-06-18. */
@@ -11732,8 +10479,6 @@ select.eem-filter-select { padding-right:32px; appearance:none; cursor:pointer; 
 .eem-reports-filter-row { display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; background:#fff; padding:14px 18px; }
 .eem-reports-filter-row + .eem-reports-filter-row { border-top:1px solid #e2e8f4; }
 .eem-reports-filter-row .eem-filter-group { flex:1 1 200px; }
-.eem-reports-filter-actions { margin-left:auto; display:flex; align-items:center; gap:16px; flex-shrink:0; }
-.eem-daterange-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .eem-daterange-controls .eem-filter-select { width:auto; min-width:150px; }
 .eem-section-title { font-family:'IBM Plex Sans',sans-serif; font-size:13px; font-weight:600; color:#64748b; margin:18px 0 10px; }
 .eem-report-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
@@ -11872,7 +10617,7 @@ table.eem-export-history td { padding:11px 22px; font-size:13px; color:#0d1b3e; 
   .eem-cp-stats-grid { grid-template-columns: 1fr; gap: var(--eem-space-2); }
   .eem-cp-details-grid { grid-template-columns: 1fr; gap: 14px; }
 }
-@media(max-width:782px){ .eem-filter-grid { grid-template-columns:1fr; } .eem-report-grid { grid-template-columns:1fr; } }
+@media(max-width:782px){ .eem-report-grid { grid-template-columns:1fr; } }
 
 /* ============================================================================
    V1 #3 — Customers list page. Reuses .eem-table, .eem-search-wrap,
@@ -11975,7 +10720,6 @@ table.eem-export-history td { padding:11px 22px; font-size:13px; color:#0d1b3e; 
 .eem-co-summary-event { font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #f0f4fb; }
 .eem-co-summary-line { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; font-size: 13px; padding: 7px 0; border-bottom: 1px solid #f0f4fb; }
 .eem-co-summary-line-label { color: var(--eem-text); flex: 1; }
-.eem-co-summary-line-sub { font-size: 11.5px; color: var(--eem-text-secondary); display: block; margin-top: 2px; }
 .eem-co-summary-line-price { font-weight: 700; color: #0d1b3e; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .eem-co-summary-divider { border: none; border-top: 1px solid #e2e8f4; margin: 10px 0; }
 .eem-co-summary-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; color: #0d1b3e; }
@@ -12063,7 +10807,6 @@ table.eem-export-history td { padding:11px 22px; font-size:13px; color:#0d1b3e; 
 .eem-co-btn-block { width: 100%; justify-content: center; margin-top: 12px; margin-bottom: 10px; }
 .eem-co-cash-field { margin-bottom: 12px; }
 .eem-co-cash-field__label { display: block; font-size: 13px; font-weight: 600; color: #0d1b3e; margin-bottom: 4px; }
-.eem-co-collect-link { text-decoration: none; }
 
 /* Responsive */
 @media (max-width: 1024px) {
@@ -12393,7 +11136,6 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-step button { width: 24px; height: 24px; border: 1px solid var(--eem-border-card, #c3c4c7); background: var(--eem-surface, #fff); border-radius: var(--eem-radius, 3px); font-weight: 700; color: var(--eem-navy, #031B4E); line-height: 1; cursor: pointer; }
 .eem-mb-controls { display: inline-flex; align-items: center; gap: 13px; flex-wrap: wrap; }
 .eem-mb-tc { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--eem-navy, #031B4E); }
-.eem-mb-tc-sep { width: 1px; align-self: stretch; min-height: 24px; background: var(--eem-border, #D9E2F2); margin: 0 2px; }
 .eem-mb-input { width: 80px; padding: 6px 8px; border: 1.5px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); font-size: 12.5px; color: var(--eem-text, #1d2327); }
 .eem-mb-input-wide { width: 180px; }
 .eem-mb-num { width: 68px; padding: 6px 8px; border: 1.5px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); font-size: 12.5px; color: var(--eem-text, #1d2327); }
@@ -12401,8 +11143,6 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-apply { padding: 7px 15px; font-size: 12.5px; background: var(--eem-electric, #1668F2); border: 1px solid var(--eem-electric, #1668F2); color: #fff; font-weight: 600; border-radius: var(--eem-radius, 3px); cursor: pointer; }
 .eem-mb-apply:hover { background: var(--eem-electric-hover, #1355cc); }
 .eem-mb-selmeta { font-size: 11.5px; color: var(--eem-text-muted, #8c8f94); font-weight: 500; }
-.eem-mb-check { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--eem-navy, #031B4E); font-weight: 500; cursor: pointer; }
-.eem-mb-check input { width: 16px; height: 16px; accent-color: var(--eem-electric, #1668F2); }
 .eem-mb-seg4 { display: inline-flex; border: 1.5px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); overflow: hidden; }
 .eem-mb-seg4 button { border: none; border-left: 1px solid var(--eem-border, #D9E2F2); background: var(--eem-surface, #fff); padding: 6px 9px; font-size: 11px; font-weight: 600; color: var(--eem-text-secondary, #6B7A99); cursor: pointer; }
 .eem-mb-seg4 button:first-child { border-left: none; }
@@ -12463,7 +11203,6 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-mb-cell.dup { background: #fdecec; color: #c0392b; box-shadow: inset 0 0 0 2px #e74c3c; z-index: 2; }
 .eem-mb-lmlabel { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; pointer-events: none; text-align: center; line-height: 1.15; padding: 2px; }
 .eem-mb-cell.vert .eem-mb-lmlabel { writing-mode: vertical-rl; transform: rotate(180deg); }
-.eem-mb-celledit { width: 100%; height: 100%; border: none; text-align: center; font: inherit; color: var(--eem-navy, #031B4E); background: #fffbe6; outline: 2px solid var(--eem-electric, #1668F2); }
 .eem-mb-toast { position: absolute; bottom: 18px; right: 18px; background: var(--eem-navy, #031B4E); color: #fff; padding: 11px 16px; border-radius: var(--eem-radius, 3px); font-weight: 600; font-size: 13px; opacity: 0; transform: translateY(8px); transition: .25s; pointer-events: none; }
 .eem-mb-toast.show { opacity: 1; transform: translateY(0); }
 @media (max-width: 860px) {
@@ -12527,18 +11266,6 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 #eem-venue-modal .eem-mb-cust-cell { border-radius: 0; }
 #eem-venue-modal .eem-mb-cust-cell.stall { border: none; }
 #eem-venue-modal .eem-mb-cust-cell.gap { background: var(--eem-border, #D9E2F2); }
-/* ── Division detail stats (Entries → Divisions rework, Slice 3) ──
-   Reuses the dashboard KPI card vocabulary (colored top border, navy value)
-   in a full-width 3-up grid. Renders into .eem-page-body (padding:0), so the
-   grid carries its own gutter to align with the table cell padding below. */
-.eem-division-stat-grid {
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	padding: 16px 14px 0;
-	margin: 0 0 4px;
-}
-@media (max-width: 782px) {
-	.eem-division-stat-grid { grid-template-columns: 1fr; }
-}
 
 /* ── Entries (Divisions) list — sortable columns ──
    The toolbar reuses the canonical .eem-list-toolbar chrome (padded, #fafafa)
@@ -12648,12 +11375,9 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
    Page body has padding:0 (custom page rendering into .eem-page-body); the
    .eem-venues wrapper self-gutters to align with the 18px header inset. */
 .eem-venues { padding: 18px; }
-.eem-venues-intro { margin: 0 0 18px; color: var(--eem-muted, #64748b); max-width: 760px; }
 .eem-venues-empty { padding: 40px 28px; text-align: center; background: var(--eem-bg-alt, #fafafa); border: 1px solid var(--eem-border, #D9E2F2); border-radius: var(--eem-radius, 3px); }
 .eem-venues-empty h3 { margin: 0 0 8px; font-size: 16px; color: var(--eem-navy, #031B4E); }
 .eem-venues-empty p { margin: 0 auto; max-width: 460px; color: var(--eem-muted, #64748b); }
-.eem-venues-table .eem-venues-name { font-weight: 600; color: var(--eem-navy, #031B4E); }
-.eem-venues-table .eem-venues-name:hover { color: var(--eem-electric, #2563eb); }
 /* compact row-action button used in the layouts table */
 .eem-btn-sm { padding: 4px 10px; font-size: 12.5px; }
 .eem-venue-detail { display: flex; flex-direction: column; gap: 18px; }
@@ -12679,10 +11403,6 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
    layout viewer (replaces the former blue "View" button). */
 .eem-venue-layout-name { background: none; border: none; padding: 0; margin: 0; font-family: inherit; font-size: 14px; font-weight: 700; color: #0d1b3e; cursor: pointer; text-align: left; }
 .eem-venue-layout-name:hover { color: var(--eem-electric); }
-/* Source column (folded in from the former Event Sources card). */
-.eem-venue-source-cell { font-size: 12px; color: #64748b; }
-.eem-venue-source-line + .eem-venue-source-line { margin-top: 2px; }
-.eem-venue-source-type { color: #94a3b8; }
 
 /* Save/Load Layout toolbar inside the stall + RV builders (Slice 3).
    White card + left accent so it reads as an intentional feature block (the
@@ -12705,20 +11425,6 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-venue-load-option__name { font-weight: 600; color: var(--eem-navy, #031B4E); }
 .eem-venue-load-option__date { margin-left: auto; font-size: 12px; color: var(--eem-muted, #64748b); }
 
-/* ==========================================================================
-   Venues list page (EEM_Venues_Page::render_list) — branded port of
-   .mockups/venues_admin_page.html. Stats strip, venue-name cell, facility-
-   template count column, and mobile cards. Reuses shared list chrome
-   (.eem-status-tabs / .eem-list-toolbar / .eem-table / row dropdown).
-   ========================================================================== */
-
-/* Header meta link row (under the page subtitle). */
-.eem-page-meta-links { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; }
-.eem-page-meta-links a,
-.eem-page-meta-links a:hover,
-.eem-page-meta-links a:focus { font-size: 12.5px; font-weight: 600; color: var(--eem-electric, #1668F2); text-decoration: none; }
-.eem-page-meta-links a:hover { color: #1257d1; }
-
 /* Stats strip — cards summarizing the list. Matches the Stall & RV Charts stat
    cards (.eem-stall-chart-stat-card): white bg, thin gray border, 4px radius,
    uppercase gray label + Space Grotesk navy number. (Whitney 2026-06-13: "make
@@ -12729,11 +11435,6 @@ a.eem-co-linked-res__change:hover { color: var(--eem-electric-hover); }
 .eem-stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: var(--eem-radius); padding: 14px 18px; flex: 1; min-width: 140px; }
 .eem-stat-card-label { font-size: 10.5px; font-weight: 700; color: #8c8f94; letter-spacing: .09em; text-transform: uppercase; margin-bottom: 8px; }
 .eem-stat-card-num { font-family: var(--eem-font-display); font-size: 28px; font-weight: 700; color: var(--eem-navy, #031B4E); line-height: 1; }
-/* Wide "Current + Upcoming" card (Events list) — list of upcoming events. */
-.eem-stat-card--wide { flex: 2.2; min-width: 220px; }
-.eem-stat-card-rows { display: flex; flex-direction: column; gap: 3px; margin-top: 2px; }
-.eem-stat-card-row { font-size: 13px; color: #1d2327; line-height: 1.5; }
-.eem-stat-card-row strong { color: var(--eem-navy, #031B4E); font-weight: 600; }
 
 /* Venue name cell. */
 a.eem-venue-name,
@@ -13469,13 +12170,6 @@ a.eem-event-editor-card__quicklink:hover { color: #1257d1; }
 	.eem-toolbar-controls .eem-term-bulk-form .eem-toolbar-btn,
 	.eem-toolbar-controls .eem-type-filter-form .eem-toolbar-btn,
 	.eem-toolbar-controls .eem-date-filter-form .eem-toolbar-btn { min-width: 84px; justify-content: center; }
-
-	/* Events list — special case: its producer filter + search + count all live
-	   inside ONE form (.eem-events-toolbar-form) with nested left/right groups,
-	   so the generic .eem-toolbar-controls flattening doesn't apply. Stack the
-	   form: search group (input+button, already attached) on top, producer
-	   filter full-width below, count last. Matches the Orders pattern intent. */
-	.eem-events-toolbar-form { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
 	.eem-events-toolbar-form .eem-list-toolbar-right { order: 1; display: flex; flex-direction: row; flex-wrap: nowrap; align-items: stretch; gap: 0; width: 100%; }
 	.eem-events-toolbar-form .eem-list-toolbar-left { order: 2; display: block; width: 100%; }
 	.eem-events-toolbar-form .eem-list-toolbar-left .eem-toolbar-select { width: 100%; max-width: 100%; }
@@ -13994,12 +12688,6 @@ a.eem-dm-print-today:visited { color: #1668F2; text-decoration: none; }
 	gap: 14px;
 	align-items: flex-end;
 }
-/* Print View lives at the end of the filter row (set filters, then print). */
-.eem-dm-toolbar-print {
-	flex: 0 0 auto;
-	margin-left: auto;
-	white-space: nowrap;
-}
 .eem-dm-toolbar-group {
 	display: flex;
 	flex-direction: column;
@@ -14068,13 +12756,6 @@ select.eem-dm-select:focus {
 }
 .eem-dm-print-header {
 	display: none;
-}
-/* Each day is a full-bleed white card; the #f0f0f1 page background shows in the
-   gaps between cards. Cards carry top/bottom borders (the page-wrap frames
-   left/right), so each day reads as its own bordered card edge-to-edge. */
-.eem-dm-sections {
-	background: #f0f0f1;
-	padding: 14px 0;
 }
 .eem-dm-date-section {
 	background: #fff;
@@ -14242,11 +12923,6 @@ select.eem-dm-select:focus {
 }
 .eem-dm-cell-shavings {
 	text-align: center;
-}
-.eem-dm-cell-notes {
-	max-width: 200px;
-	font-size: 13px;
-	color: var(--eem-slate, #64748b);
 }
 .eem-dm-status {
 	display: inline-flex;
@@ -14440,12 +13116,6 @@ select.eem-dm-select:focus {
 	.eem-dm-toolbar-group select {
 		width: 100%;
 	}
-	.eem-dm-toolbar-print {
-		margin-left: 0;
-		width: 100%;
-		text-align: center;
-	}
-	.eem-dm-sections { padding: 10px 0; }
 	.eem-dm-date-section { padding: 0; }
 	/* Hero + Day Rail responsive */
 	.eem-dm-hero { padding: 14px 16px; }
@@ -14514,8 +13184,6 @@ select.eem-dm-select:focus {
 		margin: 0;
 		color: #6B7A99;
 	}
-
-	.eem-dm-sections { padding: 10px 0; }
 	.eem-dm-date-section { padding: 0; }
 	.eem-dm-date-heading { font-size: 14px; }
 	.eem-dm-group-heading { font-size: 11px; margin: 0; }
@@ -14578,7 +13246,6 @@ input.eem-pkg-date-input:focus { border-color: var(--eem-electric); box-shadow: 
    when the wrap has .eem-pkg-eb-on. */
 .eem-pkg-price-wrap.eem-pkg-eb-wrap { display: none; }
 .eem-pkg-eb-on .eem-pkg-eb-wrap { display: flex; }
-.eem-pkg-price-sym--eb { font-size: 10.5px; font-weight: 700; letter-spacing: .02em; }
 
 /* Column titles above the package rows (widths mirror the row inputs). */
 .eem-pkg-header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
@@ -15164,23 +13831,6 @@ body.post-type-en_reservation .postbox .description {
 	margin-top: 0.5rem !important;
 }
 
-body.post-type-en_reservation .eem-section-toggle-row {
-	display: flex !important;
-	align-items: center !important;
-	justify-content: space-between !important;
-	gap: 1rem !important;
-	padding: 0 0 0.875rem !important;
-	margin-bottom: 1rem !important;
-}
-
-body.post-type-en_reservation .eem-section-toggle-control {
-	display: inline-flex !important;
-	align-items: center !important;
-	justify-content: space-between !important;
-	width: 100% !important;
-	gap: 1rem !important;
-}
-
 body.post-type-en_reservation .eem-section-toggle-control__label,
 body.post-type-en_reservation .eem-inline-toggle-control__label {
 	color: var(--eem-app-heading) !important;
@@ -15189,21 +13839,10 @@ body.post-type-en_reservation .eem-inline-toggle-control__label {
 	line-height: 1.35 !important;
 }
 
-body.post-type-en_reservation .eem-stay-type-toggle-group {
-	display: flex !important;
-	flex-wrap: wrap !important;
-	gap: 0.875rem !important;
-}
-
 body.post-type-en_reservation .eem-inline-toggle-control {
 	display: inline-flex !important;
 	align-items: center !important;
 	gap: 0.625rem !important;
-}
-
-body.post-type-en_reservation .eem-admin-structured-table {
-	display: grid !important;
-	gap: 0.875rem !important;
 }
 
 body.post-type-en_reservation .eem-general-addon-table,
@@ -15271,15 +13910,6 @@ body.post-type-en_reservation #submitdiv .wp-core-ui .button {
 
 	body.post-type-en_reservation .postbox table.form-table tr {
 		grid-template-columns: 1fr !important;
-	}
-
-	body.post-type-en_reservation .eem-section-toggle-row,
-	body.post-type-en_reservation .eem-section-toggle-control {
-		align-items: flex-start !important;
-	}
-
-	body.post-type-en_reservation .eem-section-toggle-control {
-		flex-wrap: wrap !important;
 	}
 
 	body.post-type-en_reservation #titlediv,
@@ -16046,40 +14676,6 @@ body.eem-shell-page--overview .postbox > p {
 	border-radius: 8px;
 	background: #fff;
 	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
-}
-
-.eem-shell-selection-list {
-	display: grid;
-	gap: 0.875rem;
-}
-
-.eem-shell-selection-item {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: space-between;
-	align-items: center;
-	gap: 0.875rem;
-	padding: 1rem;
-	border: 1px solid #d7dee8;
-	border-radius: 8px;
-	background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-	box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-}
-
-.eem-shell-selection-meta {
-	display: grid;
-	gap: 0.25rem;
-	min-width: 0;
-}
-
-.eem-shell-selection-meta strong {
-	color: #172033;
-	font-size: 1rem;
-	font-weight: 800;
-}
-
-.eem-shell-selection-meta span {
-	color: #667085;
 }
 
 .eem-shell-badges {
@@ -16900,142 +15496,6 @@ body.eem-shell-page--settings .eem-shell-rail {
 	min-height: calc(100vh - 170px);
 }
 
-.eem-shell-rail {
-	display: grid;
-	grid-template-columns: 225px minmax(0, 1fr);
-	column-gap: var(--eem-settings-gap);
-	padding: 0 0 var(--eem-settings-gap) 0;
-	align-items: start;
-}
-
-.eem-shell-rail__mobile-nav {
-	display: none;
-}
-
-.eem-shell-rail__mobile-picker {
-	position: relative;
-	margin: 0;
-}
-
-.eem-shell-rail__mobile-trigger {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 0.75rem;
-	width: 100%;
-	min-height: 48px;
-	padding: 0.875rem 1rem;
-	border: 1px solid rgba(215, 224, 234, 0.98);
-	border-radius: 12px;
-	background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-	box-shadow: 0 10px 24px rgba(23, 32, 51, 0.06);
-	color: #18233b;
-	font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
-	font-size: 0.95rem;
-	font-weight: 700;
-	line-height: 1.3;
-	list-style: none;
-	cursor: pointer;
-	box-sizing: border-box;
-}
-
-.eem-shell-rail__mobile-trigger::-webkit-details-marker {
-	display: none;
-}
-
-.eem-shell-rail__mobile-trigger::after {
-	content: "";
-	flex: 0 0 auto;
-	width: 0.625rem;
-	height: 0.625rem;
-	border-right: 2px solid #48556c;
-	border-bottom: 2px solid #48556c;
-	transform: rotate(45deg);
-	transition: transform 0.16s ease;
-}
-
-.eem-shell-rail__mobile-picker[open] .eem-shell-rail__mobile-trigger::after {
-	transform: rotate(-135deg) translateY(-1px);
-}
-
-.eem-shell-rail__mobile-trigger .dashicons {
-	flex: 0 0 auto;
-	width: 18px;
-	height: 18px;
-	font-size: 18px;
-	color: #4a5973;
-}
-
-.eem-shell-rail__mobile-label {
-	flex: 1 1 auto;
-	min-width: 0;
-}
-
-.eem-shell-rail__mobile-trigger:focus-visible {
-	outline: 2px solid rgba(86, 132, 199, 0.35);
-	outline-offset: 2px;
-}
-
-.eem-shell-rail__mobile-menu {
-	display: grid;
-	gap: 0.375rem;
-	margin-top: 0.625rem;
-	padding: 0.5rem;
-	border: 1px solid rgba(215, 224, 234, 0.98);
-	border-radius: 12px;
-	background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-	box-shadow: 0 18px 38px rgba(23, 32, 51, 0.12);
-}
-
-.eem-shell-rail__mobile-option {
-	display: flex;
-	align-items: center;
-	gap: 0.75rem;
-	min-height: 44px;
-	padding: 0.75rem 0.875rem;
-	border-radius: 10px;
-	color: #48556c;
-	font-weight: 700;
-	line-height: 1.25;
-	text-decoration: none;
-	transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.eem-shell-rail__mobile-option .dashicons {
-	flex: 0 0 auto;
-	width: 18px;
-	height: 18px;
-	font-size: 18px;
-	color: currentColor;
-}
-
-.eem-shell-rail__mobile-option:hover,
-.eem-shell-rail__mobile-option:focus {
-	background: rgba(86, 132, 199, 0.08);
-	color: #18233b;
-	outline: none;
-}
-
-.eem-shell-rail__mobile-option.is-active {
-	background: #ffffff;
-	color: #18233b;
-	box-shadow: 0 8px 18px rgba(23, 32, 51, 0.08);
-}
-
-.eem-shell-rail__nav {
-	display: flex;
-	flex-direction: column;
-	margin: 0;
-	padding: calc(var(--eem-settings-gap) + 0.125rem) 0.875rem 0.875rem 0.875rem;
-	background: transparent;
-	border: 0;
-	border-radius: 0;
-	overflow: visible;
-	box-shadow: none;
-	align-self: stretch;
-	min-height: calc(100vh - 170px);
-}
-
 body.eem-shell-page--settings .nav-tab-wrapper.eem-shell-rail__nav {
 	border-bottom: 0;
 	padding-top: var(--eem-settings-gap);
@@ -17072,10 +15532,6 @@ body.eem-shell-page--settings .eem-shell-rail__nav .nav-tab:focus {
 	transform: translateX(1px);
 }
 
-.eem-shell-rail__nav .nav-tab:last-child {
-	margin-bottom: 0;
-}
-
 body.eem-shell-page--settings .eem-shell-rail__nav .nav-tab .dashicons {
 	width: 18px;
 	height: 18px;
@@ -17101,13 +15557,6 @@ body.eem-shell-page--settings .eem-shell-rail__nav .nav-tab-active {
 
 body.eem-shell-page--settings .eem-shell-rail__nav .nav-tab-active .dashicons {
 	color: #202742;
-}
-
-.eem-shell-rail__content {
-	display: grid;
-	gap: var(--eem-settings-gap);
-	padding-top: var(--eem-settings-gap);
-	padding-right: var(--eem-settings-gap);
 }
 
 body.eem-shell-page--settings .eem-shell-rail__content .postbox,
@@ -17215,132 +15664,6 @@ body.eem-shell-page--settings .eem-shell-rail__content .postbox > .notice.inline
 	padding: 0;
 	line-height: 1.6;
 	color: var(--eem-settings-muted);
-}
-
-.eem-settings-source-grid {
-	display: grid;
-	gap: var(--eem-settings-gap);
-	margin-top: 0;
-	padding: 0 1.25rem 1.25rem;
-	box-sizing: border-box;
-}
-
-.eem-settings-source-card {
-	border: 1px solid #dbe5ee;
-	border-radius: var(--eem-settings-radius);
-	background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-	box-shadow: var(--eem-settings-shadow-soft);
-	overflow: hidden;
-}
-
-.eem-settings-source-card__head {
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 1rem;
-	padding: 1rem 1rem 0.75rem;
-}
-
-.eem-settings-source-card__copy {
-	display: grid;
-	gap: 0.5rem;
-	min-width: 0;
-}
-
-.eem-settings-source-card__copy h3 {
-	margin: 0;
-	font-size: 1.15rem;
-	font-weight: 800;
-	letter-spacing: -0.02em;
-	line-height: 1.2;
-	color: var(--eem-settings-text);
-}
-
-.eem-settings-source-card__copy p,
-.eem-settings-source-card__detail,
-.eem-settings-source-card__field .description {
-	margin: 0;
-	color: var(--eem-settings-muted);
-	line-height: 1.65;
-}
-
-.eem-settings-source-card__detail,
-.eem-settings-source-card__field {
-	padding: 0 1rem 1rem;
-}
-
-.eem-settings-source-card__field {
-	display: grid;
-	gap: 0.625rem;
-}
-
-.eem-settings-source-card__field label {
-	font-weight: 700;
-	color: var(--eem-settings-text);
-}
-
-.eem-settings-source-card__field input[type="url"] {
-	width: min(100%, 560px);
-	max-width: 100%;
-}
-
-.eem-settings-source-card__actions {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-}
-
-.eem-settings-toggle {
-	display: inline-flex;
-	align-items: center;
-	flex: 0 0 auto;
-	cursor: pointer;
-}
-
-.eem-settings-toggle input {
-	position: absolute;
-	opacity: 0;
-	pointer-events: none;
-}
-
-.eem-settings-toggle__track {
-	display: inline-flex;
-	align-items: center;
-	width: 46px;
-	height: 26px;
-	padding: 3px;
-	border-radius: 999px;
-	background: #cbd5e1;
-	transition: background-color 0.15s ease;
-	box-sizing: border-box;
-}
-
-.eem-settings-toggle__thumb {
-	display: block;
-	width: 20px;
-	height: 20px;
-	border-radius: 50%;
-	background: #fff;
-	box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
-	transition: transform 0.15s ease;
-}
-
-.eem-settings-toggle input:checked + .eem-settings-toggle__track {
-	background: var(--eem-settings-toggle-on);
-}
-
-.eem-settings-toggle input:checked + .eem-settings-toggle__track .eem-settings-toggle__thumb {
-	transform: translateX(20px);
-}
-
-.eem-settings-toggle input:focus-visible + .eem-settings-toggle__track {
-	outline: 2px solid var(--eem-settings-accent);
-	outline-offset: 2px;
-}
-
-.eem-shell-rail__content .submit {
-	margin: 0;
-	padding: 0 0 0.875rem;
 }
 
 body.eem-shell-page--settings .button,
@@ -17570,25 +15893,6 @@ body.eem-shell-page--settings input[readonly] {
 		max-width: 120px;
 	}
 
-	.eem-shell-rail {
-		grid-template-columns: 1fr;
-		padding: 0.875rem;
-	}
-
-	.eem-shell-rail__mobile-nav {
-		display: block;
-		padding: 0 0 0.25rem;
-	}
-
-	.eem-shell-rail__nav {
-		display: none;
-	}
-
-	.eem-shell-rail__content {
-		padding-top: 0;
-		padding-right: 0;
-	}
-
 	body.eem-shell-page--settings .eem-shell-rail__content .postbox > h2,
 	body.eem-shell-page--settings .eem-shell-rail__content .postbox > h3,
 	body.eem-shell-page--settings .eem-shell-rail__content .postbox > .hndle {
@@ -17639,24 +15943,6 @@ body.eem-shell-page--settings input[readonly] {
 	body.eem-shell-page--settings .eem-shell-rail__content .postbox .postbox > .form-table {
 		padding-left: 0.875rem;
 		padding-right: 0.875rem;
-	}
-
-	.eem-settings-source-card__head {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		align-items: start;
-		column-gap: 0.875rem;
-		row-gap: 0.5rem;
-	}
-
-	.eem-settings-source-card__copy {
-		min-width: 0;
-	}
-
-	.eem-settings-toggle {
-		align-self: start;
-		justify-self: end;
-		margin-top: 0.125rem;
 	}
 
 	body.eem-shell-page--reservations #wpbody-content > .wrap:not(.eem-shell-wrap) {
@@ -17874,16 +16160,8 @@ body.eem-shell-page--settings input[readonly] {
 		justify-content: flex-start;
 	}
 
-	.eem-orders-toolbar__count {
-		justify-self: start;
-	}
-
 	.eem-shell-metrics-grid {
 		grid-template-columns: 1fr;
-	}
-
-	.eem-shell-selection-item {
-		align-items: stretch;
 	}
 
 	.eem-shell-selection-item .eem-shell-inline-actions,
@@ -20206,13 +18484,6 @@ body.post-type-en_reservation #post-body.columns-2 {
 	gap: 1rem !important;
 }
 
-body.post-type-en_reservation .eem-section-toggle-row {
-	display: flex !important;
-	align-items: center !important;
-	justify-content: space-between !important;
-	gap: 0.875rem !important;
-}
-
 body.post-type-en_reservation .eem-section-toggle-control,
 body.post-type-en_reservation .eem-inline-toggle-control {
 	display: inline-flex !important;
@@ -20762,12 +19033,6 @@ body.post-type-en_reservation .postbox table.form-table td {
 	padding-top: 0.875rem !important;
 	padding-bottom: 0.875rem !important;
 	vertical-align: top !important;
-}
-
-body.post-type-en_reservation .eem-section-toggle-row {
-	padding: 0.125rem 0 0.875rem !important;
-	border-bottom: 1px solid #edf2f7 !important;
-	margin-bottom: 1rem !important;
 }
 
 body.post-type-en_reservation .eem-section-toggle-control,
@@ -21401,12 +19666,6 @@ body.post-type-en_reservation .form-table td {
 	vertical-align: top !important;
 }
 
-body.post-type-en_reservation .eem-section-toggle-row {
-	padding: 0.125rem 0 0.875rem !important;
-	margin-bottom: 1rem !important;
-	border-bottom: 1px solid #edf2f7 !important;
-}
-
 body.post-type-en_reservation .eem-section-toggle-control,
 body.post-type-en_reservation .eem-inline-toggle-control {
 	display: inline-flex !important;
@@ -21462,11 +19721,6 @@ body.post-type-en_reservation .eem-inline-toggle-control input:checked + .eem-in
 body.post-type-en_reservation #submitdiv .inside,
 body.post-type-en_reservation #equine_event_manager_workspace_tools .inside {
 	padding: 1rem !important;
-}
-
-body.post-type-en_reservation .eem-editor-workspace-actions {
-	display: grid !important;
-	gap: 0.75rem !important;
 }
 
 body.post-type-en_reservation #major-publishing-actions,
