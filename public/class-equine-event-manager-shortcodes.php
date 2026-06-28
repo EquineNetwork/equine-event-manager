@@ -1629,6 +1629,13 @@ class EEM_Shortcodes {
 						TOKEN = 'eh-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
 						try { localStorage.setItem('eem_hold_session', TOKEN); } catch (e) {}
 					}
+					// Localized customer-facing hold messages (5.5 / #53). A lapsed or
+					// lost hold now gets a plain-English explanation + next step
+					// instead of a bare "taken" string or a generic submit rejection.
+					var MSG = {
+						taken: <?php echo wp_json_encode( __( 'That space was just taken by another customer. Please choose a different one.', 'equine-event-manager' ) ); ?>,
+						expired: <?php echo wp_json_encode( __( 'Your 15-minute hold on this space expired and it is no longer available. Please select another to continue.', 'equine-event-manager' ) ); ?>
+					};
 					var FIELDS = { stall: 'preferred_stall_units[]', rv: 'preferred_rv_lots[]' };
 					var mine = { stall: {}, rv: {} };
 					// Carry the session token on the checkout POST so the server can drop
@@ -1689,7 +1696,11 @@ class EEM_Shortcodes {
 								if (!j || !j.success) {
 									delete mine[section][u];
 									deselect(section, u); grey(section, u);
-									showNote((j && j.data && j.data.message) ? j.data.message : 'That spot was just taken.');
+									// A server message (e.g. a specific reason) wins; otherwise
+									// distinguish "expired" (our hold lapsed) from "taken".
+									var reason = (j && j.data && j.data.code === 'expired') ? MSG.expired
+										: ((j && j.data && j.data.message) ? j.data.message : MSG.taken);
+									showNote(reason);
 								}
 							});
 						});
@@ -1703,7 +1714,17 @@ class EEM_Shortcodes {
 						post('eem_hold_heartbeat', section, null, function(j){
 							if (!j || !j.success || !j.data) { return; }
 							var sel = selected(section);
-							(j.data.held || []).forEach(function(u){ if (!sel[u]) { grey(section, u); } });
+							(j.data.held || []).forEach(function(u){
+								if (mine[section][u]) {
+									// A unit we thought we held is now held by someone else —
+									// our 15-min hold lapsed and was grabbed. Explain + release.
+									delete mine[section][u];
+									deselect(section, u); grey(section, u);
+									showNote(MSG.expired);
+								} else if (!sel[u]) {
+									grey(section, u);
+								}
+							});
 						});
 					}
 					function tick(){ ['stall', 'rv'].forEach(function(s){ syncSection(s); heartbeat(s); }); }
@@ -7492,6 +7513,23 @@ RV Lot: " . $rv_lot['name'] );
 	 * @param string $error_message Optional error message.
 	 * @return void
 	 */
+	/**
+	 * Shared `<style>` block for the standalone hosted invoice + success pages
+	 * (5.5 / #53). These pages render outside the theme, so the small set of
+	 * repeated "eyebrow"/"label" treatments lived as inline styles pasted a dozen
+	 * times. Defining them once here (and reusing across both pages) removes that
+	 * duplication; the hex values stay literal because the pages can't rely on the
+	 * brand-token CSS vars being present.
+	 *
+	 * @return string Inline `<style>` markup.
+	 */
+	private function invoice_page_style_block(): string {
+		return '<style>'
+			. '.eem-pay-label{font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;}'
+			. '.eem-pay-eyebrow{font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#5b6472;}'
+			. '</style>';
+	}
+
 	private function render_invoice_payment_page( $order, $invoice_token, $error_message = '' ) {
 		$company_settings = $this->get_company_settings();
 		$company_logo_url = $this->get_company_logo_url( 'medium' );
@@ -7514,6 +7552,7 @@ RV Lot: " . $rv_lot['name'] );
 			<?php if ( 'stripe' === $gateway && ! empty( $stripe_config['publishable_key'] ) ) : ?>
 				<script src="https://js.stripe.com/v3/"></script>
 			<?php endif; ?>
+			<?php echo $this->invoice_page_style_block(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static literal style markup. ?>
 		</head>
 		<body style="margin:0;background:#f5f7fb;font-family:Arial,sans-serif;color:#111827;">
 			<div style="max-width:960px;margin:0 auto;padding:32px 18px 48px;">
@@ -7522,17 +7561,17 @@ RV Lot: " . $rv_lot['name'] );
 						<?php if ( $company_logo_url ) : ?>
 							<p style="margin:0 0 18px;"><img src="<?php echo esc_url( $company_logo_url ); ?>" alt="<?php esc_attr_e( 'Company logo', 'equine-event-manager' ); ?>" style="max-width:180px;max-height:54px;display:block;object-fit:contain;" /></p>
 						<?php endif; ?>
-						<div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Secure Payment Link', 'equine-event-manager' ); ?></div>
+						<div class="eem-pay-eyebrow"><?php esc_html_e( 'Secure Payment Link', 'equine-event-manager' ); ?></div>
 						<h1 style="margin:12px 0 14px;font-size:34px;line-height:1.05;color:#111827;"><?php echo esc_html( $event_label ); ?></h1>
 						<p style="margin:0 0 18px;font-size:16px;line-height:1.7;color:#111827;"><?php echo esc_html( sprintf( __( 'Review order #%s and complete payment below.', 'equine-event-manager' ), $order['order_number'] ) ); ?></p>
 						<div style="display:grid;gap:12px;">
 							<div style="padding:16px 18px;border-radius:8px;background:#e4eaf1;border:1px solid #d9e1ea;">
-								<div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></div>
+								<div class="eem-pay-label"><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></div>
 								<div style="margin-top:6px;font-size:18px;font-weight:700;color:#111827;"><?php echo esc_html( $order['customer_name'] ); ?></div>
 								<div style="margin-top:4px;color:#4b5563;"><?php echo esc_html( $this->get_order_customer_email( $order ) ); ?></div>
 							</div>
 							<div style="padding:16px 18px;border-radius:8px;background:#eef2f6;border:1px solid #d9e1ea;color:#111827;">
-								<div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Amount Due', 'equine-event-manager' ); ?></div>
+								<div class="eem-pay-label"><?php esc_html_e( 'Amount Due', 'equine-event-manager' ); ?></div>
 								<div style="margin-top:6px;font-size:32px;font-weight:800;color:#111827;"><?php echo esc_html( $this->format_money( (float) $order['total'] ) ); ?></div>
 							</div>
 						</div>
@@ -7540,10 +7579,10 @@ RV Lot: " . $rv_lot['name'] );
 
 					<div style="padding:28px;background:#eef2f6;border:1px solid #d9e1ea;border-radius:8px;color:#111827;">
 						<div style="display:grid;gap:14px;">
-							<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;"><span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Order Number', 'equine-event-manager' ); ?></span><strong style="color:#111827;">#<?php echo esc_html( $order['order_number'] ); ?></strong></div>
-							<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;"><span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Event Dates', 'equine-event-manager' ); ?></span><strong style="text-align:right;color:#111827;"><?php echo esc_html( $order['event_dates'] ); ?></strong></div>
-							<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;"><span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Reservation Type', 'equine-event-manager' ); ?></span><strong style="text-align:right;color:#111827;"><?php echo esc_html( $order['type'] ); ?></strong></div>
-							<div style="display:flex;justify-content:space-between;gap:16px;"><span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></span><strong style="text-align:right;color:#111827;"><?php echo esc_html( $order['status_label'] ); ?></strong></div>
+							<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;"><span class="eem-pay-label"><?php esc_html_e( 'Order Number', 'equine-event-manager' ); ?></span><strong style="color:#111827;">#<?php echo esc_html( $order['order_number'] ); ?></strong></div>
+							<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;"><span class="eem-pay-label"><?php esc_html_e( 'Event Dates', 'equine-event-manager' ); ?></span><strong style="text-align:right;color:#111827;"><?php echo esc_html( $order['event_dates'] ); ?></strong></div>
+							<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;"><span class="eem-pay-label"><?php esc_html_e( 'Reservation Type', 'equine-event-manager' ); ?></span><strong style="text-align:right;color:#111827;"><?php echo esc_html( $order['type'] ); ?></strong></div>
+							<div style="display:flex;justify-content:space-between;gap:16px;"><span class="eem-pay-label"><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></span><strong style="text-align:right;color:#111827;"><?php echo esc_html( $order['status_label'] ); ?></strong></div>
 						</div>
 
 						<?php if ( $error_message ) : ?>
@@ -7659,6 +7698,7 @@ RV Lot: " . $rv_lot['name'] );
 			<meta charset="<?php bloginfo( 'charset' ); ?>" />
 			<meta name="viewport" content="width=device-width, initial-scale=1" />
 			<title><?php echo esc_html( sprintf( __( 'Receipt #%s', 'equine-event-manager' ), $order['order_number'] ) ); ?></title>
+			<?php echo $this->invoice_page_style_block(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static literal style markup. ?>
 		</head>
 		<body style="margin:0;background:#f5f7fb;font-family:Arial,sans-serif;color:#111827;">
 			<div style="max-width:760px;margin:0 auto;padding:32px 18px 48px;">
@@ -7666,16 +7706,16 @@ RV Lot: " . $rv_lot['name'] );
 					<?php if ( $company_logo_url ) : ?>
 						<p style="margin:0 0 18px;"><img src="<?php echo esc_url( $company_logo_url ); ?>" alt="<?php esc_attr_e( 'Company logo', 'equine-event-manager' ); ?>" style="max-width:180px;max-height:54px;display:block;object-fit:contain;" /></p>
 					<?php endif; ?>
-					<div style="font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Payment Received', 'equine-event-manager' ); ?></div>
+					<div class="eem-pay-eyebrow"><?php esc_html_e( 'Payment Received', 'equine-event-manager' ); ?></div>
 					<h1 style="margin:12px 0 10px;font-size:32px;line-height:1.08;color:#111827;"><?php echo esc_html( $event_label ); ?></h1>
 					<p style="margin:0;color:#4f5b6a;font-size:16px;line-height:1.7;"><?php esc_html_e( 'Your invoice has been paid successfully. A receipt has been emailed to the address on file.', 'equine-event-manager' ); ?></p>
 				</div>
 				<div style="margin-top:18px;padding:26px 28px;background:#eef2f6;border:1px solid #d9e1ea;border-radius:8px;">
 					<div style="display:grid;gap:14px;">
-						<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;"><span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Order Number', 'equine-event-manager' ); ?></span><strong style="color:#111827;">#<?php echo esc_html( $order['order_number'] ); ?></strong></div>
-						<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;"><span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></span><strong style="color:#111827;"><?php echo esc_html( $order['customer_name'] ); ?></strong></div>
-						<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;"><span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></span><strong style="color:#111827;"><?php echo esc_html( $order['status_label'] ); ?></strong></div>
-						<div style="display:flex;justify-content:space-between;gap:16px;"><span style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#5b6472;"><?php esc_html_e( 'Total Paid', 'equine-event-manager' ); ?></span><strong style="color:#111827;"><?php echo esc_html( $this->format_money( (float) $order['total'] ) ); ?></strong></div>
+						<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;"><span class="eem-pay-label"><?php esc_html_e( 'Order Number', 'equine-event-manager' ); ?></span><strong style="color:#111827;">#<?php echo esc_html( $order['order_number'] ); ?></strong></div>
+						<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;"><span class="eem-pay-label"><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></span><strong style="color:#111827;"><?php echo esc_html( $order['customer_name'] ); ?></strong></div>
+						<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;"><span class="eem-pay-label"><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></span><strong style="color:#111827;"><?php echo esc_html( $order['status_label'] ); ?></strong></div>
+						<div style="display:flex;justify-content:space-between;gap:16px;"><span class="eem-pay-label"><?php esc_html_e( 'Total Paid', 'equine-event-manager' ); ?></span><strong style="color:#111827;"><?php echo esc_html( $this->format_money( (float) $order['total'] ) ); ?></strong></div>
 					</div>
 				</div>
 				<?php if ( ! empty( $support_chunks ) ) : ?>
