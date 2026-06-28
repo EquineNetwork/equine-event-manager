@@ -53,7 +53,11 @@ class EEM_Refund_Engine {
 		$value      = $this->admin->get_order_note_value( $notes, 'Refunded Amount' );
 
 		if ( '' !== $value ) {
-			$from_notes = max( 0.0, (float) preg_replace( '/[^0-9.\-]/', '', $value ) );
+			// P4: a refund amount is always a positive magnitude. Strip ANY minus
+			// sign (not just clamp it) so a stored "-50.00" note parses as 50.00, not
+			// 0 — clamping it to 0 would UNDER-count what's already been refunded and
+			// let the same money be refunded again (over-refund).
+			$from_notes = max( 0.0, (float) preg_replace( '/[^0-9.]/', '', $value ) );
 		} elseif ( isset( $component['payment_status'] ) && 'refunded' === $component['payment_status'] ) {
 			$from_notes = isset( $component['total'] ) ? max( 0.0, (float) $component['total'] ) : 0.0;
 		}

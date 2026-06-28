@@ -9222,7 +9222,7 @@ RV Lot: " . $rv_lot['name'] );
 			$messages = $this->get_authorize_net_response_messages( $payload );
 
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( '[Equine Event Manager] Authorize.net payment failed (' . $http_status . '): ' . wp_json_encode( $payload ) );
+				error_log( '[Equine Event Manager] Authorize.net payment failed (' . $http_status . '): ' . wp_json_encode( $this->redact_authnet_log( $payload ) ) );
 			}
 
 			// 5.2: customer-safe message (raw gateway text can leak config internals);
@@ -9372,6 +9372,30 @@ RV Lot: " . $rv_lot['name'] );
 		}
 
 		return $value;
+	}
+
+	/**
+	 * P2: recursively redact card-bearing fields from an Authorize.net payload
+	 * before it's written to the debug log. The CHARGE REQUEST (full PAN + CVV) is
+	 * never logged — only the gateway RESPONSE, which carries at most a masked
+	 * account number — but this strips accountNumber / cardNumber / cardCode
+	 * defensively so a future API change can't leak anything sensitive into logs.
+	 *
+	 * @param mixed $data Parsed payload (array) or scalar.
+	 * @return mixed Redacted copy.
+	 */
+	private function redact_authnet_log( $data ) {
+		$sensitive = array( 'cardnumber', 'cardcode', 'accountnumber', 'expirationdate', 'cvv', 'cvv2' );
+		if ( is_array( $data ) ) {
+			$out = array();
+			foreach ( $data as $key => $value ) {
+				$out[ $key ] = in_array( strtolower( (string) $key ), $sensitive, true )
+					? '[redacted]'
+					: $this->redact_authnet_log( $value );
+			}
+			return $out;
+		}
+		return $data;
 	}
 
 	/**

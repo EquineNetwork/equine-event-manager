@@ -1253,7 +1253,8 @@ class EEM_Reports_Repo {
 				if ( '' === $amount && ! $has_tx && 'refunded' !== ( $comp['payment_status'] ?? '' ) ) {
 					continue;
 				}
-				$amount_val = '' !== $amount ? (float) preg_replace( '/[^0-9.\-]/', '', $amount ) : (float) ( $comp['total'] ?? 0 );
+				// P4: refund amounts are positive magnitudes — strip any minus sign.
+				$amount_val = '' !== $amount ? (float) preg_replace( '/[^0-9.]/', '', $amount ) : (float) ( $comp['total'] ?? 0 );
 				$rows[]     = array(
 					EEM_Formatter::format_order_number( $o['order_number'] ),
 					substr( (string) ( $comp['refunded_at'] ?? ( $o['created_at'] ?? '' ) ), 0, 10 ),
@@ -1382,7 +1383,8 @@ class EEM_Reports_Repo {
 		foreach ( $components as $comp ) {
 			$amount = $this->note_value( (string) ( $comp['notes'] ?? '' ), 'Refunded Amount' );
 			if ( '' !== $amount ) {
-				$total += max( 0, (float) preg_replace( '/[^0-9.\-]/', '', $amount ) );
+				// P4: refund amounts are positive magnitudes — strip any minus sign.
+				$total += max( 0, (float) preg_replace( '/[^0-9.]/', '', $amount ) );
 			} elseif ( 'refunded' === ( $comp['payment_status'] ?? '' ) ) {
 				$total += max( 0, (float) ( $comp['total'] ?? 0 ) );
 			}
