@@ -348,7 +348,15 @@ class EEM_Import_Handler {
 			$order_number = 'IMP-' . str_pad( (string) $next_num, 5, '0', STR_PAD_LEFT );
 			$next_num++;
 
-			$token      = 'imp-' . md5( $order_number . $customer_name );
+			// 4.1 (IDOR): the order's submission token becomes its bearer order_key
+			// (md5 of the token). The old 'imp-' . md5(order_number+name) was doubly
+			// broken — it was GUESSABLE (sequential IMP number + known name), AND the
+			// 'imp-' prefix isn't hex so extract_submission_token_from_notes() (regex
+			// [a-f0-9-]+) never even matched it, so imported orders fell through to the
+			// GUESSABLE event+name+phone+timestamp composite group key. A pure uuid4 is
+			// both high-entropy AND extractable, so every imported order now gets an
+			// unguessable order_key exactly like a real checkout submission token.
+			$token      = wp_generate_uuid4();
 			$created_at = current_time( 'mysql' );
 
 			/* Build notes */
