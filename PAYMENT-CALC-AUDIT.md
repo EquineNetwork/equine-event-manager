@@ -190,7 +190,17 @@ correct; the team's breakage was apparently fixed 662→671). NOT currently a bu
 single-component lengthen = 0 (flat fee doesn't grow) — correct; but cross-check against F7
 (flat fee on multi-component at CREATE time is still double-counted — different code path).
 
-### F6 — 🚨 CRITICAL: order system is hard-capped at the 250 most-recent rows
+### ✅ F6 — FIXED 2026-06-27 (on Local, awaiting Whitney sign-off + deploy)
+**Fix:** removed the `LIMIT 250` + `array_slice(…,250)` from `get_component_rows()` so
+`get_grouped_orders()` sees every order again. No amount/grouping logic changed — it only stops
+dropping rows. Per-request `cached_orders` memo keeps it to one build per request.
+**Verified:** seeded past the threshold (270 stall rows > 250) → **all 270 surfaced** (was capped
+at 250); money smokes regression-clean (cross-surface 11/0, receipt-parity 12/0, order-totals
+26/0, admin-reconcile 4/0). **Perf follow-up (tracked, not blocking):** single-order lookups still
+build the full grouped set; add targeted by-number/token queries when order counts reach the low
+thousands. NOT yet committed/pushed/version-bumped — awaiting sign-off.
+
+### F6 (original finding) — 🚨 CRITICAL: order system is hard-capped at the 250 most-recent rows
 **File:** `includes/class-equine-event-manager-orders-repository.php` — `get_component_rows()`
 line 2829: `SELECT * FROM {$table} ORDER BY created_at DESC LIMIT 250` (then `array_slice 250`).
 **Impact:** `get_grouped_orders()` only ever sees the 250 newest stall rows + 250 newest RV

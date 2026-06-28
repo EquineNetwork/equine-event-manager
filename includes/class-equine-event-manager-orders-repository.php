@@ -2824,9 +2824,18 @@ class EEM_Orders_Repository {
 
 		$rows = array();
 
+		// F6 fix (2026-06-27): NO row cap. The previous `LIMIT 250` + `array_slice(…,250)`
+		// silently dropped every order beyond the 250 most-recent component rows, which made
+		// get_grouped_orders() (and thus get_order / get_order_by_* lookups, receipts, Collect
+		// Payment, refunds, AND the Reports + Dashboard revenue aggregation) miss older orders
+		// once a venue exceeded 250 orders — i.e. orders became unreachable and revenue
+		// undercounted. Correctness requires all rows. The per-instance `cached_orders` memo
+		// keeps this to one build per request.
+		// PERF FOLLOW-UP (high volume): single-order lookups still build the full grouped set;
+		// add targeted by-order_number/token queries when order counts reach the low thousands.
 		foreach ( $this->get_component_table_candidates( $table ) as $table_name ) {
 			$table_rows = $wpdb->get_results(
-				"SELECT * FROM {$table_name} ORDER BY created_at DESC LIMIT 250",
+				"SELECT * FROM {$table_name} ORDER BY created_at DESC",
 				ARRAY_A
 			);
 
@@ -2849,7 +2858,7 @@ class EEM_Orders_Repository {
 			}
 		);
 
-		return array_slice( $rows, 0, 250 );
+		return $rows;
 	}
 
 	/**
