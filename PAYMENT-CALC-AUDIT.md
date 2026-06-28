@@ -151,7 +151,19 @@ RATE ONLY:**
 **Checklist impact:** adds a whole "ORDER-CREATION PATHS" dimension — every path that
 mints an order must inherit the full reservation pricing, not just customer checkout.
 
-### F4 — Add Items: products + custom items get NO convenience fee / tax (HIGH) 🔴
+### ✅ F4 — FIXED 2026-06-27 (on Local, awaiting sign-off + deploy)
+**Fix:** new single-source-of-truth `EEM_Order_Adjustments_Repo::compose_order_totals()` —
+the convenience fee follows admin-added line items (% fee → fee% × custom-items-total; flat
+fee unchanged), and **discounts do NOT touch the fee** (Whitney decision). Wired into all 3
+composition surfaces (Collect Payment, Order Detail, receipt) so they can't drift.
+**Verified (9/9):** add $10 product → owes **$10.40** ($10 + 4% fee); $20 discount → fee
+**unchanged** at $3.20, total reduced by exactly $20. Regression-clean (the c14 smoke's 5
+fails are pre-existing seed-drift — confirmed identical on the pre-F4 code).
+**Still open: F9** (Group fees + Pre-Entries not addable via Add Items) — separate additive
+change. **Minor follow-up:** the Add Items modal hint shows a product's raw price ("Charge:
+$10.00"); could note the fee, but the actual charge is now correct.
+
+### F4 (original finding) — Add Items: products + custom items get NO convenience fee / tax (HIGH) 🔴
 **Path:** Order Detail → Add Items → `ajax_add_items()` (class-eem-order-detail-page.php:2746).
 - **Stall / RV** → `add_component_quantity($order_key, $type, $qty, $priced)` — $priced carries
   fee config + tax; modal says "Fees & tax calculated on save." ✅

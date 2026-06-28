@@ -355,6 +355,57 @@ class EEM_Order_Adjustments_Repo {
 	}
 
 	/**
+	 * Compose an order's effective totals from its component totals + order-level
+	 * adjustments. SINGLE SOURCE OF TRUTH for the Collect Payment, Order Detail,
+	 * and receipt surfaces so they can never drift.
+	 *
+	 * F4 (Whitney decision 2026-06-27): the convenience fee applies to admin-added
+	 * line items (products / custom items) exactly like checkout. A PERCENTAGE fee
+	 * adds fee% × custom-items-total; a FLAT fee is once per order, so added items
+	 * don't grow it. DISCOUNTS do NOT touch the convenience fee (Whitney decision) —
+	 * a discount only reduces the payable total, never the fee. Tax mirrors the fee
+	 * base (off globally today → contributes 0).
+	 *
+	 * @param array $order       Grouped order (carries total/fees/tax/reservation_id).
+	 * @param array $adjustments Result of get_for_order(): custom_items_total + discount.
+	 * @return array{custom_total:float,discount_amount:float,custom_fee:float,custom_tax:float,effective_fees:float,effective_tax:float,grand_total:float}
+	 */
+	public static function compose_order_totals( array $order, array $adjustments ): array {
+		$base_total   = isset( $order['total'] ) ? (float) $order['total'] : 0.0; // subtotal + fees + tax
+		$base_fees    = isset( $order['fees'] ) ? (float) $order['fees'] : 0.0;
+		$base_tax     = isset( $order['tax'] ) ? (float) $order['tax'] : 0.0;
+		$custom_total = isset( $adjustments['custom_items_total'] ) ? (float) $adjustments['custom_items_total'] : 0.0;
+		$discount     = isset( $adjustments['discount'] ) ? $adjustments['discount'] : null;
+		$discount_amt = is_array( $discount ) ? (float) $discount['amount'] : 0.0;
+
+		$custom_fee = 0.0;
+		$custom_tax = 0.0;
+		if ( abs( $custom_total ) > 0.005 && class_exists( 'EEM_Settings_Repo' ) ) {
+			$fee = EEM_Settings_Repo::get_convenience_fee();
+			// Percentage fee follows every added item; flat fee is per-order (no add).
+			if ( ! empty( $fee['apply'] ) && 'percentage' === ( isset( $fee['type'] ) ? $fee['type'] : '' ) ) {
+				$custom_fee = round( (float) $fee['value'] / 100 * $custom_total, 2 );
+			}
+			$reservation_id = isset( $order['reservation_id'] ) ? (int) $order['reservation_id'] : 0;
+			$tax_rate       = EEM_Settings_Repo::get_tax_rate_for_reservation( $reservation_id );
+			if ( $tax_rate > 0 ) {
+				$custom_tax = round( $tax_rate / 100 * $custom_total, 2 );
+			}
+		}
+
+		return array(
+			'custom_total'    => $custom_total,
+			'discount_amount' => $discount_amt,
+			'custom_fee'      => $custom_fee,
+			'custom_tax'      => $custom_tax,
+			'effective_fees'  => round( $base_fees + $custom_fee, 2 ),
+			'effective_tax'   => round( $base_tax + $custom_tax, 2 ),
+			// Discount reduces the payable total but NOT the fee (Whitney decision).
+			'grand_total'     => round( $base_total + $custom_total + $custom_fee + $custom_tax - $discount_amt, 2 ),
+		);
+	}
+
+	/**
 	 * Delete every adjustment row for an order (custom items + discount).
 	 *
 	 * Used when an order is deleted so adjustments don't orphan.

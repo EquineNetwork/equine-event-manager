@@ -6399,7 +6399,16 @@ RV Lot: " . $rv_lot['name'] );
 				$receipt_discount_rsn = (string) ( $eem_adj['discount']['reason'] ?? '' );
 			}
 		}
-		$receipt_grand_total = round( $eem_order_total + $receipt_custom_total - $receipt_discount_amt, 2 );
+		// F4: convenience fee follows admin-added line items; discount leaves the fee
+		// untouched. Shared composer (also used by Collect Payment + Order Detail).
+		$receipt_effective_fees = (float) ( isset( $order['fees'] ) ? $order['fees'] : 0 );
+		if ( '' !== $eem_order_key && class_exists( 'EEM_Order_Adjustments_Repo' ) && isset( $eem_adj ) ) {
+			$eem_composed           = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $eem_adj );
+			$receipt_effective_fees = (float) $eem_composed['effective_fees'];
+			$receipt_grand_total    = (float) $eem_composed['grand_total'];
+		} else {
+			$receipt_grand_total = round( $eem_order_total + $receipt_custom_total - $receipt_discount_amt, 2 );
+		}
 		// Amount actually collected (mig-029). Legacy 'paid' rows with no recorded
 		// amount_paid count their component total as collected.
 		$receipt_amount_paid = isset( $order['amount_paid'] ) ? (float) $order['amount_paid'] : 0.0;
@@ -6470,7 +6479,7 @@ RV Lot: " . $rv_lot['name'] );
 			'special_requests'    => trim( (string) $this->get_special_requests_from_order_notes( $order['notes'] ) ),
 			'totals'              => $totals,
 			'subtotal'            => $money( $subtotal_val ),
-			'fee'                 => (float) $order['fees'] > 0 ? $money( $order['fees'] ) : '',
+			'fee'                 => $receipt_effective_fees > 0 ? $money( $receipt_effective_fees ) : '',
 			'tax'                 => (float) $order['tax'] > 0 ? $money( $order['tax'] ) : '',
 			'tax_rate_label'      => $tax_rate_value > 0 ? rtrim( rtrim( number_format( $tax_rate_value, 3 ), '0' ), '.' ) . '%' : '',
 			'grand_total'         => $money( $receipt_grand_total ),

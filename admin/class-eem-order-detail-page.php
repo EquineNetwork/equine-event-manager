@@ -1222,7 +1222,15 @@ class EEM_Order_Detail_Page {
 		$custom_items_total = (float) $adjustments['custom_items_total'];
 		$discount          = $adjustments['discount'];
 		$discount_amount   = is_array( $discount ) ? (float) $discount['amount'] : 0.0;
-		$total             = $total + $custom_items_total - $discount_amount;
+		// F4: convenience fee follows admin-added line items; discount leaves the fee
+		// untouched. Shared composer (also used by Collect Payment + receipt).
+		if ( '' !== $order_key && class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			$composed = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $adjustments );
+			$fees     = (float) $composed['effective_fees'];
+			$total    = (float) $composed['grand_total'];
+		} else {
+			$total    = $total + $custom_items_total - $discount_amount;
+		}
 		?>
 		<div class="eem-card eem-order-card">
 			<div class="eem-order-card__header">

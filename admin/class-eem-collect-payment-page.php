@@ -125,7 +125,15 @@ class EEM_Collect_Payment_Page {
 		$custom_total   = (float) $adjustments['custom_items_total'];
 		$discount       = $adjustments['discount'];
 		$discount_amt   = is_array( $discount ) ? (float) $discount['amount'] : 0.0;
-		$total_due      = $base_total + $custom_total - $discount_amt;
+		// F4: the convenience fee follows admin-added line items; a discount leaves
+		// the fee untouched. Single source of truth shared with Order Detail + receipt.
+		if ( class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			$composed  = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $adjustments );
+			$fees      = (float) $composed['effective_fees'];
+			$total_due = (float) $composed['grand_total'];
+		} else {
+			$total_due = $base_total + $custom_total - $discount_amt;
+		}
 		$amount_paid    = isset( $order['amount_paid'] ) ? (float) $order['amount_paid'] : 0.0;
 		$outstanding    = max( 0.0, $total_due - $amount_paid );
 
