@@ -96,10 +96,11 @@ resolved on 671); Order Detail totals + receipt totals.
   recompute the fee (Whitney decision); tax is off globally → moot. **F9** — Group grounds-fee, Group
   rider-deposit, and Pre-Entries are now addable item types (reuse the flat-rate product path; fee
   follows; verified with live 4% fee: $75 group fee → +$3.00). Add-qty + Edit Dates already recompute.
-- **F8** 🟡 MEDIUM — imported-order RECEIPT line items recompute (qty×price×nights) and diverge when
-  stored unit_price×nights ≠ stored subtotal (CSV imports w/ custom stay labels, e.g. "Thursday-Sunday"
-  → line $285 above a correct $137 total). NOT an overcharge; Order Detail + totals correct; checkout
-  orders unaffected. Fix: receipt line items from stored amounts.
+- **F8** ✅ FIXED 2026-06-27 (Local, awaiting sign-off + deploy) — imported-order receipt line items
+  recomputed (qty×price×nights) and overshot the correct total on CSV imports w/ custom stay labels
+  ($285 line over a $137 total). Now the stall base is DERIVED from the stored subtotal so lines always
+  reconcile. Capstone harness 101/101; new `f8-imported-receipt-reconcile-smoke.php` 6/6. (Separate
+  follow-up flagged: pre-entry charges may not be stored on component rows — needs a reconcile check.)
 - **F7** ✅ FIXED 2026-06-27 (Local, awaiting sign-off + deploy) — FLAT convenience fee was stored
   once per component row (double on stall+RV). Now applied once per order (first row), mirroring the
   tax pattern; percentage untouched. Capstone harness 101/101 (`charge-reconcile-allsurfaces-smoke.php`).

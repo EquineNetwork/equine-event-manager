@@ -6765,14 +6765,20 @@ RV Lot: " . $rv_lot['name'] );
 		$required_shavings_subtotal    = 0.0;
 		$additional_shavings_subtotal  = 0.0;
 		$base_subtotal                 = 0.0;
+		$rows_subtotal_total           = 0.0;
 		$stall_rows                    = $this->get_order_component_rows( $order, 'stall' );
 
 		foreach ( $stall_rows as $row ) {
 			$stall_quantity           = absint( $row['stall_qty'] ) + absint( $row['tack_stall_qty'] );
 			$row_required_qty         = absint( $row['required_shavings_qty'] );
 			$row_additional_qty       = absint( $row['additional_shavings_qty'] );
-			$stay_units               = $this->get_billable_stay_units( $row['arrival_date'], $row['departure_date'], $row['stay_type'] );
-			$row_base_subtotal        = $stall_quantity * (float) $row['unit_price'] * $stay_units;
+			// F8: accumulate the STORED row subtotal (what was actually charged) so
+			// base_subtotal can be DERIVED below — not recomputed as qty × unit_price ×
+			// nights, which diverges on CSV-imported orders whose custom stay-type label
+			// (e.g. "Thursday–Sunday") doesn't map to a clean billable-night count. The
+			// stored subtotal already reflects the real charge, so deriving from it keeps
+			// the receipt line items reconciled to the order total on every order.
+			$rows_subtotal_total     += (float) $row['subtotal'];
 			$row_required_subtotal    = $row_required_qty * $required_price;
 			// Additional shavings is a LIST of products, each with its own price
 			// (stored as JSON on the row at checkout). Sum the per-product subtotals
@@ -6798,7 +6804,33 @@ RV Lot: " . $rv_lot['name'] );
 			$additional_shavings_qty     += $row_additional_qty;
 			$required_shavings_subtotal  += $row_required_subtotal;
 			$additional_shavings_subtotal += $row_additional_subtotal;
-			$base_subtotal               += $row_base_subtotal;
+		}
+
+		if ( ! empty( $stall_rows ) ) {
+			// F8: base = stored stall subtotal − everything bundled into it that the
+			// receipt renders as its OWN line: required + additional shavings, the
+			// premium-stall surcharge, and the general add-ons + group charges (which
+			// always attach to the stall component when a stall order exists — see
+			// insert_reservation_orders $attach_*_to). This GUARANTEES the stall lines
+			// sum back to the stored/charged stall subtotal on every order, imports
+			// included, instead of a rate × nights recompute that can overshoot.
+			$addons_total = 0.0;
+			foreach ( $this->extract_general_addon_breakdown_from_notes( $order['notes'] ) as $addon_row ) {
+				$addons_total += (float) $addon_row['subtotal'];
+			}
+			$group_total = 0.0;
+			foreach ( $this->extract_group_charge_breakdown_from_notes( $order['notes'] ) as $group_row ) {
+				$group_total += (float) $group_row['subtotal'];
+			}
+			$base_subtotal = max(
+				0.0,
+				$rows_subtotal_total
+					- $required_shavings_subtotal
+					- $additional_shavings_subtotal
+					- $this->get_order_stall_surcharge_total( $order )
+					- $addons_total
+					- $group_total
+			);
 		}
 
 		if ( empty( $stall_rows ) ) {

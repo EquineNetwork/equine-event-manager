@@ -332,7 +332,24 @@ penny. The last-week Stay Packages work is wired end-to-end. Percentage fee + 8%
 reconcile across all 8 other scenarios. Harness now: **80 / 81 assertions pass** (the 1 fail =
 F7 flat-fee).
 
-### F8 — 🟡 MEDIUM (DOWNGRADED after browser+render verify): receipt LINE ITEMS diverge on IMPORTED orders only
+### ✅ F8 — FIXED 2026-06-27 (on Local, awaiting sign-off + deploy)
+**Fix:** `get_order_stall_breakdown()` now DERIVES the stall base from the stored row subtotal
+(`Σ row['subtotal'] − required shavings − additional shavings − premium surcharge − general
+add-ons − group charges`) instead of recomputing `qty × unit_price × billable_nights`. The
+recompute overshot on CSV-imported orders whose custom stay-type label (e.g. "Thursday–Sunday")
+doesn't map to a clean night count, rendering e.g. a $285 stall line over a correct $137 total.
+Deriving from the stored amount GUARANTEES the receipt lines sum back to the charged subtotal on
+every order. Add-ons + group always attach to the stall component when stalls exist (matches
+`insert_reservation_orders $attach_*_to`), so they're subtracted out and shown as their own lines.
+**Verified:** new `f8-imported-receipt-reconcile-smoke.php` 6/6 (import-shaped row: stored $137,
+recompute would be $285 → line now reads $137, Σlines reconciles). Capstone harness still **101/101**
+— normal/checkout orders compute the identical base (stored = recompute for them), so nothing
+regressed. Only imports change, and only for the better.
+**NOTE (separate finding, flagged for follow-up):** pre-entry charges (`pre_entries_subtotal`) are
+in the charged total but do NOT appear to be added to any stored component-row subtotal in
+`insert_reservation_orders` — needs a dedicated reconciliation check (see audit tail).
+
+### F8 (original finding) — 🟡 MEDIUM (DOWNGRADED after browser+render verify): receipt LINE ITEMS diverge on IMPORTED orders only
 **CORRECTED SCOPE — not an overcharge, not Order Detail, not the totals:**
 - Admin **Order Detail = CORRECT** (uses stored `stall_subtotal`; #IMP-90697 shows $137 ✓).
 - Receipt **Subtotal + Grand Total = CORRECT** (stored-derived: `total − fees − tax`; $137 ✓).
