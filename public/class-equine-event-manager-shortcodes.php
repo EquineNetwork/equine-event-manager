@@ -14159,6 +14159,22 @@ RV Lot: " . $rv_lot['name'] );
 			function setSubmitDisabled(form, isDisabled) {
 				form.querySelectorAll('.eem-reservation-submit').forEach(function(submitButton) {
 					submitButton.disabled = !!isDisabled;
+					// 5.3: swap to a Processing… + spinner state during the charge so a
+					// slow gateway round-trip doesn't read as a frozen, greyed button.
+					// Stash the original label so the catch-handler can restore it.
+					if (isDisabled) {
+						if (typeof submitButton.dataset.eemOriginalLabel === 'undefined') {
+							submitButton.dataset.eemOriginalLabel = submitButton.innerHTML;
+						}
+						submitButton.classList.add('eem-reservation-submit--processing');
+						submitButton.setAttribute('aria-busy', 'true');
+						submitButton.innerHTML = '<span class="eem-submit-spinner" aria-hidden="true"></span>Processing…';
+					} else if (typeof submitButton.dataset.eemOriginalLabel !== 'undefined') {
+						submitButton.classList.remove('eem-reservation-submit--processing');
+						submitButton.removeAttribute('aria-busy');
+						submitButton.innerHTML = submitButton.dataset.eemOriginalLabel;
+						delete submitButton.dataset.eemOriginalLabel;
+					}
 				});
 			}
 

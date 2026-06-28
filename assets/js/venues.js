@@ -16,6 +16,16 @@
 (function () {
 	'use strict';
 
+	// 5.4: surface admin errors through the shared toast instead of a jarring native
+	// alert(); fall back to alert() only if the toast helper hasn't loaded yet.
+	function eemNotify(message) {
+		if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+			window.EEM.showSaveToast(message, { variant: 'error', sub: '' });
+		} else {
+			window.alert(message);
+		}
+	}
+
 	function ajaxUrl() {
 		return (window.eemVenues && window.eemVenues.ajaxUrl) || (window.ajaxurl || '/wp-admin/admin-ajax.php');
 	}
@@ -95,7 +105,7 @@
 				toast('Layout renamed');
 			}, function (msg) {
 				confirmBtn.disabled = false;
-				alert(msg || 'Could not rename the layout.');
+				eemNotify(msg || 'Could not rename the layout.');
 			});
 		});
 		input.focus();
@@ -270,7 +280,7 @@
 				toast('Layout deleted');
 			}, function (msg) {
 				confirmBtn.disabled = false;
-				alert(msg || 'Could not delete the layout.');
+				eemNotify(msg || 'Could not delete the layout.');
 			});
 		});
 	}
@@ -312,7 +322,7 @@
 				window.location.reload();
 			}, function (msg) {
 				confirmBtn.disabled = false;
-				alert(msg || 'Could not move the venue to Trash.');
+				eemNotify(msg || 'Could not move the venue to Trash.');
 			});
 		});
 	}
@@ -323,7 +333,7 @@
 			var row = document.querySelector('tr[data-venue-id="' + venueId + '"]');
 			if (row) row.remove();
 		}, function (msg) {
-			alert(msg || 'Could not restore the venue.');
+			eemNotify(msg || 'Could not restore the venue.');
 		});
 	}
 
@@ -345,7 +355,7 @@
 				if (row) row.remove();
 			}, function (msg) {
 				confirmBtn.disabled = false;
-				alert(msg || 'Could not delete the venue.');
+				eemNotify(msg || 'Could not delete the venue.');
 			});
 		});
 	}
@@ -414,10 +424,10 @@
 					});
 					updateBulkBar();
 				} else {
-					alert(json && json.data && json.data.message ? json.data.message : 'Operation failed.');
+					eemNotify(json && json.data && json.data.message ? json.data.message : 'Operation failed.');
 				}
 			})
-			.catch(function () { if (overlay) overlay._close(); alert('Operation failed.'); });
+			.catch(function () { if (overlay) overlay._close(); eemNotify('Operation failed.'); });
 	}
 
 	document.addEventListener('change', function (e) {

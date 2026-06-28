@@ -20,6 +20,16 @@
 (function () {
 	'use strict';
 
+	// 5.4: surface admin errors through the shared toast instead of a jarring native
+	// alert(); fall back to alert() only if the toast helper hasn't loaded yet.
+	function eemNotify(message) {
+		if (window.EEM && typeof window.EEM.showSaveToast === 'function') {
+			window.EEM.showSaveToast(message, { variant: 'error', sub: '' });
+		} else {
+			window.alert(message);
+		}
+	}
+
 	function cfg() { return window.eemVenueLayouts || {}; }
 	function ajaxUrl() { return cfg().ajaxUrl || window.ajaxurl || '/wp-admin/admin-ajax.php'; }
 	function nonce() { return cfg().nonce || ''; }
@@ -124,7 +134,7 @@
 		// make the picker empty for all pre-split (combined) saved layouts.
 		post('eem_venue_list_layouts', { reservation_id: reservationId(), layout_type: '' }).then(function (json) {
 			if (!json || !json.success) {
-				alert(json && json.data && json.data.message ? json.data.message : 'Could not load layouts.');
+				eemNotify(json && json.data && json.data.message ? json.data.message : 'Could not load layouts.');
 				return;
 			}
 			var layouts = (json.data && json.data.layouts) || [];
@@ -169,7 +179,7 @@
 					}
 				}).catch(function () { confirmBtn.disabled = false; showError(overlay, 'Could not load the layout.'); });
 			});
-		}).catch(function () { alert('Could not load layouts.'); });
+		}).catch(function () { eemNotify('Could not load layouts.'); });
 	}
 
 	function showError(overlay, msg) {

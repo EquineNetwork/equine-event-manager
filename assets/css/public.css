@@ -2694,6 +2694,22 @@
 	cursor: pointer;
 }
 .eem-reservation-submit:hover { background: #1355cc; border-color: #1355cc; }
+/* 5.3: Processing… state during a charge so a slow gateway round-trip doesn't
+   look like a frozen, greyed-out button. */
+.eem-reservation-submit--processing { cursor: progress; opacity: 0.85; }
+.eem-reservation-submit--processing:hover { background: #1668F2; border-color: #1668F2; }
+.eem-submit-spinner {
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	margin-right: 8px;
+	vertical-align: -2px;
+	border: 2px solid rgba(255, 255, 255, 0.45);
+	border-top-color: #fff;
+	border-radius: 50%;
+	animation: eem-submit-spin 0.6s linear infinite;
+}
+@keyframes eem-submit-spin { to { transform: rotate(360deg); } }
 .eem-reservation-submit-actions {
 	display: flex;
 	flex-wrap: wrap;
