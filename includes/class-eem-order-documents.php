@@ -424,6 +424,45 @@ class EEM_Order_Documents {
 	}
 
 	/**
+	 * 4.4c: garbage-collect staged documents from checkouts that never completed —
+	 * their order_key is still the 'pending:' placeholder (reassign_pending() never
+	 * re-keyed them onto a real order) and they're older than the cutoff. Removes
+	 * both the file and the row so abandoned uploads don't pile up on disk. Called
+	 * lazily from ajax_stage(); the cutoff is generous so a slow-but-real checkout
+	 * is never collected mid-flight.
+	 *
+	 * @param int $max_age_hours Age threshold in hours (default 48).
+	 * @return int Number of staged documents removed.
+	 */
+	public static function gc_orphaned_pending( int $max_age_hours = 48 ): int {
+		global $wpdb;
+		$table  = $wpdb->prefix . 'eem_order_documents';
+		$cutoff = gmdate( 'Y-m-d H:i:s', time() - ( $max_age_hours * HOUR_IN_SECONDS ) );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL
+		$rows = $wpdb->get_results( $wpdb->prepare(
+			"SELECT id, file_name FROM {$table} WHERE order_key LIKE %s AND uploaded_at < %s",
+			$wpdb->esc_like( 'pending:' ) . '%',
+			$cutoff
+		), ARRAY_A );
+		if ( empty( $rows ) ) {
+			return 0;
+		}
+
+		$dir     = self::storage_dir();
+		$deleted = 0;
+		foreach ( $rows as $row ) {
+			$file_name = isset( $row['file_name'] ) ? (string) $row['file_name'] : '';
+			if ( '' !== $dir && '' !== $file_name && is_file( $dir . $file_name ) ) {
+				wp_delete_file( $dir . $file_name );
+			}
+			$wpdb->delete( $table, array( 'id' => (int) $row['id'] ), array( '%d' ) ); // phpcs:ignore WordPress.DB
+			$deleted++;
+		}
+		return $deleted;
+	}
+
+	/**
 	 * The list of requirement names a reservation defines (non-empty names only).
 	 *
 	 * @param int $reservation_id Reservation post ID.
@@ -493,6 +532,25 @@ class EEM_Order_Documents {
 	 */
 	public static function ajax_stage(): void {
 		check_ajax_referer( 'eem_stage_required_doc', 'nonce' );
+
+		// 4.4c: throttle this UNAUTHENTICATED 10MB upload per IP — without a limit it's
+		// a cheap DoS / disk-fill vector. Allow a generous burst (a customer uploads a
+		// handful of docs), then 429. Best-effort IP (spoofable, but raises the bar).
+		$eem_ip    = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'unknown';
+		$eem_rl    = 'eem_stage_rl_' . md5( $eem_ip );
+		$eem_count = (int) get_transient( $eem_rl );
+		if ( $eem_count >= 20 ) {
+			wp_send_json_error( array( 'message' => __( 'Too many uploads in a short time. Please wait a few minutes and try again.', 'equine-event-manager' ) ), 429 );
+		}
+		set_transient( $eem_rl, $eem_count + 1, 5 * MINUTE_IN_SECONDS );
+
+		// Lazily garbage-collect orphaned staged files (staged but never claimed by an
+		// order) so abandoned checkouts don't accumulate on disk. Runs on ~3% of
+		// stage calls to avoid a per-request cost or a dedicated cron.
+		if ( wp_rand( 1, 100 ) <= 3 ) {
+			self::gc_orphaned_pending();
+		}
+
 		$reservation_id = isset( $_POST['reservation_id'] ) ? absint( wp_unslash( $_POST['reservation_id'] ) ) : 0;
 		$token          = isset( $_POST['session'] ) ? sanitize_text_field( wp_unslash( $_POST['session'] ) ) : '';
 		$requirement    = isset( $_POST['requirement'] ) ? sanitize_text_field( wp_unslash( $_POST['requirement'] ) ) : '';
