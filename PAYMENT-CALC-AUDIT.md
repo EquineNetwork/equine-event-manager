@@ -367,6 +367,16 @@ F8 (6/6) + F9 (14/14) unaffected.
 **Impact if shipped:** any site selling pre-entries would have under-recorded revenue + wrong balances/
 refunds on every pre-entry order. Exactly the "nothing is messed" class — caught pre-launch.
 
+### ✅ REVENUE REPORTING — audited + Dashboard KPI corrected (2026-06-27)
+Dashboard + Reports both sum the now-correct stored order totals, so the F6–F11 fixes flow
+through to revenue. **One change (Whitney decision):** the Dashboard "Revenue" KPI counted the
+FULL booked total of partially-paid orders; it now counts **amount COLLECTED** (`amount_paid`),
+and "Outstanding" counts the **remaining balance** (`total − amount_paid`) instead of the full
+total. `EEM_Dashboard_Repo::compute_revenue_outstanding_totals()`. Verified
+`dashboard-revenue-collected-smoke.php` 3/3 (collected $250 not $400 booked; outstanding $330).
+Reports revenue stays per-order (Subtotal/Fee/Tax/Total/Refunded/Net) and is unchanged — it was
+already correct.
+
 ### ✅ REFUND PATH — verified correct for the new pricing inputs (2026-06-27)
 `EEM_Refund_Engine::get_component_remaining_refundable_amount()` caps refunds at the stored
 component `total` (not a line-item recompute), so the F7/F8/F10 storage fixes flow straight

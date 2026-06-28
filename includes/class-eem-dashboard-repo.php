@@ -302,13 +302,17 @@ class EEM_Dashboard_Repo {
 		$rev = 0.0; $out_amt = 0.0; $out_count = 0;
 		$outstanding_statuses = array( 'unpaid', 'invoice-sent', 'partially-paid' );
 		foreach ( $orders as $o ) {
-			$slug = (string) ( $o['status_slug'] ?? '' );
-			$amt  = (float) ( $o['total'] ?? 0 );
-			if ( 'paid' === $slug || 'partially-paid' === $slug ) {
-				$rev += $amt;
-			}
+			$slug  = (string) ( $o['status_slug'] ?? '' );
+			$total = (float) ( $o['total'] ?? 0 );
+			$paid  = max( 0.0, (float) ( $o['amount_paid'] ?? 0 ) );
+			// Revenue = money actually COLLECTED (Whitney decision 2026-06-27), not the
+			// booked order total — so a partially-paid order contributes only what has
+			// been paid, never the unpaid remainder.
+			$rev += $paid;
 			if ( in_array( $slug, $outstanding_statuses, true ) ) {
-				$out_amt += $amt;
+				// Outstanding = the remaining balance (total − collected), so a
+				// partially-paid order counts only what's still owed.
+				$out_amt += max( 0.0, $total - $paid );
 				$out_count++;
 			}
 		}
