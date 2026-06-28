@@ -12846,6 +12846,18 @@ class EEM_Admin {
 			}
 		}
 
+		// Cash/check waives the convenience fee (Whitney decision) — it's a pass-through
+		// of the merchant card fee, so an offline payment removes it. Drop the fee from
+		// the order, then recompute the now fee-free balance via the shared composer so
+		// custom items / discount stay accounted for.
+		$this->orders_repository->waive_convenience_fee( $order_key );
+		$order = $this->orders_repository->get_order( $order_key );
+		if ( is_array( $order ) && class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			$eem_adj      = EEM_Order_Adjustments_Repo::get_for_order( $order_key );
+			$eem_composed = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $eem_adj );
+			$outstanding  = round( max( 0.0, (float) $eem_composed['grand_total'] - (float) ( isset( $order['amount_paid'] ) ? $order['amount_paid'] : 0 ) ), 2 );
+		}
+
 		// Amount received (optional). Parse from the Collect Payment field; default
 		// to the full outstanding balance when omitted. The repo caps it to the
 		// outstanding balance so an over-tender never inflates amount_paid.

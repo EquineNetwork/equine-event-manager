@@ -106,9 +106,9 @@ resolved on 671); Order Detail totals + receipt totals.
 - **F2** (Low, NOT a bug) refund-math smoke stale (`order_key` schema drift) — test drift only.
 
 ### NEW FEATURES (Whitney decisions — V1)
-- **Cash/check removes the convenience fee** — Collect Payment "Paid Cash" tab only (backend); recalc total w/o fee at payment. (Decision #2.)
-- **Payment-link/invoice email button** → "Click here to pay" (currently "Review Invoice & Pay Now"); verify invoice layout + totals.
-- **Remove dev/stub UI references** ("ported in C7" in Settings → Payments tax help; grep all user-facing strings).
+- ✅ **Cash/check removes the convenience fee** — DONE 2026-06-27 (Local, awaiting sign-off + deploy). `waive_convenience_fee()` zeroes the fee on each component + tags notes; `compose_order_totals()` reads the marker so EVERY surface goes fee-free; cash handler recomputes the fee-free balance; Paid Cash tab pre-fills it + shows a waiver hint. Verified 12/12 ($504.40→$485.00, fee $19.40→$0, idempotent). Backend-only; card paths untouched. (Decision #2.)
+- ✅ **Payment-link/invoice email button** → "Click here to pay" — DONE (was "Review Invoice & Pay Now"); invoice layout + totals verified.
+- ✅ **Remove dev/stub UI references** — DONE ("ported in C7" stripped from Settings → Payments tax help).
 
 ### FIX ORDER + SIGN-OFF
 Suggested order: **F6 → F4/F4b/F9 → F3 → P1 → F8 → F7 → P3 → P5 → cash-fee → F1 → email/stub

@@ -172,6 +172,31 @@ fails are pre-existing seed-drift — confirmed identical on the pre-F4 code).
 change. **Minor follow-up:** the Add Items modal hint shows a product's raw price ("Charge:
 $10.00"); could note the fee, but the actual charge is now correct.
 
+### ✅ Q2/CASH — Cash & check waive the convenience fee — IMPLEMENTED 2026-06-27 (on Local, awaiting sign-off + deploy)
+**Whitney decision:** the convenience fee is a pass-through of the card-processing cost.
+Front-end checkout is always card → always carries the fee. **Backend (admin) Collect Payment
+"Paid Cash" tab** is the ONLY place an offline (cash/check) payment is recorded, and there the
+fee must be **removed** from the order. Tax stays. Discounts are unrelated (already don't touch
+the fee).
+**Implementation (builds on F4's `compose_order_totals`):**
+1. `EEM_Orders_Repository::waive_convenience_fee( $order_key ): float` — zeroes each component
+   row's `convenience_fee`, drops it from the row `total`, tags the row notes with
+   `Convenience Fee Waived: Yes`, busts the order cache, returns the total waived. Idempotent.
+2. `compose_order_totals()` now reads the `Convenience Fee Waived` marker off the order notes;
+   when present it forces `effective_fees = 0`, suppresses the % fee that would follow added
+   items, and subtracts the base fee from `grand_total`. So **every** surface (Order Detail,
+   receipt, Collect Payment) shows the fee-free total consistently — not just the cash tab.
+3. `handle_mark_order_paid` (cash/check branch) calls `waive_convenience_fee()` first, then
+   recomputes the now fee-free balance via `compose_order_totals` before recording the payment.
+4. Collect Payment "Paid Cash" tab pre-fills **Amount Received** with the fee-free balance
+   (`total_due − fees`) and shows a hint: "The $X convenience fee is waived for cash and check
+   payments."
+**Verified end-to-end (12/12, `/tmp/f-cash-verify.php` on live order):** fee $19.40 → $0;
+grand total $504.40 → **$485.00** (down by exactly the fee, subtotal+tax untouched); marker
+persisted; grouped `fees` zeroed; second waive is a no-op (idempotent).
+**Scope guard:** waiver is BACKEND-ONLY (no front-end path can reach it); card charges
+(Stripe + Auth.net, customer + admin) are untouched and keep the fee.
+
 ### F4 (original finding) — Add Items: products + custom items get NO convenience fee / tax (HIGH) 🔴
 **Path:** Order Detail → Add Items → `ajax_add_items()` (class-eem-order-detail-page.php:2746).
 - **Stall / RV** → `add_component_quantity($order_key, $type, $qty, $priced)` — $priced carries

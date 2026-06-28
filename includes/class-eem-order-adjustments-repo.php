@@ -378,12 +378,20 @@ class EEM_Order_Adjustments_Repo {
 		$discount     = isset( $adjustments['discount'] ) ? $adjustments['discount'] : null;
 		$discount_amt = is_array( $discount ) ? (float) $discount['amount'] : 0.0;
 
+		// Cash/check waiver (Whitney decision): the convenience fee is a pass-through of
+		// the merchant CARD fee, so a cash/check payment removes it entirely — base fee
+		// AND the fee that would follow added items. Set when the admin records a Paid
+		// Cash payment (see EEM_Orders_Repository::waive_convenience_fee). Marker lives
+		// on the order notes so every surface (Order Detail, receipt, Collect Payment)
+		// reflects the fee-free total consistently.
+		$fee_waived = isset( $order['notes'] ) && false !== stripos( (string) $order['notes'], 'Convenience Fee Waived' );
+
 		$custom_fee = 0.0;
 		$custom_tax = 0.0;
 		if ( abs( $custom_total ) > 0.005 && class_exists( 'EEM_Settings_Repo' ) ) {
 			$fee = EEM_Settings_Repo::get_convenience_fee();
 			// Percentage fee follows every added item; flat fee is per-order (no add).
-			if ( ! empty( $fee['apply'] ) && 'percentage' === ( isset( $fee['type'] ) ? $fee['type'] : '' ) ) {
+			if ( ! $fee_waived && ! empty( $fee['apply'] ) && 'percentage' === ( isset( $fee['type'] ) ? $fee['type'] : '' ) ) {
 				$custom_fee = round( (float) $fee['value'] / 100 * $custom_total, 2 );
 			}
 			$reservation_id = isset( $order['reservation_id'] ) ? (int) $order['reservation_id'] : 0;
@@ -393,15 +401,21 @@ class EEM_Order_Adjustments_Repo {
 			}
 		}
 
+		// When waived, drop the base convenience fee from the total too.
+		$effective_fees = $fee_waived ? 0.0 : round( $base_fees + $custom_fee, 2 );
+		$fee_removed    = $fee_waived ? $base_fees : 0.0;
+
 		return array(
 			'custom_total'    => $custom_total,
 			'discount_amount' => $discount_amt,
 			'custom_fee'      => $custom_fee,
 			'custom_tax'      => $custom_tax,
-			'effective_fees'  => round( $base_fees + $custom_fee, 2 ),
+			'fee_waived'      => $fee_waived,
+			'effective_fees'  => $effective_fees,
 			'effective_tax'   => round( $base_tax + $custom_tax, 2 ),
 			// Discount reduces the payable total but NOT the fee (Whitney decision).
-			'grand_total'     => round( $base_total + $custom_total + $custom_fee + $custom_tax - $discount_amt, 2 ),
+			// A cash/check waiver removes the base convenience fee ($fee_removed).
+			'grand_total'     => round( $base_total + $custom_total + $custom_fee + $custom_tax - $discount_amt - $fee_removed, 2 ),
 		);
 	}
 

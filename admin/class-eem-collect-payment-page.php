@@ -137,6 +137,13 @@ class EEM_Collect_Payment_Page {
 		$amount_paid    = isset( $order['amount_paid'] ) ? (float) $order['amount_paid'] : 0.0;
 		$outstanding    = max( 0.0, $total_due - $amount_paid );
 
+		// Cash/check waives the convenience fee (Whitney decision: the fee is a
+		// pass-through of the card processing cost, so offline payments drop it).
+		// The Paid Cash tab pre-fills this fee-free balance; the server handler
+		// (handle_mark_order_paid) zeroes the fee on the order to match.
+		$cash_total_due = max( 0.0, $total_due - $fees );
+		$cash_outstanding = max( 0.0, $cash_total_due - $amount_paid );
+
 		$customer = isset( $order['customer_name'] ) ? (string) $order['customer_name'] : '';
 		$email    = isset( $order['email'] ) ? (string) $order['email'] : '';
 		$status   = isset( $order['payment_status'] ) ? (string) $order['payment_status'] : 'pending';
@@ -488,6 +495,17 @@ class EEM_Collect_Payment_Page {
 				<p class="eem-field-hint">
 					<?php esc_html_e( 'Record an offline payment (cash, check, or other) for this order. The order will be marked as paid.', 'equine-event-manager' ); ?>
 				</p>
+				<?php if ( $fees > 0 ) : ?>
+				<p class="eem-field-hint">
+					<?php
+					printf(
+						/* translators: %s: convenience fee amount */
+						esc_html__( 'The %s convenience fee is waived for cash and check payments — the amount below excludes it.', 'equine-event-manager' ),
+						'<strong>$' . esc_html( number_format_i18n( $fees, 2 ) ) . '</strong>'
+					);
+					?>
+				</p>
+				<?php endif; ?>
 				<div class="eem-co-cash-field">
 					<span class="eem-co-cash-field__label"><?php esc_html_e( 'Payment Method', 'equine-event-manager' ); ?></span>
 					<select id="eem-cp-cash-method" class="eem-field-select" style="width:100%">
@@ -501,7 +519,7 @@ class EEM_Collect_Payment_Page {
 				</div>
 				<div class="eem-co-cash-field">
 					<span class="eem-co-cash-field__label"><?php esc_html_e( 'Amount Received', 'equine-event-manager' ); ?></span>
-					<input type="text" id="eem-cp-cash-amount" class="eem-field-input" inputmode="decimal" style="width:100%" value="<?php echo esc_attr( '$' . number_format( $total_due, 2, '.', '' ) ); ?>" />
+					<input type="text" id="eem-cp-cash-amount" class="eem-field-input" inputmode="decimal" style="width:100%" value="<?php echo esc_attr( '$' . number_format( $cash_total_due, 2, '.', '' ) ); ?>" />
 				</div>
 				<?php
 				$cash_url = wp_nonce_url(

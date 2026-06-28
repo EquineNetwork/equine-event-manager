@@ -450,6 +450,54 @@ class EEM_Orders_Repository {
 	}
 
 	/**
+	 * Waive the convenience fee on an order (cash/check payment — Whitney decision).
+	 *
+	 * The convenience fee is a pass-through of the merchant CARD fee, so a cash or
+	 * check payment removes it. Zeroes each component row's `convenience_fee`, drops
+	 * that fee from the row `total`, and tags the notes with "Convenience Fee Waived"
+	 * so the shared composer (EEM_Order_Adjustments_Repo::compose_order_totals) also
+	 * suppresses the fee that would otherwise follow admin-added items. Idempotent.
+	 *
+	 * @param string $order_key Order key.
+	 * @return float Total convenience fee removed.
+	 */
+	public function waive_convenience_fee( string $order_key ): float {
+		$order = $this->get_order( $order_key );
+		if ( ! is_array( $order ) || empty( $order['components'] ) ) {
+			return 0.0;
+		}
+		$waived = 0.0;
+		foreach ( (array) $order['components'] as $component ) {
+			$table = isset( $component['table'] ) ? (string) $component['table'] : '';
+			$row_id = isset( $component['row_id'] ) ? (int) $component['row_id'] : 0;
+			$row = ( '' !== $table && $row_id > 0 ) ? $this->get_component_row( $table, $row_id ) : null;
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+			$fee    = isset( $row['convenience_fee'] ) ? (float) $row['convenience_fee'] : 0.0;
+			$notes  = isset( $row['notes'] ) ? (string) $row['notes'] : '';
+			$fields = array();
+			$formats = array();
+			if ( $fee > 0 ) {
+				$fields['convenience_fee'] = 0.0;
+				$fields['total']           = max( 0.0, round( (float) $row['total'] - $fee, 2 ) );
+				$formats[]                 = '%f';
+				$formats[]                 = '%f';
+				$waived                   += $fee;
+			}
+			if ( false === stripos( $notes, 'Convenience Fee Waived' ) ) {
+				$fields['notes'] = trim( $notes . "\nConvenience Fee Waived: Yes" );
+				$formats[]       = '%s';
+			}
+			if ( ! empty( $fields ) ) {
+				$this->update_component_fields( $table, $row_id, $fields, $formats );
+			}
+		}
+		$this->cached_orders = null;
+		return round( $waived, 2 );
+	}
+
+	/**
 	 * Update payment details across every component in an order.
 	 *
 	 * @param string $order_key        Order key.
