@@ -367,6 +367,22 @@ F8 (6/6) + F9 (14/14) unaffected.
 **Impact if shipped:** any site selling pre-entries would have under-recorded revenue + wrong balances/
 refunds on every pre-entry order. Exactly the "nothing is messed" class — caught pre-launch.
 
+### 🛡️ P3 — charge→save crash safety net (IN PROGRESS — customer checkout DONE 2026-06-27)
+**Risk:** every charge path saves the order AFTER the gateway charge succeeds. A crash/timeout in
+that gap takes the customer's money with no order record — and the "already-processed" guard was set
+only AFTER the save, so a retry could charge AGAIN (double-charge). Whitney: full recovery snapshot,
+all four paths.
+**Mechanism (new `EEM_Charge_Recovery`):** durable per-charge snapshot (non-autoloaded `wp_option`)
+written the instant a charge succeeds, BEFORE the save; cleared on save success. On a retry the flow
+reuses the snapshot's charge result instead of charging again; `insert_reservation_orders` is now
+idempotent on the gateway transaction id, so a recovery retry can never create a second order for one
+charge. Orphan query (`get_orphans`) surfaces any snapshot un-cleared after a grace period.
+**Done:** customer checkout (Stripe + Auth.net) — both route through `process_payment_form_submission`
+→ snapshot → idempotent insert → clear. Verified `p3-charge-recovery-smoke.php` 11/11 (snapshot
+lifecycle + same-txn second insert reports duplicate, creates no second order); harness 110/110.
+**Remaining:** admin Collect Payment (Stripe + Auth.net) symmetric wiring; Dashboard "Needs Attention"
+orphan surface; then version bump to ship.
+
 ### ✅ REVENUE REPORTING — audited + Dashboard KPI corrected (2026-06-27)
 Dashboard + Reports both sum the now-correct stored order totals, so the F6–F11 fixes flow
 through to revenue. **One change (Whitney decision):** the Dashboard "Revenue" KPI counted the

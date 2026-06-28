@@ -3257,13 +3257,48 @@ class EEM_Shortcodes {
 					'submission_token' => $replay_token,
 				);
 			} else {
-				$payment_result = $this->process_payment_submission( $reservation_id, $data, $submission, $live_status );
+				// P3: if a prior attempt already charged this submission but crashed
+				// before the order saved, a durable recovery snapshot holds that
+				// charge — reuse it instead of charging again so a retry can never
+				// double-charge the customer.
+				$eem_recovery = ( '' !== $replay_token ) ? EEM_Charge_Recovery::get( $replay_token ) : null;
+				if ( is_array( $eem_recovery ) && ! empty( $eem_recovery['payment_result'] ) ) {
+					$payment_result = $eem_recovery['payment_result'];
+				} else {
+					$payment_result = $this->process_payment_submission( $reservation_id, $data, $submission, $live_status );
 
-				if ( is_wp_error( $payment_result ) ) {
-					return $this->render_notice( $payment_result->get_error_message(), 'error' );
+					if ( is_wp_error( $payment_result ) ) {
+						return $this->render_notice( $payment_result->get_error_message(), 'error' );
+					}
+
+					// P3: the charge has succeeded — persist a durable snapshot BEFORE
+					// the save so a crash here leaves a recoverable record (the retry
+					// branch above then reuses it rather than charging again).
+					if ( '' !== $replay_token && ! empty( $payment_result['transaction_id'] ) ) {
+						EEM_Charge_Recovery::snapshot(
+							$replay_token,
+							array(
+								'type'           => 'checkout',
+								'transaction_id' => (string) $payment_result['transaction_id'],
+								'gateway'        => isset( $payment_result['payment_gateway'] ) ? (string) $payment_result['payment_gateway'] : '',
+								'amount'         => isset( $payment_result['amount'] ) ? (float) $payment_result['amount'] : 0.0,
+								'reservation_id' => $reservation_id,
+								'data'           => $data,
+								'submission'     => $submission,
+								'status'         => $live_status,
+								'payment_result' => $payment_result,
+							)
+						);
+					}
 				}
 
 				$insert_result = $this->insert_reservation_orders( $reservation_id, $data, $submission, $live_status, $payment_result );
+
+				// P3: the order is safely saved (or confirmed already present) — the
+				// recovery snapshot is no longer needed.
+				if ( ! empty( $insert_result['success'] ) && '' !== $replay_token ) {
+					EEM_Charge_Recovery::clear( $replay_token );
+				}
 			}
 		} finally {
 			$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $checkout_lock ) );
@@ -5332,6 +5367,20 @@ class EEM_Shortcodes {
 		}
 
 		if ( $this->has_processed_submission_token( $submission_token ) ) {
+			return array(
+				'success'          => true,
+				'duplicate'        => true,
+				'submission_token' => $submission_token,
+			);
+		}
+
+		// P3: idempotency by gateway transaction id. If a row already carries this
+		// transaction — e.g. a prior attempt inserted some rows then crashed before
+		// marking the token, and a recovery retry is now re-running — do NOT create a
+		// duplicate order. Mark the token processed and report the existing order.
+		$eem_txn_dedup = ! empty( $payment_result['transaction_id'] ) ? sanitize_text_field( (string) $payment_result['transaction_id'] ) : '';
+		if ( '' !== $eem_txn_dedup && $this->order_exists_for_transaction( $eem_txn_dedup ) ) {
+			$this->mark_submission_token_processed( $submission_token );
 			return array(
 				'success'          => true,
 				'duplicate'        => true,
@@ -7954,6 +8003,32 @@ RV Lot: " . $rv_lot['name'] );
 
 		self::$processed_submission_tokens[ $submission_token ] = true;
 		set_transient( self::SUBMISSION_TOKEN_TRANSIENT_PREFIX . md5( $submission_token ), 1, DAY_IN_SECONDS );
+	}
+
+	/**
+	 * P3 idempotency helper: does any persisted order row already carry this gateway
+	 * transaction id? Used to make insert_reservation_orders idempotent so a recovery
+	 * retry (after a crash that left the submission token unmarked) can never create a
+	 * duplicate order for a charge that already produced rows.
+	 *
+	 * @param string $transaction_id Gateway transaction id (Stripe intent / Auth.net transId).
+	 * @return bool True when a stall or RV row already records this transaction.
+	 */
+	private function order_exists_for_transaction( string $transaction_id ): bool {
+		global $wpdb;
+		if ( '' === $transaction_id ) {
+			return false;
+		}
+		$stall_table = $wpdb->prefix . 'en_stall_reservations';
+		$rv_table    = $wpdb->prefix . 'en_rv_reservations';
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names are constants.
+		$in_stall = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$stall_table}` WHERE transaction_id = %s", $transaction_id ) );
+		if ( $in_stall > 0 ) {
+			return true;
+		}
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names are constants.
+		$in_rv = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$rv_table}` WHERE transaction_id = %s", $transaction_id ) );
+		return $in_rv > 0;
 	}
 
 	/**
