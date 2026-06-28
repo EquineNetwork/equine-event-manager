@@ -8012,6 +8012,11 @@ RV Lot: " . $rv_lot['name'] );
 			wp_send_json_error( array( 'message' => __( 'Stripe is not fully configured in plugin Settings.', 'equine-event-manager' ) ), 400 );
 		}
 
+		// F4: charge the live ADJUSTED balance (component total + admin-added items +
+		// the convenience fee that follows them − discount), not the raw component
+		// total — so the invoice link reflects anything added on Order Detail. Same
+		// single-source composer Collect Payment uses.
+		$order['total'] = $this->get_order_amount_due( $order, $order['order_key'] );
 		$intent = $this->create_invoice_stripe_payment_intent( $order, $invoice_token, $stripe_config['secret_key'] );
 
 		if ( is_wp_error( $intent ) ) {
@@ -8084,6 +8089,12 @@ RV Lot: " . $rv_lot['name'] );
 			if ( ! $this->invoice_order_is_payable( $order ) ) {
 				return new WP_Error( 'invoice_unavailable', __( 'This invoice has already been paid or is no longer payable.', 'equine-event-manager' ) );
 			}
+
+			// F4: pay the live ADJUSTED balance (with the fee that follows admin-added
+			// items), matching the intent created in ajax_create_invoice_payment_intent
+			// and the Collect Payment charge — keeps the Stripe amount-match + Auth.net
+			// charge below consistent with what the customer is shown.
+			$order['total'] = $this->get_order_amount_due( $order, $order['order_key'] );
 
 			$gateway = $this->get_invoice_order_gateway( $order );
 			$result  = array();
@@ -8202,12 +8213,17 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return float Amount due (>= 0).
 	 */
 	private function get_order_amount_due( $order, $order_key ) {
-		$total = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		// F4: the CHARGE amount (Stripe + Auth.net Collect Payment) must equal the
+		// DISPLAYED total, including the convenience fee that now follows admin-added
+		// line items. Route through the same single-source composer the Collect
+		// Payment / Order Detail / receipt surfaces use so the charge never diverges
+		// from what the admin/customer sees.
 		if ( class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
-			$adj    = EEM_Order_Adjustments_Repo::get_for_order( $order_key );
-			$total += (float) $adj['custom_items_total'];
-			$total -= is_array( $adj['discount'] ) ? (float) $adj['discount']['amount'] : 0.0;
+			$adj      = EEM_Order_Adjustments_Repo::get_for_order( $order_key );
+			$composed = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $adj );
+			return max( 0.0, (float) $composed['grand_total'] );
 		}
+		$total = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
 		return max( 0.0, round( $total, 2 ) );
 	}
 
