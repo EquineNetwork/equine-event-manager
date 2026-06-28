@@ -43,9 +43,14 @@ EEM_Reservation_Config::for( $rid )->set_many( array(
 ) )->save();
 EEM_Reservation_Config::flush_cache( $rid );
 
-// Seed a paid stall order: 2 stalls × 4 nights @ $35 = $280; required shavings
-// 2 × $10 = $20; additional shavings 2 × $10 = $20 (per-product JSON). The
-// stored stall subtotal includes all three = $320.
+// Seed a paid stall order the way production stores it. Stalls 2 × 4 × $35 =
+// $280; required shavings 2 × $10 = $20; additional shavings $20 (per-product
+// JSON); PLUS the general add-on ($30), group charges ($60 + $150) and pre-entry
+// ($50) which insert_reservation_orders FOLDS INTO the stall row subtotal when a
+// stall order exists (see $attach_*_to at ~5417 + $row_subtotal += … at ~5652).
+// So the stored stall row subtotal = 280 + 40 + 30 + 210 + 50 = $610. The
+// breakdown then derives base = subtotal − (shavings + add-ons + group + pre) =
+// $280, and every line reconciles back to the $610 subtotal.
 $table = $wpdb->prefix . 'en_stall_reservations';
 $onum  = 999500;
 $wpdb->delete( $table, array( 'order_number' => $onum ) );
@@ -65,9 +70,9 @@ $wpdb->insert( $table, array(
 	'additional_shavings_qty' => 2,
 	'additional_shavings_items' => wp_json_encode( array( array( 'name' => 'Pine Shavings', 'qty' => 2, 'price' => 10.0, 'subtotal' => 20.0 ) ) ),
 	'unit_price'              => 35.00,
-	'subtotal'                => 320.00,
+	'subtotal'                => 610.00,
 	'convenience_fee'         => 0.00,
-	'total'                   => 320.00,
+	'total'                   => 610.00,
 	'payment_status'          => 'paid',
 	'payment_gateway'         => 'stripe',
 	'order_number'            => $onum,
@@ -79,7 +84,7 @@ $wpdb->insert( $table, array(
 		. "Pre-Entry: Stall Cleaning | Qty: 2 | Subtotal: \$50.00",
 	'created_at'              => '2026-06-01 00:00:00',
 ) );
-$chk( $wpdb->insert_id > 0, 'seeded stall order ($320 = 280 stalls + 20 req + 20 add shavings)' );
+$chk( $wpdb->insert_id > 0, 'seeded stall order ($610 = 280 stalls + 40 shavings + 30 add-on + 210 group + 50 pre-entry, all folded into the stall row subtotal)' );
 
 $sc   = new EEM_Shortcodes();
 $repo = new EEM_Orders_Repository();
@@ -104,13 +109,10 @@ if ( is_array( $order ) ) {
 	$items = $li_ref->invoke( $sc, $order, false );
 
 	$descs = array();
-	$stall_section_total = 0.0;
+	$all_lines_total = 0.0;
 	foreach ( $items as $it ) {
 		$descs[] = (string) $it['desc'];
-		$sec = (string) $it['section'];
-		if ( in_array( $sec, array( 'Stall Res.', 'Stall Premium', 'Stall Product' ), true ) ) {
-			$stall_section_total += $money( $it['total'] );
-		}
+		$all_lines_total += $money( $it['total'] );
 	}
 	$chk( in_array( 'Required Shavings', $descs, true ), 'receipt line items include Required Shavings' );
 	$chk( in_array( 'Additional Shavings', $descs, true ), 'receipt line items include Additional Shavings (the #00009 regression)' );
@@ -123,9 +125,12 @@ if ( is_array( $order ) ) {
 	$chk( isset( $by_desc['Rider Deposit'] ) && $approx( $by_desc['Rider Deposit'], 150.0 ), 'receipt includes Group "Rider Deposit" = $150' );
 	$chk( isset( $by_desc['Stall Cleaning'] ) && $approx( $by_desc['Stall Cleaning'], 50.0 ), 'receipt includes Pre-Entry "Stall Cleaning" = $50 (pre-entry line gap fix)' );
 
-	// INVARIANT: stall-section line items reconcile to the stall subtotal — no
-	// dollar silently dropped from the receipt.
-	$chk( $approx( $stall_section_total, (float) $order['stall_subtotal'] ), 'INVARIANT: Σ(stall line items) $' . number_format( $stall_section_total, 2 ) . ' == stall subtotal $' . number_format( (float) $order['stall_subtotal'], 2 ) );
+	// INVARIANT: every receipt line item reconciles to the stored stall subtotal —
+	// no dollar silently dropped or double-counted. Because the general add-on,
+	// group, and pre-entry charges are folded into the stall row subtotal (and so
+	// render under the stall component), the FULL set of line items must sum back
+	// to it: base $280 + shavings $40 + add-on $30 + group $210 + pre-entry $50 = $610.
+	$chk( $approx( $all_lines_total, (float) $order['stall_subtotal'] ), 'INVARIANT: Σ(all line items) $' . number_format( $all_lines_total, 2 ) . ' == stall subtotal $' . number_format( (float) $order['stall_subtotal'], 2 ) );
 }
 
 $wpdb->delete( $table, array( 'order_number' => $onum ) );

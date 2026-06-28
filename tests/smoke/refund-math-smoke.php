@@ -28,13 +28,17 @@ $chk = static function ( $cond, $label ) use ( &$pass, &$fail ) {
 
 $admin  = new EEM_Admin( true ); // skip_hooks
 $engine = new EEM_Refund_Engine( $admin );
+$repo   = new EEM_Orders_Repository();
 $table  = $wpdb->prefix . 'en_stall_reservations';
-$okey   = 'EEM-REFUND-MATH-TEST';
+$email1 = 'refund@example.com';
+$email2 = 'guard@example.com';
 
 // Clean any prior run + seed a paid stall order: total $103 ($100 + $3 fee).
-$wpdb->delete( $table, array( 'order_key' => $okey ) );
+// NOTE: order_key is NOT a stored column on the component tables — it's the
+// computed md5(build_group_key) the read path + refund engine resolve by. Seed
+// the row, then derive the real key the same way get_order() does.
+$wpdb->delete( $table, array( 'email' => $email1 ) );
 $wpdb->insert( $table, array(
-	'order_key'       => $okey,
 	'event_source'    => 'native',
 	'event_id'        => 0,
 	'customer_name'   => 'Refund Tester',
@@ -59,6 +63,8 @@ $wpdb->insert( $table, array(
 ) );
 $row_id = (int) $wpdb->insert_id;
 $chk( $row_id > 0, 'seeded paid stall order ($103 total)' );
+$seed1 = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table WHERE id = %d", $row_id ), ARRAY_A ); // phpcs:ignore
+$okey  = $repo->order_key_for_row( (array) $seed1 );
 
 $component = static function () use ( $wpdb, $table, $row_id ) {
 	$r = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table WHERE id = %d", $row_id ), ARRAY_A ); // phpcs:ignore
@@ -89,18 +95,27 @@ $chk( 'refunded' === $c['payment_status'], 'fully refunded: status = refunded' )
 $chk( $approx( $admin->get_order_remaining_refundable( $okey ), 0.0 ), 'order remaining refundable = $0 when fully refunded' );
 
 // ── Over-refund guard (runs before any gateway call) ────────────────────────
-$okey2 = 'EEM-REFUND-MATH-TEST-2';
-$wpdb->delete( $table, array( 'order_key' => $okey2 ) );
+$wpdb->delete( $table, array( 'email' => $email2 ) );
 $wpdb->insert( $table, array(
-	'order_key' => $okey2, 'event_source' => 'native', 'event_id' => 0,
-	'customer_name' => 'Guard Tester', 'email' => 'guard@example.com', 'phone' => '',
+	'event_source' => 'native', 'event_id' => 0,
+	'customer_name' => 'Guard Tester', 'email' => $email2, 'phone' => '',
 	'stay_type' => 'nightly', 'arrival_date' => '2026-08-19', 'departure_date' => '2026-08-23',
 	'stall_qty' => 1, 'tack_stall_qty' => 0, 'unit_price' => 50.0, 'subtotal' => 50.0,
 	'convenience_fee' => 2.0, 'total' => 52.0, 'refunded_amount' => 0.0, 'payment_status' => 'paid',
 	'payment_gateway' => 'stripe', 'order_number' => 999002, 'transaction_id' => 'SEED-GUARD-TXN',
 	'notes' => '', 'created_at' => '2026-06-01 00:00:00',
 ) );
-$id2 = (int) $wpdb->insert_id;
+$id2   = (int) $wpdb->insert_id;
+$seed2 = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table WHERE id = %d", $id2 ), ARRAY_A ); // phpcs:ignore
+$okey2 = $repo->order_key_for_row( (array) $seed2 );
+
+// The order rows were seeded with direct $wpdb writes, which bypass the repo's
+// per-instance grouped-orders memo. Use fresh instances so the order-level
+// lookups below read the just-seeded order rather than the stale cache built
+// during the order-1 assertions above. (Production creates orders through the
+// repo, which invalidates the memo on write, so this is a smoke-only concern.)
+$admin  = new EEM_Admin( true );
+$engine = new EEM_Refund_Engine( $admin );
 $chk( $approx( $admin->get_order_remaining_refundable( $okey2 ), 52.0 ), 'second order remaining = $52' );
 $over = $engine->process_amount_refund( $okey2, 9999.0, 'over-refund attempt' );
 $chk( is_wp_error( $over ) && 'exceeds_remaining' === $over->get_error_code(), 'over-refund ($9999 vs $52) rejected by guard, no gateway call' );
@@ -108,7 +123,7 @@ $zero = $engine->process_amount_refund( $okey2, 0.0, 'zero' );
 $chk( is_wp_error( $zero ) && 'invalid_amount' === $zero->get_error_code(), 'zero-amount refund rejected' );
 
 // cleanup
-$wpdb->delete( $table, array( 'order_key' => $okey ) );
-$wpdb->delete( $table, array( 'order_key' => $okey2 ) );
+$wpdb->delete( $table, array( 'email' => $email1 ) );
+$wpdb->delete( $table, array( 'email' => $email2 ) );
 
 echo "\nDone. PASS=$pass FAIL=$fail\n";
