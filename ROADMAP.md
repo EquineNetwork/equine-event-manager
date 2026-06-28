@@ -123,6 +123,19 @@ resolved on 671); Order Detail totals + receipt totals.
 - ✅ **Payment-link/invoice email button** → "Click here to pay" — DONE (was "Review Invoice & Pay Now"); invoice layout + totals verified.
 - ✅ **Remove dev/stub UI references** — DONE ("ported in C7" stripped from Settings → Payments tax help).
 
+### DEFERRED TO-DOS (Whitney 2026-06-27 — capture, do later)
+- **Settings IA: new "Taxes & Fees" tab.** Move the Convenience Fee + Tax Rate sections out of
+  Settings → Payments into a NEW tab named **"Taxes & Fees"**, positioned directly below the Payments
+  tab in the settings nav. Pure relocation — same fields/options/save handlers/option keys; just move
+  the rendering + add the nav tab. (Task #24.)
+- **FINAL comprehensive audit (quality gate — AFTER the v1 list is done).** A multi-part end-of-build
+  review (Task #25): (1) eliminate ALL bloat / dead code / dead or unused styling / legacy CSS from
+  prior builds — zero chance of future conflicts; (2) confirm nothing is "duct tape and glue" /
+  patched — must be professionally built + dependable; (3) re-run styling + money + process audits;
+  (4) **fresh-eyes review** — evaluate the plugin as if handed it cold from a stranger and answer
+  honestly: is it well-built, or messy / should-be-built-differently? Must be extremely financially
+  dependable, zero tolerance for mistakes. This gates "done."
+
 ### FIX ORDER + SIGN-OFF
 Suggested order: **F6 → F4/F4b/F9 → F3 → P1 → F8 → F7 → P3 → P5 → cash-fee → F1 → email/stub
 cleanup.** Every F/P fix except F1 + email/stub changes charge / refund / payment behavior →

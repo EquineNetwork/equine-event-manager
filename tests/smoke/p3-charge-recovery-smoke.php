@@ -96,6 +96,34 @@ $chk( ! empty( $resB['success'] ) && ! empty( $resB['duplicate'] ), 'second inse
 $count_after_second = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}en_stall_reservations WHERE transaction_id = %s", $shared_txn ) );
 $chk( 1 === $count_after_second, 'STILL exactly one stall row — no duplicate order for one charge' );
 
+/* ---- 3. Dashboard surfaces an orphaned charge as the top Needs-Attention row ---- */
+if ( class_exists( 'EEM_Dashboard_Repo' ) ) {
+	$orphan_key = 'p3-orphan-' . wp_generate_uuid4();
+	EEM_Charge_Recovery::snapshot( $orphan_key, array(
+		'type'           => 'checkout',
+		'transaction_id' => 'pi_orphan_' . substr( md5( $orphan_key ), 0, 10 ),
+		'gateway'        => 'stripe',
+		'amount'         => 250.00,
+		'charged_at'     => gmdate( 'Y-m-d H:i:s', time() - 600 ), // 10 min ago → orphan
+	) );
+	$attention = ( new EEM_Dashboard_Repo() )->attention_items();
+	$has_orphan_row = false;
+	foreach ( (array) $attention as $row ) {
+		if ( isset( $row['title'] ) && false !== stripos( (string) $row['title'], 'payment taken, no order saved' ) ) {
+			$has_orphan_row = true;
+		}
+	}
+	$chk( $has_orphan_row, 'Dashboard Needs-Attention surfaces the orphaned charge' );
+	EEM_Charge_Recovery::clear( $orphan_key );
+	// After clearing, the row must drop off.
+	$attention2 = ( new EEM_Dashboard_Repo() )->attention_items();
+	$still = false;
+	foreach ( (array) $attention2 as $row ) {
+		if ( isset( $row['title'] ) && false !== stripos( (string) $row['title'], 'payment taken, no order saved' ) ) { $still = true; }
+	}
+	$chk( ! $still, 'orphan row clears once the snapshot is resolved' );
+}
+
 // Cleanup.
 $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}en_stall_reservations WHERE transaction_id = %s", $shared_txn ) );
 $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}en_rv_reservations WHERE transaction_id = %s", $shared_txn ) );

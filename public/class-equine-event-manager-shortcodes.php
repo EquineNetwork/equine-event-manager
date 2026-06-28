@@ -8607,6 +8607,22 @@ RV Lot: " . $rv_lot['name'] );
 				$last4 = isset( $card['last4'] ) ? sanitize_text_field( $card['last4'] ) : '';
 			}
 
+			// P3: the Stripe charge has succeeded (intent verified) — persist a recovery
+			// snapshot before recording, so a crash here surfaces as a recoverable
+			// orphan instead of a silent "charged but order still unpaid". Stripe intent
+			// retrieval is idempotent (a retry never re-charges); the snapshot adds
+			// orphan visibility + is cleared once the payment is fully recorded.
+			EEM_Charge_Recovery::snapshot(
+				$order_key,
+				array(
+					'type'           => 'collect',
+					'transaction_id' => $intent_id,
+					'gateway'        => 'stripe',
+					'amount'         => $amount_due,
+					'order_key'      => $order_key,
+				)
+			);
+
 			$repo->update_order_payment_details( $order_key, 'paid', $intent_id, 'stripe' );
 
 			if ( class_exists( 'EEM_Order_Payments_Repo' ) ) {
@@ -8645,6 +8661,9 @@ RV Lot: " . $rv_lot['name'] );
 					array( 'actor_type' => 'admin', 'actor_id' => get_current_user_id() )
 				);
 			}
+
+			// P3: payment fully recorded on the order — drop the recovery snapshot.
+			EEM_Charge_Recovery::clear( $order_key );
 
 			wp_send_json_success( array(
 				'requires_reload' => true,
@@ -8715,14 +8734,39 @@ RV Lot: " . $rv_lot['name'] );
 			$charge_order          = $order;
 			$charge_order['total'] = $amount_due;
 
-			$ref    = 'cp' . substr( (string) $order_key, 0, 16 );
-			$result = $this->process_authorize_net_invoice_payment( $charge_order, $ref );
-			if ( is_wp_error( $result ) ) {
-				wp_send_json_error( array( 'message' => $result->get_error_message() ), 400 );
+			// P3: if a prior attempt already charged this order but crashed before
+			// recording the payment, reuse that charge instead of charging again.
+			$eem_recovery = EEM_Charge_Recovery::get( $order_key );
+			if ( is_array( $eem_recovery ) && ! empty( $eem_recovery['transaction_id'] ) ) {
+				$transaction_id = (string) $eem_recovery['transaction_id'];
+			} else {
+				$ref    = 'cp' . substr( (string) $order_key, 0, 16 );
+				$result = $this->process_authorize_net_invoice_payment( $charge_order, $ref );
+				if ( is_wp_error( $result ) ) {
+					wp_send_json_error( array( 'message' => $result->get_error_message() ), 400 );
+				}
+
+				$transaction_id = isset( $result['transaction_id'] ) ? (string) $result['transaction_id'] : '';
+				// P3: persist the successful charge BEFORE recording it, so a crash
+				// between here and the order update leaves a recoverable record (and the
+				// reuse branch above prevents a second charge on retry).
+				if ( '' !== $transaction_id ) {
+					EEM_Charge_Recovery::snapshot(
+						$order_key,
+						array(
+							'type'           => 'collect',
+							'transaction_id' => $transaction_id,
+							'gateway'        => 'authorize_net',
+							'amount'         => $amount_due,
+							'order_key'      => $order_key,
+						)
+					);
+				}
 			}
 
-			$transaction_id = isset( $result['transaction_id'] ) ? (string) $result['transaction_id'] : '';
 			$repo->update_order_payment_details( $order_key, 'paid', $transaction_id, 'authorize_net' );
+			// P3: payment is recorded on the order — the recovery snapshot is no longer needed.
+			EEM_Charge_Recovery::clear( $order_key );
 
 			if ( class_exists( 'EEM_Order_Payments_Repo' ) ) {
 				EEM_Order_Payments_Repo::record( array(

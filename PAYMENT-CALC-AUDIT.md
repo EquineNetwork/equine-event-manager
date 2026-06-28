@@ -367,7 +367,17 @@ F8 (6/6) + F9 (14/14) unaffected.
 **Impact if shipped:** any site selling pre-entries would have under-recorded revenue + wrong balances/
 refunds on every pre-entry order. Exactly the "nothing is messed" class — caught pre-launch.
 
-### 🛡️ P3 — charge→save crash safety net (IN PROGRESS — customer checkout DONE 2026-06-27)
+### ✅ P3 — charge→save crash safety net — DONE 2026-06-27 (all four paths + Dashboard alert)
+**Status: COMPLETE.** Customer checkout (Stripe + Auth.net) + admin Collect Payment (Stripe +
+Auth.net) all wrap the charge→save seam with the recovery snapshot; the Dashboard "Needs Attention"
+card surfaces any orphan (charged, no saved order after 5 min) as its top, red row and clears it once
+resolved. Verified `p3-charge-recovery-smoke.php` **13/13** (snapshot lifecycle + idempotent insert +
+dashboard surface/clear); capstone harness 110/110; dashboard-revenue 3/3 — no regression. Ships in 2.7.674.
+**Residual (documented, accepted):** the microsecond window between a charge returning success and the
+snapshot write cannot be fully closed without gateway-side idempotency keys; the orphan alert is the
+backstop for that vanishingly-rare case. Admin Stripe additionally has the existing webhook reconciliation.
+
+### 🛡️ P3 (history) — charge→save crash safety net (customer checkout DONE 2026-06-27)
 **Risk:** every charge path saves the order AFTER the gateway charge succeeds. A crash/timeout in
 that gap takes the customer's money with no order record — and the "already-processed" guard was set
 only AFTER the save, so a retry could charge AGAIN (double-charge). Whitney: full recovery snapshot,

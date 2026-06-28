@@ -533,6 +533,38 @@ class EEM_Dashboard_Repo {
 	 */
 	public function attention_items() {
 		$items   = array();
+
+		// ── P3: charges taken but the order never saved (recovery orphans) ──
+		// The single most urgent thing on the dashboard — money left the customer
+		// but no order was recorded (an interrupted checkout / crash). Surfaced from
+		// the durable EEM_Charge_Recovery snapshots that weren't cleared within the
+		// grace period, so a charge can never silently vanish.
+		if ( class_exists( 'EEM_Charge_Recovery' ) ) {
+			$eem_orphans = EEM_Charge_Recovery::get_orphans( 300 );
+			if ( ! empty( $eem_orphans ) ) {
+				$eem_orphan_total = 0.0;
+				foreach ( $eem_orphans as $eem_orphan ) {
+					$eem_orphan_total += isset( $eem_orphan['amount'] ) ? (float) $eem_orphan['amount'] : 0.0;
+				}
+				$items[] = array(
+					'icon'     => 'red',
+					'icon_key' => 'card',
+					'title'    => sprintf(
+						/* translators: %d: count of charges with no saved order */
+						_n( '%d charge needs review — payment taken, no order saved', '%d charges need review — payment taken, no order saved', count( $eem_orphans ), 'equine-event-manager' ),
+						count( $eem_orphans )
+					),
+					'desc'     => sprintf(
+						/* translators: %s: total currency amount charged without a saved order */
+						__( '%s charged with no recorded order (likely an interrupted checkout). Verify in the payment gateway and recover or refund.', 'equine-event-manager' ),
+						self::format_currency( $eem_orphan_total )
+					),
+					'href'     => admin_url( 'admin.php?page=equine-event-manager-orders' ),
+					'action'   => __( 'Review →', 'equine-event-manager' ),
+				);
+			}
+		}
+
 		$metrics = $this->stall_metrics();
 		$charts_url = admin_url( 'admin.php?page=equine-event-manager-stall-charts' );
 
