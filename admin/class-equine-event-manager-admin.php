@@ -416,7 +416,7 @@ class EEM_Admin {
 		// the 2026-06-19 cache investigation). No more hard-refresh required.
 		$ver = defined( 'EQUINE_EVENT_MANAGER_VERSION' ) ? EQUINE_EVENT_MANAGER_VERSION : '0';
 		$eem_asset_mtime = 0;
-		foreach ( array( 'assets/css/admin.css', 'assets/css/admin-legacy.css', 'assets/js/admin.js', 'assets/css/eem-choices.css' ) as $eem_asset_rel ) {
+		foreach ( array( 'assets/css/admin.css', 'assets/js/admin.js', 'assets/css/eem-choices.css' ) as $eem_asset_rel ) {
 			$eem_asset_path = EQUINE_EVENT_MANAGER_PATH . $eem_asset_rel;
 			if ( file_exists( $eem_asset_path ) ) {
 				$eem_asset_mtime = max( $eem_asset_mtime, (int) filemtime( $eem_asset_path ) );
@@ -441,12 +441,9 @@ class EEM_Admin {
 
 		// Phase 3 rebuild (tokenized) — loaded first so legacy rules can
 		// override it where pages haven't been ported yet.
+		// #42: the former admin-legacy.css was merged into admin.css, so the plugin
+		// now loads ONE admin stylesheet (no more two-files-fighting cascade).
 		wp_enqueue_style( 'eem-admin', EQUINE_EVENT_MANAGER_URL . 'assets/css/admin.css', array( 'eem-google-fonts' ), $ver );
-
-		// Phase 2 → Phase 3 transition stylesheet. Each page-port chunk
-		// migrates rules out of this file into admin.css; final commit of
-		// Phase 3 deletes it.
-		wp_enqueue_style( 'eem-admin-legacy', EQUINE_EVENT_MANAGER_URL . 'assets/css/admin-legacy.css', array( 'eem-admin' ), $ver );
 
 		// Shared admin JS (delegated handlers, EEM namespace).
 		wp_enqueue_script( 'eem-admin', EQUINE_EVENT_MANAGER_URL . 'assets/js/admin.js', array(), $ver, true );

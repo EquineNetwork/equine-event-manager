@@ -79,8 +79,8 @@ class EEM_Reservation_Editor {
 		}
 
 		$ver = defined( 'EQUINE_EVENT_MANAGER_VERSION' ) ? EQUINE_EVENT_MANAGER_VERSION : false;
+		// #42: admin-legacy.css merged into admin.css — one admin stylesheet.
 		wp_enqueue_style( 'eem-admin', EQUINE_EVENT_MANAGER_URL . 'assets/css/admin.css', array(), $ver );
-		wp_enqueue_style( 'eem-admin-legacy', EQUINE_EVENT_MANAGER_URL . 'assets/css/admin-legacy.css', array( 'eem-admin' ), $ver );
 		wp_enqueue_script( 'eem-admin', EQUINE_EVENT_MANAGER_URL . 'assets/js/admin.js', array(), $ver, true );
 		// Native Map Builder modal (replaces the Google-Sheet connector); depends on
 		// eem-admin for window.EEM + EEM.showSaveToast.
