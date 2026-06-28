@@ -2474,3 +2474,24 @@ rather than gating it:
 Pre-existing live DB columns are left in place (dbDelta never drops); they are
 simply no longer read or written. The `rv_type` column on the RV reservations
 table remains (real schema) but is always empty for new orders.
+
+## Naming: meta-key prefix stays mixed (no rename) — decided 2026-06-28 (#45)
+
+CLAUDE.md's "Naming canonical references" table lists `_en_` as the canonical
+post-meta prefix (so `_eem_*` reads as drift). But the code deliberately evolved
+the OTHER way for some families: migrations **007** + **040** renamed
+`_en_section_enabled_*` → `_eem_section_enabled_*` and treat `_eem_` as the
+canonical form there. So the two references genuinely contradict, and the meta
+prefix is mixed in practice (`_en_stall_rows`, `_en_*` form fields vs.
+`_eem_section_enabled_*`, `_eem_cancellation_policy_*`, `_eem_frontend_url_cache`,
+etc.).
+
+**Decision (Whitney delegated the call): leave post-meta keys exactly as they
+are — no rename, no migration.** Rationale: meta keys are 100% internal (never
+user-facing), both prefixes work, and *any* rename direction means a postmeta
+data migration carrying real risk for zero user benefit — and renaming toward
+`_en_` would also undo the deliberate mig-007/040 work. The **table** half of #45
+(legacy `wp_en_*` → canonical `wp_eem_*`) WAS completed (2.7.699) because table
+names are the meaningful, lower-ambiguity consistency win and §13 is unambiguous
+there. The post-meta naming convention is therefore officially "mixed, frozen" —
+do not mass-rename meta keys; match the surrounding code when adding new ones.
