@@ -686,6 +686,42 @@ class EEM_Import_Handler {
 	}
 
 	/**
+	 * 4.3: only post-meta keys in the plugin's OWN namespace may be written from an
+	 * imported file. The import loops otherwise did blind update_post_meta() with
+	 * attacker-controlled keys, so a poisoned JSON could set arbitrary WP/other-plugin
+	 * meta (capabilities, _edit_lock, _wp_*, etc.). JSON can't encode PHP objects, so
+	 * restricting the KEY namespace is the proportionate guard.
+	 *
+	 * @param string $key Candidate meta key.
+	 * @return bool
+	 */
+	private static function is_importable_meta_key( string $key ): bool {
+		foreach ( array( '_en_', '_eem_', '_equine_event_manager_' ) as $prefix ) {
+			if ( 0 === strpos( $key, $prefix ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * 4.3: the real columns of a component table (minus the auto-increment PK), used
+	 * to filter an imported order row so a poisoned file can't write to unexpected
+	 * columns. Reads the live schema so it can't drift out of sync.
+	 *
+	 * @param string $table Fully-qualified table name.
+	 * @return string[] Column names (excluding `id`).
+	 */
+	private static function table_columns( string $table ): array {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is an internal prefix + literal, not user input.
+		$cols = $wpdb->get_col( 'SHOW COLUMNS FROM `' . esc_sql( $table ) . '`', 0 );
+		return array_values( array_filter( (array) $cols, static function ( $c ) {
+			return 'id' !== $c;
+		} ) );
+	}
+
+	/**
 	 * Perform the full setup import from parsed JSON data.
 	 *
 	 * @param array $data Parsed export JSON.
@@ -707,6 +743,9 @@ class EEM_Import_Handler {
 			) );
 			if ( $venue_id && ! empty( $data['venue']['meta'] ) ) {
 				foreach ( $data['venue']['meta'] as $key => $val ) {
+					if ( ! self::is_importable_meta_key( (string) $key ) ) {
+						continue;
+					}
 					update_post_meta( $venue_id, $key, $val );
 				}
 			}
@@ -725,6 +764,9 @@ class EEM_Import_Handler {
 			) );
 			if ( $event_id && ! empty( $data['event']['meta'] ) ) {
 				foreach ( $data['event']['meta'] as $key => $val ) {
+					if ( ! self::is_importable_meta_key( (string) $key ) ) {
+						continue;
+					}
 					if ( $key === '_equine_event_manager_event_venue_id' && $venue_id ) {
 						$val = $venue_id;
 					}
@@ -755,6 +797,9 @@ class EEM_Import_Handler {
 
 		if ( ! empty( $res_data['meta'] ) ) {
 			foreach ( $res_data['meta'] as $key => $val ) {
+				if ( ! self::is_importable_meta_key( (string) $key ) ) {
+					continue;
+				}
 				if ( $key === '_en_event_id' && $event_id ) {
 					$val = $event_id;
 				}
@@ -817,11 +862,16 @@ class EEM_Import_Handler {
 		$stall_count = 0;
 		if ( ! empty( $data['stall_orders'] ) ) {
 			$stall_table = $wpdb->prefix . 'en_stall_reservations';
+			$stall_cols  = array_flip( self::table_columns( $stall_table ) );
 			foreach ( $data['stall_orders'] as $row ) {
-				unset( $row['id'] );
+				// 4.3: keep only real table columns from the imported row.
+				$row = array_intersect_key( (array) $row, $stall_cols );
 				$row['reservation_id'] = $reservation_id;
 				if ( $event_id ) {
 					$row['event_id'] = $event_id;
+				}
+				if ( empty( $row ) ) {
+					continue;
 				}
 				$wpdb->insert( $stall_table, $row );
 				$stall_count++;
@@ -833,11 +883,16 @@ class EEM_Import_Handler {
 		$rv_count = 0;
 		if ( ! empty( $data['rv_orders'] ) ) {
 			$rv_table = $wpdb->prefix . 'en_rv_reservations';
+			$rv_cols  = array_flip( self::table_columns( $rv_table ) );
 			foreach ( $data['rv_orders'] as $row ) {
-				unset( $row['id'] );
+				// 4.3: keep only real table columns from the imported row.
+				$row = array_intersect_key( (array) $row, $rv_cols );
 				$row['reservation_id'] = $reservation_id;
 				if ( $event_id ) {
 					$row['event_id'] = $event_id;
+				}
+				if ( empty( $row ) ) {
+					continue;
 				}
 				$wpdb->insert( $rv_table, $row );
 				$rv_count++;
