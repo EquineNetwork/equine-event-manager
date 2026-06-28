@@ -568,6 +568,9 @@ class EEM_Settings_Page {
 			'test_transaction_key' => '',
 			'live_api_login'       => '',
 			'live_transaction_key' => '',
+			'test_client_key'      => '',
+			'live_client_key'      => '',
+			'use_acceptjs'         => '',
 		) );
 
 		$active = in_array( $payment['selected_gateway'], array( 'stripe', 'authorize_net' ), true ) ? $payment['selected_gateway'] : 'stripe';
@@ -652,6 +655,20 @@ class EEM_Settings_Page {
 					$this->render_credential_field( array( 'id' => 'authnet-test-key',   'name' => 'payload[authorize_net][test_transaction_key]', 'label' => __( 'Test Transaction Key', 'equine-event-manager' ),  'value' => $payment['authorize_net']['test_transaction_key'], 'type' => 'password', 'group' => 'authnet', 'mode_group' => 'test' ) );
 					$this->render_credential_field( array( 'id' => 'authnet-live-login', 'name' => 'payload[authorize_net][live_api_login]',       'label' => __( 'Live API Login ID', 'equine-event-manager' ),     'value' => $payment['authorize_net']['live_api_login'], 'group' => 'authnet', 'mode_group' => 'live' ) );
 					$this->render_credential_field( array( 'id' => 'authnet-live-key',   'name' => 'payload[authorize_net][live_transaction_key]', 'label' => __( 'Live Transaction Key', 'equine-event-manager' ),  'value' => $payment['authorize_net']['live_transaction_key'], 'type' => 'password', 'group' => 'authnet', 'mode_group' => 'live' ) );
+					// #46: Accept.js public Client Key (PUBLIC, not a secret — it's safe in
+					// page source). When set + the toggle below is on, the card is tokenized
+					// in the browser so the raw card never reaches the server (PCI SAQ-A).
+					$this->render_credential_field( array( 'id' => 'authnet-test-client', 'name' => 'payload[authorize_net][test_client_key]', 'label' => __( 'Test Public Client Key (Accept.js)', 'equine-event-manager' ), 'value' => $payment['authorize_net']['test_client_key'], 'group' => 'authnet', 'mode_group' => 'test' ) );
+					$this->render_credential_field( array( 'id' => 'authnet-live-client', 'name' => 'payload[authorize_net][live_client_key]', 'label' => __( 'Live Public Client Key (Accept.js)', 'equine-event-manager' ), 'value' => $payment['authorize_net']['live_client_key'], 'group' => 'authnet', 'mode_group' => 'live' ) );
+					?>
+					<label class="eem-field-row" style="display:flex;gap:8px;align-items:flex-start;margin-top:8px;">
+						<input type="checkbox" name="payload[authorize_net][use_acceptjs]" value="1" <?php checked( '1', (string) $payment['authorize_net']['use_acceptjs'] ); ?> />
+						<span>
+							<strong><?php esc_html_e( 'Tokenize cards with Accept.js (recommended)', 'equine-event-manager' ); ?></strong><br />
+							<span class="eem-field-help"><?php esc_html_e( 'When on and a Public Client Key is set for the active mode, customer card details are tokenized in the browser and never touch this server — reducing PCI scope. Leave off to use the legacy direct-card flow.', 'equine-event-manager' ); ?></span>
+						</span>
+					</label>
+					<?php
 					?>
 					<div class="eem-field-row">
 						<button type="button" class="eem-btn eem-btn-secondary" data-eem-authnet-test
@@ -1670,6 +1687,9 @@ class EEM_Settings_Page {
 				'test_transaction_key' => 'secret',
 				'live_api_login'       => 'text',
 				'live_transaction_key' => 'secret',
+				'test_client_key'      => 'text',
+				'live_client_key'      => 'text',
+				'use_acceptjs'         => 'bool',
 			), is_array( $current['authorize_net'] ) ? $current['authorize_net'] : array() );
 		}
 
@@ -1796,6 +1816,8 @@ class EEM_Settings_Page {
 			$value = isset( $input[ $field ] ) ? (string) $input[ $field ] : '';
 			if ( 'mode' === $type ) {
 				$out[ $field ] = in_array( $value, array( 'test', 'live' ), true ) ? $value : 'test';
+			} elseif ( 'bool' === $type ) {
+				$out[ $field ] = in_array( $value, array( '1', 'on', 'true' ), true ) ? '1' : '';
 			} elseif ( 'secret' === $type ) {
 				// 4.4 write-only: the field renders empty, so a blank submit means
 				// "unchanged" — keep the stored secret rather than wiping it.

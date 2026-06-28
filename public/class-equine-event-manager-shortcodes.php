@@ -3459,6 +3459,10 @@ class EEM_Shortcodes {
 			'authorize_exp_month'      => isset( $_POST['authorize_exp_month'] ) ? sanitize_text_field( wp_unslash( $_POST['authorize_exp_month'] ) ) : '',
 			'authorize_exp_year'       => isset( $_POST['authorize_exp_year'] ) ? sanitize_text_field( wp_unslash( $_POST['authorize_exp_year'] ) ) : '',
 			'authorize_card_code'      => isset( $_POST['authorize_card_code'] ) ? preg_replace( '/[^0-9]/', '', wp_unslash( $_POST['authorize_card_code'] ) ) : '',
+			// #46: Accept.js opaque payment nonce (when Accept.js is enabled the raw
+			// card fields above arrive empty and these carry the tokenized card).
+			'authorize_opaque_descriptor' => isset( $_POST['authorize_opaque_descriptor'] ) ? sanitize_text_field( wp_unslash( $_POST['authorize_opaque_descriptor'] ) ) : '',
+			'authorize_opaque_value'      => isset( $_POST['authorize_opaque_value'] ) ? sanitize_text_field( wp_unslash( $_POST['authorize_opaque_value'] ) ) : '',
 		);
 
 		$submission = array_merge( $submission, $this->get_stall_submission_payload( $data ) );
@@ -7363,13 +7367,18 @@ RV Lot: " . $rv_lot['name'] );
 			return new WP_Error( 'authorize_not_configured', __( 'Authorize.net is not fully configured in plugin Settings yet.', 'equine-event-manager' ) );
 		}
 
-		$card_number = isset( $_POST['authorize_card_number'] ) ? preg_replace( '/[^0-9]/', '', (string) wp_unslash( $_POST['authorize_card_number'] ) ) : '';
-		$exp_month   = isset( $_POST['authorize_exp_month'] ) ? preg_replace( '/[^0-9]/', '', (string) wp_unslash( $_POST['authorize_exp_month'] ) ) : '';
-		$exp_year    = isset( $_POST['authorize_exp_year'] ) ? preg_replace( '/[^0-9]/', '', (string) wp_unslash( $_POST['authorize_exp_year'] ) ) : '';
-		$card_code   = isset( $_POST['authorize_card_code'] ) ? preg_replace( '/[^0-9]/', '', (string) wp_unslash( $_POST['authorize_card_code'] ) ) : '';
-
-		if ( strlen( $card_number ) < 13 || strlen( $card_number ) > 19 || '' === $exp_month || '' === $exp_year || strlen( $card_code ) < 3 ) {
-			return new WP_Error( 'authorize_missing_card', __( 'Please enter a complete credit card number, expiration date, and security code.', 'equine-event-manager' ) );
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- the invoice-payment nonce is verified by the caller before this method runs.
+		$payment = $this->build_authorize_net_payment(
+			isset( $_POST['authorize_opaque_descriptor'] ) ? wp_unslash( $_POST['authorize_opaque_descriptor'] ) : '',
+			isset( $_POST['authorize_opaque_value'] ) ? wp_unslash( $_POST['authorize_opaque_value'] ) : '',
+			isset( $_POST['authorize_card_number'] ) ? wp_unslash( $_POST['authorize_card_number'] ) : '',
+			isset( $_POST['authorize_exp_month'] ) ? wp_unslash( $_POST['authorize_exp_month'] ) : '',
+			isset( $_POST['authorize_exp_year'] ) ? wp_unslash( $_POST['authorize_exp_year'] ) : '',
+			isset( $_POST['authorize_card_code'] ) ? wp_unslash( $_POST['authorize_card_code'] ) : ''
+		);
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+		if ( is_wp_error( $payment ) ) {
+			return $payment;
 		}
 
 		$billing = $this->get_billing_details_parts_from_notes( $order['notes'] );
@@ -7384,13 +7393,7 @@ RV Lot: " . $rv_lot['name'] );
 				'transactionRequest'     => array(
 					'transactionType' => 'authCaptureTransaction',
 					'amount'          => number_format( (float) $order['total'], 2, '.', '' ),
-					'payment'         => array(
-						'creditCard' => array(
-							'cardNumber'     => $card_number,
-							'expirationDate' => sprintf( '%04d-%02d', absint( $exp_year ), absint( $exp_month ) ),
-							'cardCode'       => $card_code,
-						),
-					),
+					'payment'         => $payment,
 					'order'           => array(
 						'invoiceNumber' => substr( 'INV' . sanitize_text_field( $order['order_number'] ), 0, 20 ),
 					),
@@ -9148,14 +9151,24 @@ RV Lot: " . $rv_lot['name'] );
 				'test_transaction_key' => '',
 				'live_api_login'       => '',
 				'live_transaction_key' => '',
+				'test_client_key'      => '',
+				'live_client_key'      => '',
+				'use_acceptjs'         => '',
 			)
 		);
-		$mode = 'live' === $authorize_net['mode'] ? 'live' : 'test';
+		$mode       = 'live' === $authorize_net['mode'] ? 'live' : 'test';
+		$client_key = 'live' === $mode ? $authorize_net['live_client_key'] : $authorize_net['test_client_key'];
 
 		return array(
 			'mode'            => $mode,
 			'api_login'       => 'live' === $mode ? $authorize_net['live_api_login'] : $authorize_net['test_api_login'],
 			'transaction_key' => 'live' === $mode ? $authorize_net['live_transaction_key'] : $authorize_net['test_transaction_key'],
+			'client_key'      => $client_key,
+			// #46: Accept.js is active only when the admin opted in AND a public
+			// client key is configured for the active mode. Otherwise the raw-card
+			// flow runs exactly as before, so this is a no-op until both are set.
+			'use_acceptjs'    => ! empty( $authorize_net['use_acceptjs'] ) && '' !== trim( (string) $client_key ),
+			'acceptjs_url'    => 'live' === $mode ? 'https://js.authorize.net/v1/Accept.js' : 'https://jstest.authorize.net/v1/Accept.js',
 			'endpoint'        => 'live' === $mode ? 'https://api.authorize.net/xml/v1/request.api' : 'https://apitest.authorize.net/xml/v1/request.api',
 		);
 	}
@@ -9168,17 +9181,41 @@ RV Lot: " . $rv_lot['name'] );
 	 * @param array $totals Calculated totals.
 	 * @return array|WP_Error
 	 */
-	private function process_authorize_net_payment( $reservation_id, $submission, $totals ) {
-		$config = $this->get_active_authorize_net_configuration();
+	/**
+	 * Build the Authorize.net `payment` node for a createTransactionRequest (#46).
+	 *
+	 * Prefers Accept.js opaque data — a one-time payment nonce produced in the
+	 * browser by Accept.js, so the raw PAN/CVV never reach our server (this is what
+	 * drops the integration from PCI SAQ-D to SAQ-A). Falls back to the raw-card
+	 * node when no opaque data is present, so the legacy flow keeps working when
+	 * Accept.js is disabled or a key isn't configured. Shared by all three charge
+	 * paths (customer checkout, hosted invoice, admin Collect Payment).
+	 *
+	 * @param string $opaque_descriptor Accept.js dataDescriptor (e.g. COMMON.ACCEPT.INAPP.PAYMENT).
+	 * @param string $opaque_value      Accept.js dataValue (the opaque payment nonce).
+	 * @param string $card_number       Raw PAN (fallback only).
+	 * @param string $exp_month         Raw expiry month (fallback only).
+	 * @param string $exp_year          Raw expiry year (fallback only).
+	 * @param string $card_code         Raw CVV (fallback only).
+	 * @return array<string,mixed>|WP_Error The `payment` node, or a WP_Error on invalid raw-card input.
+	 */
+	private function build_authorize_net_payment( $opaque_descriptor, $opaque_value, $card_number, $exp_month, $exp_year, $card_code ) {
+		$opaque_descriptor = sanitize_text_field( (string) $opaque_descriptor );
+		$opaque_value      = trim( (string) $opaque_value );
 
-		if ( empty( $config['api_login'] ) || empty( $config['transaction_key'] ) ) {
-			return new WP_Error( 'authorize_not_configured', __( 'Authorize.net is not fully configured in Settings yet. Please add your API Login ID and Transaction Key first.', 'equine-event-manager' ) );
+		if ( '' !== $opaque_descriptor && '' !== $opaque_value ) {
+			return array(
+				'opaqueData' => array(
+					'dataDescriptor' => $opaque_descriptor,
+					'dataValue'      => $opaque_value,
+				),
+			);
 		}
 
-		$card_number = isset( $submission['authorize_card_number'] ) ? preg_replace( '/[^0-9]/', '', (string) $submission['authorize_card_number'] ) : '';
-		$exp_month   = isset( $submission['authorize_exp_month'] ) ? preg_replace( '/[^0-9]/', '', (string) $submission['authorize_exp_month'] ) : '';
-		$exp_year    = isset( $submission['authorize_exp_year'] ) ? preg_replace( '/[^0-9]/', '', (string) $submission['authorize_exp_year'] ) : '';
-		$card_code   = isset( $submission['authorize_card_code'] ) ? preg_replace( '/[^0-9]/', '', (string) $submission['authorize_card_code'] ) : '';
+		$card_number = preg_replace( '/[^0-9]/', '', (string) $card_number );
+		$exp_month   = preg_replace( '/[^0-9]/', '', (string) $exp_month );
+		$exp_year    = preg_replace( '/[^0-9]/', '', (string) $exp_year );
+		$card_code   = preg_replace( '/[^0-9]/', '', (string) $card_code );
 
 		if ( strlen( $card_number ) < 13 || strlen( $card_number ) > 19 || '' === $exp_month || '' === $exp_year || strlen( $card_code ) < 3 ) {
 			return new WP_Error( 'authorize_missing_card', __( 'Please enter a complete credit card number, expiration date, and security code for Authorize.net.', 'equine-event-manager' ) );
@@ -9191,6 +9228,34 @@ RV Lot: " . $rv_lot['name'] );
 			return new WP_Error( 'authorize_invalid_expiry', __( 'Please enter a valid Authorize.net card expiration date.', 'equine-event-manager' ) );
 		}
 
+		return array(
+			'creditCard' => array(
+				'cardNumber'     => $card_number,
+				'expirationDate' => $exp_year . '-' . $exp_month,
+				'cardCode'       => $card_code,
+			),
+		);
+	}
+
+	private function process_authorize_net_payment( $reservation_id, $submission, $totals ) {
+		$config = $this->get_active_authorize_net_configuration();
+
+		if ( empty( $config['api_login'] ) || empty( $config['transaction_key'] ) ) {
+			return new WP_Error( 'authorize_not_configured', __( 'Authorize.net is not fully configured in Settings yet. Please add your API Login ID and Transaction Key first.', 'equine-event-manager' ) );
+		}
+
+		$payment = $this->build_authorize_net_payment(
+			isset( $submission['authorize_opaque_descriptor'] ) ? $submission['authorize_opaque_descriptor'] : '',
+			isset( $submission['authorize_opaque_value'] ) ? $submission['authorize_opaque_value'] : '',
+			isset( $submission['authorize_card_number'] ) ? $submission['authorize_card_number'] : '',
+			isset( $submission['authorize_exp_month'] ) ? $submission['authorize_exp_month'] : '',
+			isset( $submission['authorize_exp_year'] ) ? $submission['authorize_exp_year'] : '',
+			isset( $submission['authorize_card_code'] ) ? $submission['authorize_card_code'] : ''
+		);
+		if ( is_wp_error( $payment ) ) {
+			return $payment;
+		}
+
 		$request_body = array(
 			'createTransactionRequest' => array(
 				'merchantAuthentication' => array(
@@ -9201,13 +9266,7 @@ RV Lot: " . $rv_lot['name'] );
 				'transactionRequest'     => array(
 					'transactionType' => 'authCaptureTransaction',
 					'amount'          => number_format( (float) $totals['total'], 2, '.', '' ),
-					'payment'         => array(
-						'creditCard' => array(
-							'cardNumber'     => $card_number,
-							'expirationDate' => $exp_year . '-' . $exp_month,
-							'cardCode'       => $card_code,
-						),
-					),
+					'payment'         => $payment,
 					'order'           => array(
 						'invoiceNumber' => $this->get_authorize_net_invoice_number( $reservation_id ),
 					),
