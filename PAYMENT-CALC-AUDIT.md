@@ -124,7 +124,16 @@ label/line gaps on newer inputs (packages may render "pkg_5 stay"), (b) the live
 customer JS Order Summary, (c) edit-order recalc, (d) custom line item / discount
 surfacing on receipts. **Harness will seed each input for empirical proof.**
 
-### F3 — Manual map "Add New Customer" placeholder orders are MIS-PRICED (HIGH) 🔴
+### ✅ F3 — FIXED 2026-06-27 (on Local, awaiting sign-off + deploy)
+**Fix:** `ajax_stall_create_placeholder` now (a) adds the picked stall's MAP surcharge (barn tab
++ zone, stacked) × nights via the new public `EEM_Shortcodes::get_map_surcharge_per_night()`,
+and (b) defaults the stay to the reservation's full available window (Whitney decision) so it
+bills the real night count, not 1. Surcharge is added to the subtotal BEFORE fee/tax so the fee
+covers it (mirrors checkout). **Verified 6/6:** premium stall 100 (barn $5 + zone $3) over a
+5-night event now charges **$215** (base $175 + surcharge $40) vs the old **$35** (1 night, no
+surcharge). Regression-clean. Admin can still shorten the stay via Edit Dates.
+
+### F3 (original finding) — Manual map "Add New Customer" placeholder orders are MIS-PRICED (HIGH) 🔴
 **Path:** Stall/RV Chart map popover → "Add New Customer" → Save & Assign →
 `eemSmapCreatePlaceholder()` (admin.js:7454) → `ajax_stall_create_placeholder()`
 (class-equine-event-manager-admin.php:7288).
@@ -351,5 +360,28 @@ The paths that DO recompute correctly: Add stall/RV qty (`add_component_quantity
 Dates (per-row fee/tax recompute). Fix should make the order's fee + tax DERIVED from the
 current (components + custom items − discount) subtotal everywhere they're displayed/charged,
 so every surface and every adjustment stays consistent.
+
+### P1 (from styling-chat security audit) — RE-CHARACTERIZED after code trace
+**Claim:** Auth.net doesn't verify the charged amount matches the server total (Stripe does).
+**Finding after tracing both Auth.net paths:** the amount is ALREADY server-authoritative, so
+there's no amount-tampering vector to exploit:
+- Checkout (`process_authorize_net_payment` 8817): `amount = number_format($totals['total'])`
+  — server-computed via `calculate_submission_totals`. Client supplies only card details.
+- Admin Collect Payment (`ajax_collect_payment_authorize_charge` 8467): charges
+  `get_order_amount_due()` — server-recomputed balance under a per-order advisory lock.
+Stripe's check exists because its PaymentIntent is created CLIENT-side (amount could be
+forged); Auth.net's charge is a single server-side authCaptureTransaction, so that vector
+doesn't exist here.
+**Why the literal "verify the response amount" isn't directly doable:** Auth.net's
+authCaptureTransaction response does NOT echo the captured amount in `transactionResponse`
+(only responseCode/authCode/transId/etc.), so there's no amount field to compare.
+**Proper parity fix (deferred — needs credential + live test):** verify the response's
+`transHashSha2` HMAC, which is keyed by the merchant **Signature Key** (a separate credential
+from the transaction key) and covers (apiLoginID + transId + amount). That cryptographically
+confirms the captured amount. Requires: (a) a new Settings → Payments field for the Signature
+Key, (b) the HMAC verification in the two response handlers, (c) a LIVE test charge to verify.
+Auth.net live testing is credential-blocked per CLAUDE.md, so I did NOT modify the untestable
+charge dispatch. **Severity downgraded from "most important" to LOW/defense-in-depth** — no
+exploit; it's a parity/robustness improvement gated on the Signature Key + live test.
 
 (more below as the run continues)

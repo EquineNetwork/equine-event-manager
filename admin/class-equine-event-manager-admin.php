@@ -7271,10 +7271,29 @@ class EEM_Admin {
 			$stay_map   = ! empty( $inv_info[ $section ]['stay_types'] ) ? (array) $inv_info[ $section ]['stay_types'] : array();
 			$stay_type  = ! empty( $stay_map ) ? (string) array_key_first( $stay_map ) : 'nightly';
 
+			// F3: the map quick-add sends no dates — default to the reservation's full
+			// available window (the event stay) so the placeholder bills the real
+			// number of nights, not 1. Admin can shorten later via Edit Dates.
+			if ( '' === $arrival && isset( $inv_info['available_start'] ) ) {
+				$arrival = (string) $inv_info['available_start'];
+			}
+			if ( '' === $departure && isset( $inv_info['available_end'] ) ) {
+				$departure = (string) $inv_info['available_end'];
+			}
+
 			$priced     = $pricer->price_base_rate_addition( $reservation_id, $section, $unit_count, $stay_type, $arrival, $departure );
 			$unit_price = (float) $priced['unit_price'];
 			$tax_rate   = (float) $priced['tax_rate'];
 			$subtotal   = (float) $priced['subtotal'];
+
+			// F3: a customer seated on a premium barn/zone stall must be charged that
+			// stall's map surcharge × nights — the same figure customer checkout
+			// resolves (base rate alone undercharged premium stalls).
+			$units_for_surcharge = array_values( array_filter( array_map( 'trim', explode( ',', $stall ) ), 'strlen' ) );
+			$surcharge_per_night = $pricer->get_map_surcharge_per_night( $reservation_id, $section, $units_for_surcharge, $stay_type );
+			if ( $surcharge_per_night > 0 ) {
+				$subtotal += round( $surcharge_per_night * max( 1, (int) ( $priced['nights'] ?? 1 ) ), 2 );
+			}
 
 			if ( ! $is_rv ) {
 				$shav                  = $pricer->price_required_shavings( $reservation_id, max( 0, $unit_count - $tack_count ) );

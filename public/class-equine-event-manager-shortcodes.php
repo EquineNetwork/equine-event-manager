@@ -4923,6 +4923,34 @@ class EEM_Shortcodes {
 	}
 
 	/**
+	 * Public per-night map surcharge for a set of picked stall / RV units. Used by
+	 * the manual "Add New Customer" placeholder flow (F3) so a customer seated on a
+	 * premium barn/zone stall is charged that stall's surcharge — the same figure
+	 * the customer checkout would resolve. Returns the PER-NIGHT sum across the
+	 * units; the caller multiplies by billable nights.
+	 *
+	 * @param int    $reservation_id Reservation post ID.
+	 * @param string $section        'stall' | 'rv'.
+	 * @param array  $units          Picked unit labels (e.g. ['100','101']).
+	 * @param string $stay_type      Stay type (drives package vs nightly surcharge).
+	 * @return float Per-night surcharge sum across the units.
+	 */
+	public function get_map_surcharge_per_night( int $reservation_id, string $section, array $units, string $stay_type ): float {
+		$units = array_values( array_filter( array_map( 'trim', $units ), 'strlen' ) );
+		if ( $reservation_id < 1 || empty( $units ) ) {
+			return 0.0;
+		}
+		$data = $this->get_reservation_data( $reservation_id );
+		if ( ! is_array( $data ) || empty( $data ) ) {
+			return 0.0;
+		}
+		$data = $this->overlay_config_rates( $data, $reservation_id );
+		return ( 'rv' === $section )
+			? (float) $this->get_rv_zone_surcharge_for_units( $data, $units, $stay_type )
+			: (float) $this->get_stall_zone_surcharge_for_units( $data, $units, $stay_type, $reservation_id );
+	}
+
+	/**
 	 * Describe the inventory that can be added to an order at any time (Order
 	 * Edit). For each section the reservation has enabled (stall / RV), returns
 	 * the enabled stay-type options, the base unit rate per stay type, and the
