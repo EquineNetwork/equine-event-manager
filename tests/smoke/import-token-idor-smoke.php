@@ -62,10 +62,12 @@ $old_key   = (string) $bgk->invoke( $repo, $old_row );
 $chk( $uuid_key === $uuid, 'uuid row → group key is the unguessable uuid' );
 $chk( false !== strpos( $old_key, $guess_name ), "old-token row → group key is the GUESSABLE composite (contains the name)" );
 
-// The resulting bearer keys (md5) must differ, and the uuid one must not be
-// derivable from the customer's known fields.
+// The bare composite md5 an attacker could reconstruct from known fields.
 $guessable_md5 = md5( implode( '|', array( 'native', 7, '', $guess_name, 'jane@example.com', '555-0100', '2026-06-01 10:00:00', 5 ) ) );
-$chk( md5( $old_key ) === $guessable_md5, 'old import order_key IS brute-forceable from known fields' );
+// #60 update: the composite fallback is now SALTED with a per-site secret, so even
+// the legacy composite-derived key is no longer the brute-forceable bare md5 —
+// defense-in-depth on top of the #32 forward fix. Neither key is derivable now.
+$chk( md5( $old_key ) !== $guessable_md5, 'composite-fallback order_key is NOT the brute-forceable bare md5 (salted by #60)' );
 $chk( md5( $uuid_key ) !== $guessable_md5, 'new (uuid) import order_key is NOT derivable from known fields' );
 
 echo "\n$pass passed, $fail failed\n";
