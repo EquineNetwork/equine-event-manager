@@ -7346,9 +7346,35 @@ class EEM_Admin {
 			$row['required_shavings_qty'] = $required_shavings_qty;
 		}
 
+		// 2.3: serialize against a live customer checkout for THIS reservation (same
+		// lock name + window) so the admin quick-add can't race a real checkout for
+		// the same stall, and — for stalls — reject the assignment up-front if any
+		// requested unit is already occupied for the billing window. RV lots use a
+		// separate occupancy model, so the conflict check is stall-only. The lock
+		// auto-releases on request end, so an error-path exit can't wedge it.
+		$eem_units      = array_values( array_filter( array_map( 'trim', explode( ',', $stall ) ), 'strlen' ) );
+		$eem_place_lock = 'eem_checkout_' . absint( $reservation_id );
+		$wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', $eem_place_lock, 15 ) );
+
+		if ( ! $is_rv && class_exists( 'EEM_Stall_Status_Repo' ) && '' !== $arrival && '' !== $departure ) {
+			$eem_conflicts = EEM_Stall_Status_Repo::units_occupied_in_window( $reservation_id, $eem_units, $arrival, $departure );
+			if ( ! empty( $eem_conflicts ) ) {
+				$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $eem_place_lock ) );
+				wp_send_json_error( array(
+					'message' => sprintf(
+						/* translators: %s: comma-separated list of already-booked stall labels */
+						__( 'Already booked: %s. Refresh the chart — another order holds these for these dates.', 'equine-event-manager' ),
+						implode( ', ', $eem_conflicts )
+					),
+					'code'    => 'stall_conflict',
+				), 409 );
+			}
+		}
+
 		$inserted = $wpdb->insert( $table, $row );
 
 		if ( ! $inserted ) {
+			$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $eem_place_lock ) );
 			wp_send_json_error( array( 'message' => __( 'Could not create placeholder order.', 'equine-event-manager' ) ), 500 );
 		}
 
@@ -7357,11 +7383,17 @@ class EEM_Admin {
 		$note_label = $is_rv ? 'Assigned RV Lots' : 'Assigned Stall Units';
 
 		// Assign the stall to the new placeholder order via the standard notes path.
+		// This also writes the eem_stall_status occupancy rows (see
+		// update_order_unit_assignments → create_occupied), so the new placeholder
+		// immediately blocks any subsequent booking of the same unit.
 		$assign_ok = $this->orders_repository->update_order_unit_assignments(
 			$order_key,
 			$is_rv ? '' : $stall,
 			$is_rv ? $stall : ''
 		);
+
+		// Critical section done — release before the (slower) chart re-render.
+		$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $eem_place_lock ) );
 
 		if ( ! $assign_ok ) {
 			wp_send_json_error( array( 'message' => __( 'Order created but stall assignment failed.', 'equine-event-manager' ) ), 500 );

@@ -7298,7 +7298,10 @@ RV Lot: " . $rv_lot['name'] );
 			'metadata[order_number]'    => $order['order_number'],
 		);
 
-		return $this->request_stripe_api( 'POST', 'payment_intents', $secret_key, $body );
+		// 2.5: key on invoice token + amount so a retry at the same balance reuses the
+		// intent; a later pay attempt at a different balance gets a fresh one.
+		$idem = 'piinv_' . md5( (string) $invoice_token . '_' . (string) $body['amount'] );
+		return $this->request_stripe_api( 'POST', 'payment_intents', $secret_key, $body, $idem );
 	}
 
 	/**
@@ -8528,15 +8531,17 @@ RV Lot: " . $rv_lot['name'] );
 				wp_send_json_error( array( 'message' => __( 'There is no balance due on this order.', 'equine-event-manager' ) ), 400 );
 			}
 
+			$eem_collect_cents = absint( round( $amount_due * 100 ) );
 			$intent = $this->request_stripe_api( 'POST', 'payment_intents', $stripe['secret_key'], array(
-				'amount'                 => absint( round( $amount_due * 100 ) ),
+				'amount'                 => $eem_collect_cents,
 				'currency'               => 'usd',
 				'payment_method_types[]' => 'card',
 				'description'            => sprintf( 'EEM admin collect — order %s', sanitize_text_field( (string) $order['order_number'] ) ),
 				'metadata[order_key]'    => $order_key,
 				'metadata[order_number]' => (string) $order['order_number'],
 				'metadata[source]'       => 'admin_collect_payment',
-			) );
+			// 2.5: key on order + amount so a retry at the same balance reuses the intent.
+			), 'picollect_' . md5( (string) $order_key . '_' . $eem_collect_cents ) );
 
 			if ( is_wp_error( $intent ) ) {
 				wp_send_json_error( array( 'message' => $intent->get_error_message() ), 400 );
@@ -9477,7 +9482,10 @@ RV Lot: " . $rv_lot['name'] );
 			'metadata[submission_token]' => $submission['submission_token'],
 		);
 
-		return $this->request_stripe_api( 'POST', 'payment_intents', $secret_key, $body );
+		// 2.5: key on the submission token (one per checkout attempt) so a retry of
+		// the same submission reuses the intent instead of creating a second one.
+		$idem = 'pi_' . sanitize_key( (string) $submission['submission_token'] );
+		return $this->request_stripe_api( 'POST', 'payment_intents', $secret_key, $body, $idem );
 	}
 
 	/**
@@ -9506,7 +9514,7 @@ RV Lot: " . $rv_lot['name'] );
 	 * @param array  $body Optional request body.
 	 * @return array|WP_Error
 	 */
-	private function request_stripe_api( $method, $path, $secret_key, $body = array() ) {
+	private function request_stripe_api( $method, $path, $secret_key, $body = array(), $idempotency_key = '' ) {
 		$args = array(
 			'method'  => strtoupper( $method ),
 			'timeout' => 20,
@@ -9514,6 +9522,14 @@ RV Lot: " . $rv_lot['name'] );
 				'Authorization' => 'Bearer ' . $secret_key,
 			),
 		);
+
+		// 2.5: a deterministic Idempotency-Key makes a timed-out create-then-retry
+		// return the SAME PaymentIntent/refund rather than creating a second one
+		// (Stripe dedups POSTs carrying the same key for 24h). Only meaningful on
+		// mutating requests.
+		if ( '' !== (string) $idempotency_key && 'GET' !== strtoupper( $method ) ) {
+			$args['headers']['Idempotency-Key'] = substr( 'eem_' . (string) $idempotency_key, 0, 255 );
+		}
 
 		if ( ! empty( $body ) && 'GET' !== strtoupper( $method ) ) {
 			$args['body'] = $body;

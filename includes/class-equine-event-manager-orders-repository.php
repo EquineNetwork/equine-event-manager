@@ -2685,9 +2685,35 @@ class EEM_Orders_Repository {
 	 * @return string
 	 */
 	public function reserve_order_number() {
-		$next_number = $this->get_next_order_number_counter();
+		global $wpdb;
 
-		update_option( self::NEXT_ORDER_NUMBER_OPTION, $next_number + 1, false );
+		// 2.2: serialize the read-then-increment behind a connection-scoped MySQL
+		// advisory lock so two concurrent checkouts (or a checkout + the admin
+		// placeholder path) can never both read the same counter and allocate a
+		// duplicate order number. A DB UNIQUE index isn't viable here because the
+		// stall + RV rows of one order legitimately share the same order_number, so
+		// the atomic allocation IS the guard. MySQL auto-releases the lock if the
+		// process dies, so it can never wedge.
+		$lock_name = 'eem_order_number';
+		$got_lock  = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', $lock_name, 10 ) );
+
+		try {
+			// Read the counter straight from the DB (NOT the object cache) so two
+			// separate PHP processes holding stale caches can't both read the same
+			// value under the lock.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$raw         = $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", self::NEXT_ORDER_NUMBER_OPTION ) );
+			$next_number = ( null !== $raw ) ? absint( $raw ) : 0;
+			if ( $next_number < 1 ) {
+				// First allocation on this site — bootstrap from the existing rows.
+				$next_number = $this->get_next_order_number_counter();
+			}
+			update_option( self::NEXT_ORDER_NUMBER_OPTION, $next_number + 1, false );
+		} finally {
+			if ( 1 === $got_lock ) {
+				$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock_name ) );
+			}
+		}
 
 		return str_pad( (string) $next_number, 4, '0', STR_PAD_LEFT );
 	}

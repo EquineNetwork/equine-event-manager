@@ -138,6 +138,14 @@ sellable with Tier 1–3 work). **Every item is now tracked as its own task (#26
 - Tier 2 concurrency (#28–#31), Tier 4 security (#32, #46–#48), Tier 5 UX (#49–#53), Tier 6 process
   (#54–#55), Tier 3 bloat/slim-down (#40–#45).
 
+**Shipped progress (working down by priority):**
+- ✅ **2.7.675** — #26 (2.4 % fee rounding) + #27 (1.3 `_eem_oc.php` removed).
+- ✅ **2.7.676** — #31 (2.5 Stripe idempotency keys on all PaymentIntent + refund creates),
+  #29 (2.2 atomic order-number via `GET_LOCK` — a DB unique index isn't viable since stall+RV
+  rows share one number), #30 (2.3 admin quick-add now takes the `eem_checkout_<rid>` lock +
+  rejects a stall already occupied for the window via `units_occupied_in_window`). Verified
+  `concurrency-hardening-smoke.php` 6/6; capstone harness 119/119.
+
 ### DEFERRED TO-DOS (Whitney 2026-06-27 — capture, do later)
 - **Settings IA: new "Taxes & Fees" tab.** Move the Convenience Fee + Tax Rate sections out of
   Settings → Payments into a NEW tab named **"Taxes & Fees"**, positioned directly below the Payments

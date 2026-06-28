@@ -498,6 +498,39 @@ class EEM_Stall_Status_Repo {
 	}
 
 	/**
+	 * Return which of the given stall units are already occupied (by any order) on
+	 * one or more nights in [arrival, departure). Used to block a double-book before
+	 * an admin quick-add / placeholder assigns a unit a live customer already holds.
+	 *
+	 * @param int      $reservation_id Reservation post ID.
+	 * @param string[] $stall_units    Candidate unit labels.
+	 * @param string   $arrival_date   Y-m-d (inclusive).
+	 * @param string   $departure_date Y-m-d (exclusive — same night semantics as create_occupied()).
+	 * @return string[] The subset of $stall_units that conflict (empty array = all free).
+	 */
+	public static function units_occupied_in_window( int $reservation_id, array $stall_units, string $arrival_date, string $departure_date ): array {
+		global $wpdb;
+
+		$units = array_values( array_unique( array_filter( array_map( 'sanitize_text_field', $stall_units ), 'strlen' ) ) );
+		$dates = self::date_range( $arrival_date, $departure_date );
+		if ( empty( $units ) || empty( $dates ) ) {
+			return array();
+		}
+
+		$table   = $wpdb->prefix . 'eem_stall_status';
+		$unit_ph = implode( ',', array_fill( 0, count( $units ), '%s' ) );
+		$date_ph = implode( ',', array_fill( 0, count( $dates ), '%s' ) );
+		$params  = array_merge( array( $reservation_id ), $units, $dates );
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- placeholders built from counts; values bound below.
+		$sql  = "SELECT DISTINCT stall_unit FROM {$table} WHERE reservation_id = %d AND status = 'occupied' AND stall_unit IN ({$unit_ph}) AND night_date IN ({$date_ph})";
+		// phpcs:ignore WordPress.DB.PreparedSQL
+		$rows = $wpdb->get_col( $wpdb->prepare( $sql, $params ) );
+
+		return array_values( array_map( 'strval', (array) $rows ) );
+	}
+
+	/**
 	 * Transition a stall's status for a given night.
 	 *
 	 * Enforces the allowed transition chain unless $is_override is true.

@@ -520,12 +520,19 @@ class EEM_Refund_Engine {
 			$body['amount'] = max( 1, (int) round( $amount * 100 ) );
 		}
 
+		// 2.5: a deterministic Idempotency-Key keyed on the transaction + refund
+		// amount means a timed-out refund that gets retried reuses the SAME Stripe
+		// refund instead of issuing a second one.
+		$idem_amount = isset( $body['amount'] ) ? (string) $body['amount'] : 'full';
+		$idem_key    = 'eem_re_' . md5( (string) $component['transaction_id'] . '_' . $idem_amount );
+
 		$response = wp_remote_post(
 			'https://api.stripe.com/v1/refunds',
 			array(
 				'timeout' => 30,
 				'headers' => array(
-					'Authorization' => 'Bearer ' . $secret,
+					'Authorization'   => 'Bearer ' . $secret,
+					'Idempotency-Key' => substr( $idem_key, 0, 255 ),
 				),
 				'body'    => $body,
 			)
