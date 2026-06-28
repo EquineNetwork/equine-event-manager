@@ -7410,7 +7410,15 @@ RV Lot: " . $rv_lot['name'] );
 
 		if ( ! is_array( $payload ) || '1' !== $response_code || empty( $payload['transactionResponse']['transId'] ) ) {
 			$messages = is_array( $payload ) ? $this->get_authorize_net_response_messages( $payload ) : array();
-			return new WP_Error( 'authorize_payment_failed', ! empty( $messages ) ? implode( ' ', $messages ) : __( 'Authorize.net payment failed. Please verify the card details and try again.', 'equine-event-manager' ) );
+			// 5.2: never show the raw gateway text to a customer (it can leak config
+			// internals, e.g. "Merchant Login ID or Password is invalid"). Show a
+			// decline-appropriate or generic message; keep the raw detail in error_data
+			// for admin diagnosis.
+			return new WP_Error(
+				'authorize_payment_failed',
+				$this->customer_safe_authorize_message( $response_code ),
+				array( 'gateway_detail' => implode( ' ', $messages ) )
+			);
 		}
 
 		return array(
@@ -7556,11 +7564,11 @@ RV Lot: " . $rv_lot['name'] );
 									<div id="eem-invoice-card-error" style="display:none;margin-top:12px;color:#8a3528;"></div>
 								<?php else : ?>
 									<div style="display:grid;gap:12px;">
-										<input type="text" name="authorize_card_number" placeholder="<?php esc_attr_e( 'Card Number', 'equine-event-manager' ); ?>" style="padding:14px 16px;border:1px solid #d9e1ea;border-radius:16px;background:#ffffff;color:#111827;" />
+										<input type="text" name="authorize_card_number" inputmode="numeric" autocomplete="cc-number" aria-label="<?php esc_attr_e( 'Card number', 'equine-event-manager' ); ?>" placeholder="<?php esc_attr_e( 'Card Number', 'equine-event-manager' ); ?>" style="padding:14px 16px;border:1px solid #d9e1ea;border-radius:16px;background:#ffffff;color:#111827;" />
 										<div style="display:grid;gap:12px;grid-template-columns:repeat(3,minmax(0,1fr));">
-											<input type="text" name="authorize_exp_month" placeholder="<?php esc_attr_e( 'MM', 'equine-event-manager' ); ?>" style="padding:14px 16px;border:1px solid #d9e1ea;border-radius:16px;background:#ffffff;color:#111827;" />
-											<input type="text" name="authorize_exp_year" placeholder="<?php esc_attr_e( 'YYYY', 'equine-event-manager' ); ?>" style="padding:14px 16px;border:1px solid #d9e1ea;border-radius:16px;background:#ffffff;color:#111827;" />
-											<input type="text" name="authorize_card_code" placeholder="<?php esc_attr_e( 'CVV', 'equine-event-manager' ); ?>" style="padding:14px 16px;border:1px solid #d9e1ea;border-radius:16px;background:#ffffff;color:#111827;" />
+											<input type="text" name="authorize_exp_month" inputmode="numeric" autocomplete="cc-exp-month" aria-label="<?php esc_attr_e( 'Card expiry month (MM)', 'equine-event-manager' ); ?>" placeholder="<?php esc_attr_e( 'MM', 'equine-event-manager' ); ?>" style="padding:14px 16px;border:1px solid #d9e1ea;border-radius:16px;background:#ffffff;color:#111827;" />
+											<input type="text" name="authorize_exp_year" inputmode="numeric" autocomplete="cc-exp-year" aria-label="<?php esc_attr_e( 'Card expiry year (YYYY)', 'equine-event-manager' ); ?>" placeholder="<?php esc_attr_e( 'YYYY', 'equine-event-manager' ); ?>" style="padding:14px 16px;border:1px solid #d9e1ea;border-radius:16px;background:#ffffff;color:#111827;" />
+											<input type="text" name="authorize_card_code" inputmode="numeric" autocomplete="cc-csc" aria-label="<?php esc_attr_e( 'Card security code (CVV)', 'equine-event-manager' ); ?>" placeholder="<?php esc_attr_e( 'CVV', 'equine-event-manager' ); ?>" style="padding:14px 16px;border:1px solid #d9e1ea;border-radius:16px;background:#ffffff;color:#111827;" />
 										</div>
 									</div>
 								<?php endif; ?>
@@ -9212,13 +9220,18 @@ RV Lot: " . $rv_lot['name'] );
 
 		if ( '1' !== $response_code || empty( $payload['transactionResponse'][ 'transId' ] ) ) {
 			$messages = $this->get_authorize_net_response_messages( $payload );
-			$message  = ! empty( $messages ) ? implode( ' ', $messages ) : __( 'Authorize.net payment failed. Please verify the gateway mode, credentials, and card details, then try again.', 'equine-event-manager' );
 
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
 				error_log( '[Equine Event Manager] Authorize.net payment failed (' . $http_status . '): ' . wp_json_encode( $payload ) );
 			}
 
-			return new WP_Error( 'authorize_payment_failed', $message );
+			// 5.2: customer-safe message (raw gateway text can leak config internals);
+			// the raw detail rides in error_data for capability-gated admin surfaces.
+			return new WP_Error(
+				'authorize_payment_failed',
+				$this->customer_safe_authorize_message( $response_code ),
+				array( 'gateway_detail' => implode( ' ', $messages ) )
+			);
 		}
 
 		return array(
@@ -9359,6 +9372,27 @@ RV Lot: " . $rv_lot['name'] );
 		}
 
 		return $value;
+	}
+
+	/**
+	 * Map an Authorize.net failure to a CUSTOMER-SAFE message (5.2).
+	 *
+	 * The raw gateway text is never shown to a paying customer — it can leak
+	 * configuration internals ("Merchant Login ID or Password is invalid") or
+	 * processor jargon. responseCode 2 means the CARD was declined, which warrants
+	 * a decline-appropriate, actionable message; anything else (processing error,
+	 * held-for-review, auth/config failure) is not the customer's card, so they see
+	 * a generic try-again message. The raw detail is preserved in the WP_Error's
+	 * error_data for capability-gated admin surfaces.
+	 *
+	 * @param string $response_code Authorize.net transactionResponse.responseCode.
+	 * @return string Customer-facing message.
+	 */
+	private function customer_safe_authorize_message( $response_code ): string {
+		if ( '2' === (string) $response_code ) {
+			return __( 'Your card was declined. Please double-check the card details or try a different card.', 'equine-event-manager' );
+		}
+		return __( 'We couldn’t process your payment right now. Please try again in a moment, or contact us if the problem continues.', 'equine-event-manager' );
 	}
 
 	/**
