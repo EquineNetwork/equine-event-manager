@@ -714,11 +714,20 @@ class EEM_Settings_Page {
 		$mode_attrs = ( '' !== $args['group'] && '' !== $args['mode_group'] )
 			? sprintf( ' data-eem-cred-group="%s" data-eem-cred-mode="%s"', esc_attr( $args['group'] ), esc_attr( $args['mode_group'] ) )
 			: '';
+		// 4.4 write-only secrets: a password field NEVER emits its stored value into
+		// the page source. When a secret is already saved we render an empty input
+		// with a "saved — leave blank to keep" placeholder; the save handler keeps the
+		// existing value on a blank submit (see sanitize_credential_group 'secret').
+		$is_secret    = 'password' === $args['type'];
+		$field_value  = $is_secret ? '' : (string) $args['value'];
+		$placeholder  = ( $is_secret && '' !== (string) $args['value'] )
+			? __( '•••••••• saved — leave blank to keep', 'equine-event-manager' )
+			: '';
 		?>
 		<div class="eem-field-row"<?php echo $mode_attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above. ?>>
 			<label class="eem-field-label" for="eem-<?php echo esc_attr( $args['id'] ); ?>"><?php echo esc_html( $args['label'] ); ?></label>
 			<div class="eem-field-control">
-				<input class="eem-field-input" id="eem-<?php echo esc_attr( $args['id'] ); ?>" type="<?php echo esc_attr( $args['type'] ); ?>" name="<?php echo esc_attr( $args['name'] ); ?>" value="<?php echo esc_attr( $args['value'] ); ?>" autocomplete="off" />
+				<input class="eem-field-input" id="eem-<?php echo esc_attr( $args['id'] ); ?>" type="<?php echo esc_attr( $args['type'] ); ?>" name="<?php echo esc_attr( $args['name'] ); ?>" value="<?php echo esc_attr( $field_value ); ?>" placeholder="<?php echo esc_attr( $placeholder ); ?>" autocomplete="off" />
 				<?php if ( '' !== $args['hint'] ) : ?>
 					<p class="eem-field-hint"><?php echo esc_html( $args['hint'] ); ?></p>
 				<?php endif; ?>
@@ -1608,21 +1617,21 @@ class EEM_Settings_Page {
 			$current['stripe'] = $this->sanitize_credential_group( $payload['stripe'], array(
 				'mode'                   => 'mode',
 				'test_publishable_key'   => 'text',
-				'test_secret_key'        => 'text',
+				'test_secret_key'        => 'secret',
 				'live_publishable_key'   => 'text',
-				'live_secret_key'        => 'text',
-				'webhook_signing_secret' => 'text',
-			) );
+				'live_secret_key'        => 'secret',
+				'webhook_signing_secret' => 'secret',
+			), is_array( $current['stripe'] ) ? $current['stripe'] : array() );
 		}
 
 		if ( isset( $payload['authorize_net'] ) && is_array( $payload['authorize_net'] ) ) {
 			$current['authorize_net'] = $this->sanitize_credential_group( $payload['authorize_net'], array(
 				'mode'                 => 'mode',
 				'test_api_login'       => 'text',
-				'test_transaction_key' => 'text',
+				'test_transaction_key' => 'secret',
 				'live_api_login'       => 'text',
-				'live_transaction_key' => 'text',
-			) );
+				'live_transaction_key' => 'secret',
+			), is_array( $current['authorize_net'] ) ? $current['authorize_net'] : array() );
 		}
 
 		if ( ! update_option( 'equine_event_manager_payment_settings', $current, false ) ) {
@@ -1742,12 +1751,18 @@ class EEM_Settings_Page {
 	 * @param array<string,string> $schema   field_name => 'text'|'mode'
 	 * @return array<string, string>
 	 */
-	private function sanitize_credential_group( array $input, array $schema ) {
+	private function sanitize_credential_group( array $input, array $schema, array $existing = array() ) {
 		$out = array();
 		foreach ( $schema as $field => $type ) {
 			$value = isset( $input[ $field ] ) ? (string) $input[ $field ] : '';
 			if ( 'mode' === $type ) {
 				$out[ $field ] = in_array( $value, array( 'test', 'live' ), true ) ? $value : 'test';
+			} elseif ( 'secret' === $type ) {
+				// 4.4 write-only: the field renders empty, so a blank submit means
+				// "unchanged" — keep the stored secret rather than wiping it.
+				$out[ $field ] = ( '' === trim( $value ) && isset( $existing[ $field ] ) )
+					? (string) $existing[ $field ]
+					: sanitize_text_field( $value );
 			} else {
 				$out[ $field ] = sanitize_text_field( $value );
 			}
