@@ -25,7 +25,7 @@ class EEM_Daily_Movement_Service {
 	 */
 	public static function build_date_report( int $reservation_id, string $date ): array {
 		global $wpdb;
-		$table         = $wpdb->prefix . 'en_stall_reservations';
+		$table         = $wpdb->prefix . 'eem_stall_reservations';
 		$checkin_table = $wpdb->prefix . 'eem_order_checkin';
 
 		// Per-ORDER customer check-in status — one value per order (keyed by
@@ -141,7 +141,7 @@ class EEM_Daily_Movement_Service {
 	 */
 	public static function build_all_dates_report( int $reservation_id ): array {
 		global $wpdb;
-		$table = $wpdb->prefix . 'en_stall_reservations';
+		$table = $wpdb->prefix . 'eem_stall_reservations';
 
 		$dates = $wpdb->get_col(
 			$wpdb->prepare(
@@ -168,7 +168,7 @@ class EEM_Daily_Movement_Service {
 	/**
 	 * Shape a raw DB row into a normalized movement row.
 	 *
-	 * @param array $row Raw row from wp_en_stall_reservations.
+	 * @param array $row Raw row from wp_eem_stall_reservations.
 	 * @return array
 	 */
 	private static function shape_row( array $row ): array {
@@ -177,7 +177,7 @@ class EEM_Daily_Movement_Service {
 
 		return array(
 			'order_key'            => self::extract_note_value( $notes, 'Submission token' ),
-			// Component row id (wp_en_stall_reservations.id) — kept for back-compat.
+			// Component row id (wp_eem_stall_reservations.id) — kept for back-compat.
 			'status_order_id'      => (int) ( $row['id'] ?? 0 ),
 			// The order's human number — the key the per-order check-in store uses,
 			// shared with the Stall Charts By-Customer table.
@@ -280,7 +280,7 @@ class EEM_Daily_Movement_Service {
 	 */
 	public static function get_available_dates( int $reservation_id ): array {
 		global $wpdb;
-		$table = $wpdb->prefix . 'en_stall_reservations';
+		$table = $wpdb->prefix . 'eem_stall_reservations';
 
 		return $wpdb->get_col(
 			$wpdb->prepare(
@@ -305,8 +305,8 @@ class EEM_Daily_Movement_Service {
 	 */
 	public static function get_reservation_windows(): array {
 		global $wpdb;
-		$stall = $wpdb->prefix . 'en_stall_reservations';
-		$rv    = $wpdb->prefix . 'en_rv_reservations';
+		$stall = $wpdb->prefix . 'eem_stall_reservations';
+		$rv    = $wpdb->prefix . 'eem_rv_reservations';
 
 		$rows = $wpdb->get_results(
 			"SELECT reservation_id, MIN(arrival_date) AS start_date, MAX(departure_date) AS end_date FROM (

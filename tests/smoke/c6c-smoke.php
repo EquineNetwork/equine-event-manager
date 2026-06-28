@@ -111,8 +111,8 @@ if ( $paid_order ) {
 		// name. The repo's private get_table_name() handles the slug→full
 		// mapping; in smoke context we hardcode the same map.
 		$table_slug = isset( $first_comp['table'] ) ? (string) $first_comp['table'] : '';
-		$table      = 'stall' === $table_slug ? $wpdb->prefix . 'en_stall_reservations'
-		             : ( 'rv'    === $table_slug ? $wpdb->prefix . 'en_rv_reservations' : '' );
+		$table      = 'stall' === $table_slug ? $wpdb->prefix . 'eem_stall_reservations'
+		             : ( 'rv'    === $table_slug ? $wpdb->prefix . 'eem_rv_reservations' : '' );
 		$row_id     = isset( $first_comp['row_id'] ) ? (int) $first_comp['row_id'] : 0;
 		$orig_notes = isset( $first_comp['notes'] ) ? (string) $first_comp['notes'] : '';
 

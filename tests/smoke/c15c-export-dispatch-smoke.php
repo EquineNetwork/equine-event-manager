@@ -47,7 +47,7 @@ if ( is_array( $pdf_dispatch ) && isset( $pdf_dispatch['path'] ) ) { @unlink( $p
 
 // Export was logged to the history table.
 global $wpdb;
-$logged = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}en_report_exports WHERE export_scope = 'all'" );
+$logged = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}eem_report_exports WHERE export_scope = 'all'" );
 $check( 'export-history rows were written', $logged >= 1 );
 
 // Cleanup the cached files we created.

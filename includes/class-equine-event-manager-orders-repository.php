@@ -875,7 +875,7 @@ class EEM_Orders_Repository {
 			return false;
 		}
 
-		$table   = $wpdb->prefix . ( 'rv' === $section ? 'en_rv_reservations' : 'en_stall_reservations' );
+		$table   = $wpdb->prefix . ( 'rv' === $section ? 'eem_rv_reservations' : 'eem_stall_reservations' );
 		$qty_col = ( 'rv' === $section ) ? 'rv_qty' : 'stall_qty';
 
 		$tax_rate  = (float) ( $priced['tax_rate'] ?? 0 );
@@ -941,7 +941,7 @@ class EEM_Orders_Repository {
 		if ( ! $sister ) {
 			return false;
 		}
-		$sister_table = $wpdb->prefix . ( 'rv' === $sister['table'] ? 'en_rv_reservations' : 'en_stall_reservations' );
+		$sister_table = $wpdb->prefix . ( 'rv' === $sister['table'] ? 'eem_rv_reservations' : 'eem_stall_reservations' );
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table from a known section.
 		$sister_row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$sister_table}` WHERE id = %d", (int) $sister['row_id'] ), ARRAY_A );
 		if ( ! $sister_row ) {
@@ -1022,7 +1022,7 @@ class EEM_Orders_Repository {
 	 */
 	public function split_stall_row( int $row_id, array $keep_fields, array $new_fields, string $keep_units, string $keep_tack, string $new_units, string $new_tack ) {
 		global $wpdb;
-		$table  = $wpdb->prefix . 'en_stall_reservations';
+		$table  = $wpdb->prefix . 'eem_stall_reservations';
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- fixed table name.
 		$source = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$table}` WHERE id = %d", $row_id ), ARRAY_A );
 		if ( ! $source ) {
@@ -2979,7 +2979,7 @@ class EEM_Orders_Repository {
 	private function get_component_table_candidates( $table ) {
 		global $wpdb;
 
-		$canonical_name = 'stall' === $table ? $wpdb->prefix . 'en_stall_reservations' : $wpdb->prefix . 'en_rv_reservations';
+		$canonical_name = 'stall' === $table ? $wpdb->prefix . 'eem_stall_reservations' : $wpdb->prefix . 'eem_rv_reservations';
 		$legacy_suffix  = 'stall' === $table ? 'stall_reservations' : 'rv_reservations';
 		$candidates     = array( $canonical_name );
 		$patterns       = array(

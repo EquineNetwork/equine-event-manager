@@ -103,7 +103,7 @@ remove_all_filters( 'wp_redirect' );
 
 echo "\n[6] Recipient resolver dedup\n";
 global $wpdb;
-$stall_table = $wpdb->prefix . 'en_stall_reservations';
+$stall_table = $wpdb->prefix . 'eem_stall_reservations';
 $wpdb->insert( $stall_table, array(
 	'event_source' => 'native', 'event_id' => 0, 'external_event_id' => '',
 	'customer_name' => 'C4C Alice', 'email' => 'c4c-alice@example.com', 'phone' => '',

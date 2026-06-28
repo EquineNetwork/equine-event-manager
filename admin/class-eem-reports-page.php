@@ -52,7 +52,7 @@ class EEM_Reports_Page {
 
 		global $wpdb;
 		( new EEM_Report_Exporter() )->purge_all();
-		$wpdb->query( "DELETE FROM {$wpdb->prefix}en_report_exports" ); // phpcs:ignore WordPress.DB
+		$wpdb->query( "DELETE FROM {$wpdb->prefix}eem_report_exports" ); // phpcs:ignore WordPress.DB
 
 		wp_safe_redirect( add_query_arg( array( 'page' => self::MENU_SLUG, 'eem_notice' => 'history_cleared' ), admin_url( 'admin.php' ) ) );
 		exit;
@@ -292,7 +292,7 @@ class EEM_Reports_Page {
 	 */
 	private function render_export_history(): void {
 		global $wpdb;
-		$rows = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}en_report_exports ORDER BY created_at DESC LIMIT 25" ); // phpcs:ignore WordPress.DB
+		$rows = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}eem_report_exports ORDER BY created_at DESC LIMIT 25" ); // phpcs:ignore WordPress.DB
 		if ( empty( $rows ) ) {
 			return;
 		}
@@ -761,7 +761,7 @@ class EEM_Reports_Page {
 	 */
 	private static function log_export( int $reservation_id, string $filename ): void {
 		global $wpdb;
-		$table = $wpdb->prefix . 'en_report_exports';
+		$table = $wpdb->prefix . 'eem_report_exports';
 		$name  = $reservation_id > 0 ? get_the_title( $reservation_id ) : __( 'All reservations', 'equine-event-manager' );
 
 		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery

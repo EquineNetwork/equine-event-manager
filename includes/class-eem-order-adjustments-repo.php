@@ -2,9 +2,9 @@
 /**
  * Order adjustments data repository (C13.C).
  *
- * Orders in this plugin are stored as 1–2 component rows (en_stall_reservations /
- * en_rv_reservations) grouped by order_key; there is no native line-item or
- * discount storage. This repo owns the {prefix}en_order_adjustments table, which
+ * Orders in this plugin are stored as 1–2 component rows (eem_stall_reservations /
+ * eem_rv_reservations) grouped by order_key; there is no native line-item or
+ * discount storage. This repo owns the {prefix}eem_order_adjustments table, which
  * holds the two order-level adjustment kinds introduced by the Create Order page:
  *
  *  - Custom line items — one-off charges not configured on the reservation (late
@@ -62,7 +62,7 @@ class EEM_Order_Adjustments_Repo {
 	 */
 	private static function table(): string {
 		global $wpdb;
-		return $wpdb->prefix . 'en_order_adjustments';
+		return $wpdb->prefix . 'eem_order_adjustments';
 	}
 
 	/**

@@ -43,8 +43,8 @@ function eem_mig_038_normalize_caps_names() {
 	}
 
 	$tables  = array(
-		$wpdb->prefix . 'en_stall_reservations',
-		$wpdb->prefix . 'en_rv_reservations',
+		$wpdb->prefix . 'eem_stall_reservations',
+		$wpdb->prefix . 'eem_rv_reservations',
 	);
 	$updated = 0;
 

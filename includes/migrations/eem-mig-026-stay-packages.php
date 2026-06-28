@@ -5,7 +5,7 @@
  * 1. Creates wp_eem_stay_packages table.
  * 2. Adds stall_pricing_mode / rv_pricing_mode columns to wp_eem_reservation_config.
  * 3. Adds selected_package_ids, effective_start_date, effective_end_date columns
- *    to wp_en_stall_reservations and wp_en_rv_reservations.
+ *    to wp_eem_stall_reservations and wp_eem_rv_reservations.
  *
  * Idempotent: uses dbDelta for the new table; ALTER IGNORE for columns.
  *
@@ -66,7 +66,7 @@ function eem_mig_026_stay_packages(): void {
 	}
 
 	// 3. Add package columns to stall reservations table.
-	$stall_table = $wpdb->prefix . 'en_stall_reservations';
+	$stall_table = $wpdb->prefix . 'eem_stall_reservations';
 	$stall_cols  = $wpdb->get_col( "SHOW COLUMNS FROM {$stall_table}", 0 );
 
 	if ( ! in_array( 'selected_package_ids', $stall_cols, true ) ) {
@@ -80,7 +80,7 @@ function eem_mig_026_stay_packages(): void {
 	}
 
 	// 4. Add package columns to RV reservations table.
-	$rv_table = $wpdb->prefix . 'en_rv_reservations';
+	$rv_table = $wpdb->prefix . 'eem_rv_reservations';
 	$rv_cols  = $wpdb->get_col( "SHOW COLUMNS FROM {$rv_table}", 0 );
 
 	if ( ! in_array( 'selected_package_ids', $rv_cols, true ) ) {

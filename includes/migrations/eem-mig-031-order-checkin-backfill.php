@@ -14,7 +14,7 @@
  * Mapping: the order's effective (MIN across nights) legacy status maps to the
  * three customer statuses — occupied → occupied (Pending Arrival), checked_in →
  * checked_in, and checked_out / needs_cleaning / clean → checked_out (the
- * customer has left). The legacy store keys on order_id = wp_en_stall_reservations.id,
+ * customer has left). The legacy store keys on order_id = wp_eem_stall_reservations.id,
  * so we resolve each to its (reservation_id, order_number) to key the new store.
  *
  * Idempotent / flag-gated. Only the new store is written; the legacy tables are
@@ -44,7 +44,7 @@ function eem_mig_031_order_checkin_backfill() {
 
 	$status_table  = $wpdb->prefix . 'eem_stall_status';
 	$checkin_table = $wpdb->prefix . 'eem_order_checkin';
-	$sr_table      = $wpdb->prefix . 'en_stall_reservations';
+	$sr_table      = $wpdb->prefix . 'eem_stall_reservations';
 
 	// Guard: both tables must exist (create_tables runs first via activate()).
 	$have_status  = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $status_table ) );

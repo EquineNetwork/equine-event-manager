@@ -39,7 +39,7 @@ foreach ( array( '_edit_lock', '_wp_capabilities', 'wp_user_level', 'evil', '_ed
 }
 
 // --- table column allowlist ---
-$stall_table = $wpdb->prefix . 'en_stall_reservations';
+$stall_table = $wpdb->prefix . 'eem_stall_reservations';
 $stall_cols  = (array) $cols->invoke( null, $stall_table );
 $chk( ! empty( $stall_cols ), 'table_columns returns stall columns' );
 $chk( ! in_array( 'id', $stall_cols, true ), 'table_columns excludes the PK id' );

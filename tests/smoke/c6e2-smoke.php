@@ -254,7 +254,7 @@ if ( ! $order ) {
 
 	// Self-clean probe entries.
 	global $wpdb;
-	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}en_activity_log WHERE payload LIKE %s", '%c6e2-probe-%' ) );
+	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}eem_activity_log WHERE payload LIKE %s", '%c6e2-probe-%' ) );
 }
 
 // ── [8] JS dispatch arm in admin.js ────────────────────────────────

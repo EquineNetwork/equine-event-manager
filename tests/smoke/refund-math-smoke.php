@@ -29,7 +29,7 @@ $chk = static function ( $cond, $label ) use ( &$pass, &$fail ) {
 $admin  = new EEM_Admin( true ); // skip_hooks
 $engine = new EEM_Refund_Engine( $admin );
 $repo   = new EEM_Orders_Repository();
-$table  = $wpdb->prefix . 'en_stall_reservations';
+$table  = $wpdb->prefix . 'eem_stall_reservations';
 $email1 = 'refund@example.com';
 $email2 = 'guard@example.com';
 

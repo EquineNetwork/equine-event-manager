@@ -15,7 +15,7 @@ function oc_ok( $label, $cond, &$pass, &$fail, &$log ) {
 }
 
 global $wpdb;
-$st = $wpdb->prefix . 'en_stall_reservations';
+$st = $wpdb->prefix . 'eem_stall_reservations';
 
 $repo = new EEM_Orders_Repository();
 $sc   = new EEM_Shortcodes();

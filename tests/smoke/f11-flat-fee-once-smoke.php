@@ -111,8 +111,8 @@ $chk( $approx( $order_fee_total( $orderB ), $FLAT ), 'B: after adding a NEW RV c
 // Cleanup.
 foreach ( array( $subA['submission_token'], $subB['submission_token'] ) as $tok ) {
 	$like = '%' . $wpdb->esc_like( $tok ) . '%';
-	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}en_stall_reservations WHERE notes LIKE %s", $like ) );
-	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}en_rv_reservations WHERE notes LIKE %s", $like ) );
+	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}eem_stall_reservations WHERE notes LIKE %s", $like ) );
+	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}eem_rv_reservations WHERE notes LIKE %s", $like ) );
 }
 wp_delete_post( $rid, true );
 if ( false !== $prev_fee ) { update_option( EEM_Settings_Repo::OPTION_CONVENIENCE_FEE, $prev_fee, false ); } else { delete_option( EEM_Settings_Repo::OPTION_CONVENIENCE_FEE ); }

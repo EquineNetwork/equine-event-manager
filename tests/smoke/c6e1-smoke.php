@@ -74,7 +74,7 @@ ok( 'read-back honors $limit (limit=1 returns 1 row)',                 1 === cou
 
 // Self-clean probe rows.
 global $wpdb;
-$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}en_activity_log WHERE payload LIKE %s", '%' . $wpdb->esc_like( $probe_key ) . '%' ) );
+$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}eem_activity_log WHERE payload LIKE %s", '%' . $wpdb->esc_like( $probe_key ) . '%' ) );
 
 // ── [3] EEM_Order_Telemetry render-side filter + enricher ──────────
 echo "\n[3] Render-side filter + enricher\n";
@@ -161,7 +161,7 @@ if ( $test_order ) {
 	ok( 'render emits C2 partial markup (eem-activity-log <ul>)',      preg_match( '/<ul class="eem-activity-log"/', $html ) === 1,                    $pass, $fail, $log );
 
 	// Self-clean the probe entry.
-	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}en_activity_log WHERE payload LIKE %s", '%' . $wpdb->esc_like( $render_probe_marker ) . '%' ) );
+	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}eem_activity_log WHERE payload LIKE %s", '%' . $wpdb->esc_like( $render_probe_marker ) . '%' ) );
 }
 
 // ── [5] Empty-state copy ───────────────────────────────────────────

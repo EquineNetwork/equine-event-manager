@@ -51,7 +51,7 @@ function eem_mig_029_amount_paid_column() {
 	$paid_like = array( 'paid', 'refunded', 'partially-refunded', 'captured', 'completed' );
 	$updated   = 0;
 
-	foreach ( array( 'en_stall_reservations', 'en_rv_reservations' ) as $suffix ) {
+	foreach ( array( 'eem_stall_reservations', 'eem_rv_reservations' ) as $suffix ) {
 		$table = $wpdb->prefix . $suffix;
 
 		// Guard: the column must exist (create_reservation_tables runs first).

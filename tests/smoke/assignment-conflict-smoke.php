@@ -22,7 +22,7 @@ $check = static function ( string $label, bool $ok ) use ( &$passed, &$failed ):
 };
 
 global $wpdb;
-$st   = $wpdb->prefix . 'en_stall_reservations';
+$st   = $wpdb->prefix . 'eem_stall_reservations';
 $repo = new EEM_Orders_Repository();
 $suf  = substr( md5( (string) wp_rand() ), 0, 6 );
 

@@ -17,8 +17,8 @@
  *
  * What this migration does, per tokenless order
  * ---------------------------------------------
- *  1. Group every token-free component row (across en_stall_reservations +
- *     en_rv_reservations) by its CURRENT order_key — `order_key_for_row()`, the
+ *  1. Group every token-free component row (across eem_stall_reservations +
+ *     eem_rv_reservations) by its CURRENT order_key — `order_key_for_row()`, the
  *     same md5 the read path + aux tables use, so we match exactly what's stored.
  *  2. Generate ONE uuid4 token for the order; new_key = md5(token).
  *  3. Append "Submission token: <uuid>" to every component row's notes (so all
@@ -63,17 +63,17 @@ function eem_mig_042_backfill_order_tokens(): array {
 	$repo = new EEM_Orders_Repository();
 
 	$component_tables = array(
-		$wpdb->prefix . 'en_stall_reservations',
-		$wpdb->prefix . 'en_rv_reservations',
+		$wpdb->prefix . 'eem_stall_reservations',
+		$wpdb->prefix . 'eem_rv_reservations',
 	);
 
 	// Every table that stores order_key as a bearer/foreign key. Missing one
 	// here = orphaned data after the re-key, so this list is exhaustive (verified
 	// against the activator schema + each repo's runtime queries).
 	$aux_tables = array(
-		$wpdb->prefix . 'en_order_adjustments',
+		$wpdb->prefix . 'eem_order_adjustments',
 		$wpdb->prefix . 'eem_order_payments',
-		$wpdb->prefix . 'en_activity_log',
+		$wpdb->prefix . 'eem_activity_log',
 		$wpdb->prefix . 'eem_division_entries',
 		$wpdb->prefix . 'eem_order_documents',
 	);

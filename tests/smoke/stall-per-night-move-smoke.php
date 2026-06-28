@@ -51,7 +51,7 @@ $check( 'resolve falls back to flat on every night when no map', array( '5' ) ==
 
 // --- repo round-trip: write + clear the map line ---------------------------
 $repo  = new EEM_Orders_Repository();
-$table = $wpdb->prefix . 'en_stall_reservations';
+$table = $wpdb->prefix . 'eem_stall_reservations';
 $okey  = 'eem-pn-smoke-' . wp_generate_password( 10, false );
 $wpdb->insert( $table, array(
 	'customer_name' => 'Per Night', 'email' => 'pn@example.test',

@@ -815,7 +815,7 @@ class EEM_Reports_Repo {
 
 		// Per-type breakdown: sum qty per product name from additional_shavings_items JSON.
 		$type_totals = array();
-		$sr_table    = $wpdb->prefix . 'en_stall_reservations';
+		$sr_table    = $wpdb->prefix . 'eem_stall_reservations';
 		$raw_items   = $wpdb->get_col( $wpdb->prepare( // phpcs:ignore WordPress.DB
 			"SELECT additional_shavings_items FROM {$sr_table} WHERE reservation_id = %d AND additional_shavings_items IS NOT NULL AND additional_shavings_items != ''",
 			$rid

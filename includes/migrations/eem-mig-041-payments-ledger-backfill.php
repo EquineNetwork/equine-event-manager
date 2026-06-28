@@ -2,7 +2,7 @@
 /**
  * Migration #041 — backfill the per-order payments ledger
  * ({prefix}eem_order_payments) from the legacy single-set-of-payment-columns
- * stored on each order component row (en_stall_reservations / en_rv_reservations).
+ * stored on each order component row (eem_stall_reservations / eem_rv_reservations).
  *
  * Before the ledger existed, the only record of money movement was the component
  * columns: amount_paid / payment_gateway / transaction_id (the collection) and
@@ -49,8 +49,8 @@ function eem_mig_041_payments_ledger_backfill(): array {
 	}
 
 	$tables  = array(
-		$wpdb->prefix . 'en_stall_reservations',
-		$wpdb->prefix . 'en_rv_reservations',
+		$wpdb->prefix . 'eem_stall_reservations',
+		$wpdb->prefix . 'eem_rv_reservations',
 	);
 	$payments = 0;
 	$refunds  = 0;

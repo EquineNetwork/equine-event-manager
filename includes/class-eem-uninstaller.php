@@ -43,12 +43,12 @@ class EEM_Uninstaller {
 	 * @var string[]
 	 */
 	const TABLES = array(
-		'en_stall_reservations',
-		'en_rv_reservations',
-		'en_report_exports',
-		'en_activity_log',
+		'eem_stall_reservations',
+		'eem_rv_reservations',
+		'eem_report_exports',
+		'eem_activity_log',
 		'eem_event_defaults',
-		'en_order_adjustments',
+		'eem_order_adjustments',
 	);
 
 	/**
@@ -142,7 +142,7 @@ class EEM_Uninstaller {
 			);
 		}
 
-		$orders = self::count_table_rows( 'en_stall_reservations' ) + self::count_table_rows( 'en_rv_reservations' );
+		$orders = self::count_table_rows( 'eem_stall_reservations' ) + self::count_table_rows( 'eem_rv_reservations' );
 
 		return array(
 			'reservations' => $post_counts['en_reservation'] ?? 0,
@@ -150,7 +150,7 @@ class EEM_Uninstaller {
 			'venues'       => $post_counts['en_venue'] ?? 0,
 			'producers'    => $post_counts['en_producer'] ?? 0,
 			'orders'       => $orders,
-			'activity_log' => self::count_table_rows( 'en_activity_log' ),
+			'activity_log' => self::count_table_rows( 'eem_activity_log' ),
 			'options'      => count( self::plugin_option_names() ),
 		);
 	}

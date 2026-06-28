@@ -2,7 +2,7 @@
 /**
  * C13.C.1 smoke — EEM_Order_Adjustments_Repo data layer.
  *
- * Exercises the en_order_adjustments storage + discount math end-to-end:
+ * Exercises the eem_order_adjustments storage + discount math end-to-end:
  * custom-item insert/replace/read-back, discount set/replace/remove (at most
  * one per order), the resolve_discount_amount clamp rules, and get_for_order
  * aggregation. Uses a throwaway order_key so it leaves no fixture residue.
@@ -28,7 +28,7 @@ $check  = static function ( string $label, bool $ok ) use ( &$passed, &$failed )
 };
 
 global $wpdb;
-$table = $wpdb->prefix . 'en_order_adjustments';
+$table = $wpdb->prefix . 'eem_order_adjustments';
 // Realistic 32-char order key (real keys are submission-token hashes, not the
 // short display order number) — guards against the varchar overflow that an
 // undersized column silently swallows.
@@ -36,7 +36,7 @@ $order = wp_generate_password( 32, false );
 
 // --- 0. Table exists -------------------------------------------------------
 $table_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) === $table;
-$check( 'en_order_adjustments table exists', $table_exists );
+$check( 'eem_order_adjustments table exists', $table_exists );
 
 $check( 'repo class loaded', class_exists( 'EEM_Order_Adjustments_Repo' ) );
 

@@ -1,7 +1,7 @@
 <?php
 /**
  * Migration #013 — add the `trashed_at` soft-delete column to both order tables
- * (en_stall_reservations / en_rv_reservations) for the Orders Trash lifecycle
+ * (eem_stall_reservations / eem_rv_reservations) for the Orders Trash lifecycle
  * (v1 #9).
  *
  * Orders are stored as component rows in the two reservation tables; a soft
@@ -36,7 +36,7 @@ function eem_mig_013_order_trashed_at_column() {
 
 	$added = 0;
 
-	foreach ( array( 'en_stall_reservations', 'en_rv_reservations' ) as $suffix ) {
+	foreach ( array( 'eem_stall_reservations', 'eem_rv_reservations' ) as $suffix ) {
 		$table = $wpdb->prefix . $suffix;
 
 		$has_col = $wpdb->get_var(

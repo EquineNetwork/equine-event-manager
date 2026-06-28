@@ -58,9 +58,9 @@ wp_delete_post( (int) $tmp_res, true );
 // --- Constants are the expected canonical sets ---
 uok( 'TABLES is the 6 known custom tables',
 	count( EEM_Uninstaller::TABLES ) === 6
-	&& in_array( 'en_stall_reservations', EEM_Uninstaller::TABLES, true )
+	&& in_array( 'eem_stall_reservations', EEM_Uninstaller::TABLES, true )
 	&& in_array( 'eem_event_defaults', EEM_Uninstaller::TABLES, true )
-	&& in_array( 'en_order_adjustments', EEM_Uninstaller::TABLES, true ),
+	&& in_array( 'eem_order_adjustments', EEM_Uninstaller::TABLES, true ),
 	$pass, $fail, $log );
 uok( 'POST_TYPES is the 4 plugin CPTs (no TEC types)',
 	EEM_Uninstaller::POST_TYPES === array( 'en_reservation', 'en_event', 'en_venue', 'en_producer' ),

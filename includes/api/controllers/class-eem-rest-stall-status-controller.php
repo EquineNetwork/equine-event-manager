@@ -441,7 +441,7 @@ class EEM_REST_Stall_Status_Controller extends EEM_REST_Controller {
 	 */
 	private function resolve_order_id( string $order_key ): ?int {
 		global $wpdb;
-		$table = $wpdb->prefix . 'en_stall_reservations';
+		$table = $wpdb->prefix . 'eem_stall_reservations';
 
 		$id = $wpdb->get_var(
 			$wpdb->prepare(

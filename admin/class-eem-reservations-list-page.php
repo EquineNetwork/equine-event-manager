@@ -553,8 +553,8 @@ class EEM_Reservations_List_Page {
 		$reservation_id = self::check_action_request( 'eem_reservation_export_roster' );
 
 		global $wpdb;
-		$stall_table = $wpdb->prefix . 'en_stall_reservations';
-		$rv_table    = $wpdb->prefix . 'en_rv_reservations';
+		$stall_table = $wpdb->prefix . 'eem_stall_reservations';
+		$rv_table    = $wpdb->prefix . 'eem_rv_reservations';
 		$needle      = '%Reservation setup ID: ' . $reservation_id . '%';
 
 		// Same notes-based lookup the orders-count uses. C4.D / C11
@@ -940,8 +940,8 @@ class EEM_Reservations_List_Page {
 	 */
 	private static function resolve_recipients_for_reservation( $reservation_id ) {
 		global $wpdb;
-		$stall_table = $wpdb->prefix . 'en_stall_reservations';
-		$rv_table    = $wpdb->prefix . 'en_rv_reservations';
+		$stall_table = $wpdb->prefix . 'eem_stall_reservations';
+		$rv_table    = $wpdb->prefix . 'eem_rv_reservations';
 		$needle      = '%Reservation setup ID: ' . absint( $reservation_id ) . '%';
 
 		$stall_emails = (array) $wpdb->get_col( $wpdb->prepare( "SELECT email FROM `{$stall_table}` WHERE notes LIKE %s AND email <> ''", $needle ) );

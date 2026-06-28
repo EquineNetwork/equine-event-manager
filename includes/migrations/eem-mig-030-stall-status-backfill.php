@@ -6,14 +6,14 @@
  * The per-stall-per-night status table is normally populated by
  * EEM_Stall_Status_Repo::create_occupied() at assignment-save time. Orders that
  * were assigned before that wiring existed (or seeded directly into
- * wp_en_stall_reservations) have assignments in their notes but NO status rows,
+ * wp_eem_stall_reservations) have assignments in their notes but NO status rows,
  * so the hotel-style check-in / check-out / needs-cleaning tracker has nothing to
  * transition. This backfill reads each order's `Assigned Stall Units:` note line
  * and creates the missing 'occupied' rows.
  *
  * Reversible + additive: only INSERTs into the new status table (idempotent —
  * create_occupied skips rows that already exist; the flag gates a re-run). No
- * existing data is modified. Operates on the flat wp_en_stall_reservations table
+ * existing data is modified. Operates on the flat wp_eem_stall_reservations table
  * (no per-reservation config hydration) so it's safe on large/seeded sites.
  *
  * @package   EEM_Plugin
@@ -41,7 +41,7 @@ function eem_mig_030_stall_status_backfill() {
 		return array( 'orders' => 0, 'rows' => 0 );
 	}
 
-	$table = $wpdb->prefix . 'en_stall_reservations';
+	$table = $wpdb->prefix . 'eem_stall_reservations';
 
 	// Assigned, non-trashed stall components with a reservation + a date window.
 	$rows = $wpdb->get_results(

@@ -27,8 +27,8 @@ $admins = get_users( array( 'role' => 'administrator', 'number' => 1 ) );
 if ( $admins ) { wp_set_current_user( $admins[0]->ID ); }
 
 global $wpdb;
-$stall_t = $wpdb->prefix . 'en_stall_reservations';
-$rv_t    = $wpdb->prefix . 'en_rv_reservations';
+$stall_t = $wpdb->prefix . 'eem_stall_reservations';
+$rv_t    = $wpdb->prefix . 'eem_rv_reservations';
 
 // Seed a reservation (event) + a published division on it.
 $rid = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'Notif Smoke Event' ) );

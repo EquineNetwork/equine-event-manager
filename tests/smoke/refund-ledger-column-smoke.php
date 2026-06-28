@@ -27,7 +27,7 @@ $admin  = new EEM_Admin();
 $engine = new EEM_Refund_Engine( $admin );
 
 // --- 1. schema column present ---------------------------------------------
-foreach ( array( 'en_stall_reservations', 'en_rv_reservations' ) as $suffix ) {
+foreach ( array( 'eem_stall_reservations', 'eem_rv_reservations' ) as $suffix ) {
 	$t   = $wpdb->prefix . $suffix;
 	$col = (int) $wpdb->get_var( $wpdb->prepare(
 		"SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = 'refunded_amount'",
@@ -49,7 +49,7 @@ $check( 'fully-refunded with no ledger falls back to total',
 	100.0 === (float) $engine->get_component_refunded_amount( array( 'refunded_amount' => 0.0, 'notes' => '', 'payment_status' => 'refunded', 'total' => 100.0 ) ) );
 
 // --- 3. real persist round-trip -------------------------------------------
-$table = $wpdb->prefix . 'en_stall_reservations';
+$table = $wpdb->prefix . 'eem_stall_reservations';
 $wpdb->insert(
 	$table,
 	array(

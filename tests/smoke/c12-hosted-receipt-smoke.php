@@ -21,7 +21,7 @@ $check = function ( $label, $cond ) use ( &$fail, &$pass ) {
 };
 
 global $wpdb;
-$stall_table = $wpdb->prefix . 'en_stall_reservations';
+$stall_table = $wpdb->prefix . 'eem_stall_reservations';
 // Submission tokens are hex (the extractor regex is [a-f0-9-]); use a hex token.
 $token       = md5( 'c12hosted-' . wp_generate_password( 12, false ) );
 $order_key   = md5( sanitize_text_field( $token ) );

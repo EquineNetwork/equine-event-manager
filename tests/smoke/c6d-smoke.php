@@ -51,7 +51,7 @@ remove_filter( 'eem_activity_log_event_type', $capture_create_filter, 10 );
 // filter. The cleaner assertion is via direct DB read for our smoke event_type.
 global $wpdb;
 $created_rows = (int) $wpdb->get_var( $wpdb->prepare(
-	"SELECT COUNT(*) FROM {$wpdb->prefix}en_activity_log WHERE event_type = %s AND payload LIKE %s",
+	"SELECT COUNT(*) FROM {$wpdb->prefix}eem_activity_log WHERE event_type = %s AND payload LIKE %s",
 	'order_create',
 	'%c6d-smoke-create-test%'
 ) );
@@ -59,7 +59,7 @@ ok( 'do_action eem_order_created → exactly 1 order.create row inserted',  1 ==
 
 // Self-clean.
 $wpdb->query( $wpdb->prepare(
-	"DELETE FROM {$wpdb->prefix}en_activity_log WHERE payload LIKE %s",
+	"DELETE FROM {$wpdb->prefix}eem_activity_log WHERE payload LIKE %s",
 	'%c6d-smoke-create-test%'
 ) );
 
@@ -74,7 +74,7 @@ do_action( 'eem_order_payment_status_changed', array(
 	'source'     => 'gateway_callback',
 ) );
 $pr_rows = (int) $wpdb->get_var( $wpdb->prepare(
-	"SELECT COUNT(*) FROM {$wpdb->prefix}en_activity_log WHERE event_type = %s AND payload LIKE %s",
+	"SELECT COUNT(*) FROM {$wpdb->prefix}eem_activity_log WHERE event_type = %s AND payload LIKE %s",
 	'order_payment_received',
 	'%c6d-smoke-funnel-pr%'
 ) );
@@ -88,7 +88,7 @@ do_action( 'eem_order_payment_status_changed', array(
 	'source'     => 'process_amount_refund_kernel',
 ) );
 $sc_rows = (int) $wpdb->get_var( $wpdb->prepare(
-	"SELECT COUNT(*) FROM {$wpdb->prefix}en_activity_log WHERE event_type = %s AND payload LIKE %s",
+	"SELECT COUNT(*) FROM {$wpdb->prefix}eem_activity_log WHERE event_type = %s AND payload LIKE %s",
 	'order_status_change',
 	'%c6d-smoke-funnel-sc%'
 ) );
@@ -102,20 +102,20 @@ do_action( 'eem_order_payment_status_changed', array(
 	'source'     => 'spurious',
 ) );
 $noop_rows = (int) $wpdb->get_var( $wpdb->prepare(
-	"SELECT COUNT(*) FROM {$wpdb->prefix}en_activity_log WHERE payload LIKE %s",
+	"SELECT COUNT(*) FROM {$wpdb->prefix}eem_activity_log WHERE payload LIKE %s",
 	'%c6d-smoke-funnel-noop%'
 ) );
 ok( 'old == new emits NO entry (funnel no-op guard)',                    0 === $noop_rows, $pass, $fail, $log, "got {$noop_rows}" );
 
 // (d) source field round-trips through payload (forensics attribution)
 $source_row = $wpdb->get_var( $wpdb->prepare(
-	"SELECT payload FROM {$wpdb->prefix}en_activity_log WHERE payload LIKE %s LIMIT 1",
+	"SELECT payload FROM {$wpdb->prefix}eem_activity_log WHERE payload LIKE %s LIMIT 1",
 	'%c6d-smoke-funnel-pr%'
 ) );
 ok( 'source field round-trips through payload (forensics attribution)',  $source_row && false !== strpos( $source_row, 'gateway_callback' ), $pass, $fail, $log );
 
 // Self-clean funnel rows.
-$wpdb->query( "DELETE FROM {$wpdb->prefix}en_activity_log WHERE payload LIKE '%c6d-smoke-funnel-%'" );
+$wpdb->query( "DELETE FROM {$wpdb->prefix}eem_activity_log WHERE payload LIKE '%c6d-smoke-funnel-%'" );
 
 // ── [4] update_order_payment_details + mark_order_paid_manually emit the funnel ─
 echo "\n[4] orders-repository methods emit the status-change funnel\n";
@@ -150,7 +150,7 @@ remove_action( 'eem_order_payment_status_changed', $capture_upd, 5 );
 
 // Self-clean any rows generated.
 $wpdb->query( $wpdb->prepare(
-	"DELETE FROM {$wpdb->prefix}en_activity_log WHERE payload LIKE %s",
+	"DELETE FROM {$wpdb->prefix}eem_activity_log WHERE payload LIKE %s",
 	'%c6d-smoke-txn-12345%'
 ) );
 
@@ -207,7 +207,7 @@ do_action( 'eem_email_sent', array(
 	'context' => array( 'type' => 'invoice', 'order_key' => 'c6d-smoke-email-with' ),
 ) );
 $with_rows = (int) $wpdb->get_var( $wpdb->prepare(
-	"SELECT COUNT(*) FROM {$wpdb->prefix}en_activity_log WHERE event_type = %s AND payload LIKE %s",
+	"SELECT COUNT(*) FROM {$wpdb->prefix}eem_activity_log WHERE event_type = %s AND payload LIKE %s",
 	'order_email_sent',
 	'%c6d-smoke-email-with%'
 ) );
@@ -220,14 +220,14 @@ do_action( 'eem_email_sent', array(
 	'context' => array( 'type' => 'test_email' ),
 ) );
 $without_rows = (int) $wpdb->get_var( $wpdb->prepare(
-	"SELECT COUNT(*) FROM {$wpdb->prefix}en_activity_log WHERE event_type = %s AND payload LIKE %s",
+	"SELECT COUNT(*) FROM {$wpdb->prefix}eem_activity_log WHERE event_type = %s AND payload LIKE %s",
 	'order_email_sent',
 	'%C6D Smoke Email No Order%'
 ) );
 ok( 'email without order_key context (test_email) → NO entry written',    0 === $without_rows, $pass, $fail, $log, "got {$without_rows}" );
 
 // Self-clean.
-$wpdb->query( "DELETE FROM {$wpdb->prefix}en_activity_log WHERE payload LIKE '%c6d-smoke-email-with%' OR payload LIKE '%C6D Smoke Email No Order%'" );
+$wpdb->query( "DELETE FROM {$wpdb->prefix}eem_activity_log WHERE payload LIKE '%c6d-smoke-email-with%' OR payload LIKE '%C6D Smoke Email No Order%'" );
 
 // ── [8] Refund-duplication regression — exactly ONE order.refund per process_amount_refund ─
 echo "\n[8] Refund-duplication regression guard\n";
@@ -238,7 +238,7 @@ foreach ( $orders as $o ) { if ( 'paid' === ( $o['status_slug'] ?? '' ) ) { $pai
 
 if ( $paid_order ) {
 	$pre_count = (int) $wpdb->get_var( $wpdb->prepare(
-		"SELECT COUNT(*) FROM {$wpdb->prefix}en_activity_log WHERE event_type = %s AND payload LIKE %s",
+		"SELECT COUNT(*) FROM {$wpdb->prefix}eem_activity_log WHERE event_type = %s AND payload LIKE %s",
 		'order_refund',
 		'%' . $paid_order['order_key'] . '%'
 	) );
@@ -253,7 +253,7 @@ if ( $paid_order ) {
 	$result = $admin->process_amount_refund( $paid_order['order_key'], 0.01, 'C6D regression-guard probe' );
 
 	$post_count = (int) $wpdb->get_var( $wpdb->prepare(
-		"SELECT COUNT(*) FROM {$wpdb->prefix}en_activity_log WHERE event_type = %s AND payload LIKE %s",
+		"SELECT COUNT(*) FROM {$wpdb->prefix}eem_activity_log WHERE event_type = %s AND payload LIKE %s",
 		'order_refund',
 		'%' . $paid_order['order_key'] . '%'
 	) );
@@ -267,7 +267,7 @@ if ( $paid_order ) {
 
 	// Self-clean any test row.
 	$wpdb->query( $wpdb->prepare(
-		"DELETE FROM {$wpdb->prefix}en_activity_log WHERE event_type = %s AND payload LIKE %s",
+		"DELETE FROM {$wpdb->prefix}eem_activity_log WHERE event_type = %s AND payload LIKE %s",
 		'order_refund',
 		'%C6D regression-guard probe%'
 	) );

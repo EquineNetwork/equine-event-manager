@@ -51,7 +51,7 @@ EEM_Reservation_Config::flush_cache( $rid );
 // So the stored stall row subtotal = 280 + 40 + 30 + 210 + 50 = $610. The
 // breakdown then derives base = subtotal − (shavings + add-ons + group + pre) =
 // $280, and every line reconciles back to the $610 subtotal.
-$table = $wpdb->prefix . 'en_stall_reservations';
+$table = $wpdb->prefix . 'eem_stall_reservations';
 $onum  = 999500;
 $wpdb->delete( $table, array( 'order_number' => $onum ) );
 $wpdb->insert( $table, array(

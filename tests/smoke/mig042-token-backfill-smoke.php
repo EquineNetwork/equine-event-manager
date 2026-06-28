@@ -34,12 +34,12 @@ $repo = new EEM_Orders_Repository();
 
 $marker  = 'EEM_MIG042_SMOKE_' . substr( md5( uniqid( '', true ) ), 0, 10 );
 $flag    = 'eem_mig_042_backfill_order_tokens_complete';
-$stall_t = $wpdb->prefix . 'en_stall_reservations';
-$rv_t    = $wpdb->prefix . 'en_rv_reservations';
+$stall_t = $wpdb->prefix . 'eem_stall_reservations';
+$rv_t    = $wpdb->prefix . 'eem_rv_reservations';
 $aux_tables = array(
-	$wpdb->prefix . 'en_order_adjustments',
+	$wpdb->prefix . 'eem_order_adjustments',
 	$wpdb->prefix . 'eem_order_payments',
-	$wpdb->prefix . 'en_activity_log',
+	$wpdb->prefix . 'eem_activity_log',
 	$wpdb->prefix . 'eem_division_entries',
 	$wpdb->prefix . 'eem_order_documents',
 );

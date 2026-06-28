@@ -188,10 +188,10 @@ class EEM_Stay_Packages_Repo {
 	 * Count how many orders have selected a given package (for max_quantity enforcement).
 	 *
 	 * @param int    $package_id      Package row ID.
-	 * @param string $reservation_table 'en_stall_reservations' or 'en_rv_reservations'.
+	 * @param string $reservation_table 'eem_stall_reservations' or 'eem_rv_reservations'.
 	 * @return int
 	 */
-	public static function count_sold( int $package_id, string $reservation_table = 'en_stall_reservations' ): int {
+	public static function count_sold( int $package_id, string $reservation_table = 'eem_stall_reservations' ): int {
 		global $wpdb;
 		$table = $wpdb->prefix . sanitize_key( $reservation_table );
 

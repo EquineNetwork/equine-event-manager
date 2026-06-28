@@ -20,8 +20,8 @@ $check = function ( $label, $cond ) use ( &$fail, &$pass ) {
 };
 
 global $wpdb;
-$stall_table = $wpdb->prefix . 'en_stall_reservations';
-$rv_table    = $wpdb->prefix . 'en_rv_reservations';
+$stall_table = $wpdb->prefix . 'eem_stall_reservations';
+$rv_table    = $wpdb->prefix . 'eem_rv_reservations';
 
 $rid_a = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'C15 Res A' ) );
 $rid_b = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'C15 Res B' ) );

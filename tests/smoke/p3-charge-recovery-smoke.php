@@ -85,7 +85,7 @@ $pay    = array( 'payment_status' => 'paid', 'payment_gateway' => 'stripe', 'tra
 $subA = $mk( $sc, $sanitize ); $subA['submission_token'] = wp_generate_uuid4();
 $resA = $insert->invoke( $sc, $rid, $data, $subA, $status, $pay );
 $chk( ! empty( $resA['success'] ) && empty( $resA['duplicate'] ), 'first insert creates the order' );
-$count_after_first = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}en_stall_reservations WHERE transaction_id = %s", $shared_txn ) );
+$count_after_first = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}eem_stall_reservations WHERE transaction_id = %s", $shared_txn ) );
 $chk( 1 === $count_after_first, 'exactly one stall row for the transaction after first insert' );
 
 // Second insert (DIFFERENT token B, SAME transaction) — simulates a recovery retry
@@ -93,7 +93,7 @@ $chk( 1 === $count_after_first, 'exactly one stall row for the transaction after
 $subB = $mk( $sc, $sanitize ); $subB['submission_token'] = wp_generate_uuid4();
 $resB = $insert->invoke( $sc, $rid, $data, $subB, $status, $pay );
 $chk( ! empty( $resB['success'] ) && ! empty( $resB['duplicate'] ), 'second insert (same txn) reports duplicate, not a new order' );
-$count_after_second = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}en_stall_reservations WHERE transaction_id = %s", $shared_txn ) );
+$count_after_second = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}eem_stall_reservations WHERE transaction_id = %s", $shared_txn ) );
 $chk( 1 === $count_after_second, 'STILL exactly one stall row — no duplicate order for one charge' );
 
 /* ---- 3. Dashboard surfaces an orphaned charge as the top Needs-Attention row ---- */
@@ -125,8 +125,8 @@ if ( class_exists( 'EEM_Dashboard_Repo' ) ) {
 }
 
 // Cleanup.
-$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}en_stall_reservations WHERE transaction_id = %s", $shared_txn ) );
-$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}en_rv_reservations WHERE transaction_id = %s", $shared_txn ) );
+$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}eem_stall_reservations WHERE transaction_id = %s", $shared_txn ) );
+$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}eem_rv_reservations WHERE transaction_id = %s", $shared_txn ) );
 wp_delete_post( $rid, true );
 
 echo "\n$pass passed, $fail failed\n";

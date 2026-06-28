@@ -30,7 +30,7 @@ $check = static function ( string $label, bool $ok ) use ( &$passed, &$failed ):
 
 EEM_Stall_Status_Repo::create_tables();
 $status_table = $wpdb->prefix . 'eem_stall_status';
-$sr_table     = $wpdb->prefix . 'en_stall_reservations';
+$sr_table     = $wpdb->prefix . 'eem_stall_reservations';
 $uid          = 1;
 
 // Throwaway reservation so we never touch real data.

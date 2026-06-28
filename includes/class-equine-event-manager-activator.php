@@ -31,6 +31,12 @@ class EEM_Activator {
 	 * Run activation tasks.
 	 */
 	public static function activate() {
+		// #45: rename the legacy wp_en_* tables to the canonical wp_eem_* prefix
+		// BEFORE any create/dbDelta or one-time migration runs, so every downstream
+		// step (schema verification, the token backfill, the payments ledger) sees
+		// the canonical names. Idempotent: only renames when the old table exists
+		// and the new one doesn't, so it's a no-op on fresh installs + re-runs.
+		self::rename_legacy_en_tables();
 		self::create_reservation_tables();
 		self::create_reports_log_table();
 		self::create_activity_log_table();
@@ -74,6 +80,39 @@ class EEM_Activator {
 	}
 
 	/**
+	 * Rename the five legacy `wp_en_*` tables to the canonical `wp_eem_*` prefix
+	 * (#45). Runs first in activate() so schema verification + one-time migrations
+	 * all operate on the canonical names. Idempotent + lossless: a table is renamed
+	 * only when the old name exists and the new one does not, so re-runs and fresh
+	 * installs (where dbDelta already created the wp_eem_* tables) are no-ops.
+	 *
+	 * @return void
+	 */
+	private static function rename_legacy_en_tables(): void {
+		global $wpdb;
+
+		$renames = array(
+			'en_stall_reservations' => 'eem_stall_reservations',
+			'en_rv_reservations'    => 'eem_rv_reservations',
+			'en_activity_log'       => 'eem_activity_log',
+			'en_report_exports'     => 'eem_report_exports',
+			'en_order_adjustments'  => 'eem_order_adjustments',
+		);
+
+		foreach ( $renames as $old => $new ) {
+			$old_table  = $wpdb->prefix . $old;
+			$new_table  = $wpdb->prefix . $new;
+			$old_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $old_table ) );
+			$new_exists = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $new_table ) );
+
+			if ( $old_exists && ! $new_exists ) {
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- identifiers derived from $wpdb->prefix, not user input.
+				$wpdb->query( "RENAME TABLE `{$old_table}` TO `{$new_table}`" );
+			}
+		}
+	}
+
+	/**
 	 * Create the plugin-owned event defaults table ({prefix}eem_event_defaults).
 	 *
 	 * Composite PK (event_id, event_source) per Q4 — handles native/tec
@@ -111,10 +150,10 @@ class EEM_Activator {
 	}
 
 	/**
-	 * Create the order adjustments table ({prefix}en_order_adjustments).
+	 * Create the order adjustments table ({prefix}eem_order_adjustments).
 	 *
 	 * Stores order-level adjustments that don't fit the component-row model
-	 * (en_stall_reservations / en_rv_reservations): custom line items (one-off
+	 * (eem_stall_reservations / eem_rv_reservations): custom line items (one-off
 	 * charges keyed by order_number) and a single per-order discount. Introduced
 	 * in C13.C (Create Order — Custom Line Items + Discount). Additive — existing
 	 * orders simply have zero adjustment rows, so no data backfill is required;
@@ -136,7 +175,7 @@ class EEM_Activator {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		$charset_collate = $wpdb->get_charset_collate();
-		$table_name      = $wpdb->prefix . 'en_order_adjustments';
+		$table_name      = $wpdb->prefix . 'eem_order_adjustments';
 
 		// order_key holds the order's submission token (a 32-char hash), NOT the
 		// short display order_number — so it must be wide enough (varchar(191)),
@@ -474,8 +513,8 @@ class EEM_Activator {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		$charset_collate = $wpdb->get_charset_collate();
-		$stall_table     = $wpdb->prefix . 'en_stall_reservations';
-		$rv_table        = $wpdb->prefix . 'en_rv_reservations';
+		$stall_table     = $wpdb->prefix . 'eem_stall_reservations';
+		$rv_table        = $wpdb->prefix . 'eem_rv_reservations';
 
 		$stall_sql = "CREATE TABLE {$stall_table} (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -573,7 +612,7 @@ class EEM_Activator {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		$charset_collate = $wpdb->get_charset_collate();
-		$table_name      = $wpdb->prefix . 'en_report_exports';
+		$table_name      = $wpdb->prefix . 'eem_report_exports';
 
 		$sql = "CREATE TABLE {$table_name} (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -592,7 +631,7 @@ class EEM_Activator {
 	}
 
 	/**
-	 * Create the activity log table ({prefix}en_activity_log).
+	 * Create the activity log table ({prefix}eem_activity_log).
 	 *
 	 * Append-only event log used by Order Detail (ODET-7) and Stall Chart
 	 * Detail (CDET-5). Idempotent via dbDelta — re-running upgrades the
@@ -604,7 +643,7 @@ class EEM_Activator {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 		$charset_collate = $wpdb->get_charset_collate();
-		$table_name      = $wpdb->prefix . 'en_activity_log';
+		$table_name      = $wpdb->prefix . 'eem_activity_log';
 
 		$sql = "CREATE TABLE {$table_name} (
 			id bigint(20) unsigned NOT NULL AUTO_INCREMENT,

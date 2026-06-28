@@ -197,8 +197,8 @@ foreach ( $scenarios as $snum => $S ) {
 		$chk( $approx( $sum_lines + $tax, $stored_total ), sprintf( 'RECONCILE Σlines %.2f + tax %.2f == stored %.2f', $sum_lines, $tax, $stored_total ) );
 		foreach ( $S['lines'] as $need ) { $chk( isset( $present[ $need ] ), "receipt shows '$need'" ); }
 	}
-	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}en_stall_reservations WHERE notes LIKE %s", $like ) );
-	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}en_rv_reservations WHERE notes LIKE %s", $like ) );
+	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}eem_stall_reservations WHERE notes LIKE %s", $like ) );
+	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}eem_rv_reservations WHERE notes LIKE %s", $like ) );
 }
 
 wp_delete_post( $rid, true );

@@ -42,7 +42,7 @@ EEM_Reservation_Config::for( $rid )->set_many( array(
 ) )->save();
 EEM_Reservation_Config::flush_cache( $rid );
 
-$table = $wpdb->prefix . 'en_stall_reservations';
+$table = $wpdb->prefix . 'eem_stall_reservations';
 $onum  = 999600;
 $wpdb->delete( $table, array( 'order_number' => $onum ) );
 $wpdb->insert( $table, array(

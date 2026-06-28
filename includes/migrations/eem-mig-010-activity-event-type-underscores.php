@@ -36,7 +36,7 @@ function eem_mig_010_activity_event_type_underscores() {
 		return array( 'updated' => 0 );
 	}
 
-	$table = $wpdb->prefix . 'en_activity_log';
+	$table = $wpdb->prefix . 'eem_activity_log';
 
 	$map = array(
 		'ordercreate'           => 'order_create',

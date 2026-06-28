@@ -21,7 +21,7 @@ $check = function ( $label, $cond ) use ( &$fail, &$pass ) {
 };
 
 global $wpdb;
-$stall_table = $wpdb->prefix . 'en_stall_reservations';
+$stall_table = $wpdb->prefix . 'eem_stall_reservations';
 
 $rid = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'Add-On Smoke Res' ) );
 $tok = md5( 'addon-' . wp_generate_password( 8, false ) );

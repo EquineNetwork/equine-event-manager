@@ -40,7 +40,7 @@ add_filter( 'wp_die_ajax_handler', static function () { return static function (
 
 $admin = new EEM_Admin();
 $repo  = new EEM_Orders_Repository();
-$stall = $wpdb->prefix . 'en_stall_reservations';
+$stall = $wpdb->prefix . 'eem_stall_reservations';
 $email = 'edit-dates-f5@example.test';
 
 // --- Global 4% convenience fee (the Add-Items / Edit-Dates pricer reads it) ---

@@ -269,8 +269,8 @@ class EEM_Reservations_List_Repo {
 			// is the stable secondary key. Filter is removed right after the query
 			// (shared `$left_join_filter` cleanup below).
 			global $wpdb;
-			$orders_stall_table = $wpdb->prefix . 'en_stall_reservations';
-			$orders_rv_table    = $wpdb->prefix . 'en_rv_reservations';
+			$orders_stall_table = $wpdb->prefix . 'eem_stall_reservations';
+			$orders_rv_table    = $wpdb->prefix . 'eem_rv_reservations';
 			$orders_dir         = 'DESC' === $order ? 'DESC' : 'ASC';
 			$left_join_filter   = static function ( $clauses ) use ( $wpdb, $orders_stall_table, $orders_rv_table, $orders_dir ) {
 				$clauses['join'] .= " LEFT JOIN ("
@@ -322,8 +322,8 @@ class EEM_Reservations_List_Repo {
 			return 0;
 		}
 
-		$stall_table = $wpdb->prefix . 'en_stall_reservations';
-		$rv_table    = $wpdb->prefix . 'en_rv_reservations';
+		$stall_table = $wpdb->prefix . 'eem_stall_reservations';
+		$rv_table    = $wpdb->prefix . 'eem_rv_reservations';
 
 		// CLEANUP #11 — filter on the indexed `reservation_id` column (populated
 		// at checkout insert + backfilled from the `Reservation setup ID: N` notes

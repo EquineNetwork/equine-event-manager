@@ -17,8 +17,8 @@
  */
 
 global $wpdb;
-$stall = $wpdb->prefix . 'en_stall_reservations';
-$rv    = $wpdb->prefix . 'en_rv_reservations';
+$stall = $wpdb->prefix . 'eem_stall_reservations';
+$rv    = $wpdb->prefix . 'eem_rv_reservations';
 
 $stall_email = 'order-edit-stall@example.test';
 $rv_email    = 'order-edit-rv@example.test';

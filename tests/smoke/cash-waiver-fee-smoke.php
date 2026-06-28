@@ -33,7 +33,7 @@ if ( ! class_exists( 'EEM_Orders_Repository' ) || ! class_exists( 'EEM_Order_Adj
 	return;
 }
 
-$table = $wpdb->prefix . 'en_stall_reservations';
+$table = $wpdb->prefix . 'eem_stall_reservations';
 $onum  = 999810;
 $wpdb->delete( $table, array( 'order_number' => $onum ) );
 

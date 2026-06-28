@@ -38,7 +38,7 @@ function eem_mig_009_order_reservation_id() {
 
 	$updated = 0;
 
-	foreach ( array( 'en_stall_reservations', 'en_rv_reservations' ) as $suffix ) {
+	foreach ( array( 'eem_stall_reservations', 'eem_rv_reservations' ) as $suffix ) {
 		$table = $wpdb->prefix . $suffix;
 
 		// Guard: table + column must exist.

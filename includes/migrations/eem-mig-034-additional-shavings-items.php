@@ -2,7 +2,7 @@
 /**
  * Migration 034: per-type additional shavings items column.
  *
- * Adds `additional_shavings_items` TEXT column to `wp_en_stall_reservations`
+ * Adds `additional_shavings_items` TEXT column to `wp_eem_stall_reservations`
  * to store a JSON breakdown of additional shavings bags sold by product type
  * (e.g. [{"name":"Large Flake","qty":3,"price":12.00,"subtotal":36.00}]).
  *
@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 function eem_mig_034_additional_shavings_items(): void {
 	global $wpdb;
 
-	$table = $wpdb->prefix . 'en_stall_reservations';
+	$table = $wpdb->prefix . 'eem_stall_reservations';
 	$cols  = (array) $wpdb->get_col( "SHOW COLUMNS FROM {$table}", 0 ); // phpcs:ignore WordPress.DB
 
 	if ( ! in_array( 'additional_shavings_items', $cols, true ) ) {

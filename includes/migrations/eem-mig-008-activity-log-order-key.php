@@ -4,7 +4,7 @@
  * log (CLEANUP #32).
  *
  * The dedicated `order_key` column + `KEY order_key_created (order_key, created_at)`
- * index were added to `{prefix}en_activity_log` via dbDelta in
+ * index were added to `{prefix}eem_activity_log` via dbDelta in
  * `create_activity_log_table()`. Existing rows wrote the order key only inside the
  * JSON `payload`; this migration extracts it into the new column so
  * `EEM_Activity_Log::get_for_order_key()` (now an indexed `WHERE order_key = %s`
@@ -36,7 +36,7 @@ function eem_mig_008_activity_log_order_key() {
 		return array( 'updated' => 0 );
 	}
 
-	$table = $wpdb->prefix . 'en_activity_log';
+	$table = $wpdb->prefix . 'eem_activity_log';
 
 	// Guard: the table must exist and carry the new column (dbDelta runs before
 	// run_one_time_migrations in activate(), so this should always hold).

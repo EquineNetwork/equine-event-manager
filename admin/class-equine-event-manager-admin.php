@@ -7010,7 +7010,7 @@ class EEM_Admin {
 	 * Backs the clickable status chips on the Daily Movement board and the
 	 * Stall Charts customer modal — one click applies the new status to every
 	 * stall-night the order holds (hotel-style front desk). The component row
-	 * id (wp_en_stall_reservations.id) is the key wp_eem_stall_status rows are
+	 * id (wp_eem_stall_reservations.id) is the key wp_eem_stall_status rows are
 	 * grouped under; a per-id nonce guards each chip.
 	 *
 	 * @return void
@@ -7217,7 +7217,7 @@ class EEM_Admin {
 
 		// Canonical table for the component kind — use the known table name directly.
 		$is_rv   = 'rv' === $kind;
-		$table   = $wpdb->prefix . ( $is_rv ? 'en_rv_reservations' : 'en_stall_reservations' );
+		$table   = $wpdb->prefix . ( $is_rv ? 'eem_rv_reservations' : 'eem_stall_reservations' );
 
 		// Generate a unique submission token — this becomes the stable order_key
 		// (build_group_key extracts it from the notes column and MD5-hashes it).
@@ -10360,7 +10360,7 @@ class EEM_Admin {
 			return array();
 		}
 
-		$table_name = 'stall' === $component['table'] ? $wpdb->prefix . 'en_stall_reservations' : $wpdb->prefix . 'en_rv_reservations';
+		$table_name = 'stall' === $component['table'] ? $wpdb->prefix . 'eem_stall_reservations' : $wpdb->prefix . 'eem_rv_reservations';
 
 		$query = $wpdb->prepare(
 			"SELECT * FROM {$table_name} WHERE id = %d LIMIT 1",
@@ -14416,7 +14416,7 @@ class EEM_Admin {
 			return array();
 		}
 
-		$table_name   = 'stall' === $component_type ? $wpdb->prefix . 'en_stall_reservations' : $wpdb->prefix . 'en_rv_reservations';
+		$table_name   = 'stall' === $component_type ? $wpdb->prefix . 'eem_stall_reservations' : $wpdb->prefix . 'eem_rv_reservations';
 		$placeholders = implode( ',', array_fill( 0, count( $row_ids ), '%d' ) );
 		$query        = $wpdb->prepare( "SELECT * FROM {$table_name} WHERE id IN ({$placeholders})", $row_ids );
 
@@ -14537,7 +14537,7 @@ class EEM_Admin {
 	private function log_report_export( $reservation_id, $reservation_name, $file_name ) {
 		global $wpdb;
 
-		$table_name = $wpdb->prefix . 'en_report_exports';
+		$table_name = $wpdb->prefix . 'eem_report_exports';
 
 		$wpdb->insert(
 			$table_name,
@@ -14560,7 +14560,7 @@ class EEM_Admin {
 	private function get_report_export_logs() {
 		global $wpdb;
 
-		$table_name = $wpdb->prefix . 'en_report_exports';
+		$table_name = $wpdb->prefix . 'eem_report_exports';
 		$rows       = $wpdb->get_results( "SELECT * FROM {$table_name} ORDER BY created_at DESC LIMIT 50", ARRAY_A );
 
 		foreach ( $rows as &$row ) {

@@ -302,8 +302,8 @@ class EEM_Import_Handler {
 	private static function create_orders( array $rows, array $map, int $reservation_id, string $event_source, int $event_id ): array {
 		global $wpdb;
 
-		$stall_table = $wpdb->prefix . 'en_stall_reservations';
-		$rv_table    = $wpdb->prefix . 'en_rv_reservations';
+		$stall_table = $wpdb->prefix . 'eem_stall_reservations';
+		$rv_table    = $wpdb->prefix . 'eem_rv_reservations';
 
 		$created = 0;
 		$skipped = 0;
@@ -588,8 +588,8 @@ class EEM_Import_Handler {
 			$packages = EEM_Stay_Packages_Repo::get_packages( $reservation_id );
 		}
 
-		$stall_table = $wpdb->prefix . 'en_stall_reservations';
-		$rv_table    = $wpdb->prefix . 'en_rv_reservations';
+		$stall_table = $wpdb->prefix . 'eem_stall_reservations';
+		$rv_table    = $wpdb->prefix . 'eem_rv_reservations';
 
 		$stall_orders = $wpdb->get_results( $wpdb->prepare(
 			"SELECT * FROM {$stall_table} WHERE reservation_id = %d AND trashed_at IS NULL ORDER BY id ASC",
@@ -861,7 +861,7 @@ class EEM_Import_Handler {
 		/* ── Stall Orders ──────────────────────────────────────── */
 		$stall_count = 0;
 		if ( ! empty( $data['stall_orders'] ) ) {
-			$stall_table = $wpdb->prefix . 'en_stall_reservations';
+			$stall_table = $wpdb->prefix . 'eem_stall_reservations';
 			$stall_cols  = array_flip( self::table_columns( $stall_table ) );
 			foreach ( $data['stall_orders'] as $row ) {
 				// 4.3: keep only real table columns from the imported row.
@@ -882,7 +882,7 @@ class EEM_Import_Handler {
 		/* ── RV Orders ─────────────────────────────────────────── */
 		$rv_count = 0;
 		if ( ! empty( $data['rv_orders'] ) ) {
-			$rv_table = $wpdb->prefix . 'en_rv_reservations';
+			$rv_table = $wpdb->prefix . 'eem_rv_reservations';
 			$rv_cols  = array_flip( self::table_columns( $rv_table ) );
 			foreach ( $data['rv_orders'] as $row ) {
 				// 4.3: keep only real table columns from the imported row.

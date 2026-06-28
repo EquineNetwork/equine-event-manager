@@ -294,7 +294,7 @@ class EEM_Stall_Status_Repo {
 	/**
 	 * Flip every stall-night row for an order to 'needs_cleaning' — the turnover
 	 * auto-step fired when the customer is marked Checked Out. Resolves the order
-	 * by (reservation_id, order_number) → wp_en_stall_reservations.id.
+	 * by (reservation_id, order_number) → wp_eem_stall_reservations.id.
 	 *
 	 * @param int    $reservation_id Reservation post ID.
 	 * @param string $order_number   The order's human number.
@@ -304,7 +304,7 @@ class EEM_Stall_Status_Repo {
 	public static function mark_order_stalls_needs_cleaning( int $reservation_id, string $order_number, int $user_id ): int {
 		global $wpdb;
 		$table = $wpdb->prefix . 'eem_stall_status';
-		$sr    = $wpdb->prefix . 'en_stall_reservations';
+		$sr    = $wpdb->prefix . 'eem_stall_reservations';
 
 		return (int) $wpdb->query(
 			$wpdb->prepare(
@@ -394,7 +394,7 @@ class EEM_Stall_Status_Repo {
 	/**
 	 * Get all stall statuses for a specific order.
 	 *
-	 * @param int $order_id Order row ID (wp_en_stall_reservations.id).
+	 * @param int $order_id Order row ID (wp_eem_stall_reservations.id).
 	 * @return array[] Array of status rows.
 	 */
 	public static function get_for_order( int $order_id ): array {
@@ -722,7 +722,7 @@ class EEM_Stall_Status_Repo {
 	 * the Daily Movement status dropdown where each pick is an explicit target,
 	 * not a one-way step. Rows already at the target are no-ops.
 	 *
-	 * @param int    $order_id   Order row ID (wp_en_stall_reservations.id).
+	 * @param int    $order_id   Order row ID (wp_eem_stall_reservations.id).
 	 * @param string $new_status Exact target status (occupied / checked_in / checked_out).
 	 * @param int    $user_id    Acting user.
 	 * @return array{success:int, failed:int, errors:array<int,string>, status:string}

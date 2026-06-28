@@ -2,8 +2,8 @@
 /**
  * Order payments ledger repository.
  *
- * Orders in this plugin are stored as 1–2 component rows (en_stall_reservations /
- * en_rv_reservations) grouped by order_key. Each component carries a SINGLE set of
+ * Orders in this plugin are stored as 1–2 component rows (eem_stall_reservations /
+ * eem_rv_reservations) grouped by order_key. Each component carries a SINGLE set of
  * payment columns (amount_paid, payment_gateway, transaction_id, payment_status),
  * which cannot represent an order settled by more than one tender (e.g. part card,
  * part cash). This repo owns the {prefix}eem_order_payments ledger, which records

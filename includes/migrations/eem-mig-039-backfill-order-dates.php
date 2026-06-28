@@ -53,8 +53,8 @@ function eem_mig_039_backfill_order_dates() {
 		$rid    = (int) $rid;
 		$all_pk = EEM_Stay_Packages_Repo::get_packages( $rid );
 		$by_type = array(
-			$wpdb->prefix . 'en_stall_reservations' => array_values( array_filter( $all_pk, static function ( $p ) { return ( $p['type'] ?? '' ) === 'stall'; } ) ),
-			$wpdb->prefix . 'en_rv_reservations'     => array_values( array_filter( $all_pk, static function ( $p ) { return ( $p['type'] ?? '' ) === 'rv'; } ) ),
+			$wpdb->prefix . 'eem_stall_reservations' => array_values( array_filter( $all_pk, static function ( $p ) { return ( $p['type'] ?? '' ) === 'stall'; } ) ),
+			$wpdb->prefix . 'eem_rv_reservations'     => array_values( array_filter( $all_pk, static function ( $p ) { return ( $p['type'] ?? '' ) === 'rv'; } ) ),
 		);
 
 		foreach ( $by_type as $table => $pks ) {

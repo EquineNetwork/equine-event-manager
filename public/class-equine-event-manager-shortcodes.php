@@ -5619,7 +5619,7 @@ class EEM_Shortcodes {
 		}
 
 		if ( $has_stall_order ) {
-			$stall_table       = $wpdb->prefix . 'en_stall_reservations';
+			$stall_table       = $wpdb->prefix . 'eem_stall_reservations';
 			$required_shavings = $totals['required_shavings_qty'];
 
 			$stall_notes = $notes;
@@ -5751,7 +5751,7 @@ class EEM_Shortcodes {
 		}
 
 		if ( $has_rv_order ) {
-			$rv_table      = $wpdb->prefix . 'en_rv_reservations';
+			$rv_table      = $wpdb->prefix . 'eem_rv_reservations';
 			$rv_unit_price = $totals['rv_unit_price'];
 			$rv_subtotal   = $totals['rv_subtotal'] + ( 'rv' === $attach_general_addons_to ? (float) $totals['general_addons_subtotal'] : 0.0 ) + ( 'rv' === $attach_group_charges_to ? (float) $totals['group_subtotal'] : 0.0 ) + ( 'rv' === $attach_pre_entries_to ? (float) $totals['pre_entries_subtotal'] : 0.0 );
 			// F7: flat fee once per order — if a stall row already took it,
@@ -6856,7 +6856,7 @@ RV Lot: " . $rv_lot['name'] );
 			return array();
 		}
 
-		$table_name   = 'stall' === $component_type ? $wpdb->prefix . 'en_stall_reservations' : $wpdb->prefix . 'en_rv_reservations';
+		$table_name   = 'stall' === $component_type ? $wpdb->prefix . 'eem_stall_reservations' : $wpdb->prefix . 'eem_rv_reservations';
 		$placeholders = implode( ',', array_fill( 0, count( $row_ids ), '%d' ) );
 		$query        = $wpdb->prepare( "SELECT * FROM {$table_name} WHERE id IN ({$placeholders})", $row_ids );
 
@@ -8118,8 +8118,8 @@ RV Lot: " . $rv_lot['name'] );
 		if ( '' === $transaction_id ) {
 			return false;
 		}
-		$stall_table = $wpdb->prefix . 'en_stall_reservations';
-		$rv_table    = $wpdb->prefix . 'en_rv_reservations';
+		$stall_table = $wpdb->prefix . 'eem_stall_reservations';
+		$rv_table    = $wpdb->prefix . 'eem_rv_reservations';
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table names are constants.
 		$in_stall = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$stall_table}` WHERE transaction_id = %s", $transaction_id ) );
 		if ( $in_stall > 0 ) {
@@ -10156,8 +10156,8 @@ RV Lot: " . $rv_lot['name'] );
 		}
 
 		$notes_like  = '%' . $wpdb->esc_like( 'Reservation setup ID: ' . $reservation_id ) . '%';
-		$stall_table = $wpdb->prefix . 'en_stall_reservations';
-		$rv_table    = $wpdb->prefix . 'en_rv_reservations';
+		$stall_table = $wpdb->prefix . 'eem_stall_reservations';
+		$rv_table    = $wpdb->prefix . 'eem_rv_reservations';
 
 		// Refunded AND cancelled line items free their inventory (v2 — order cancel).
 		$stall_sold = (int) $wpdb->get_var(

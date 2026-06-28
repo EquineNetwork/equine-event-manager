@@ -22,7 +22,7 @@ $check = static function ( string $label, bool $ok ) use ( &$passed, &$failed ):
 global $wpdb;
 
 // --- schema: trashed_at column on both order tables ------------------------
-foreach ( array( 'en_stall_reservations', 'en_rv_reservations' ) as $suffix ) {
+foreach ( array( 'eem_stall_reservations', 'eem_rv_reservations' ) as $suffix ) {
 	$table = $wpdb->prefix . $suffix;
 	$has   = (int) $wpdb->get_var( $wpdb->prepare(
 		"SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s AND COLUMN_NAME = 'trashed_at'",

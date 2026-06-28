@@ -19,8 +19,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 global $wpdb;
-$stall_table = $wpdb->prefix . 'en_stall_reservations';
-$rv_table    = $wpdb->prefix . 'en_rv_reservations';
+$stall_table = $wpdb->prefix . 'eem_stall_reservations';
+$rv_table    = $wpdb->prefix . 'eem_rv_reservations';
 $token       = 'test-c12-tax-' . wp_generate_password( 8, false );
 $notes       = "Reservation setup ID: 0\nSubmission token: {$token}";
 

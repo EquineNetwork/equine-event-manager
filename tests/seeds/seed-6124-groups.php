@@ -13,7 +13,7 @@
 
 global $wpdb;
 $rid   = 6124;
-$table = $wpdb->prefix . 'en_stall_reservations';
+$table = $wpdb->prefix . 'eem_stall_reservations';
 
 // Enable Group Reservations so the checkout group field + datalist render.
 update_post_meta( $rid, '_en_group_reservations_enabled', '1' );

@@ -6,7 +6,7 @@
  * Activity Log card on Order Detail (ODET-7) and the chart-move audit trail
  * on Stall Chart Detail (CDET-5).
  *
- * Schema lives in {prefix}en_activity_log, created/migrated by EEM_Activator.
+ * Schema lives in {prefix}eem_activity_log, created/migrated by EEM_Activator.
  *
  * Read access via:
  *   EEM_Activity_Log::get_for_order( $order_id )
@@ -45,7 +45,7 @@ class EEM_Activity_Log {
 	 */
 	public static function table_name() {
 		global $wpdb;
-		return $wpdb->prefix . 'en_activity_log';
+		return $wpdb->prefix . 'eem_activity_log';
 	}
 
 	/**
