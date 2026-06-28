@@ -337,6 +337,38 @@ class EEM_Admin {
 	}
 
 	/**
+	 * Resolve an asset's URL + cache-busting version, preferring the minified
+	 * sibling in production (#43).
+	 *
+	 * Serves `foo.min.css` when it exists AND WP_DEBUG is off AND the
+	 * `eem_use_minified_assets` filter is true; otherwise falls back to the
+	 * readable source — so a missing or not-yet-built min file can never break a
+	 * page. The version is the served file's mtime so the cache-buster changes
+	 * whenever either the source or its rebuilt min file changes.
+	 *
+	 * @param string $relative Source asset path relative to the plugin root
+	 *                         (e.g. 'assets/css/admin.css').
+	 * @return array{0:string,1:string} [ absolute URL, version string ].
+	 */
+	public static function asset_src( string $relative ): array {
+		$min_relative = (string) preg_replace( '/\.(css|js)$/', '.min.$1', $relative );
+		$min_path     = EQUINE_EVENT_MANAGER_PATH . $min_relative;
+
+		$use_min = $min_relative !== $relative
+			&& ! ( defined( 'WP_DEBUG' ) && WP_DEBUG )
+			&& apply_filters( 'eem_use_minified_assets', true )
+			&& is_readable( $min_path );
+
+		$serve_relative = $use_min ? $min_relative : $relative;
+		$serve_path     = EQUINE_EVENT_MANAGER_PATH . $serve_relative;
+		$version        = is_readable( $serve_path )
+			? (string) filemtime( $serve_path )
+			: ( defined( 'EQUINE_EVENT_MANAGER_VERSION' ) ? EQUINE_EVENT_MANAGER_VERSION : '0' );
+
+		return array( EQUINE_EVENT_MANAGER_URL . $serve_relative, $version );
+	}
+
+	/**
 	 * Enqueue the new minimal backend shell stylesheet for canonical patterns only.
 	 *
 	 * @return void
@@ -443,7 +475,11 @@ class EEM_Admin {
 		// override it where pages haven't been ported yet.
 		// #42: the former admin-legacy.css was merged into admin.css, so the plugin
 		// now loads ONE admin stylesheet (no more two-files-fighting cascade).
-		wp_enqueue_style( 'eem-admin', EQUINE_EVENT_MANAGER_URL . 'assets/css/admin.css', array( 'eem-google-fonts' ), $ver );
+		// #43: serve the minified admin.css in production (falls back to source
+		// under WP_DEBUG or when the .min file is absent). Its own mtime drives the
+		// cache-buster so a rebuild invalidates caches.
+		list( $eem_admin_css_url, $eem_admin_css_ver ) = self::asset_src( 'assets/css/admin.css' );
+		wp_enqueue_style( 'eem-admin', $eem_admin_css_url, array( 'eem-google-fonts' ), $eem_admin_css_ver );
 
 		// Shared admin JS (delegated handlers, EEM namespace).
 		wp_enqueue_script( 'eem-admin', EQUINE_EVENT_MANAGER_URL . 'assets/js/admin.js', array(), $ver, true );

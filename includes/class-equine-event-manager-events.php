@@ -2859,11 +2859,14 @@ class EEM_Events {
 			array(),
 			EQUINE_EVENT_MANAGER_VERSION
 		);
+		// #43: serve the minified public.css in production (source fallback under
+		// WP_DEBUG or when the .min file is absent), versioned by the served file.
+		list( $eem_public_css_url, $eem_public_css_ver ) = EEM_Admin::asset_src( 'assets/css/public.css' );
 		wp_enqueue_style(
 			'eem-public',
-			EQUINE_EVENT_MANAGER_URL . 'assets/css/public.css',
+			$eem_public_css_url,
 			array(),
-			EQUINE_EVENT_MANAGER_VERSION
+			$eem_public_css_ver
 		);
 	}
 
