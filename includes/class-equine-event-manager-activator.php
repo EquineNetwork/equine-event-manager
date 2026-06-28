@@ -419,6 +419,11 @@ class EEM_Activator {
 			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-041-payments-ledger-backfill.php';
 			eem_mig_041_payments_ledger_backfill();
 		}
+
+		if ( ! get_option( 'eem_mig_042_backfill_order_tokens_complete' ) ) {
+			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-042-backfill-order-tokens.php';
+			eem_mig_042_backfill_order_tokens();
+		}
 	}
 
 	/**

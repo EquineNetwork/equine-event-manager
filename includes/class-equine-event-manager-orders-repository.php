@@ -3009,6 +3009,22 @@ class EEM_Orders_Repository {
 	}
 
 	/**
+	 * Public, canonical order_key for a component row — the md5 of its grouping
+	 * key. This is the single source of truth used everywhere an order is keyed
+	 * (Order Detail, the document/adjustment/payment/activity aux tables, the
+	 * hosted receipt URL). Exposed so one-time migrations (e.g. the legacy-token
+	 * backfill) compute the SAME key the read path computes, instead of
+	 * re-deriving the composite and risking drift.
+	 *
+	 * @param array $row Reservation DB row (needs at least `notes`, plus the
+	 *                   event/customer composite fields when token-free).
+	 * @return string 32-char md5 order key.
+	 */
+	public function order_key_for_row( array $row ): string {
+		return md5( $this->build_group_key( $row ) );
+	}
+
+	/**
 	 * Build a grouping key for stall/RV rows created by one submission.
 	 *
 	 * @param array $row Reservation DB row.
