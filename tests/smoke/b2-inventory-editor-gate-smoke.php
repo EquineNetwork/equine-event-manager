@@ -33,6 +33,8 @@ update_post_meta( $rid, '_en_stall_customer_selection', 'quantity' );
 register_shutdown_function( static function () use ( $rid ) { if ( $rid ) { wp_delete_post( (int) $rid, true ); } } );
 
 // ── Editor render: the two controls replace the single toggle ──
+require_once __DIR__ . '/_editor-seed.php'; // #55: mirror _en_* meta → config table.
+eem_smoke_setup_editor( $rid );
 $_GET['page'] = 'equine-event-manager-reservation-editor';
 $_GET['reservation_id'] = (string) $rid;
 $_REQUEST['reservation_id'] = (string) $rid;

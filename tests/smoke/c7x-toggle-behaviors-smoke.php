@@ -84,6 +84,8 @@ $eid = wp_insert_post( array( 'post_type' => 'tribe_events', 'post_status' => 'p
 update_post_meta( $eid, '_equine_event_manager_reservation_id', $rid );
 update_post_meta( $rid, '_en_event_id', $eid );
 
+require_once __DIR__ . '/_editor-seed.php'; // #55: mirror _en_* meta → config table.
+eem_smoke_setup_editor( $rid );
 $_GET['reservation_id'] = $rid;
 ob_start(); EEM_Reservation_Editor_Page::render(); $html = (string) ob_get_clean();
 $_GET = array();
