@@ -23,3 +23,7 @@ composer.phar
 
 # Local dev DB snapshots / fixtures — contain customer data, never commit
 .dev-fixtures/
+
+# OPcache-reset dev helper (written transiently by the deploy workflow, self-deletes
+# on curl). Must never ship to installs — to a reviewer it reads like a backdoor.
+_eem_oc.php

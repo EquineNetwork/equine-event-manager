@@ -128,10 +128,11 @@ Full document: `SHIP-READINESS-AUDIT.md` (verdict: genuinely good plugin, ~7/10 
 sellable with Tier 1–3 work). **Every item is now tracked as its own task (#26–#57).** Highlights:
 - **Already addressed since 2.7.673:** 2.1 (charge-before-insert / retry double-charge) largely
   solved by P3 in 2.7.674; 2.6 (F10 et al deployed) done; 6.3 (tools/ guard) done.
-- **Top NEW money find — task #26 (2.4):** per-row % fee rounding diverges stored vs charged total
-  by a cent on multi-row orders → can strand a correctly-charged customer marked unpaid. Fix = once-
-  per-order rounded-share + remainder (same as tax / flat-fee F7). **Highest priority.**
-- **Trivial ship-blockers:** #27 delete `_eem_oc.php` (ships to installs), #40 export-ignore leaked .md.
+- **✅ #26 (2.4) FIXED 2.7.675:** per-row % fee rounding diverged stored vs charged by a cent on
+  multi-row orders (could strand a customer unpaid). Now split once-per-order with exact remainder
+  (mirrors tax / flat-fee F7). Capstone harness 119/119 incl. a $12.62+$12.62 rounding-edge scenario.
+- **✅ #27 (1.3) FIXED 2.7.675:** `_eem_oc.php` git-rm'd + gitignored (no longer ships).
+- **Remaining trivial ship-blocker:** #40 export-ignore leaked .md.
 - **Distribution decision (#38):** WordPress.org (remove GitHub self-updater) vs self-hosted/premium
   (keep it — current model). Gates the readme.txt + updater work.
 - Tier 2 concurrency (#28–#31), Tier 4 security (#32, #46–#48), Tier 5 UX (#49–#53), Tier 6 process

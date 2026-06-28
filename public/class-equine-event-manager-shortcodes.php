@@ -5569,6 +5569,27 @@ class EEM_Shortcodes {
 		$eem_fee_is_flat        = ! empty( $eem_fee_cfg['apply'] ) && 'flat' === ( isset( $eem_fee_cfg['type'] ) ? $eem_fee_cfg['type'] : '' );
 		$eem_flat_fee_remaining = $eem_fee_is_flat ? (float) $totals['fees'] : 0.0;
 
+		// 2.4: distribute a PERCENTAGE convenience fee the SAME way as tax above —
+		// the order's total fee, split once across components proportional to each
+		// component's taxable base, with the RV row taking the exact remainder so the
+		// two always sum to the charged figure to the cent. Computing the fee per row
+		// and rounding each independently makes Σ round(p·rowᵢ) drift from the charged
+		// round(p·Σrowᵢ) (e.g. $12.62 + $12.62 @ 4% → 0.50 + 0.50 = $1.00 stored vs
+		// $1.01 charged); that 1¢ gap trips the Stripe webhook underpayment guard and
+		// strands a correctly-charged customer marked unpaid. (Flat fees stay
+		// once-on-the-first-row via $eem_flat_fee_remaining — see F7.)
+		$eem_total_fee = (float) $totals['fees'];
+		if ( $has_stall_order && $has_rv_order && $eem_base_sum > 0 ) {
+			$eem_stall_fee = round( $eem_total_fee * $eem_stall_tax_base / $eem_base_sum, 2 );
+			$eem_rv_fee    = round( $eem_total_fee - $eem_stall_fee, 2 );
+		} elseif ( $has_stall_order ) {
+			$eem_stall_fee = $eem_total_fee;
+			$eem_rv_fee    = 0.0;
+		} else {
+			$eem_stall_fee = 0.0;
+			$eem_rv_fee    = $eem_total_fee;
+		}
+
 		if ( $has_stall_order ) {
 			$stall_table       = $wpdb->prefix . 'en_stall_reservations';
 			$required_shavings = $totals['required_shavings_qty'];
@@ -5623,12 +5644,13 @@ class EEM_Shortcodes {
 				if ( 0 === $si_row_idx ) {
 					$row_subtotal += $stall_addon_extra + $stall_group_extra + $stall_pre_entry_extra;
 				}
-				// F7: flat fee once on the first inserted row; percentage stays per-row.
+				// F7 (flat) + 2.4 (percentage): the convenience fee is a per-ORDER
+				// charge — land the whole stall-share once, on the first stall row.
 				if ( $eem_fee_is_flat ) {
 					$row_fee                = $eem_flat_fee_remaining;
 					$eem_flat_fee_remaining = 0.0;
 				} else {
-					$row_fee = $this->calculate_convenience_fee( $row_subtotal, $data );
+					$row_fee = ( 0 === $si_row_idx ) ? $eem_stall_fee : 0.0;
 				}
 				$row_tax = ( 0 === $si_row_idx ) ? (float) $eem_stall_tax : 0.0;
 
@@ -5707,7 +5729,9 @@ class EEM_Shortcodes {
 				$rv_fee                 = $eem_flat_fee_remaining;
 				$eem_flat_fee_remaining = 0.0;
 			} else {
-				$rv_fee        = $this->calculate_convenience_fee( $rv_subtotal, $data );
+				// 2.4: the RV-share fee — the exact remainder after the stall row's
+				// rounded share, so stall_fee + rv_fee == the charged fee to the cent.
+				$rv_fee = $eem_rv_fee;
 			}
 
 			$rv_notes = $notes;

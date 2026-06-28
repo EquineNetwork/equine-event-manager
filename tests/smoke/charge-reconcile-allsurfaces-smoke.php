@@ -118,6 +118,15 @@ $scenarios = array(
 			'rv_qty' => 1, 'rv_stay_type' => 'nightly', 'rv_arrival_date' => '2026-08-19', 'rv_departure_date' => '2026-08-21',
 			'group_reservation_enabled' => 1, 'group_rider_count' => 2 ),
 		'addon_qty' => 1, 'lines' => array( 'Stall Res.', 'RV Res.', 'General Add-On', 'Group Res.' ) ),
+	// 2.4 guard: per-row % fee ROUNDING must not drift stored from charged. stall
+	// $12.62 + RV $12.62 → charge fee round(.04 × 25.24) = $1.01, but per-row rounding
+	// gives round(.4952)+round(.4952) = 0.50 + 0.50 = $1.00 (1¢ short) unless the fee is
+	// split once-per-order with an exact remainder.
+	array( 'label' => 'Fee rounding edge (stall $12.62 + RV $12.62 @ 4%)', 'fee' => 'percentage',
+		'data' => array( 'stall_nightly_rate' => 12.62, 'rv_nightly_rate' => 12.62 ),
+		'sub' => array( 'stall_qty' => 1, 'stall_stay_type' => 'nightly', 'stall_arrival_date' => '2026-08-19', 'stall_departure_date' => '2026-08-20',
+			'rv_qty' => 1, 'rv_stay_type' => 'nightly', 'rv_arrival_date' => '2026-08-19', 'rv_departure_date' => '2026-08-20' ),
+		'lines' => array( 'Stall Res.', 'RV Res.' ) ),
 	// FLAT fee on a MULTI-component order — does the flat fee get charged once or per row?
 	array( 'label' => 'Stall+RV FLAT $25 fee (multi-row double-charge check)', 'fee' => 'flat:25',
 		'data' => array(),
