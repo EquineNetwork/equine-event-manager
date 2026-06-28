@@ -13662,14 +13662,14 @@ body.post-type-en_reservation .eem-shell-icon-button svg {
 
 body.eem-shell-page--orders .eem-card--orders-list table.widefat,
 body.eem-shell-page--reservations #posts-filter > .wp-list-table {
-	table-layout: fixed !important;
+	table-layout: fixed;
 }
 
 body.eem-shell-page--orders .eem-card--orders-list table.widefat td,
 body.eem-shell-page--orders .eem-card--orders-list table.widefat th,
 body.eem-shell-page--reservations #posts-filter > .wp-list-table td,
 body.eem-shell-page--reservations #posts-filter > .wp-list-table th {
-	vertical-align: middle !important;
+	vertical-align: middle;
 }
 
 body.eem-shell-page--orders .eem-shell-content--order-detail {
@@ -13787,8 +13787,8 @@ body.post-type-en_reservation .eem-editor-overview-card .inside p {
 
 body.post-type-en_reservation .postbox table.form-table {
 	width: 100%;
-	border-collapse: separate !important;
-	border-spacing: 0 !important;
+	border-collapse: separate;
+	border-spacing: 0;
 }
 
 body.post-type-en_reservation .postbox table.form-table tbody {
@@ -13857,7 +13857,7 @@ body.post-type-en_reservation .eem-general-addon-table td,
 body.post-type-en_reservation .widefat.striped th,
 body.post-type-en_reservation .widefat.striped td {
 	padding: 0.75rem;
-	vertical-align: middle !important;
+	vertical-align: middle;
 }
 
 body.post-type-en_reservation #submitdiv .inside {
@@ -14084,7 +14084,7 @@ body.eem-shell-page--orders .eem-shell-content--order-detail .eem-order-assignme
 	font-size: 1rem;
 	font-weight: 700;
 	line-height: 1.35;
-	appearance: none !important;
+	appearance: none;
 }
 
 body.eem-shell-page--orders .eem-shell-content--order-detail .eem-order-assignment-form__select option {
@@ -14127,12 +14127,12 @@ body.eem-shell-page--orders .eem-shell-content--order-detail td .eem-shell-badge
 
 body.eem-shell-page--orders .eem-shell-content--order-detail table[role="presentation"] > tbody > tr > th {
 	width: 28%;
-	vertical-align: top !important;
+	vertical-align: top;
 }
 
 body.eem-shell-page--orders .eem-shell-content--order-detail table[role="presentation"] > tbody > tr > td {
 	width: 72%;
-	vertical-align: top !important;
+	vertical-align: top;
 }
 
 @media screen and (max-width: 1080px) {
@@ -16735,13 +16735,13 @@ body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready {
 }
 
 body.eem-shell-page--reservations #posts-filter > .subsubsub {
-	grid-area: status !important;
+	grid-area: status;
 	margin: 0 0 0.875rem;
 }
 
 body.eem-shell-page--reservations #posts-filter > .tablenav.top,
 body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .tablenav.top {
-	grid-area: toolbar !important;
+	grid-area: toolbar;
 	order: 2;
 	display: flex;
 	align-items: center;
@@ -16818,7 +16818,7 @@ body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready >
 
 body.eem-shell-page--reservations #posts-filter > .wp-list-table,
 body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .wp-list-table {
-	grid-area: table !important;
+	grid-area: table;
 	order: 3;
 	margin: 0;
 	border-top: 0;
@@ -17210,13 +17210,13 @@ body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready {
 }
 
 body.eem-shell-page--reservations #posts-filter > .subsubsub {
-	grid-area: status !important;
+	grid-area: status;
 	margin: 0 0 0.875rem;
 }
 
 body.eem-shell-page--reservations #posts-filter > .tablenav.top,
 body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .tablenav.top {
-	grid-area: toolbar !important;
+	grid-area: toolbar;
 	order: 2;
 	display: flex;
 	flex-wrap: wrap;
@@ -17293,7 +17293,7 @@ body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready >
 
 body.eem-shell-page--reservations #posts-filter > .wp-list-table,
 body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .wp-list-table {
-	grid-area: table !important;
+	grid-area: table;
 	order: 3;
 	margin: 0;
 	border-top: 1px solid #dde5ee;
@@ -17433,7 +17433,7 @@ body.eem-shell-page--reservations .wp-list-table tbody tr:hover {
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list .widefat.fixed.striped tbody td::before {
-		content: attr(data-label) !important;
+		content: attr(data-label);
 		flex: 0 0 92px;
 		color: #5f6b7c;
 		font-size: 0.8125rem;
@@ -17690,12 +17690,12 @@ body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready {
 }
 
 body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .subsubsub {
-	grid-area: status !important;
+	grid-area: status;
 	margin: 0 0 0.25rem;
 }
 
 body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .tablenav.top {
-	grid-area: toolbar !important;
+	grid-area: toolbar;
 	margin: 0;
 	padding: 1rem;
 	border: 1px solid #d7e0ea;
@@ -17734,7 +17734,7 @@ body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready >
 }
 
 body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .wp-list-table {
-	grid-area: table !important;
+	grid-area: table;
 	margin-top: 0;
 	border-top-left-radius: 0;
 	border-top-right-radius: 0;
@@ -17769,13 +17769,13 @@ body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready {
 
 body.eem-shell-page--reservations #posts-filter > .subsubsub,
 body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .subsubsub {
-	grid-area: status !important;
+	grid-area: status;
 	margin: 0;
 }
 
 body.eem-shell-page--reservations #posts-filter > .tablenav.top,
 body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .tablenav.top {
-	grid-area: toolbar !important;
+	grid-area: toolbar;
 	order: 2;
 	display: flex;
 	align-items: center;
@@ -17816,7 +17816,7 @@ body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready >
 
 body.eem-shell-page--reservations #posts-filter > .search-box,
 body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .search-box {
-	grid-area: search !important;
+	grid-area: search;
 	order: 2;
 	float: none;
 	display: flex;
@@ -17845,7 +17845,7 @@ body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready >
 
 body.eem-shell-page--reservations #posts-filter > .wp-list-table,
 body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .wp-list-table {
-	grid-area: table !important;
+	grid-area: table;
 	order: 3;
 	margin-top: 0;
 }
@@ -18211,12 +18211,12 @@ body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready {
 
 body.eem-shell-page--reservations #posts-filter > .subsubsub,
 body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .subsubsub {
-	grid-area: status !important;
+	grid-area: status;
 }
 
 body.eem-shell-page--reservations #posts-filter > .tablenav.top,
 body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .tablenav.top {
-	grid-area: toolbar !important;
+	grid-area: toolbar;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -18284,7 +18284,7 @@ body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready >
 
 body.eem-shell-page--reservations #posts-filter > .wp-list-table,
 body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .wp-list-table {
-	grid-area: table !important;
+	grid-area: table;
 	margin-top: 0;
 	border-top-left-radius: 0;
 	border-top-right-radius: 0;
@@ -18363,7 +18363,7 @@ body.eem-shell-page--reports .widefat,
 body.eem-shell-page--overview .widefat,
 body.eem-shell-page--orders .widefat {
 	width: 100%;
-	table-layout: auto !important;
+	table-layout: auto;
 }
 
 /* Order details / refund / overview table integration */
@@ -18408,8 +18408,8 @@ body.eem-shell-page--orders .eem-shell-content > .postbox:not(.eem-card--orders-
 	width: calc(100% - 2.5rem);
 	border: 1px solid #dfe7f1;
 	border-radius: 8px;
-	border-collapse: separate !important;
-	border-spacing: 0 !important;
+	border-collapse: separate;
+	border-spacing: 0;
 	box-shadow: none;
 	overflow: hidden;
 }
@@ -18434,7 +18434,7 @@ body.eem-shell-page--orders .eem-shell-content > .postbox:not(.eem-card--orders-
 	text-transform: uppercase;
 	background: #f8fbff;
 	border-right: 1px solid #e3eaf2;
-	vertical-align: top !important;
+	vertical-align: top;
 }
 
 body.eem-shell-page--orders .eem-shell-content > .postbox:not(.eem-card--orders-list) > .inside > table.widefat td,
@@ -18571,7 +18571,7 @@ body.post-type-en_reservation .eem-inline-toggle-control__label {
 
 	body.eem-shell-page--orders .eem-card--orders-list .widefat.fixed.striped tbody td::before,
 	body.eem-shell-page--orders .postbox.eem-card--orders-list > table.widefat.fixed.striped tbody td::before {
-		content: attr(data-label) !important;
+		content: attr(data-label);
 		flex: 0 0 92px;
 		font-weight: 800;
 		color: #2c374f;
@@ -18893,13 +18893,13 @@ body.eem-shell-page--reservations #posts-filter {
 }
 
 body.eem-shell-page--reservations #posts-filter > .subsubsub {
-	grid-area: status !important;
+	grid-area: status;
 	margin: 0 0 0.875rem;
 }
 
 body.eem-shell-page--reservations #posts-filter > .tablenav.top,
 body.eem-shell-page--reservations #posts-filter.eem-reservations-toolbar-ready > .tablenav.top {
-	grid-area: toolbar !important;
+	grid-area: toolbar;
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
@@ -18943,7 +18943,7 @@ body.eem-shell-page--reservations .displaying-num {
 }
 
 body.eem-shell-page--reservations #posts-filter > .wp-list-table {
-	grid-area: table !important;
+	grid-area: table;
 	margin: 0;
 	border-top-left-radius: 0;
 	border-top-right-radius: 0;
@@ -19032,7 +19032,7 @@ body.post-type-en_reservation .postbox table.form-table th,
 body.post-type-en_reservation .postbox table.form-table td {
 	padding-top: 0.875rem;
 	padding-bottom: 0.875rem;
-	vertical-align: top !important;
+	vertical-align: top;
 }
 
 body.post-type-en_reservation .eem-section-toggle-control,
@@ -19399,7 +19399,7 @@ body.eem-shell-page--orders .eem-card--orders-list table.widefat thead th {
 
 body.eem-shell-page--orders .eem-card--orders-list table.widefat,
 body.eem-shell-page--orders .eem-card--orders-list table.widefat.fixed.striped {
-	table-layout: fixed !important;
+	table-layout: fixed;
 }
 
 body.eem-shell-page--orders .eem-card--orders-list table.widefat thead th:nth-child(1),
@@ -19593,8 +19593,8 @@ body.eem-shell-page--reports .postbox table.widefat th {
 body.eem-shell-page--orders .postbox.eem-card,
 body.eem-shell-page--overview .postbox,
 body.eem-shell-page--reports .postbox {
-	break-inside: avoid !important;
-	page-break-inside: avoid !important;
+	break-inside: avoid;
+	page-break-inside: avoid;
 }
 
 body.post-type-en_reservation .wrap > h1.wp-heading-inline,
@@ -19663,7 +19663,7 @@ body.post-type-en_reservation .form-table th,
 body.post-type-en_reservation .form-table td {
 	padding-top: 0.875rem;
 	padding-bottom: 0.875rem;
-	vertical-align: top !important;
+	vertical-align: top;
 }
 
 body.post-type-en_reservation .eem-section-toggle-control,
@@ -19696,7 +19696,7 @@ body.post-type-en_reservation .eem-inline-toggle-control__track {
 
 body.post-type-en_reservation .eem-section-toggle-control__thumb,
 body.post-type-en_reservation .eem-inline-toggle-control__track::after {
-	content: "" !important;
+	content: "";
 	position: absolute;
 	top: 4px;
 	left: 4px;
@@ -19806,7 +19806,7 @@ body.eem-shell-page--reservations #posts-filter > .tablenav.top {
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list table.widefat td::before {
-		content: attr(data-colname) !important;
+		content: attr(data-colname);
 		color: #5f6f85;
 		font-size: 0.8rem;
 		font-weight: 700;
@@ -19914,7 +19914,7 @@ body.eem-shell-page--orders td[data-label="Status"] .eem-shell-badge--status-par
 
 body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody tr > th,
 body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody tr > td {
-	vertical-align: middle !important;
+	vertical-align: middle;
 }
 
 body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody td.column-title,
@@ -19925,7 +19925,7 @@ body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody td[d
 body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody td[data-colname="Event Dates"],
 body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody td[data-colname="Type"],
 body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody td[data-colname="Actions"] {
-	vertical-align: middle !important;
+	vertical-align: middle;
 }
 
 body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody td.column-title strong,
@@ -19986,7 +19986,7 @@ body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody td[d
 		border: 0;
 		border-top: 1px solid #edf1f5;
 		word-break: normal;
-		overflow-wrap: anywhere !important;
+		overflow-wrap: anywhere;
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list table.widefat tbody tr td:first-child,
@@ -19998,7 +19998,7 @@ body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody td[d
 	body.eem-shell-page--orders .eem-card--orders-list table.widefat tbody td::before,
 	body.eem-shell-page--orders .eem-card--orders-list table.widefat.fixed.striped tbody td::before,
 	body.eem-shell-page--orders .postbox.eem-card--orders-list > table.widefat.fixed.striped tbody td::before {
-		content: attr(data-label) !important;
+		content: attr(data-label);
 		color: #5f6b7c;
 		font-size: 0.8125rem;
 		font-weight: 700;
@@ -20275,7 +20275,7 @@ body.eem-shell-page--orders .postbox.eem-card--orders-list > table.widefat.fixed
 		border: 0;
 		background: transparent;
 		box-shadow: none;
-		vertical-align: middle !important;
+		vertical-align: middle;
 	}
 
 	body.eem-shell-page--reservations #posts-filter > .wp-list-table tbody tr > th.check-column input[type="checkbox"] {
@@ -20294,12 +20294,12 @@ body.eem-shell-page--orders .postbox.eem-card--orders-list > table.widefat.fixed
 		background: transparent;
 		box-shadow: none;
 		word-break: normal;
-		overflow-wrap: anywhere !important;
+		overflow-wrap: anywhere;
 	}
 
 	body.eem-shell-page--reservations #posts-filter > .wp-list-table tbody td.column-title::before,
 	body.eem-shell-page--reservations #posts-filter > .wp-list-table tbody td[data-colname="Reservation"]::before {
-		content: none !important;
+		content: none;
 		display: none;
 	}
 
@@ -20325,11 +20325,11 @@ body.eem-shell-page--orders .postbox.eem-card--orders-list > table.widefat.fixed
 		background: transparent;
 		box-shadow: none;
 		word-break: normal;
-		overflow-wrap: anywhere !important;
+		overflow-wrap: anywhere;
 	}
 
 	body.eem-shell-page--reservations #posts-filter > .wp-list-table tbody td::before {
-		content: attr(data-colname) !important;
+		content: attr(data-colname);
 		color: #5f6b7c;
 		font-size: 0.8125rem;
 		font-weight: 700;
@@ -20347,7 +20347,7 @@ body.eem-shell-page--orders .postbox.eem-card--orders-list > table.widefat.fixed
 	body.eem-shell-page--reservations #posts-filter > .wp-list-table tbody td[data-colname="Event Dates"],
 	body.eem-shell-page--reservations #posts-filter > .wp-list-table tbody td[data-colname="Type"],
 	body.eem-shell-page--reservations #posts-filter > .wp-list-table tbody td[data-colname="Actions"] {
-		vertical-align: middle !important;
+		vertical-align: middle;
 	}
 
 	body.eem-shell-page--reservations #posts-filter > .wp-list-table tbody td[data-colname="Type"] .eem-shell-badges,
@@ -20555,7 +20555,7 @@ body.eem-shell-page--orders .eem-shell-content--order-detail table[role="present
 }
 
 body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped {
-	table-layout: fixed !important;
+	table-layout: fixed;
 }
 
 body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped th:nth-child(1),
@@ -20599,7 +20599,7 @@ body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody tr {
 
 body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody tr > th,
 body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody tr > td {
-	vertical-align: middle !important;
+	vertical-align: middle;
 }
 
 body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody tr > th.check-column,
@@ -20618,7 +20618,7 @@ body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody td[d
 body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody td.column-title,
 body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody td[data-colname="Reservation"] {
 	display: table-cell;
-	vertical-align: middle !important;
+	vertical-align: middle;
 }
 
 body.eem-shell-page--reservations #posts-filter > table.wp-list-table tbody td.column-title strong,
@@ -20756,7 +20756,7 @@ body.post-type-en_reservation #postbox-container-2 .widefat.striped {
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped tbody td::before {
-		content: attr(data-label) !important;
+		content: attr(data-label);
 		color: #5f6b7c;
 		font-size: 0.8125rem;
 		font-weight: 700;
@@ -20831,13 +20831,13 @@ body.eem-shell-page--orders .eem-card--orders-list .eem-shell-badge--group {
 
 	body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped tbody {
 		padding: 0 0.875rem 0.875rem;
-		box-sizing: border-box !important;
+		box-sizing: border-box;
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped tbody tr {
 		width: 100%;
 		max-width: 100%;
-		box-sizing: border-box !important;
+		box-sizing: border-box;
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped tbody td {
@@ -20846,7 +20846,7 @@ body.eem-shell-page--orders .eem-card--orders-list .eem-shell-badge--group {
 		max-width: 100%;
 		padding: 0.875rem;
 		text-align: left;
-		box-sizing: border-box !important;
+		box-sizing: border-box;
 		overflow: hidden;
 	}
 
@@ -20866,7 +20866,7 @@ body.eem-shell-page--orders .eem-card--orders-list .eem-shell-badge--group {
 		text-align: left;
 		white-space: normal;
 		word-break: break-word;
-		overflow-wrap: anywhere !important;
+		overflow-wrap: anywhere;
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped tbody td[data-label="Type"] .eem-shell-badges {
@@ -20986,7 +20986,7 @@ body.eem-shell-page--orders .eem-card--orders-list td[data-label="Status"] .eem-
 	body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped > tbody,
 	body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped > tbody > tr,
 	body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped > tbody > tr > td {
-		box-sizing: border-box !important;
+		box-sizing: border-box;
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped {
@@ -20995,7 +20995,7 @@ body.eem-shell-page--orders .eem-card--orders-list td[data-label="Status"] .eem-
 		max-width: 100%;
 		border: 0;
 		background: transparent;
-		table-layout: auto !important;
+		table-layout: auto;
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped thead,
@@ -21036,7 +21036,7 @@ body.eem-shell-page--orders .eem-card--orders-list td[data-label="Status"] .eem-
 		border: 0;
 		border-top: 1px solid #edf1f5;
 		text-align: left;
-		vertical-align: top !important;
+		vertical-align: top;
 		overflow: hidden;
 	}
 
@@ -21045,7 +21045,7 @@ body.eem-shell-page--orders .eem-card--orders-list td[data-label="Status"] .eem-
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped tbody td::before {
-		content: attr(data-label) !important;
+		content: attr(data-label);
 		display: block;
 		margin: 0 0 0.375rem;
 		color: #5f6b7c;
@@ -21068,7 +21068,7 @@ body.eem-shell-page--orders .eem-card--orders-list td[data-label="Status"] .eem-
 		text-align: left;
 		white-space: normal;
 		word-break: normal;
-		overflow-wrap: anywhere !important;
+		overflow-wrap: anywhere;
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped tbody td[data-label="Type"] .eem-shell-badges {
@@ -21119,7 +21119,7 @@ body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped
 		max-width: 100%;
 		border: 0;
 		background: transparent;
-		table-layout: auto !important;
+		table-layout: auto;
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list table.widefat thead,
@@ -21163,9 +21163,9 @@ body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped
 		border: 0;
 		border-top: 1px solid #edf1f5;
 		text-align: left;
-		vertical-align: top !important;
+		vertical-align: top;
 		overflow: hidden;
-		box-sizing: border-box !important;
+		box-sizing: border-box;
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list table.widefat tbody td:first-child {
@@ -21173,7 +21173,7 @@ body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list table.widefat tbody td::before {
-		content: attr(data-label) !important;
+		content: attr(data-label);
 		display: block;
 		width: 100%;
 		margin: 0 0 0.375rem;
@@ -21185,7 +21185,7 @@ body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list table.widefat tbody td[data-colname]:not([data-label])::before {
-		content: attr(data-colname) !important;
+		content: attr(data-colname);
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list table.widefat tbody td > *,
@@ -21201,7 +21201,7 @@ body.eem-shell-page--orders .eem-card--orders-list > table.widefat.fixed.striped
 		text-align: left;
 		white-space: normal;
 		word-break: normal;
-		overflow-wrap: anywhere !important;
+		overflow-wrap: anywhere;
 	}
 
 	body.eem-shell-page--orders .eem-card--orders-list table.widefat tbody td[data-label="Type"] .eem-shell-badges {
@@ -21710,7 +21710,7 @@ body.eem-shell-page--orders .eem-order-payment-card .eem-key-value-grid th {
 	font-weight: 800;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
-	vertical-align: top !important;
+	vertical-align: top;
 }
 
 body.eem-shell-page--orders .eem-order-product-card .eem-key-value-grid td,
@@ -21720,7 +21720,7 @@ body.eem-shell-page--orders .eem-order-payment-card .eem-key-value-grid td {
 	color: #1d2c44;
 	font-weight: 600;
 	line-height: 1.5;
-	vertical-align: top !important;
+	vertical-align: top;
 }
 
 body.eem-shell-page--orders .eem-order-product-card__section,
@@ -22130,8 +22130,8 @@ body.eem-shell-page--orders .eem-orders-guide__table-wrap {
 
 body.eem-shell-page--orders .eem-orders-table {
 	width: 100%;
-	border-collapse: collapse !important;
-	table-layout: fixed !important;
+	border-collapse: collapse;
+	table-layout: fixed;
 }
 
 body.eem-shell-page--orders .eem-orders-table thead tr {
@@ -22166,7 +22166,7 @@ body.eem-shell-page--orders .eem-orders-table td {
 	font-family: "IBM Plex Sans", sans-serif;
 	font-size: 0.8125rem;
 	color: #031b4e;
-	vertical-align: middle !important;
+	vertical-align: middle;
 }
 
 body.eem-shell-page--orders .eem-orders-table th:nth-child(1),
@@ -22444,8 +22444,8 @@ body.post-type-en_reservation.eem-shell-page #submitdiv .inside {
 body.post-type-en_reservation.eem-shell-page #postbox-container-2 .form-table,
 body.post-type-en_reservation.eem-shell-page #postbox-container-1 .form-table {
 	width: 100%;
-	border-collapse: separate !important;
-	border-spacing: 0 !important;
+	border-collapse: separate;
+	border-spacing: 0;
 }
 
 body.post-type-en_reservation.eem-shell-page #postbox-container-2 .form-table th,
@@ -22453,7 +22453,7 @@ body.post-type-en_reservation.eem-shell-page #postbox-container-2 .form-table td
 body.post-type-en_reservation.eem-shell-page #postbox-container-1 .form-table th,
 body.post-type-en_reservation.eem-shell-page #postbox-container-1 .form-table td {
 	padding: 0.875rem;
-	vertical-align: middle !important;
+	vertical-align: middle;
 }
 
 body.post-type-en_reservation.eem-shell-page #postbox-container-2 input[type="text"],
@@ -22752,7 +22752,7 @@ body.eem-shell-page--reservations .wp-list-table thead th {
 
 body.eem-shell-page--reservations .wp-list-table tbody td,
 body.eem-shell-page--reservations .wp-list-table tbody th {
-	vertical-align: middle !important;
+	vertical-align: middle;
 	padding-top: 14px;
 	padding-bottom: 14px;
 }
@@ -22819,7 +22819,7 @@ body.eem-shell-page--reservations .wp-list-table tbody .column-title a.row-title
 	}
 
 	body.eem-shell-page--reservations #posts-filter > .wp-list-table td::before {
-		content: attr(data-colname) !important;
+		content: attr(data-colname);
 		display: block;
 		margin-bottom: 4px;
 		font-size: 11px;
@@ -22922,7 +22922,7 @@ body.eem-shell-page--reports .eem-reports-guide--history thead th {
 	}
 
 	body.eem-shell-page--reports .eem-reports-guide--history td::before {
-		content: attr(data-label) !important;
+		content: attr(data-label);
 		display: block;
 		margin-bottom: 4px;
 		font-size: 11px;
@@ -22987,7 +22987,7 @@ body.post-type-en_reservation.eem-shell-page #postbox-container-2 .form-table td
 body.post-type-en_reservation.eem-shell-page #postbox-container-1 .form-table th,
 body.post-type-en_reservation.eem-shell-page #postbox-container-1 .form-table td {
 	padding: 12px 0;
-	vertical-align: top !important;
+	vertical-align: top;
 }
 
 /*
