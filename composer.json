@@ -28,7 +28,8 @@
         "lint": "phpcs",
         "lint:summary": "phpcs --report=summary",
         "lint:fix": "phpcbf",
-        "test": "bash tests/smoke/run-all.sh"
+        "test": "find equine-event-manager.php includes admin public tests tools -name '*.php' -print0 | xargs -0 -n1 -P4 php -l",
+        "test:smokes": "echo 'Full WordPress smoke suite needs a live WP + wp-cli: php tests/run-all-smokes.php <wp-path> <php-bin> <wp-cli.phar>'"
     },
     "config": {
         "allow-plugins": {

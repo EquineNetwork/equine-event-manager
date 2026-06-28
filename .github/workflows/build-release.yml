@@ -16,7 +16,45 @@ permissions:
   contents: write
 
 jobs:
+  # 6.1: a real gate BEFORE the release build. `main` auto-deploys to the live site
+  # via the in-WordPress updater, so a syntax-broken or smoke-failing main must NOT
+  # produce an installable zip. build-zip `needs: verify`, so it only runs if this
+  # passes. (The full WordPress smoke suite — needing a MySQL + seeded WP fixture —
+  # lands as a follow-up per #55; this gates on what runs without a WP fixture.)
+  verify:
+    name: Verify (lint + JS + no-WP smokes)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+      - name: Lint all PHP files
+        run: |
+          set -euo pipefail
+          find equine-event-manager.php includes admin public tests tools \
+            -name '*.php' -print0 \
+            | xargs -0 -n1 -P4 php -l > /dev/null
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: node --check every JS file
+        run: |
+          set -euo pipefail
+          for f in assets/js/*.js; do
+            node --check "$f"
+          done
+      - name: Run standalone (no-WP) smokes
+        run: |
+          set -euo pipefail
+          out=$(php tests/smoke/stall-map-sanitize-smoke.php)
+          echo "$out"
+          echo "$out" | grep -q ' 0 failed'
+
   build-zip:
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
