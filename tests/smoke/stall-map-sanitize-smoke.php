@@ -14,7 +14,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	define( 'ABSPATH', '/tmp/' );
 }
 
-require_once dirname( __DIR__, 2 ) . '/includes/class-eem-stall-map-importer.php';
+if ( ! class_exists( 'EEM_Stall_Map_Importer' ) ) {
+	require_once dirname( __DIR__, 2 ) . '/includes/class-eem-stall-map-importer.php';
+}
 
 $fail = 0; $pass = 0;
 $check = function ( $label, $cond ) use ( &$fail, &$pass ) {

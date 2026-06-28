@@ -17,7 +17,9 @@ foreach ( array( '__', 'esc_html__' ) as $fn ) {
 if ( ! function_exists( 'sanitize_text_field' ) ) { function sanitize_text_field( $s ) { return is_string( $s ) ? trim( $s ) : $s; } }
 if ( ! function_exists( 'absint' ) ) { function absint( $n ) { return abs( (int) $n ); } }
 
-require_once __DIR__ . '/../../includes/class-equine-event-manager-orders-repository.php';
+if ( ! class_exists( 'EEM_Orders_Repository' ) ) {
+	require_once __DIR__ . '/../../includes/class-equine-event-manager-orders-repository.php';
+}
 
 $ref  = new ReflectionClass( 'EEM_Orders_Repository' );
 $repo = $ref->newInstanceWithoutConstructor();

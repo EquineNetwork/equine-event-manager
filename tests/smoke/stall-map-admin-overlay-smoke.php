@@ -25,7 +25,9 @@ function ok( $cond, $label ) {
 }
 
 // ── format_customer_last_first via reflection ──────────────────────────────
-require_once __DIR__ . '/../../admin/class-equine-event-manager-admin.php';
+if ( ! class_exists( 'EEM_Admin' ) ) {
+	require_once __DIR__ . '/../../admin/class-equine-event-manager-admin.php';
+}
 
 $ref = new ReflectionClass( 'EEM_Admin' );
 $admin = $ref->newInstanceWithoutConstructor();

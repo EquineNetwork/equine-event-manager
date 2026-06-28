@@ -18,7 +18,9 @@ foreach ( array( '__', 'esc_html__', 'esc_attr__' ) as $fn ) {
 if ( ! function_exists( 'sanitize_text_field' ) ) { function sanitize_text_field( $s ) { return is_string( $s ) ? trim( $s ) : $s; } }
 if ( ! function_exists( '_n' ) ) { function _n( $a, $b, $n, $d = null ) { return $n === 1 ? $a : $b; } }
 
-require_once __DIR__ . '/../../admin/class-eem-reservation-editor-page.php';
+if ( ! class_exists( 'EEM_Reservation_Editor_Page' ) ) {
+	require_once __DIR__ . '/../../admin/class-eem-reservation-editor-page.php';
+}
 
 $pass = 0; $fail = 0;
 function ok( $cond, $label ) {

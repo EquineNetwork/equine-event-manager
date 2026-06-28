@@ -16,8 +16,12 @@ if ( ! function_exists( '_n' ) ) { function _n( $a, $b, $n, $d = null ) { return
 if ( ! function_exists( 'metadata_exists' ) ) { function metadata_exists() { return false; } }
 if ( ! function_exists( 'get_post_meta' ) ) { function get_post_meta() { return ''; } }
 
-require_once __DIR__ . '/../../includes/class-equine-event-manager-reservations-cpt.php';
-require_once __DIR__ . '/../../admin/class-eem-reservation-editor-page.php';
+if ( ! class_exists( 'EEM_Reservations_CPT' ) ) {
+	require_once __DIR__ . '/../../includes/class-equine-event-manager-reservations-cpt.php';
+}
+if ( ! class_exists( 'EEM_Reservation_Editor_Page' ) ) {
+	require_once __DIR__ . '/../../admin/class-eem-reservation-editor-page.php';
+}
 
 $C = 'EEM_Reservations_CPT';
 $pass = 0; $fail = 0;

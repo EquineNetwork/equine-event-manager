@@ -10,7 +10,9 @@
  */
 
 define( 'ABSPATH', '/tmp/' );
-require_once __DIR__ . '/../../includes/class-eem-stall-map-importer.php';
+if ( ! class_exists( 'EEM_Stall_Map_Importer' ) ) {
+	require_once __DIR__ . '/../../includes/class-eem-stall-map-importer.php';
+}
 
 $pass = 0; $fail = 0;
 function ok( $cond, $label ) {
