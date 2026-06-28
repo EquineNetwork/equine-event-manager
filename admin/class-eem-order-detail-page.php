@@ -2419,17 +2419,34 @@ class EEM_Order_Detail_Page {
 									</option>
 								<?php endif; ?>
 							<?php endforeach; ?>
-							<?php if ( ! empty( $products ) ) : ?>
-								<optgroup label="<?php esc_attr_e( 'Add-Ons & Shavings', 'equine-event-manager' ); ?>">
-									<?php foreach ( $products as $product ) : ?>
-										<option value="product"
-											data-product-key="<?php echo esc_attr( $product['key'] ); ?>"
-											data-price="<?php echo esc_attr( (string) (float) $product['price'] ); ?>">
-											<?php echo esc_html( $product['label'] . ' — $' . number_format_i18n( (float) $product['price'], 2 ) ); ?>
-										</option>
-									<?php endforeach; ?>
-								</optgroup>
-							<?php endif; ?>
+							<?php
+							if ( ! empty( $products ) ) :
+								// Group addable products by their `group` label so each
+								// catalog section (Additional Shavings, Add-Ons, Group
+								// Fees, Pre-Entries) renders as its own <optgroup>. Order
+								// of first appearance is preserved.
+								$product_groups = array();
+								foreach ( $products as $product ) {
+									$group_label = ( isset( $product['group'] ) && '' !== $product['group'] )
+										? (string) $product['group']
+										: __( 'Add-Ons & Shavings', 'equine-event-manager' );
+									$product_groups[ $group_label ][] = $product;
+								}
+								foreach ( $product_groups as $group_label => $group_products ) :
+									?>
+									<optgroup label="<?php echo esc_attr( $group_label ); ?>">
+										<?php foreach ( $group_products as $product ) : ?>
+											<option value="product"
+												data-product-key="<?php echo esc_attr( $product['key'] ); ?>"
+												data-price="<?php echo esc_attr( (string) (float) $product['price'] ); ?>">
+												<?php echo esc_html( $product['label'] . ' — $' . number_format_i18n( (float) $product['price'], 2 ) ); ?>
+											</option>
+										<?php endforeach; ?>
+									</optgroup>
+									<?php
+								endforeach;
+							endif;
+							?>
 							<option value="custom"><?php esc_html_e( 'Custom Line Item', 'equine-event-manager' ); ?></option>
 						</select>
 						<input type="hidden" name="product_key" value="" data-eem-add-items-product-key />

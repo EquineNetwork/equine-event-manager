@@ -90,11 +90,12 @@ resolved on 671); Order Detail totals + receipt totals.
   click in. **Launch-blocker.** Fix: targeted indexed lookups + uncapped reports/dashboard aggregation.
 - **F3** 🔴 HIGH — map "Add New Customer" placeholder orders mis-priced: NO tab/zone surcharge,
   bills 1 night (no dates), sparse order. `ajax_stall_create_placeholder` uses a base-rate-only pricer.
-- **F4/F4b/F9** 🔴 HIGH — order fee+tax FROZEN at checkout; adjustments don't recompute: Add Items
-  products + custom items added FLAT (no fee/tax); discount subtracts without recomputing fee/tax on
-  post-discount subtotal; Group fees + Pre-Entries not addable via Add Items. (Add-qty + Edit Dates
-  DO recompute — fine.) Fix: fee+tax DERIVED from current (components + custom − discount) subtotal
-  everywhere; add Group + Pre-Entry as addable item types.
+- **F4/F4b/F9** ✅ ALL RESOLVED 2026-06-27 (Local, awaiting sign-off + deploy). **F4** — Add Items
+  products + custom items now carry the convenience fee via `compose_order_totals()` (single source
+  of truth across Collect Payment / Order Detail / receipt). **F4b** — discounts intentionally do NOT
+  recompute the fee (Whitney decision); tax is off globally → moot. **F9** — Group grounds-fee, Group
+  rider-deposit, and Pre-Entries are now addable item types (reuse the flat-rate product path; fee
+  follows; verified with live 4% fee: $75 group fee → +$3.00). Add-qty + Edit Dates already recompute.
 - **F8** 🟡 MEDIUM — imported-order RECEIPT line items recompute (qty×price×nights) and diverge when
   stored unit_price×nights ≠ stored subtotal (CSV imports w/ custom stay labels, e.g. "Thursday-Sunday"
   → line $285 above a correct $137 total). NOT an overcharge; Order Detail + totals correct; checkout

@@ -216,11 +216,12 @@ products [likely YES — match checkout], (b) custom line items [ambiguous]?
 — custom items/products are added at FLAT amount; `$fees` is the original component-row fee,
 NOT recomputed to include custom items, and no tax is applied to them. So every product/
 custom item added via Add Items undercharges fee+tax vs the checkout path.
-**Related concern (F4b):** the same line subtracts `$discount_amt` from `$base_total` WITHOUT
-recomputing the convenience fee + tax on the POST-discount subtotal — but the roadmap
-Discount-handling spec says fee + tax should recalc from the post-discount subtotal. So a
-discount may leave the fee/tax computed on the pre-discount amount (customer overpays fee+tax
-after a discount). Needs explicit verification + decision (likely a bug per the spec).
+**Related concern (F4b) — ✅ RESOLVED BY WHITNEY DECISION (2026-06-27):** "discounts are NOT
+things we will touch with convenience fees." So the fee is intentionally computed on the
+FULL pre-discount subtotal and a discount only reduces the payable total — it does NOT
+recompute the fee. `compose_order_totals()` implements exactly this (discount subtracts from
+`grand_total`; fee untouched). Tax is OFF globally per Whitney, so the tax-on-discount question
+is moot too. NOT a bug — current behavior matches the decision.
 
 ### F5 (to verify) — Edit Dates shorten must say "Refund Owed", lengthen "Balance Due"
 **Path:** Order Detail → Edit Dates modal. **CODE-VERIFIED CORRECT on v2.7.671**
@@ -367,7 +368,21 @@ still reconstructs. Touches every receipt surface → sign-off + careful re-veri
 **Minor:** `date_create_from_format(null)` deprecation at shortcodes.php:11155 (null dates) —
 fold into the same fix.
 
-### F9 — Add Items can't add Group fees or Pre-Entries (MEDIUM, UX/feature gap)
+### ✅ F9 — FIXED 2026-06-27 (on Local, awaiting sign-off + deploy)
+**Fix:** Group grounds-fee, Group rider-deposit, and Pre-Entries are now addable via Order
+Detail → Add Items. They reuse the existing flat-rate "product" path (qty × server-resolved
+unit price → custom line item), so the convenience fee follows them automatically through
+`compose_order_totals()` (F4 machinery) and they're itemized like any other line. Two surgical
+edits: (a) `get_addable_products()` appends the group fees (gated on `group_reservations_enabled`
++ each fee enabled with amount > 0) and every enabled pre-entry (legacy meta + Entries CPT);
+(b) the Add Items modal renders one `<optgroup>` per product `group` so "Group Fees" and
+"Pre-Entries" appear as labeled sections. Server re-prices by key (never trusts client amount).
+**Verified 14/14** (`f9-group-preentry-addable-smoke.php`): catalog surfaces all three with
+correct keys/prices/groups; gating hides them when the reservation doesn't sell them; modal
+renders both optgroups + options; 3 riders × $25 = $75 re-priced server-side; **with the live
+4% fee ON, the $75 adds $3.00 convenience fee** and grand_total = base + $75 + $3.
+
+### F9 (original finding) — Add Items can't add Group fees or Pre-Entries (MEDIUM, UX/feature gap)
 **File:** `render_add_items_modal` (order-detail-page.php:2363). Item types offered: Stall, RV
 (from `get_addable_inventory`), Additional Shavings + General Add-Ons (from
 `get_addable_products`), Custom Line Item. **NOT offered: Group reservation fees (grounds fee

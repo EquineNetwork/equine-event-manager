@@ -5096,6 +5096,52 @@ class EEM_Shortcodes {
 			);
 		}
 
+		// Group reservation fees (F9): per-rider grounds fee + per-rider deposit.
+		// Priced exactly as checkout does (rider count × per-rider amount) — the
+		// admin enters the rider count as the Add-Items quantity. Only offered when
+		// the reservation enables group reservations AND the specific fee is on with
+		// a positive amount.
+		if ( ! empty( $data['group_reservations_enabled'] ) ) {
+			if ( ! empty( $data['group_rider_grounds_fee_enabled'] ) && (float) $data['group_rider_grounds_fee_amount'] > 0 ) {
+				$out[] = array(
+					'key'   => 'group_grounds_fee',
+					'label' => __( 'Group Grounds Fee (per rider)', 'equine-event-manager' ),
+					'price' => (float) $data['group_rider_grounds_fee_amount'],
+					'group' => __( 'Group Fees', 'equine-event-manager' ),
+				);
+			}
+			if ( ! empty( $data['group_rider_deposit_enabled'] ) && (float) $data['group_rider_deposit_amount'] > 0 ) {
+				$out[] = array(
+					'key'   => 'group_rider_deposit',
+					'label' => __( 'Group Rider Deposit (per rider)', 'equine-event-manager' ),
+					'price' => (float) $data['group_rider_deposit_amount'],
+					'group' => __( 'Group Fees', 'equine-event-manager' ),
+				);
+			}
+		}
+
+		// Pre-Entries (F9): each enabled pre-entry option, priced per entry
+		// (qty × price) — same source the customer event page sells from. The CPT
+		// branch of get_enabled_pre_entry_options() keys off active_reservation_id,
+		// which is not set on this (admin-side) instance, so set+restore it around
+		// the call to surface CPT entries as well as the legacy per-meta entries.
+		$prev_active = $this->active_reservation_id;
+		$this->active_reservation_id = $reservation_id;
+		foreach ( $this->get_enabled_pre_entry_options( $data ) as $pre_entry_key => $pre_entry ) {
+			$title = isset( $pre_entry['title'] ) ? (string) $pre_entry['title'] : '';
+			$price = isset( $pre_entry['price'] ) ? (float) $pre_entry['price'] : 0.0;
+			if ( '' === trim( $title ) || $price <= 0 ) {
+				continue;
+			}
+			$out[] = array(
+				'key'   => 'pre_entry_' . sanitize_key( (string) $pre_entry_key ),
+				'label' => $title,
+				'price' => $price,
+				'group' => __( 'Pre-Entries', 'equine-event-manager' ),
+			);
+		}
+		$this->active_reservation_id = $prev_active;
+
 		return $out;
 	}
 
