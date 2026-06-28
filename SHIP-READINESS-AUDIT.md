@@ -87,7 +87,11 @@ PaymentIntent creation (`:7228, :8432, :9337`) and refund creation (`refund-engi
 
 ### 3.1 — Strip dev files leaking into the zip · effort: XS
 `.gitattributes` export-ignore correctly strips `tests/`, `tools/`, `scripts/`, `.mockups/`, `docs/`, `.github/`, `CLAUDE.md`, `CLEANUP.md`, `README.md`, `ROADMAP.md`, `composer.*`, `phpcs.xml` (verified via real `git archive`). But these are **not** stripped and ship to customers: `_eem_oc.php` (delete — see 1.3), `HEALTH-AND-V2-READINESS.md`, `PAYMENT-CALC-AUDIT.md` (38 KB, internal pricing detail), `FOR-REVIEW.md`, `CHARGE-CHECKLIST.md`, `SESSION-HANDOFF-2026-06-27.md`, and **`PLUGIN-REVIEW.md` / this `SHIP-READINESS-AUDIT.md`**.
-**Action:** add a `/*.md export-ignore` rule (with re-includes for any runtime-needed MD) or list each explicitly. **~99 KB off the shipped artifact.**
+**Action:** delete `_eem_oc.php` outright (see 1.3). For the internal `.md` docs, **the audit chat decides** between three handlings — none of these reach a customer either way, the difference is repo cleanliness:
+  - (a) **Delete from repo entirely** — removes all internal docs including `CLAUDE.md`/`CLEANUP.md`/`ROADMAP.md`. Note: `CLAUDE.md` drives how future Claude sessions behave; deleting it changes that.
+  - (b) **Just stop them shipping** — add a `/*.md export-ignore` rule (with re-includes for any runtime-needed MD) so none reach an install, keep them in the repo for reference.
+  - (c) **Hybrid** — export-ignore the keepers (`CLAUDE`/`CLEANUP`/`ROADMAP`), delete the transient/dated ones (`HEALTH`, `PAYMENT-CALC-AUDIT`, `FOR-REVIEW`, `CHARGE-CHECKLIST`, `SESSION-HANDOFF`).
+  Whichever is chosen, **~99 KB comes off the shipped artifact** and the web-callable script is gone.
 
 ### 3.2 — Collapse the 41 one-time migrations · effort: M · saves ~3,145 LOC
 `includes/migrations/eem-mig-001..041` = **2,965 LOC**, plus a ~180-LOC runner in `class-equine-event-manager-activator.php:230-410`. **All 41 are no-ops on a fresh install** — `dbDelta` already creates every table in final shape, and there's no legacy data to backfill/drop. They exist solely to upgrade the one existing production site.
@@ -106,6 +110,14 @@ Nothing in the plugin is minified (only the vendored `choices.min.js`). Raw `adm
 `_en_special_instructions` is written at `admin/class-equine-event-manager-admin.php:7138` (`ajax_special_instructions_set`, hooked :131) and **never read anywhere**.
 **Action:** either wire a reader or remove the write + AJAX handler (~15 LOC). Also inline the 4 thin `format_order_number_display()` wrapper shims (`collect-payment-page.php:661`, `orders-list-page.php:802`, `admin.php:5954`, `order-detail-page.php:3137`) to direct `EEM_Formatter::` calls (~25 LOC cosmetic).
 **Correction:** the HEALTH doc's "22 dead methods + 2 functions" were **already deleted** in 2.7.669 (−1,089 LOC); spot-checking 15 current private methods found all live. Mark `HEALTH-AND-V2-READINESS.md` superseded so nobody re-chases completed work.
+
+### 3.5b — OUTSTANDING: run a full exhaustive dead-code sweep · effort: M
+**This audit did NOT prove the codebase is 100% dead-code-free.** What it established: the *previously-known* dead code (the "22 methods") is gone, a 15-method sample of the current private surface is all live, and one dead write-path remains (3.5). It did **not** exhaustively check every function, method, hook callback, post-meta key, option, JS function, CSS class, or file for reachability across all ~98k LOC. To honestly claim "all dead/unused code removed," a dedicated sweep is still required:
+- **PHP:** every `private`/`protected` method and standalone function grepped for a caller; every `add_action`/`add_filter` callback confirmed to exist and fire; every `register_*` confirmed used.
+- **Data:** every post-meta key and `wp_option` checked for both a writer *and* a reader (write-only = dead, like `_en_special_instructions`); orphaned custom-table columns.
+- **Assets:** every `.eem-*` CSS class checked for a rendering site; every JS function/`data-eem-action` checked for a binding; any never-enqueued asset file.
+- **Files:** any `includes/`/`admin/`/`public/` file never `require`d/autoloaded.
+**Action:** the audit chat should run this sweep (or commission a follow-up agent pass) and remove what it confirms dead, verifying each removal with a whole-project reference search first.
 
 ### 3.6 — Unify naming prefixes · effort: L · **ASK-FIRST (touches stored data)**
 Post-meta: `_en_` (59 keys, canonical) vs `_equine_event_manager_` (~25, drift) vs `_eem_` (7 real keys, drift — note most `_eem_*` grep hits are nonce names, not meta). Tables: `wp_eem_` (15, canonical) vs `wp_en_` (5: `en_activity_log`, `en_order_adjustments`, `en_report_exports`, `en_rv_reservations`, `en_stall_reservations`).
