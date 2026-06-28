@@ -5388,7 +5388,14 @@ class EEM_Shortcodes {
 			);
 		}
 
-		$inserted        = false;
+		$inserted          = false;
+		$eem_insert_failed = false;
+		// 2.1: wrap the multi-row order insert in a single DB transaction so a partial
+		// write (some component rows in, then a failure) can never be reported as
+		// success — either every row commits or the whole order rolls back. P3's
+		// recovery snapshot + idempotent insert cover the charge side; this guarantees
+		// the order ROWS themselves are all-or-nothing.
+		$wpdb->query( 'START TRANSACTION' );
 		$event_id        = in_array( $data['event_source'], array( 'tec', 'native' ), true ) ? absint( $data['event_id'] ) : 0;
 		$payment_gateway = ! empty( $payment_result['payment_gateway'] ) ? $payment_result['payment_gateway'] : $this->get_configured_payment_gateway();
 		$payment_status  = ! empty( $payment_result['payment_status'] ) ? $payment_result['payment_status'] : 'pending';
@@ -5654,7 +5661,7 @@ class EEM_Shortcodes {
 				}
 				$row_tax = ( 0 === $si_row_idx ) ? (float) $eem_stall_tax : 0.0;
 
-				$inserted = false !== $wpdb->insert(
+				$eem_stall_row_ok = false !== $wpdb->insert(
 					$stall_table,
 					array(
 						'event_source'              => $data['event_source'],
@@ -5691,7 +5698,11 @@ class EEM_Shortcodes {
 						'notes'                     => $stall_notes,
 						'created_at'                => $created,
 					)
-				) || $inserted;
+				);
+				$inserted = $eem_stall_row_ok || $inserted;
+				if ( ! $eem_stall_row_ok ) {
+					$eem_insert_failed = true;
+				}
 
 				$row_order_id = (int) $wpdb->insert_id;
 				if ( 0 === $si_row_idx ) {
@@ -5763,7 +5774,7 @@ RV Lot: " . $rv_lot['name'] );
 				}
 			}
 
-			$inserted = false !== $wpdb->insert(
+			$eem_rv_row_ok = false !== $wpdb->insert(
 				$rv_table,
 				array(
 					'event_source'      => $data['event_source'],
@@ -5799,7 +5810,20 @@ RV Lot: " . $rv_lot['name'] );
 					'notes'             => $rv_notes,
 					'created_at'        => $created,
 				)
-			) || $inserted;
+			);
+			$inserted = $eem_rv_row_ok || $inserted;
+			if ( ! $eem_rv_row_ok ) {
+				$eem_insert_failed = true;
+			}
+		}
+
+		// 2.1: commit only if every attempted row inserted; otherwise roll the whole
+		// order back so a half-written order is never reported as success.
+		if ( $inserted && ! $eem_insert_failed ) {
+			$wpdb->query( 'COMMIT' );
+		} else {
+			$wpdb->query( 'ROLLBACK' );
+			$inserted = false;
 		}
 
 		if ( $inserted ) {
