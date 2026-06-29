@@ -50,6 +50,7 @@ $wpdb->insert( $wpdb->prefix . 'eem_stall_reservations', array( // phpcs:ignore 
 	'departure_date'          => '2026-05-10',
 	'subtotal'                => '64.00',
 	'total'                   => '64.00',
+	'amount_paid'             => '64.00', // #55: paid row records collected amount (mig-029 invariant)
 	'payment_status'          => 'paid',
 	'order_number'            => '42',
 ) );
