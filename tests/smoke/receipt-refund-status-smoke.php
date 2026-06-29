@@ -39,6 +39,19 @@ $sc  = new EEM_Shortcodes();
 // order may itself be refunded in the live DB — scrub it to a clean paid state).
 $paid = $order;
 $paid['payment_status'] = 'paid';
+// #55: the "Total Amount Paid" grand-total row renders only when the receipt has
+// NO outstanding balance (and no refund). balance_due is computed from the
+// composed grand total (which may include custom items / discounts) minus
+// amount_paid, gated on status_slug==='paid'. Force a fully-settled control:
+// mark it paid and record collection covering the full composed total.
+$paid['status_slug']    = 'paid';
+$paid['payment_status'] = 'paid';
+$paid['amount_due']     = 0;
+$paid['amount_paid']    = max(
+	(float) ( $paid['total'] ?? 0 ),
+	(float) ( $paid['grand_total'] ?? 0 ),
+	(float) ( $paid['amount_paid'] ?? 0 )
+) + 1000.0;
 if ( ! empty( $paid['components'] ) ) {
 	foreach ( $paid['components'] as $i => $c ) {
 		$paid['components'][ $i ]['refunded_amount'] = 0;
