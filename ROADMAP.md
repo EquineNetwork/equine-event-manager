@@ -65,6 +65,34 @@ smoke passes 12/0. Marked in the v1 list; **just needs your visual verify** (Rep
 - **#22 Bulk unsubscribe — ✅ BUILT + smoke** (`email-optout-smoke.php` 23/0). New `EEM_Email_Optout`
   (HMAC link, opt-out option, public handler, footer + skip-check) wired into both bulk-send paths;
   transactional sends untouched. **Review the rendered footer + confirmation page before activating.**
+- **Stale-branch batch (#7/#8/#9/#10/#12/#21) — ✅ ALL VERIFIED + REMOVED from v1.** Audited the
+  "branches waiting to merge": PR #36 is CLOSED and every orphan branch is 100–468 commits behind main;
+  all the features were re-landed on main long ago. Whitney verified live 2026-06-29: #7 contiguous
+  stalls, #8 global convenience fee, #9 display-math parity, #10 hide-assignment-UI on bulk/quantity,
+  #12 venue map auto-save; #21 (PR #36 content) confirmed present on main. The "BRANCHES WAITING TO
+  MERGE" block was corrected — **do not merge the orphan branches.** Also removed #1 (mobile polish)
+  and #13 (View Event restyle — not a real item) per Whitney.
+- **#23 Auto payment-reminder cron — ✅ FULLY BUILT incl. Settings UI; ships OFF.** (See NEXT UP.)
+- **Checkout-test bug sweep on res 18375 (Whitney driving a real booking) — several REAL fixes:**
+  - **Order-number search** (`order-search-smoke.php` 14/0): searching the padded display number
+    (`#09017`) never matched the raw stored number (`9017`), and the old all-fields digit-concat matched
+    unrelated orders. Now zero-padding-insensitive on the order_number field; pure-numeric queries don't
+    match free-text notes.
+  - **Order Detail docs-banner** sat with a 10px top gap → flush.
+  - **🔴 Section toggles read from config** (`section-enabled-config-read-smoke.php` 10/0): the v4 editor
+    writes section toggles (Add-Ons, Groups, …) to the config table, but `read_section_enabled_raw()`
+    read stale post-meta — so **a section enabled in the admin was invisible at customer checkout.**
+    Now prefers the config value when a config row exists (mirrors the #212 rate overlay). Full-DB scan:
+    0 regressions, 8 sections corrected. Same divergence the #5 audit flagged.
+  - **🔴 Group-name dropdown + group $0-on-load** (`group-name-dropdown-smoke.php` 12/0): (a) the strict
+    admin group-name list lives in config but the form read stale post-meta → dropdown never rendered;
+    `get_reservation_meta()` now reads `group_names` from config. (b) Added the one-paragraph helper with
+    the Settings→Branding support phone. (c) **The group section pre-charged $200 with 0 riders** — TWO
+    separate `Math.max(1, …)` clamps on `group_rider_count` (rider-row renderer + price recalc); the
+    first commit only fixed one and still shipped a $200-at-0 charge. Both now allow 0.
+- **🚨 Added PAYMENT-AUDIT-2 (HIGH) to the v1 list** — Whitney does not trust the money math after the
+  above; a full behavioral (real-checkout, not source-smoke) re-audit of every money surface is now a
+  blocking v1 item. See the v1 list.
 
 ### NEXT UP
 
