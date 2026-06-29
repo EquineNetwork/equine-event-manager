@@ -8306,9 +8306,31 @@ RV Lot: " . $rv_lot['name'] );
 			wp_send_json_error( array( 'message' => __( 'We could not verify this reservation request. Please refresh the page and try again.', 'equine-event-manager' ) ), 403 );
 		}
 
+		// CRITICAL: set the active reservation context BEFORE sanitizing the
+		// submission. sanitize_submission() → sanitize_preferred_stall_units() →
+		// get_stall_map_unit_labels() reads $this->active_reservation_id to merge
+		// the stall-MAP cell labels (e.g. "274", "275", "A-01") into the allowed
+		// unit pool. The final-submit handler (handle_reservation_submission, line
+		// ~3293) sets this; this AJAX handler did NOT, so the map labels were absent
+		// from the pool, every picked stall was dropped, the designated tack stall
+		// was discarded, and the PaymentIntent total was computed WITHOUT the tack
+		// shavings exclusion — diverging from the final-submit total and triggering
+		// "The Stripe payment amount did not match this reservation total." on every
+		// map-picked stall checkout. (Whitney 2026-06-29.)
+		$this->active_reservation_id = (int) $reservation_id;
+
 		$data            = $this->get_reservation_meta( $reservation_id );
 		$status          = $this->get_reservation_status( $data, $reservation_id );
 		$submission      = $this->sanitize_submission( $data );
+		// CRITICAL: run the SAME tier-resolution the final-submit handler runs
+		// (handle_reservation_submission, lines ~3302-3303) BEFORE computing the
+		// intent total. These derive the authoritative stall/RV quantities +
+		// surcharges (e.g. stall qty from the picked map stalls). Without them the
+		// PaymentIntent was created for a different total than the final submit
+		// recomputes, so checkout failed with "The Stripe payment amount did not
+		// match this reservation total." (Whitney 2026-06-29.)
+		$submission      = $this->resolve_rv_tier_submission( $submission, $data, (int) $reservation_id );
+		$submission      = $this->resolve_stall_tier_submission( $submission, $data, (int) $reservation_id );
 		$validation      = $this->validate_submission( $submission, $status, $data );
 		$stripe_config   = $this->get_active_stripe_configuration();
 		$payment_gateway = $this->get_configured_payment_gateway();
@@ -9805,9 +9827,15 @@ RV Lot: " . $rv_lot['name'] );
 			'metadata[submission_token]' => $submission['submission_token'],
 		);
 
-		// 2.5: key on the submission token (one per checkout attempt) so a retry of
-		// the same submission reuses the intent instead of creating a second one.
-		$idem = 'pi_' . sanitize_key( (string) $submission['submission_token'] );
+		// 2.5: key on the submission token (one per page load) so a true retry of the
+		// SAME cart reuses the intent instead of creating a second one. INCLUDE the
+		// amount in the key (Whitney 2026-06-29): if the customer changes the cart and
+		// re-submits on the same page load, the total changes — without the amount in
+		// the key, Stripe's idempotency returns the STALE intent for the old amount,
+		// and the final-submit amount-match then rejects it ("payment amount did not
+		// match this reservation total"). Amount-in-key → a changed total creates a
+		// fresh intent for the correct amount; an unchanged total still de-dupes.
+		$idem = 'pi_' . sanitize_key( (string) $submission['submission_token'] ) . '_' . absint( round( $totals['total'] * 100 ) );
 		return $this->request_stripe_api( 'POST', 'payment_intents', $secret_key, $body, $idem );
 	}
 
@@ -12678,6 +12706,10 @@ RV Lot: " . $rv_lot['name'] );
 			});
 			window.addEventListener('load', function() {
 				initializeReservationForms(document);
+				// Belt-and-suspenders draft restore: re-run shortly after load so the
+				// saved cart is repopulated even if the draft wasn't readable on the
+				// first passes (restore is a no-op once it has applied a draft).
+				window.setTimeout(function() { initializeReservationForms(document); }, 350);
 			});
 
 			function loadStripeLibrary() {
@@ -12811,10 +12843,16 @@ RV Lot: " . $rv_lot['name'] );
 
 			function restoreReservationFormState(form) {
 				if (form.dataset.enRestoreDone === '1') { return; }
-				form.dataset.enRestoreDone = '1';
 				var raw;
 				try { raw = sessionStorage.getItem(eemFormStateKey(form)); } catch (e) { return; }
+				// No draft to apply yet — DON'T mark restore as done, so a later init
+				// pass (the load-event re-init + the delayed retry below) can still
+				// restore once the draft is readable. Previously the done-flag was set
+				// before this check, so a single early/empty read permanently disabled
+				// restore and the customer's whole form stayed wiped after a checkout
+				// error. (Whitney 2026-06-29.)
 				if (!raw) { return; }
+				form.dataset.enRestoreDone = '1';
 				var state;
 				try { state = JSON.parse(raw); } catch (e) { return; }
 				if (!state || typeof state !== 'object') { return; }
@@ -12866,6 +12904,10 @@ RV Lot: " . $rv_lot['name'] );
 						}
 					});
 				});
+
+				// 3b) Keep the tack designation consistent with the actual picked
+				// stalls before recomputing (see normalizeTackSelection for the why).
+				normalizeTackSelection(form);
 
 				// 4) Recompute derived UI now that values are back.
 				try {
@@ -13555,6 +13597,7 @@ RV Lot: " . $rv_lot['name'] );
 							}
 
 							form.querySelector('[name="stripe_payment_intent_id"]').value = result.paymentIntent.id;
+							normalizeTackSelection(form);
 							form.submit();
 						})
 						.catch(function(error) {
@@ -13565,7 +13608,37 @@ RV Lot: " . $rv_lot['name'] );
 				});
 			}
 
+			// A tack stall MUST be one of the buyer's currently-picked stalls (the
+			// server enforces this). If preferred_tack_stall points at a stall that
+			// isn't checked, clear it. This keeps the value consistent so the
+			// PaymentIntent payload (FormData snapshot, taken when the buyer clicks
+			// Pay) and the final native form POST (sent ~2s later, after the card is
+			// confirmed) can never disagree about whether a tack stall applies —
+			// which previously made the charged amount and the order total diverge
+			// and Stripe rejected the charge with "payment amount did not match this
+			// reservation total." Called on restore, before the intent snapshot, and
+			// right before the native submit so all three serializations agree.
+			// (Whitney 2026-06-29.)
+			function normalizeTackSelection(form) {
+				var tackSel = form.querySelector('[name="preferred_tack_stall"]');
+				if (!tackSel || !tackSel.value) {
+					return;
+				}
+				// Picked stalls are emitted as hidden inputs (map picks) and/or
+				// checkboxes (list UI). Mirror the browser's own submit serialization:
+				// a hidden input is always sent; a checkbox only when checked.
+				var pickedUnits = Array.prototype.filter.call(
+					form.querySelectorAll('[name="preferred_stall_units[]"]'),
+					function (c) { return c.type !== 'checkbox' || c.checked; }
+				).map(function (c) { return c.value; });
+				if (pickedUnits.indexOf(tackSel.value) === -1) {
+					tackSel.value = '';
+				}
+			}
+
 			function createStripePaymentIntent(form) {
+				normalizeTackSelection(form);
+
 				var formData = new FormData(form);
 
 				formData.append('action', 'equine_event_manager_create_stripe_payment_intent');
