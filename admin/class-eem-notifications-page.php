@@ -430,10 +430,20 @@ class EEM_Notifications_Page {
 		if ( ! empty( $sender['reply_to'] ) ) {
 			$headers[] = sprintf( 'Reply-To: %s', $sender['reply_to'] );
 		}
-		$html   = self::wrap_body( $subject, $body );
-		$sent   = 0;
-		$failed = 0;
+		$body_html = self::wrap_body( $subject, $body );
+		$sent      = 0;
+		$failed    = 0;
+		$skipped   = 0;
 		foreach ( $emails as $email ) {
+			// #22 — bulk/marketing send: honor per-recipient unsubscribe.
+			if ( class_exists( 'EEM_Email_Optout' ) && EEM_Email_Optout::is_opted_out( (string) $email ) ) {
+				$skipped++;
+				continue;
+			}
+			$html = $body_html;
+			if ( class_exists( 'EEM_Email_Optout' ) ) {
+				$html .= EEM_Email_Optout::footer_html( (string) $email );
+			}
 			$ok = EEM_Mailer::send_html_email( $email, $subject, $html, $headers, array(
 				'type'           => 'notification',
 				'reservation_id' => $reservation_id,
@@ -441,7 +451,7 @@ class EEM_Notifications_Page {
 			) );
 			if ( true === $ok ) { $sent++; } else { $failed++; }
 		}
-		return array( 'sent' => $sent, 'failed' => $failed );
+		return array( 'sent' => $sent, 'failed' => $failed, 'skipped' => $skipped );
 	}
 
 	/**

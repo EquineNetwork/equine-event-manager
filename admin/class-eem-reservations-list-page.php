@@ -804,17 +804,27 @@ class EEM_Reservations_List_Page {
 		// log writes for these (no order_key) because the per-batch NOTIFICATION_SENT
 		// write below is the canonical entry; the per-message do_action fires
 		// remain available for future listeners (audit log, send-rate tracking).
-		$sent   = 0;
-		$failed = 0;
+		$sent    = 0;
+		$failed  = 0;
+		$skipped = 0;
 		$context_base = array(
 			'type'           => 'email_customers',
 			'reservation_id' => isset( $reservation_id ) ? (int) $reservation_id : 0,
 		);
 		foreach ( $recipients as $email ) {
+			// #22 — bulk/marketing send: honor per-recipient unsubscribe + footer.
+			if ( class_exists( 'EEM_Email_Optout' ) && EEM_Email_Optout::is_opted_out( (string) $email ) ) {
+				$skipped++;
+				continue;
+			}
+			$message = $body;
+			if ( class_exists( 'EEM_Email_Optout' ) ) {
+				$message .= EEM_Email_Optout::footer_html( (string) $email );
+			}
 			$result = EEM_Mailer::send_html_email(
 				$email,
 				$subject,
-				$body,
+				$message,
 				$headers,
 				array_merge( $context_base, array( 'recipient' => $email ) )
 			);

@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-formatter.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-secret-store.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-email-optout.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-orders-repository.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-order-adjustments-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-order-payments-repo.php';
@@ -258,6 +259,10 @@ class EEM_Plugin {
 		// Registered first so the option read/write filters are active before any
 		// request handler reads or saves the payment settings.
 		EEM_Secret_Store::init();
+
+		// #22 — public unsubscribe handler for bulk/marketing emails (HMAC-signed
+		// link; transactional emails are never affected).
+		EEM_Email_Optout::init();
 
 		add_action( 'init', array( 'EEM_Activator', 'maybe_upgrade' ) );
 		add_action( 'init', array( 'EEM_Activator', 'maybe_refresh_runtime_rewrite_rules' ), 30 );
