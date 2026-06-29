@@ -1239,6 +1239,19 @@ class EEM_Shortcodes {
 											</select>
 										</label>
 										<p class="eem-reservation-help"><?php esc_html_e( 'If you’re booking with a group, choose it here so we can stall your group together.', 'equine-event-manager' ); ?></p>
+										<p class="eem-reservation-help">
+											<?php
+											if ( '' !== $support_phone ) {
+												printf(
+													/* translators: %s: support phone number. */
+													esc_html__( 'Don’t see your group in the list? Please call us at %s to be added.', 'equine-event-manager' ),
+													'<strong>' . esc_html( $support_phone ) . '</strong>'
+												);
+											} else {
+												esc_html_e( 'Don’t see your group in the list? Please contact us to be added.', 'equine-event-manager' );
+											}
+											?>
+										</p>
 									</div>
 								<?php endif; ?>
 								<p class="eem-reservation-help"><?php esc_html_e( 'This is a group reservation — we’ll capture the rider count and a first and last name for each rider. Switch the toggle off if you’re not booking for a group.', 'equine-event-manager' ); ?></p>
@@ -10143,6 +10156,25 @@ RV Lot: " . $rv_lot['name'] );
 			$shav_products = $shav_cfg->get( 'additional_shavings_products', null );
 			if ( is_array( $shav_products ) ) {
 				$data['additional_shavings_products'] = $shav_products;
+			}
+
+			// Group names (the strict admin-defined list offered as the customer
+			// Group Name dropdown) + group fee/description fields also live in the
+			// config table, not post meta — read them explicitly so the dropdown
+			// populates. Without this the section rendered with no group selector.
+			$grp_names = $shav_cfg->get( 'group_names', null );
+			if ( is_array( $grp_names ) ) {
+				$data['group_names'] = $grp_names;
+			}
+			foreach ( array(
+				'group_description',
+				'group_rider_grounds_fee_enabled', 'group_rider_grounds_fee_amount',
+				'group_rider_deposit_enabled', 'group_rider_deposit_amount',
+			) as $grp_key ) {
+				$grp_val = $shav_cfg->get( $grp_key, null );
+				if ( null !== $grp_val && '' !== $grp_val ) {
+					$data[ $grp_key ] = $grp_val;
+				}
 			}
 		}
 
