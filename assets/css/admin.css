@@ -1199,6 +1199,10 @@ a.eem-btn-add:hover {
 	padding-bottom: 0;
 }
 
+#eem-json-import-step-1 {
+	margin-top: 10px;
+}
+
 /* Import-JSON file row is the only row in its card, so first-child/last-child
    strip both borders. Restore a top separator + top padding so it reads with the
    same rhythm as the CSV section's file row (which sits below a reservation row). */
