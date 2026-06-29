@@ -98,7 +98,7 @@ class EEM_Test_Data_Seeder {
 	 */
 	private static function order_plan(): array {
 		return array(
-			array( 0,  3, 0, 0, 'completed',          true,  'Near the wash rack please', '' ),
+			array( 0,  3, 0, 0, 'completed',          true,  'Near the wash rack please', 'Bluegrass Trailer Crew' ),
 			array( 0,  0, 1, 0, 'completed',          true,  '', '' ),
 			array( 1,  1, 0, 2, 'completed',          true,  '', '' ),
 			array( 2,  5, 0, 0, 'pending',            true,  'Stalls together if possible — traveling with three horses', 'Delgado Performance Horses' ),
@@ -128,8 +128,9 @@ class EEM_Test_Data_Seeder {
 	 */
 	public static function run(): void {
 		global $wpdb;
-		$stall_tbl = $wpdb->prefix . 'en_stall_reservations';
-		$rv_tbl    = $wpdb->prefix . 'en_rv_reservations';
+		// #45 renamed these tables en_* → eem_*; the seeder must target the live names.
+		$stall_tbl = $wpdb->prefix . 'eem_stall_reservations';
+		$rv_tbl    = $wpdb->prefix . 'eem_rv_reservations';
 
 		// 1. Discover configured stall/RV reservations + their available pools.
 		$targets = self::discover_targets();
@@ -186,6 +187,7 @@ class EEM_Test_Data_Seeder {
 				$wpdb->insert( $stall_tbl, array( // phpcs:ignore WordPress.DB
 					'event_source'          => 'native',
 					'event_id'              => $target['id'],
+					'reservation_id'        => $target['id'], // CLEANUP #36: link rows to the reservation so chart/grid queries match.
 					'customer_name'         => $name,
 					'email'                 => $email,
 					'phone'                 => $phone,
@@ -216,6 +218,7 @@ class EEM_Test_Data_Seeder {
 				$wpdb->insert( $rv_tbl, array( // phpcs:ignore WordPress.DB
 					'event_source'    => 'native',
 					'event_id'        => $target['id'],
+					'reservation_id'  => $target['id'], // CLEANUP #36: link rows to the reservation.
 					'customer_name'   => $name,
 					'email'           => $email,
 					'phone'           => $phone,
