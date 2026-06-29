@@ -29,7 +29,9 @@ ok( "map_status_slug 'unpaid' → unpaid",             'unpaid'    === EEM_Order
 // HYPHENATED slugs — what legacy EEM_Orders_Repository actually emits
 // (C5.F-polish lock-in; earlier underscored arms were dead).
 ok( "map_status_slug 'invoice-sent' → unpaid",       'unpaid'    === EEM_Orders_List_Repo::map_status_slug_to_tab( 'invoice-sent' ),       $pass, $fail, $log );
-ok( "map_status_slug 'partially-refunded' → unpaid", 'unpaid'    === EEM_Orders_List_Repo::map_status_slug_to_tab( 'partially-refunded' ), $pass, $fail, $log );
+// #55: partially-refunded now maps to 'refunded' (paid-then-partially-refunded
+// orders don't owe a balance — Whitney 2026-06-21), not 'unpaid'.
+ok( "map_status_slug 'partially-refunded' → refunded", 'refunded'  === EEM_Orders_List_Repo::map_status_slug_to_tab( 'partially-refunded' ), $pass, $fail, $log );
 // Underscored variants — still map to unpaid via default arm (forward-compat).
 ok( "map_status_slug 'pending' → unpaid (default)",  'unpaid'    === EEM_Orders_List_Repo::map_status_slug_to_tab( 'pending' ),            $pass, $fail, $log );
 ok( "map_status_slug 'refunded' → refunded",         'refunded'  === EEM_Orders_List_Repo::map_status_slug_to_tab( 'refunded' ),           $pass, $fail, $log );

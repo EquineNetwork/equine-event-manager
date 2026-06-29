@@ -180,6 +180,10 @@ class EEM_Test_Data_Seeder {
 
 			$nights = $target['nights'];
 
+			// Paid-state rows record amount_paid = total (mig-029 foundation); unpaid
+			// states (pending / invoice_sent / refunded) record 0.
+			$paid_states = array( 'completed', 'paid', 'partially_refunded' );
+
 			if ( $stall_qty > 0 ) {
 				$sub   = round( $stall_qty * $target['stall_rate'] * $nights, 2 );
 				$cfee  = round( $sub * self::FEE_PCT, 2 );
@@ -200,6 +204,7 @@ class EEM_Test_Data_Seeder {
 					'subtotal'              => number_format( $sub, 2, '.', '' ),
 					'convenience_fee'       => number_format( $cfee, 2, '.', '' ),
 					'total'                 => number_format( $sub + $cfee, 2, '.', '' ),
+					'amount_paid'           => number_format( in_array( $status, $paid_states, true ) ? ( $sub + $cfee ) : 0, 2, '.', '' ),
 					'payment_status'        => $status,
 					'payment_gateway'       => 'stripe',
 					'order_number'          => $order_num,
@@ -231,6 +236,7 @@ class EEM_Test_Data_Seeder {
 					'subtotal'        => number_format( $sub, 2, '.', '' ),
 					'convenience_fee' => number_format( $cfee, 2, '.', '' ),
 					'total'           => number_format( $sub + $cfee, 2, '.', '' ),
+					'amount_paid'     => number_format( in_array( $status, $paid_states, true ) ? ( $sub + $cfee ) : 0, 2, '.', '' ),
 					'payment_status'  => $status,
 					'payment_gateway' => 'stripe',
 					'order_number'    => $order_num,
