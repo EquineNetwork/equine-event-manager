@@ -51,31 +51,35 @@ $check( 'found a seeded reservation with grouped grid cells (run tools/seed-test
 ob_start();
 $priv( 'render_stall_chart_matrix_table' )->invoke( $admin, $grid['stall_rows'], $grid['date_columns'], 'Stall', 'Block' );
 $loc_html = ob_get_clean();
-$check( 'By Location renders a Group badge', false !== strpos( $loc_html, 'eem-occ-badge--group' ) );
-$check( 'Group badge carries the "Group" label', (bool) preg_match( '/eem-occ-badge--group[^>]*>Group</', $loc_html ) );
-$check( 'By Location sets the --eem-group-color var', false !== strpos( $loc_html, '--eem-group-color:#' ) );
-$check( 'By Location pill title carries the group label', false !== strpos( $loc_html, 'Group: ' ) );
+// #55: the By-Location grid carries the group as a DATA CONTRACT (data-group +
+// data-group-name on occupied pills); the visible group coloring is applied
+// CLIENT-SIDE by admin.js when "Show by group" is toggled (same pattern as the
+// tack badge). So assert the server contract + the JS handler, not a
+// server-rendered badge/color.
+$check( 'By Location pills carry data-group-name (group contract)', false !== strpos( $loc_html, 'data-group-name="' ) );
+$loc_js = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' );
+$check( 'admin.js implements Show-by-group from data-group',        false !== strpos( $loc_js, "getAttribute('data-group')" ) );
 
-// ── By Customer roster: chip reuses the same color + a dot ──
+// ── By Customer roster: chip reuses the same color + a group icon ──
 $rows = $priv( 'build_stall_chart_rows' )->invoke( $admin, $seed_rid, $cfg );
 ob_start();
 $priv( 'render_stall_chart_order_count_table' )->invoke( $admin, $rows, $grid['date_columns'] );
 $cust_html = ob_get_clean();
-$check( 'By Customer chip carries a colored dot', false !== strpos( $cust_html, 'eem-chart-cust-group__dot' ) );
+$check( 'By Customer chip carries the group icon', false !== strpos( $cust_html, 'eem-chart-cust-icon--group' ) );
 $check( 'By Customer chip sets --eem-group-color', false !== strpos( $cust_html, '--eem-group-color:#' ) );
 
-// ── Cross-view color agreement: a group present in both views uses the SAME color ──
-if ( preg_match( '/data-group-name="([^"]+)"\s+style="--eem-group-color:(#[0-9a-f]{6})/i', $loc_html, $lm ) ) {
-	$grp = html_entity_decode( $lm[1], ENT_QUOTES, 'UTF-8' );
+// ── Cross-view color agreement: the By-Customer chip color matches group_color_for ──
+if ( preg_match( '/--eem-group-color:(#[0-9a-f]{6})[^>]*aria-label="Group: ([^"]+)"/i', $cust_html, $lm ) ) {
+	$grp      = html_entity_decode( $lm[2], ENT_QUOTES, 'UTF-8' );
 	$expected = $gc->invoke( $admin, $grp );
-	$check( 'By Location color matches group_color_for', strtolower( $lm[2] ) === strtolower( $expected ), "grp={$grp}" );
+	$check( 'By Customer chip color matches group_color_for', strtolower( $lm[1] ) === strtolower( $expected ), "grp={$grp}" );
 } else {
-	$check( 'found at least one grouped pill with a color', false, 'no grouped pill matched' );
+	$check( 'found at least one grouped chip with a color', false, 'no grouped chip matched' );
 }
 
 // ── CSS hooks present ──
 $css = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/css/admin.css' );
-$check( 'CSS styles the group badge', false !== strpos( $css, '.eem-occ-badge--group' ) );
+$check( 'CSS styles the group icon', false !== strpos( $css, '.eem-chart-cust-icon--group' ) );
 $check( 'CSS styles the badge container', false !== strpos( $css, '.eem-occ-pill__badges' ) );
 
 WP_CLI::log( "\n=== D2 group-location indicator smoke: {$pass} passed, {$fail} failed ===" );

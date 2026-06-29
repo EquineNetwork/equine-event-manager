@@ -51,12 +51,12 @@ $rows = array(
 	),
 );
 $cust_html = $render( 'render_stall_chart_order_count_table', array( $rows, $date_columns ) );
-$check( 'by-customer renders the group chip', false !== strpos( $cust_html, 'eem-chart-cust-group__chip' ) );
+$check( 'by-customer renders the group chip', false !== strpos( $cust_html, 'eem-chart-cust-icon--group' ) );
 $check( 'group chip shows the group name', false !== strpos( $cust_html, $GROUP ) );
 $check( 'grouped row carries data-group', false !== strpos( $cust_html, 'data-group="' . esc_attr( $GROUP ) . '"' ) );
 $check( 'ungrouped row has empty data-group', false !== strpos( $cust_html, 'data-group=""' ) );
 $check( 'group name folded into row search index', false !== strpos( strtolower( $cust_html ), strtolower( $GROUP ) ) );
-$check( 'exactly one group chip (ungrouped row has none)', 1 === substr_count( $cust_html, 'eem-chart-cust-group__chip' ) );
+$check( 'exactly one group chip (ungrouped row has none)', 1 === substr_count( $cust_html, 'eem-chart-cust-icon--group' ) );
 
 // ── B) Matrix pill carries data-group-name ──
 $pill_rows = array( array(
