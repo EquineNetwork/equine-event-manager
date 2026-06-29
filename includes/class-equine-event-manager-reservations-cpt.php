@@ -86,6 +86,20 @@ class EEM_Reservations_CPT {
 			// Not a mapped section toggle — single key, no fallback needed.
 			return get_post_meta( $post_id, $canonical, true );
 		}
+		// The v4 editor writes section toggles to the relational config table; the
+		// post-meta mirror went stale once writes moved off post-meta, so reading
+		// post-meta here returned the wrong answer (a section enabled in the editor
+		// read as OFF at checkout). Prefer the config value when a config ROW
+		// exists — that's exactly what the editor shows. Guarded on row existence so
+		// not-yet-migrated reservations (no row) still read post-meta, and so we
+		// never trigger Config's post-meta hydration fallback from here (recursion).
+		if ( class_exists( 'EEM_Reservation_Config' )
+			&& EEM_Reservation_Config::row_exists( $post_id ) ) {
+			$val = EEM_Reservation_Config::for( $post_id )->get( $field, null );
+			if ( null !== $val ) {
+				return $val;
+			}
+		}
 		if ( metadata_exists( 'post', $post_id, $canonical ) ) {
 			return get_post_meta( $post_id, $canonical, true );
 		}

@@ -1108,4 +1108,24 @@ class EEM_Reservation_Config {
 		}
 		return $exists;
 	}
+
+	/**
+	 * Whether a config-table row exists for this reservation. A row means the
+	 * relational store — not the post-meta fallback — is the source of truth for
+	 * this reservation's config (it's been saved through the v4 editor at least
+	 * once). Cheap existence probe; does NOT hydrate.
+	 *
+	 * @param int $reservation_id Reservation post id.
+	 * @return bool
+	 */
+	public static function row_exists( int $reservation_id ): bool {
+		if ( ! self::table_exists() ) {
+			return false;
+		}
+		global $wpdb;
+		$table = $wpdb->prefix . 'eem_reservation_config';
+		return (bool) $wpdb->get_var(
+			$wpdb->prepare( "SELECT 1 FROM $table WHERE reservation_id = %d LIMIT 1", $reservation_id )
+		);
+	}
 }
