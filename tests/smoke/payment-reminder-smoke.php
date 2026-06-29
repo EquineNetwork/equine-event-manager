@@ -89,5 +89,49 @@ $src = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-e
 $check( 'send_reminder reuses send_invoice_email_for_order', false !== strpos( $src, 'send_invoice_email_for_order' ) );
 $check( 'no separate email template authored', false === strpos( $src, 'build_' ) || false === strpos( $src, 'wp_mail' ) );
 
+// --- Settings UI: render + save round-trip --------------------------------
+if ( class_exists( 'EEM_Settings_Page' ) ) {
+	$page = new EEM_Settings_Page();
+
+	// Render the reminders section and assert the three controls are present.
+	update_option( EEM_Payment_Reminder::OPTION_ENABLED, 1 );
+	update_option( EEM_Payment_Reminder::OPTION_MIN_AGE, 5 );
+	update_option( EEM_Payment_Reminder::OPTION_REPEAT, 14 );
+	$render = new ReflectionMethod( 'EEM_Settings_Page', 'render_communications_reminders_section' );
+	$render->setAccessible( true );
+	ob_start();
+	$render->invoke( $page );
+	$html = (string) ob_get_clean();
+	$check( 'section renders the enable toggle', false !== strpos( $html, 'name="payload[payment_reminder][enabled]"' ) );
+	$check( 'section renders the min-age field', false !== strpos( $html, 'name="payload[payment_reminder][min_age_days]"' ) );
+	$check( 'section renders the repeat field', false !== strpos( $html, 'name="payload[payment_reminder][repeat_days]"' ) );
+	$check( 'enable toggle reflects saved ON state', false !== strpos( $html, 'id="eem-reminder-enabled"' ) && false !== strpos( $html, 'checked' ) );
+	$check( 'min-age field reflects saved value 5', false !== strpos( $html, 'value="5"' ) );
+	$check( 'repeat field reflects saved value 14', false !== strpos( $html, 'value="14"' ) );
+
+	// Save round-trip: enable with custom cadence.
+	$save = new ReflectionMethod( 'EEM_Settings_Page', 'save_communications_panel' );
+	$save->setAccessible( true );
+	$save->invoke( $page, array( 'payment_reminder' => array( 'enabled' => '1', 'min_age_days' => '2', 'repeat_days' => '10' ) ) );
+	$check( 'save persists enabled=ON', EEM_Payment_Reminder::is_enabled() );
+	$check( 'save persists min-age', 2 === EEM_Payment_Reminder::min_age_days() );
+	$check( 'save persists repeat', 10 === EEM_Payment_Reminder::repeat_days() );
+	$check( 'enabling save (re)schedules the cron', false !== wp_next_scheduled( EEM_Payment_Reminder::CRON_HOOK ) );
+
+	// Save round-trip: unchecked toggle (absent from payload) turns it OFF.
+	$save->invoke( $page, array( 'payment_reminder' => array( 'min_age_days' => '2', 'repeat_days' => '10' ) ) );
+	$check( 'absent checkbox saves enabled=OFF', ! EEM_Payment_Reminder::is_enabled() );
+
+	// Negative input clamps to 0.
+	$save->invoke( $page, array( 'payment_reminder' => array( 'min_age_days' => '-4', 'repeat_days' => '-1' ) ) );
+	$check( 'negative min-age clamps to 0', 0 === EEM_Payment_Reminder::min_age_days() );
+	$check( 'negative repeat clamps to 0', 0 === EEM_Payment_Reminder::repeat_days() );
+
+	// Reset to safe defaults (OFF) so the smoke leaves no live auto-emailer on.
+	delete_option( EEM_Payment_Reminder::OPTION_ENABLED );
+	delete_option( EEM_Payment_Reminder::OPTION_MIN_AGE );
+	delete_option( EEM_Payment_Reminder::OPTION_REPEAT );
+}
+
 echo "\n{$passed} passed, {$failed} failed\n";
 if ( $failed > 0 ) { exit( 1 ); }

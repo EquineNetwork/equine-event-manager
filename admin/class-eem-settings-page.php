@@ -1204,6 +1204,7 @@ class EEM_Settings_Page {
 			<?php wp_nonce_field( 'eem_settings_save', 'nonce' ); ?>
 
 			<?php $this->render_communications_sender_section( $sender ); ?>
+			<?php $this->render_communications_reminders_section(); ?>
 			<?php $this->render_communications_templates_section( $templates, $placeholders ); ?>
 			<?php $this->render_communications_policies_section( $policies ); ?>
 
@@ -1388,6 +1389,58 @@ class EEM_Settings_Page {
 	 * @param array $policies Result of EEM_Settings_Repo::get_policies().
 	 * @return void
 	 */
+	/**
+	 * Automatic Payment Reminders section (#23). Master enable toggle + the two
+	 * cadence controls (first-reminder age, repeat interval) for the daily cron.
+	 * Reminders reuse the same "Send Payment Link" email; the cron no-ops while
+	 * the toggle is off, so this ships safely disabled by default.
+	 *
+	 * @return void
+	 */
+	private function render_communications_reminders_section(): void {
+		$enabled = class_exists( 'EEM_Payment_Reminder' ) ? EEM_Payment_Reminder::is_enabled() : false;
+		$min_age = class_exists( 'EEM_Payment_Reminder' ) ? EEM_Payment_Reminder::min_age_days() : 3;
+		$repeat  = class_exists( 'EEM_Payment_Reminder' ) ? EEM_Payment_Reminder::repeat_days() : 7;
+		?>
+		<section class="eem-card">
+			<header class="eem-card-header">
+				<h2 class="eem-card-title"><?php esc_html_e( 'Automatic Payment Reminders', 'equine-event-manager' ); ?></h2>
+			</header>
+			<div class="eem-card-body">
+				<p class="eem-field-hint" style="margin-bottom:14px;">
+					<?php esc_html_e( 'When enabled, a daily job emails customers with unpaid orders the same secure "Click here to pay" email as the manual Send Payment Link button. It only contacts orders older than the age below, and waits the repeat interval before reminding the same customer again.', 'equine-event-manager' ); ?>
+				</p>
+
+				<div class="eem-field-row">
+					<label class="eem-field-label" for="eem-reminder-enabled"><?php esc_html_e( 'Send Reminders', 'equine-event-manager' ); ?></label>
+					<div class="eem-field-control">
+						<label class="eem-checkbox-row">
+							<input type="checkbox" id="eem-reminder-enabled" name="payload[payment_reminder][enabled]" value="1" <?php checked( $enabled ); ?> />
+							<span><?php esc_html_e( 'Automatically email unpaid-order reminders on a daily schedule', 'equine-event-manager' ); ?></span>
+						</label>
+					</div>
+				</div>
+
+				<div class="eem-field-row">
+					<label class="eem-field-label" for="eem-reminder-min-age"><?php esc_html_e( 'First Reminder After', 'equine-event-manager' ); ?></label>
+					<div class="eem-field-control">
+						<input class="eem-field-input" id="eem-reminder-min-age" type="number" min="0" step="1" name="payload[payment_reminder][min_age_days]" value="<?php echo esc_attr( (string) $min_age ); ?>" style="max-width:120px;" />
+						<p class="eem-field-hint"><?php esc_html_e( 'Days an order must be unpaid before its first reminder. Default 3.', 'equine-event-manager' ); ?></p>
+					</div>
+				</div>
+
+				<div class="eem-field-row">
+					<label class="eem-field-label" for="eem-reminder-repeat"><?php esc_html_e( 'Repeat Every', 'equine-event-manager' ); ?></label>
+					<div class="eem-field-control">
+						<input class="eem-field-input" id="eem-reminder-repeat" type="number" min="0" step="1" name="payload[payment_reminder][repeat_days]" value="<?php echo esc_attr( (string) $repeat ); ?>" style="max-width:120px;" />
+						<p class="eem-field-hint"><?php esc_html_e( 'Days to wait before reminding the same customer again. Set to 0 to remind only once. Default 7.', 'equine-event-manager' ); ?></p>
+					</div>
+				</div>
+			</div>
+		</section>
+		<?php
+	}
+
 	private function render_communications_policies_section( array $policies ) {
 		?>
 		<section class="eem-card">
@@ -1618,6 +1671,23 @@ class EEM_Settings_Page {
 			if ( ! EEM_Settings_Repo::update_policies( $payload['policies'] ) ) {
 				$errors[] = 'policies';
 			}
+		}
+
+		// #23 — automatic payment-reminder cron settings. The checkbox is absent
+		// from the POST when unchecked, so its presence within this panel's payload
+		// is what toggles it off; the section always renders inside this panel.
+		$reminder = isset( $payload['payment_reminder'] ) && is_array( $payload['payment_reminder'] ) ? $payload['payment_reminder'] : array();
+		update_option( EEM_Payment_Reminder::OPTION_ENABLED, ! empty( $reminder['enabled'] ) ? 1 : 0 );
+		if ( isset( $reminder['min_age_days'] ) ) {
+			update_option( EEM_Payment_Reminder::OPTION_MIN_AGE, max( 0, (int) $reminder['min_age_days'] ) );
+		}
+		if ( isset( $reminder['repeat_days'] ) ) {
+			update_option( EEM_Payment_Reminder::OPTION_REPEAT, max( 0, (int) $reminder['repeat_days'] ) );
+		}
+		// Make sure the daily event exists once reminders are switched on (covers
+		// sites that were active before #23 shipped and never re-ran activation).
+		if ( ! empty( $reminder['enabled'] ) ) {
+			EEM_Payment_Reminder::schedule();
 		}
 
 		return $errors;
