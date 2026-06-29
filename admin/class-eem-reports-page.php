@@ -591,9 +591,6 @@ class EEM_Reports_Page {
 			echo '</tr>';
 		};
 
-		$total_row_count = ! empty( $groups )
-			? array_sum( array_map( static fn( $g ) => count( $g['rows'] ?? array() ), $groups ) )
-			: count( $rows );
 		?>
 		<!DOCTYPE html>
 		<html <?php language_attributes(); ?>>
@@ -723,15 +720,12 @@ class EEM_Reports_Page {
 								<?php endif; ?>
 							</tbody>
 						</table>
-						<div class="pv-total">
-							<?php
-							if ( '' !== $total_lbl ) {
-								echo esc_html( $total_lbl );
-							} else {
-								echo esc_html( sprintf( /* translators: %s: row count */ _n( '%s row', '%s rows', $total_row_count, 'equine-event-manager' ), number_format_i18n( $total_row_count ) ) );
-							}
-							?>
-						</div>
+						<?php // Only render the footer when a report supplies a meaningful total
+						// label (e.g. a grand total). The bare "N rows" count added no value —
+						// the table already shows every row — so it's suppressed. ?>
+						<?php if ( '' !== $total_lbl ) : ?>
+							<div class="pv-total"><?php echo esc_html( $total_lbl ); ?></div>
+						<?php endif; ?>
 					</div>
 				<?php endif; ?>
 
