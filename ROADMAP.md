@@ -279,7 +279,6 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 
 
-10. [ ] **Hide assignment UI when inventory is Bulk/Quantity** — built on branch (Order Detail hides Manage Stall/RV blocks unless numbered/mapped). Needs your verify + merge.
 
 12. [ ] **Auto-save stall/RV maps to the venue** — built on branch (rolling "Auto-saved (latest)" per venue, empty-guard; smokes pass). Needs your verify + merge.
 
