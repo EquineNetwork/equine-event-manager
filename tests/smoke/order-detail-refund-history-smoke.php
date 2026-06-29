@@ -42,8 +42,12 @@ $clean_html = $render( $clean );
 $ok( 'clean order shows "No refunds processed"', false !== strpos( $clean_html, 'No refunds processed' ) );
 $ok( 'clean order has no refund-line', false === strpos( $clean_html, 'eem-order-payment__refund-line' ) );
 
-// Refunded — inject the persisted note shape.
+// Refunded — inject the persisted note shape. The card prefers the C14 payments
+// ledger when the order has one (get_for_order keys off order_key), so to
+// exercise the LEGACY note-based refund path (imported / pre-ledger orders) we
+// point the in-memory order at a key with no ledger entries.
 $refunded = $base;
+$refunded['order_key'] = 'eem-noledger-refund-' . uniqid();
 foreach ( $refunded['components'] as $i => $c ) {
 	$refunded['components'][ $i ]['notes'] = (string) ( $c['notes'] ?? '' )
 		. "\nRefunded Amount: 2.00\nLast Refund Transaction: authorize-net-refund\nLast Refunded At: 2026-06-09 21:23:48";

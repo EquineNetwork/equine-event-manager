@@ -119,7 +119,9 @@ ok( 'summary grand label "Total"',                             str_contains( $ht
 // ── [6] Payment Details — Customer/Email/Phone/Processor/Captured + NO Card block ──
 echo "\n[6] Payment Details content density (mockup lines 531-565)\n";
 ok( 'payment details emits Customer label',           str_contains( $html, '>Customer</div>' ),                                  $pass, $fail, $log );
-ok( 'payment details emits Processor label',          str_contains( $html, '>Processor</div>' ) || str_contains( $html, 'Processor' ), $pass, $fail, $log );
+// "Processor" for legacy/no-ledger orders; "Tenders" once the C14 payments
+// ledger has an entry. Accept either payment-method label.
+ok( 'payment details emits a payment-method label (Processor or Tenders)', str_contains( $html, 'Processor' ) || str_contains( $html, 'Tenders' ), $pass, $fail, $log );
 ok( 'payment details emits Captured label',           str_contains( $html, '>Captured</div>' ) || str_contains( $html, 'Captured' ), $pass, $fail, $log );
 ok( 'payment details emits Refund History label',     str_contains( $html, 'Refund History' ),                                   $pass, $fail, $log );
 ok( 'payment details emits separator class on Refund History',
