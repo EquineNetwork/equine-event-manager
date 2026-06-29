@@ -25,7 +25,9 @@ $check( 'collect-payment class loaded', class_exists( 'EEM_Collect_Payment_Page'
 $fmt = new ReflectionMethod( 'EEM_Collect_Payment_Page', 'format_order_number_display' );
 $fmt->setAccessible( true );
 $check( 'numeric order number -> #%05d', '#00021' === $fmt->invoke( null, '21' ) );
-$check( 'non-numeric order number prefixed verbatim', '#X-7' === $fmt->invoke( null, 'X-7' ) );
+// #55: EEM_Formatter now zero-pads the numeric suffix of a prefixed order number
+// (X-7 → X-00007) rather than '#'-prefixing it verbatim.
+$check( 'prefixed order number zero-pads its numeric suffix', 'X-00007' === $fmt->invoke( null, 'X-7' ) );
 
 // --- workspace render with real adjustments --------------------------------
 $order_key = wp_generate_password( 32, false );
@@ -76,7 +78,10 @@ $check( 'charge form is client-tokenized (honest note)', str_contains( $html, 'n
 $check( 'no raw card input fields shipped', ! str_contains( $html, '1234 1234' ) && ! str_contains( $html, 'name="card' ) );
 
 // --- paid order shows Payment Collected, not Outstanding -------------------
-$paid_order = array_merge( $order, array( 'payment_status' => 'paid' ) );
+// #55: the "paid in full" banner keys on the computed outstanding balance
+// (total_due − amount_paid <= 0), NOT payment_status alone — so record a
+// collected amount that covers the total.
+$paid_order = array_merge( $order, array( 'payment_status' => 'paid', 'amount_paid' => 100000.0, 'amount_due' => 0.0 ) );
 ob_start(); $ws->invoke( null, $paid_order, $order_key, '#00021' ); $paid_html = (string) ob_get_clean();
 $check( 'paid order shows Payment Collected banner', str_contains( $paid_html, 'Payment Collected' ) && str_contains( $paid_html, 'eem-cp-banner--paid' ) );
 $check( 'paid order does NOT show Payment Outstanding', ! str_contains( $paid_html, 'Payment Outstanding' ) );
