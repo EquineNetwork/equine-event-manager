@@ -278,7 +278,6 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 
 
-9. [ ] **Display-math parity across all 4 surfaces** — built on branch (admin Order Detail uses the canonical breakdown; receipt/Order Detail itemize surcharges; Σ rows == total guard). Needs your verify + merge. Live side-by-side of customer checkout JS vs receipt is folded into #3.
 
 10. [ ] **Hide assignment UI when inventory is Bulk/Quantity** — built on branch (Order Detail hides Manage Stall/RV blocks unless numbered/mapped). Needs your verify + merge.
 
