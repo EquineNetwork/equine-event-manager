@@ -72,12 +72,12 @@ smoke passes 12/0. Marked in the v1 list; **just needs your visual verify** (Rep
   `tests/run-all-smokes.php <wp-path> <php-bin> <wp-cli.phar>` (full suite >10min → run backgrounded).
 
 ### Open / deferred
-- **`native-events-slice3` smoke** (last red) — v2 Native Events geocoding. The coords now persist to
-  the relational venue store (not `_en_venue_lat` post-meta), and the en_venue needs a resolved
-  canonical venue first (the save hook only fires when Native Events is enabled). My partial fix got
-  lat/lng passing but the HTTP-call-count/cache-guard assertions cascade more store-vs-postmeta
-  reads (address, geocoded_address). Reverted to keep the tree clean. Needs a dedicated pass that
-  seeds EVERY venue field consistently in the store. Low priority — it's a gated v2 feature.
+- **`native-events-slice3` smoke — ✅ NOW GREEN (the suite is 100% green, 0 failing / 0 fatal).**
+  Fixed a REAL bug while finishing it: a **geocoded native venue rendered NO address** because the
+  coords-only relational store row (from resolve/geocode) shadowed the post-meta address. Fix:
+  `EEM_Venue::get_detail()` now backfills empty store address fields from post-meta on post-id reads,
+  and `maybe_geocode_venue` syncs the address into the store alongside the coords. (v2-gated, but a
+  genuine fix.) All 5 venue smokes still pass — no regression from the `get_detail` change.
 - **P1 (Auth.net charge-amount verification)** — still deferred to launch-prep; needs your Signature
   Key + a real test charge.
 
