@@ -45,7 +45,18 @@ $ref   = ( new ReflectionClass( $repo ) )->getMethod( 'get_grouped_orders' );
 $ref->setAccessible( true );
 $rows  = $ref->invoke( $repo );
 $order = null;
-foreach ( $rows as $o ) { if ( ! empty( $o['order_key'] ) ) { $order = $o; break; } }
+// #55: prefer a content-rich seeded order (has email + a priced section) so the
+// header + summary density assertions exercise a real populated render; fall back
+// to the first keyed order if the seeder hasn't run.
+foreach ( $rows as $o ) {
+	if ( ! empty( $o['order_key'] ) && ! empty( $o['email'] )
+		&& ( (float) ( $o['stall_subtotal'] ?? 0 ) > 0 || (float) ( $o['rv_subtotal'] ?? 0 ) > 0 ) ) {
+		$order = $o; break;
+	}
+}
+if ( null === $order ) {
+	foreach ( $rows as $o ) { if ( ! empty( $o['order_key'] ) ) { $order = $o; break; } }
+}
 $html = '';
 if ( $order ) {
 	$_GET = array( 'page' => EEM_Order_Detail_Page::MENU_SLUG, 'order_key' => $order['order_key'] );
@@ -91,7 +102,9 @@ $rv_nights    = $order ? (int) $nights_ref->invoke( $odp, (string) ( $order['rv_
 $has_stall_sub = $order && (float) ( $order['stall_subtotal'] ?? 0 ) > 0 && $stall_nights > 0;
 $has_rv_sub    = $order && (float) ( $order['rv_subtotal']    ?? 0 ) > 0 && $rv_nights > 0;
 $has_fees      = $order && (float) ( $order['fees']           ?? 0 ) > 0;
-ok( 'summary emits Section Total label',                       str_contains( $html, 'Section Total' ),                                              $pass, $fail, $log );
+// #55: the summary redesigned to per-section labelled subtotals ("Stalls
+// Subtotal", "RV Subtotal", "Fees Total") instead of a generic "Section Total".
+ok( 'summary emits a per-section subtotal label',              ! ( $has_stall_sub || $has_rv_sub ) || str_contains( $html, 'Subtotal' ), $pass, $fail, $log );
 ok( 'summary emits .eem-order-summary__section-subtotal class', str_contains( $html, 'eem-order-summary__section-subtotal' ),                       $pass, $fail, $log );
 ok( 'summary emits Non-Refundable Convenience Fee label',      ! $has_fees || str_contains( $html, 'Non-Refundable Convenience Fee' ),             $pass, $fail, $log );
 ok( 'summary stall badge class present when stall section exists',
@@ -143,19 +156,21 @@ ok( 'card shows masked •••• last4 glyph (with last4 digits)',
 
 // ── [7] Special Instructions — always renders ──────────────────────
 echo "\n[7] Special Instructions always renders (no empty-guard)\n";
-ok( 'instructions card always present in output',
-	str_contains( $html, 'eem-order-full-width' ) && str_contains( $html, 'Special Instructions' ),
+ok( 'requests card always present in output',
+	str_contains( $html, 'eem-order-full-width' ) && str_contains( $html, 'Special Requests' ),
 	$pass, $fail, $log );
 
-// Direct test of the renderer with $reservation_id=0 (forces empty path).
+// Direct test of the renderer with an empty order array (forces empty path).
+// #55: card renamed render_special_instructions_card → render_special_requests_card
+// and now takes an $order array (customer notes), not a reservation_id.
 $page = new EEM_Order_Detail_Page();
-$m = new ReflectionMethod( $page, 'render_special_instructions_card' );
+$m = new ReflectionMethod( $page, 'render_special_requests_card' );
 $m->setAccessible( true );
 ob_start();
-$m->invoke( $page, 0 );
+$m->invoke( $page, array() );
 $empty_si_html = ob_get_clean();
-ok( 'empty-state still renders the card chrome',                str_contains( $empty_si_html, 'Special Instructions' ),                            $pass, $fail, $log );
-ok( 'empty-state renders em-dash placeholder',                   str_contains( $empty_si_html, '&mdash;' ),                                          $pass, $fail, $log );
+ok( 'empty-state still renders the card chrome',                str_contains( $empty_si_html, 'Special Requests' ),                                $pass, $fail, $log );
+ok( 'empty-state renders the no-requests placeholder',           str_contains( $empty_si_html, 'No special requests.' ),                             $pass, $fail, $log );
 ok( 'empty-state applies --empty modifier class',                str_contains( $empty_si_html, 'eem-order-instructions__text--empty' ),             $pass, $fail, $log );
 
 // ── [8] Save bar — DEFERRED per CLEANUP #33 ────────────────────────
@@ -173,8 +188,10 @@ ok( 'card data sourced from captured component notes',          str_contains( $s
 
 // ── [10] Edit Reservation button ────────────────────────────────────
 echo "\n[10] Edit Reservation button in header actions\n";
-ok( 'Edit Reservation button rendered when reservation_id > 0',
-	! ( $order && ! empty( $order['reservation_id'] ) ) || str_contains( $html, 'Edit Reservation' ),
+// #55: the header "Edit Reservation" button was removed in a later pass
+// (admin/class-eem-order-detail-page.php ~389) — assert it's gone, not present.
+ok( 'no header Edit Reservation button (removed)',
+	false === strpos( $html, '>Edit Reservation<' ),
 	$pass, $fail, $log );
 
 // ── [11] Group card — rider list rendered when notes contain riders ─
@@ -229,7 +246,9 @@ $m->invoke( $page, array(
 ) );
 $addon_html = ob_get_clean();
 ok( 'addon card title rendered',                       str_contains( $addon_html, 'Add-Ons' ),                                  $pass, $fail, $log );
-ok( 'addon card Shavings (×2) line label',             str_contains( $addon_html, 'Shavings (×2)' ),                            $pass, $fail, $log );
+// #55: addon card collapses to a single "Add-On Charges" line (not a per-qty
+// "Shavings (×N)" breakdown — that detail lives on the Stall card).
+ok( 'addon card Add-On Charges line label',            str_contains( $addon_html, 'Add-On Charges' ),                           $pass, $fail, $log );
 ok( 'addon card line item shows $24.00 (computed)',    str_contains( $addon_html, '$24.00' ),                                   $pass, $fail, $log );
 ok( 'addon card Add-On Subtotal row',                  str_contains( $addon_html, 'Add-On Subtotal' ),                          $pass, $fail, $log );
 ok( 'addon card subtotal cell echoes $24.00',          substr_count( $addon_html, '$24.00' ) >= 2,                              $pass, $fail, $log );
@@ -277,17 +296,18 @@ ok( 'summary RV Reservation section title',            str_contains( $sum_html, 
 ok( 'summary Add-Ons section title',                   str_contains( $sum_html, '>Add-Ons<' ) || str_contains( $sum_html, 'Add-Ons' ), $pass, $fail, $log );
 ok( 'summary Fees section title',                      str_contains( $sum_html, 'Fees' ),                                        $pass, $fail, $log );
 ok( 'summary stall section-badge "2 nights"',          str_contains( $sum_html, '2 nights' ),                                   $pass, $fail, $log );
-ok( 'summary addon section-badge "2 items"',           str_contains( $sum_html, '2 items' ),                                    $pass, $fail, $log );
 ok( 'summary stall badge class --stall',               str_contains( $sum_html, 'eem-order-summary__section-badge--stall' ),    $pass, $fail, $log );
 ok( 'summary rv badge class --rv',                     str_contains( $sum_html, 'eem-order-summary__section-badge--rv' ),       $pass, $fail, $log );
-ok( 'summary addon badge class --addon',               str_contains( $sum_html, 'eem-order-summary__section-badge--addon' ),    $pass, $fail, $log );
-ok( 'summary Section Total row appears 4x (stall+rv+addon+fees)',
-	substr_count( $sum_html, 'Section Total' ) >= 4,
-	$pass, $fail, $log, 'got ' . substr_count( $sum_html, 'Section Total' ) );
-ok( 'summary line: Stall Subtotal $64.00',             str_contains( $sum_html, 'Stall Subtotal' ) && str_contains( $sum_html, '$64.00' ), $pass, $fail, $log );
+// #55: each priced section renders its own labelled subtotal row (Stalls
+// Subtotal / RV Subtotal / Add-Ons Total / Fees Total) — 4 section-subtotal rows
+// rather than 4 generic "Section Total" rows; addon/fees sections carry no badge.
+ok( 'summary renders 4 section-subtotal rows (stall+rv+addon+fees)',
+	substr_count( $sum_html, 'eem-order-summary__section-subtotal' ) >= 4,
+	$pass, $fail, $log, 'got ' . substr_count( $sum_html, 'eem-order-summary__section-subtotal' ) );
+ok( 'summary line: Stalls Subtotal $64.00',            str_contains( $sum_html, 'Stalls Subtotal' ) && str_contains( $sum_html, '$64.00' ), $pass, $fail, $log );
 ok( 'summary line: RV Subtotal $100.00',               str_contains( $sum_html, 'RV Subtotal' ) && str_contains( $sum_html, '$100.00' ),   $pass, $fail, $log );
 ok( 'summary line: Non-Refundable Convenience Fee $6.56', str_contains( $sum_html, 'Non-Refundable Convenience Fee' ) && str_contains( $sum_html, '$6.56' ), $pass, $fail, $log );
-ok( 'summary addon line: Shavings (×2)',               str_contains( $sum_html, 'Shavings (×2)' ),                              $pass, $fail, $log );
+ok( 'summary addon line: Add-On Charges $24.00',       str_contains( $sum_html, 'Add-On Charges' ) && str_contains( $sum_html, '$24.00' ), $pass, $fail, $log );
 ok( 'summary grand total $194.56',                     str_contains( $sum_html, '$194.56' ),                                    $pass, $fail, $log );
 ok( 'summary grand-total navy box class',              str_contains( $sum_html, 'eem-order-summary__grand-total' ),             $pass, $fail, $log );
 
@@ -332,40 +352,39 @@ ok( 'CSS: .eem-rider-row',                              false !== strpos( $css, 
 ok( 'CSS: .eem-rider-num',                              false !== strpos( $css, '.eem-rider-num' ),                             $pass, $fail, $log );
 ok( 'CSS: .eem-order-instructions__text--empty',        false !== strpos( $css, '.eem-order-instructions__text--empty' ),       $pass, $fail, $log );
 
-// ── [16] CLEANUP doc entries ────────────────────────────────────────
-echo "\n[16] CLEANUP entries #33 + #34\n";
-$cleanup = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'CLEANUP.md' );
-ok( 'CLEANUP #33 entry exists',                         str_contains( $cleanup, '### 33.' ),                                    $pass, $fail, $log );
-ok( 'CLEANUP #33 mentions save bar',                    str_contains( $cleanup, 'save bar' ) || str_contains( $cleanup, 'Save bar' ) || str_contains( $cleanup, 'save-bar' ), $pass, $fail, $log );
-ok( 'CLEANUP #33 mentions C7',                          str_contains( $cleanup, 'C7' ),                                         $pass, $fail, $log );
-ok( 'CLEANUP #34 entry exists',                         str_contains( $cleanup, '### 34.' ),                                    $pass, $fail, $log );
-ok( 'CLEANUP #34 mentions card brand/last4',            str_contains( $cleanup, '_en_card_brand' ) && str_contains( $cleanup, '_en_card_last4' ), $pass, $fail, $log );
-ok( 'CLEANUP #34 cites mockup lines 548-554',           str_contains( $cleanup, '548-554' ),                                    $pass, $fail, $log );
+// [16] retired (#55): CLEANUP.md is an internal dev doc, export-ignored from the
+// shipped plugin (#40), so it isn't present at EQUINE_EVENT_MANAGER_PATH on a real
+// install. Verifying markdown heading text is process theater, not behavior.
 
 // ── [17] C6.A.3 polish — canonical palette + status-badge + markers ──
 echo "\n[17] C6.A.3 polish — palette, Section Total case, status-badge naming, markers\n";
 
 // Section-badge colors must match the canonical .eem-type-badge--{X} palette
 // (mockup lines 66-71). Three variants × hex+border = 6 assertions.
-ok( 'CSS section-badge--stall has canonical bg #EEF4FF',
-	(bool) preg_match( '/\.eem-order-summary__section-badge--stall\s*\{[^}]*#EEF4FF/i', $css ), $pass, $fail, $log );
-ok( 'CSS section-badge--stall has canonical color #1668F2',
-	(bool) preg_match( '/\.eem-order-summary__section-badge--stall\s*\{[^}]*#1668F2/i', $css ), $pass, $fail, $log );
-ok( 'CSS section-badge--rv has canonical bg #F5F3FF',
-	(bool) preg_match( '/\.eem-order-summary__section-badge--rv\s*\{[^}]*#F5F3FF/i', $css ), $pass, $fail, $log );
-ok( 'CSS section-badge--rv has canonical color #6d28d9',
-	(bool) preg_match( '/\.eem-order-summary__section-badge--rv\s*\{[^}]*#6d28d9/i', $css ), $pass, $fail, $log );
-ok( 'CSS section-badge--addon has canonical bg #FFF7ED',
-	(bool) preg_match( '/\.eem-order-summary__section-badge--addon\s*\{[^}]*#FFF7ED/i', $css ), $pass, $fail, $log );
-ok( 'CSS section-badge--addon has canonical color #c2410c',
-	(bool) preg_match( '/\.eem-order-summary__section-badge--addon\s*\{[^}]*#c2410c/i', $css ), $pass, $fail, $log );
+// #55/#59: the canonical hexes were extracted into CSS custom properties; the
+// badge selectors now reference them via var(). Assert (a) the token holds the
+// canonical hex AND (b) the selector consumes the matching token.
+ok( 'token --eem-badge-blue-bg = canonical #EEF4FF',   (bool) preg_match( '/--eem-badge-blue-bg:\s*#EEF4FF/i', $css ), $pass, $fail, $log );
+ok( 'section-badge--stall consumes --eem-badge-blue-bg/text',
+	(bool) preg_match( '/\.eem-order-summary__section-badge--stall\s*\{[^}]*var\(\s*--eem-badge-blue-bg/i', $css )
+	&& (bool) preg_match( '/--eem-badge-blue-text:\s*#1668F2/i', $css ), $pass, $fail, $log );
+ok( 'token --eem-badge-purple-bg = canonical #F5F3FF', (bool) preg_match( '/--eem-badge-purple-bg:\s*#F5F3FF/i', $css ), $pass, $fail, $log );
+ok( 'section-badge--rv consumes --eem-badge-purple-bg/text',
+	(bool) preg_match( '/\.eem-order-summary__section-badge--rv\s*\{[^}]*var\(\s*--eem-badge-purple-bg/i', $css )
+	&& (bool) preg_match( '/--eem-badge-purple-text:\s*#6d28d9/i', $css ), $pass, $fail, $log );
+ok( 'token --eem-badge-orange-bg = canonical #FFF7ED', (bool) preg_match( '/--eem-badge-orange-bg:\s*#FFF7ED/i', $css ), $pass, $fail, $log );
+ok( 'section-badge--addon consumes --eem-badge-orange-bg/text',
+	(bool) preg_match( '/\.eem-order-summary__section-badge--addon\s*\{[^}]*var\(\s*--eem-badge-orange-bg/i', $css )
+	&& (bool) preg_match( '/--eem-badge-orange-text:\s*#c2410c/i', $css ), $pass, $fail, $log );
 
 // Section-Total no longer uppercase per mockup (lines 163-164 use title-case).
 ok( 'CSS section-subtotal does NOT use text-transform: uppercase',
 	(bool) preg_match( '/\.eem-order-summary__section-subtotal\s*\{(?:(?!\}).)*\}/s', $css, $m ) && false === stripos( $m[0], 'text-transform' ),
 	$pass, $fail, $log );
-ok( 'rendered output uses title-case "Section Total" (not all-caps)',
-	str_contains( $html, '>Section Total<' ),
+// #55: per-section subtotal labels are title-case ("Stalls Subtotal", "Fees
+// Total") — verify a section-subtotal row renders, not the retired "Section Total".
+ok( 'rendered output emits a title-case section-subtotal row',
+	! ( $has_stall_sub || $has_rv_sub ) || str_contains( $html, 'eem-order-summary__section-subtotal' ),
 	$pass, $fail, $log );
 
 // Status-badge render uses legacy single-dash class to match existing CSS.
@@ -384,10 +403,7 @@ ok( 'NO C6A2-MARKER strings in source file',
 	false === strpos( file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-order-detail-page.php' ), 'C6A2-MARKER' ),
 	$pass, $fail, $log );
 
-// CLEANUP #36 entry exists.
-ok( 'CLEANUP #36 entry exists (dev-seed reservation_id gap)',
-	str_contains( $cleanup, '### 36.' ) && str_contains( $cleanup, 'reservation_id' ),
-	$pass, $fail, $log );
+// CLEANUP #36 doc check retired (#55) — internal dev doc, not shipped.
 
 echo implode( "\n", $log ) . "\n=== RESULT: {$pass} passed, {$fail} failed ===\n";
 exit( $fail > 0 ? 1 : 0 );
