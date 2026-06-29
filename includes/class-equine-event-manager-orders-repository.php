@@ -3394,48 +3394,86 @@ class EEM_Orders_Repository {
 			return true;
 		}
 
-		$needle        = function_exists( 'mb_strtolower' ) ? mb_strtolower( $search_term ) : strtolower( $search_term );
+		$lower         = static function ( $s ) {
+			return function_exists( 'mb_strtolower' ) ? mb_strtolower( (string) $s ) : strtolower( (string) $s );
+		};
+		$needle        = $lower( $search_term );
 		$needle_digits = preg_replace( '/\D+/', '', $search_term );
-		$haystacks     = array(
+
+		// A purely-numeric query (e.g. "09017", "#9017") is an order-number / id
+		// lookup — it must NOT match free-text notes, or a digit run buried in an
+		// unrelated order's notes false-matches (the bug Whitney hit). Only the
+		// order_number + phone/transaction identifier fields are searched in that
+		// case. Alphanumeric queries still search everything.
+		$digits_only_query = '' !== $needle_digits && '' === preg_replace( '/[\d#\s]+/', '', $search_term );
+
+		// --- Order number: zero-padding-insensitive. The list shows the padded
+		// display form (#09017) but the number is stored raw (9017), so users who
+		// search what they see would otherwise never match. Compare on the digits
+		// with leading zeros stripped (substring, so partials like "9017" still
+		// hit), and allow a literal substring for prefixed numbers (IMP-90681).
+		// Scoped to the order_number field ONLY — never to notes — so a digit run
+		// inside an unrelated order's notes can't false-match (the bug Whitney hit:
+		// "09017" pulling up IMP-90681 orders).
+		$order_no = isset( $order['order_number'] ) ? (string) $order['order_number'] : '';
+		if ( '' !== $order_no ) {
+			if ( false !== strpos( $lower( $order_no ), $needle ) ) {
+				return true;
+			}
+			if ( '' !== $needle_digits ) {
+				$order_no_digits = preg_replace( '/\D+/', '', $order_no );
+				if ( '' !== $order_no_digits
+					&& false !== strpos( ltrim( $order_no_digits, '0' ), ltrim( $needle_digits, '0' ) ) ) {
+					return true;
+				}
+			}
+		}
+
+		// --- Free-text fields: literal (lowercased) substring match only. No
+		// digit gymnastics here — that's what produced cross-field false matches.
+		$text_haystacks = array(
 			isset( $order['customer_name'] ) ? (string) $order['customer_name'] : '',
 			isset( $order['email'] ) ? (string) $order['email'] : '',
-			isset( $order['phone'] ) ? (string) $order['phone'] : '',
-			isset( $order['order_number'] ) ? (string) $order['order_number'] : '',
 			isset( $order['reservation_title'] ) ? (string) $order['reservation_title'] : '',
 			isset( $order['event_name'] ) ? (string) $order['event_name'] : '',
 			isset( $order['notes'] ) ? (string) $order['notes'] : '',
 		);
-
 		foreach ( (array) $order['components'] as $component ) {
 			if ( ! empty( $component['notes'] ) ) {
-				$haystacks[] = (string) $component['notes'];
+				$text_haystacks[] = (string) $component['notes'];
 			}
-
-			if ( ! empty( $component['transaction_id'] ) ) {
-				$haystacks[] = (string) $component['transaction_id'];
-			}
-
-			if ( ! empty( $component['refund_transaction_id'] ) ) {
-				$haystacks[] = (string) $component['refund_transaction_id'];
+		}
+		if ( ! $digits_only_query ) {
+			foreach ( $text_haystacks as $haystack ) {
+				if ( '' !== $haystack && false !== strpos( $lower( $haystack ), $needle ) ) {
+					return true;
+				}
 			}
 		}
 
-		foreach ( $haystacks as $haystack ) {
-			$haystack = (string) $haystack;
-
+		// --- Phone + transaction identifiers: literal OR digit-normalized match
+		// (so a phone typed with/without formatting, or a transaction id fragment,
+		// still resolves). Bounded to identifier fields, not free text.
+		$id_haystacks = array(
+			isset( $order['phone'] ) ? (string) $order['phone'] : '',
+		);
+		foreach ( (array) $order['components'] as $component ) {
+			if ( ! empty( $component['transaction_id'] ) ) {
+				$id_haystacks[] = (string) $component['transaction_id'];
+			}
+			if ( ! empty( $component['refund_transaction_id'] ) ) {
+				$id_haystacks[] = (string) $component['refund_transaction_id'];
+			}
+		}
+		foreach ( $id_haystacks as $haystack ) {
 			if ( '' === $haystack ) {
 				continue;
 			}
-
-			$haystack_lower = function_exists( 'mb_strtolower' ) ? mb_strtolower( $haystack ) : strtolower( $haystack );
-
-			if ( false !== strpos( $haystack_lower, $needle ) ) {
+			if ( false !== strpos( $lower( $haystack ), $needle ) ) {
 				return true;
 			}
-
 			if ( '' !== $needle_digits ) {
 				$haystack_digits = preg_replace( '/\D+/', '', $haystack );
-
 				if ( '' !== $haystack_digits && false !== strpos( $haystack_digits, $needle_digits ) ) {
 					return true;
 				}
