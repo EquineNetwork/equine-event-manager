@@ -375,8 +375,15 @@ class EEM_Reports_Page {
 	 * @return array{reservation_id:int,date_from:string,date_to:string,status:string}
 	 */
 	public static function read_filters( array $src ): array {
+		// #55: previously dropped date_from/date_to/status, so the Reports page's
+		// date-range + status filters never reached the repo (companion to the
+		// EEM_Reports_Repo::normalize_filters fix). Read + sanitize all four;
+		// status is lowercased to match the canonical slug form.
 		return array(
 			'reservation_id' => isset( $src['reservation_id'] ) ? absint( $src['reservation_id'] ) : 0,
+			'date_from'      => isset( $src['date_from'] ) ? sanitize_text_field( (string) $src['date_from'] ) : '',
+			'date_to'        => isset( $src['date_to'] ) ? sanitize_text_field( (string) $src['date_to'] ) : '',
+			'status'         => isset( $src['status'] ) ? strtolower( sanitize_text_field( (string) $src['status'] ) ) : '',
 		);
 	}
 

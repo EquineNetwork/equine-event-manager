@@ -49,7 +49,10 @@ if ( $exporter->zip_available() ) {
 			$has_orders_pdf = false !== $za->locateName( 'orders.pdf' );
 			$has_refund_csv = false !== $za->locateName( 'refund_log.csv' );
 			$za->close();
-			$check( 'ZIP contains 12 entries (6 CSV + 6 PDF)', 12 === $count );
+			// #55: the report set grew (now 10), so the bundle is one CSV + one PDF
+			// per report — assert dynamically against the canonical REPORTS list.
+			$expected_zip = 2 * count( EEM_Reports_Repo::REPORTS );
+			$check( 'ZIP contains one CSV + one PDF per report (' . $expected_zip . ')', $expected_zip === $count );
 			$check( 'ZIP contains orders.csv + orders.pdf', $has_orders_csv && $has_orders_pdf );
 			$check( 'ZIP contains refund_log.csv', $has_refund_csv );
 		} else {
