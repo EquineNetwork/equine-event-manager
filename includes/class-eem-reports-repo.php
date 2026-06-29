@@ -60,8 +60,14 @@ class EEM_Reports_Repo {
 	 * @return array{reservation_id:int,date_from:string,date_to:string,status:string}
 	 */
 	public function normalize_filters( array $filters ): array {
+		// #55: previously this dropped date_from/date_to/status, silently disabling
+		// the Reports page's date-range + status filters. Pass them through (the
+		// docblock contract already promised all four keys).
 		return array(
 			'reservation_id' => isset( $filters['reservation_id'] ) ? absint( $filters['reservation_id'] ) : 0,
+			'date_from'      => isset( $filters['date_from'] ) ? sanitize_text_field( (string) $filters['date_from'] ) : '',
+			'date_to'        => isset( $filters['date_to'] ) ? sanitize_text_field( (string) $filters['date_to'] ) : '',
+			'status'         => isset( $filters['status'] ) ? sanitize_text_field( (string) $filters['status'] ) : '',
 		);
 	}
 
@@ -78,6 +84,25 @@ class EEM_Reports_Repo {
 		foreach ( $this->orders_repo->get_orders( '', 'date', 'desc', '' ) as $order ) {
 			if ( $filters['reservation_id'] > 0 && absint( isset( $order['reservation_id'] ) ? $order['reservation_id'] : 0 ) !== $filters['reservation_id'] ) {
 				continue;
+			}
+			// Date-range filter (inclusive), compared on the order's calendar date.
+			// normalize_filters() omits date/status keys when unset, so null-coalesce.
+			$date_from = (string) ( isset( $filters['date_from'] ) ? $filters['date_from'] : '' );
+			$date_to   = (string) ( isset( $filters['date_to'] ) ? $filters['date_to'] : '' );
+			$status    = (string) ( isset( $filters['status'] ) ? $filters['status'] : '' );
+			$created   = substr( (string) ( isset( $order['created_at'] ) ? $order['created_at'] : '' ), 0, 10 );
+			if ( '' !== $date_from && '' !== $created && $created < $date_from ) {
+				continue;
+			}
+			if ( '' !== $date_to && '' !== $created && $created > $date_to ) {
+				continue;
+			}
+			// Status filter — match the order's resolved status slug.
+			if ( '' !== $status ) {
+				$order_status = (string) ( isset( $order['status_slug'] ) ? $order['status_slug'] : ( isset( $order['payment_status'] ) ? $order['payment_status'] : '' ) );
+				if ( sanitize_key( str_replace( '-', '_', $order_status ) ) !== sanitize_key( str_replace( '-', '_', $status ) ) ) {
+					continue;
+				}
 			}
 			$out[] = $order;
 		}

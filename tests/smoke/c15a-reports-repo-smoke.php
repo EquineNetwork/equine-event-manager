@@ -27,6 +27,13 @@ $rid_a = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' =
 $rid_b = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'C15 Res B' ) );
 update_post_meta( $rid_a, '_en_stall_inventory', '100' );
 update_post_meta( $rid_a, '_en_rv_inventory', '20' );
+// #55: capacity reads from the relational config table (mig-016), not _en_ post-meta.
+if ( class_exists( 'EEM_Reservation_Config' ) ) {
+	EEM_Reservation_Config::for( (int) $rid_a )
+		->set_many( array( 'stall_inventory' => '100', 'rv_inventory' => '20' ) )
+		->save();
+	EEM_Reservation_Config::flush_cache( (int) $rid_a );
+}
 
 $t1 = md5( 'c15o1-' . wp_generate_password( 8, false ) );
 $t2 = md5( 'c15o2-' . wp_generate_password( 8, false ) );
