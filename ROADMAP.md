@@ -44,11 +44,24 @@ smoke passes 12/0. Marked in the v1 list; **just needs your visual verify** (Rep
 
 ### 2026-06-29 continued (autonomous, all committed dormant + pushed, NO version bumps)
 
-- **#16 Import event dates — ✅ DONE + smoke** (`import-event-dates-smoke.php` 6/0). Reproduced on
-  Local: the round-trip already carries the reservation's available window; the real gap is TEC/feed
-  events store no start/end in `en_event` post-meta, so a cloned event imported dateless.
-  `import_setup` now backfills the cloned event's dates from the available window **only when empty**.
-- **#2 Add-On Report — ✅ confirmed already CODE-COMPLETE** (smoke 12/0); just needs your visual verify.
+- **#16 Import event dates — ✅ DONE + VERIFIED by Whitney.** Imported Columbiana clone (#18375) shows
+  Aug 20–24 as intended. (`import-event-dates-smoke.php` 6/0.) TEC/feed events store no start/end in
+  `en_event` post-meta, so `import_setup` backfills the cloned event's dates from the available window
+  **only when empty**.
+- **Import/Export enhancements (out of #16 verify) — ✅ BUILT + smoke** (`export-selection-smoke.php`
+  22/0), all Whitney-directed:
+  - **Export section checkboxes** — Event (event + venue + producer), Reservation (map + blocked units +
+    config + stay packages + all settings — always travels together), Orders & customers (OFF by
+    default). Orders can only export with the Reservation (gated in `build_export` + UI disables the
+    Orders box while Reservation is unchecked). `build_export($id, $include)` + export AJAX reads
+    `include_*` flags. Export version 1.0→1.1 with an `included` manifest.
+  - **Producer** now exports/imports symmetric to venue (created on import + remapped onto the event).
+  - **Imports land as Draft** (always, regardless of exported status) so the clone is reviewed before
+    going live. Setup-only exports import unlinked; link the event in the reservation editor afterward.
+  - Import-JSON file-row top border to match the CSV section.
+- **#2 Add-On Report — ✅ DONE + VERIFIED.** Whitney reviewed the populated report (5990). Two polish
+  fixes shipped from her review: "Export history cleared" → toast (generic flash-toast bridge); the bare
+  "N rows" report footer removed. (`addons-report-smoke.php` 12/0.)
 - **#22 Bulk unsubscribe — ✅ BUILT + smoke** (`email-optout-smoke.php` 23/0). New `EEM_Email_Optout`
   (HMAC link, opt-out option, public handler, footer + skip-check) wired into both bulk-send paths;
   transactional sends untouched. **Review the rendered footer + confirmation page before activating.**
@@ -260,8 +273,6 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 1. [ ] **Global mobile visual polish** — per-page pass to match Daily Movement standard (row heights, badge sizing, spacing/density). Scaffolding shipped (2.7.577–580); per-page work not started.
 
-2. [ ] **Add-On Report** — ✅ CODE-COMPLETE (the "paused mid-build" was actually finished) + smoke-passing (`addons-report-smoke.php` 12/0); awaiting Whitney's visual verify. Implements the locked spec exactly: `EEM_Reports_Repo::addons_report()` → `addons_summary` (per-event "All reservations" view) + `addons_daily` (single-reservation per-day worksheet: dynamic column per general add-on, navy TOTALS row, per-add-on total-purchased note section; counts each add-on on EVERY day of its order's stay). General add-ons only. Wired in `REPORTS` const + `get_report()` dispatch + reports page UI + generic exporter/PDF/ZIP. Per-order qty parsed from order notes via `parse_addons_from_notes()`. **Verify:** Reports → Add-Ons, pick a reservation, confirm per-day quantities + totals, download CSV + PDF.
-
 3. [ ] **Full end-to-end customer checkout sweep** — run a real checkout on the NTR 6519 fixture page. Also the recommended way to seed test data (real checkout writes correct `reservation_id` + notes tag + config-based pricing).
 
 5. [ ] **Postmeta → relational de-coupling Phase 1** — remaining gaps: map snapshots, hybrid blocked-units reads, events/venues/producers/divisions editors still on post-meta. Audit plan: `docs/POSTMETA-AUDIT.md`.
@@ -279,8 +290,6 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 13. [ ] **Restyle "View Event" overview page** to match plugin design system.
 
 14. [ ] **Remove "X days" countdown chip** on the event-list flyer card. **BLOCKED** — needs Whitney's mockup before starting.
-
-16. [ ] **Import/Export: event-level dates not carried** into the imported reservation. ✅ FIXED + smoke (`import-event-dates-smoke.php` 6/0); awaiting your verify. Reproduced on Local: the JSON setup round-trip already carries the reservation's `available_start/end` window fine — the real gap is that **TEC/feed-sourced events store NO start/end in `en_event` post-meta** (those live in the upstream calendar), so a cloned event imported dateless. `import_setup` now backfills the cloned event's `_equine_event_manager_event_start/end_date` from the available window **only when empty** (native events with real dates are untouched). **Verify:** export a TEC-sourced reservation, import it, confirm the cloned event shows dates on the event page / list flyer.
 
 20. [ ] **TEC event list template** — frontend event-list display for TEC-sourced events (part of the deferred frontend-lists work; scope/design TBD).
 
