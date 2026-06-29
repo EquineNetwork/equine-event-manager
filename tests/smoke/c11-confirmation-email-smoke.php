@@ -42,7 +42,49 @@ update_post_meta( $rid, '_en_event_day_checkin', 'Check in at the stall office' 
 update_post_meta( $rid, '_en_event_day_bring', 'Health and Coggins certificates' );
 update_post_meta( $rid, '_en_event_day_parking', 'Truck and trailer parking in Silver Lot' );
 update_post_meta( $rid, '_en_event_day_contact', '555-555-5555' );
-update_post_meta( $rid, '_en_cancellation_policy_override', 'Full refund 14+ days before the event; non-refundable within 14 days.' );
+// #55: the cancellation resolver reads the canonical _eem_-prefixed override key
+// (eem-cancellation-policy.php), not _en_.
+update_post_meta( $rid, '_eem_cancellation_policy_override', 'Full refund 14+ days before the event; non-refundable within 14 days.' );
+
+// #55: the canonical stall breakdown reads the shavings PRICE from the config
+// table and the shavings QTY from the order's stall component ROW
+// (eem_stall_reservations), NOT the top-level order fields — so the synthetic
+// order must carry a real stall row + a config price for the "Required Shavings"
+// line to split out of the stall base.
+// Seeding a config row activates the config-table read path for this
+// reservation, so seed EVERY field the email reads (event-day info +
+// cancellation override) there too — otherwise those fields read empty.
+if ( class_exists( 'EEM_Reservation_Config' ) ) {
+	EEM_Reservation_Config::for( (int) $rid )
+		->set_many( array(
+			'required_shavings_price'        => 22.00,
+			'event_day_enabled'              => 1,
+			'event_day_checkin'              => 'Check in at the stall office',
+			'event_day_bring'                => 'Health and Coggins certificates',
+			'event_day_parking'              => 'Truck and trailer parking in Silver Lot',
+			'event_day_contact'              => '555-555-5555',
+			'cancellation_policy_override'   => 'Full refund 14+ days before the event; non-refundable within 14 days.',
+		) )
+		->save();
+	EEM_Reservation_Config::flush_cache( (int) $rid );
+}
+global $wpdb;
+$wpdb->insert( $wpdb->prefix . 'eem_stall_reservations', array( // phpcs:ignore WordPress.DB
+	'event_source'            => 'native',
+	'reservation_id'          => (int) $rid,
+	'customer_name'           => 'Whitney Mitchell',
+	'email'                   => 'whitney@eem-test.local',
+	'stall_qty'               => 1,
+	'required_shavings_qty'   => 2,
+	'additional_shavings_qty' => 0,
+	'arrival_date'            => '2026-05-08',
+	'departure_date'          => '2026-05-10',
+	'subtotal'                => '64.00',
+	'total'                   => '64.00',
+	'payment_status'          => 'paid',
+	'order_number'            => '42',
+) );
+$c11_stall_row_id = (int) $wpdb->insert_id;
 
 // ── Synthetic order payload (EEM_Orders_Repository grouped shape) ──
 $order = array(
@@ -58,7 +100,7 @@ $order = array(
 	'fees'                 => 6.56,
 	'transaction_id'       => 'ch_test_123',
 	'notes'                  => '',
-	'components'             => array(),
+	'components'             => array( array( 'table' => 'stall', 'row_id' => $c11_stall_row_id ) ),
 	'stall_quantity'         => 1,
 	'stall_subtotal'         => 64.00, // 20 stall base + 44 required shavings
 	'stall_arrival_date'     => '2026-05-08',
@@ -119,7 +161,8 @@ $check( 'footer shows event line', false !== strpos( $html, 'footer-event' ) );
 // ── CSS inlining round-trip ──
 $inlined = EEM_Mailer::inline_css( $html );
 $check( 'inline_css produced an inline style attribute', false !== strpos( $inlined, 'style="' ) );
-$check( 'inline_css carried .header-event navy color (#031B4E) inline', false !== stripos( $inlined, '031B4E' ) && preg_match( '/style="[^"]*031B4E/i', $inlined ) === 1 );
+// #55: the .header-event navy was retuned to #0d1b3e (confirmation.php:48).
+$check( 'inline_css carried .header-event navy color (#0d1b3e) inline', false !== stripos( $inlined, '0d1b3e' ) && preg_match( '/style="[^"]*0d1b3e/i', $inlined ) === 1 );
 
 // ── POSITIVE: reservation-meta-derived sections render with real content ──
 $check( 'line item: Required Shavings row splits out (Stall Product)', false !== strpos( $html, 'Required Shavings' ) && false !== strpos( $html, 'Stall Product' ) );
