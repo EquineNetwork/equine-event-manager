@@ -6,7 +6,80 @@
 
 ---
 
-## 🔖 SESSION HANDOFF — 2026-06-27
+## 🔖 SESSION HANDOFF — 2026-06-28 (smoke-suite green-up + feature triage)
+
+**Pick up here tomorrow.** All work below is committed + pushed to `main` (GitHub) with
+**NO version bumps** — nothing auto-deployed; everything is dormant until you bump+deploy.
+
+### What landed this session
+
+**1. Smoke suite driven to green (#55).** Started 82 failing files / 11 fatals → now **0 fatals,
+~1 remaining failure** (`native-events-slice3`, a v2-gated geocoding smoke — see "Open" below).
+~45 smokes fixed. The dominant root cause was the **relational-store migrations** (mig-016
+reservation-config table, venue store, division-config table, native-events table, mig-040
+section-enabled keys): smokes seeded/read the OLD post-meta location and got empty back. Fix
+pattern = seed/read through the canonical repo (`EEM_Reservation_Config`,
+`EEM_Division_Config_Repo`, `EEM_Entries::save_entry_fields`, `EEM_Venue::save_detail`) or pass
+`get_meta_values(..., prefer_postmeta=true)`.
+
+**2. Seven REAL bugs found + fixed while greening smokes** (not just test edits):
+- **Reports date/status filters were 100% non-functional** — `EEM_Reports_Repo::normalize_filters()`
+  AND `EEM_Reports_Page::read_filters()` both silently dropped `date_from`/`date_to`/`status`. The
+  Reports page date-range + status filtering did nothing. Fixed both layers + `get_filtered_orders`
+  now actually applies them. **This is a live v1 bug fix — verify the Reports page filters work.**
+- **Native venue rename orphaning** — `EEM_Venue::sync_native_venue` ignored its durable back-ref
+  and re-resolved by name, so renaming a native venue spawned a duplicate canonical record. Now
+  honors the back-ref. (v2-gated feature, low live impact.)
+- **Dead `render_stats()`** in the Venues page (built, never called) — removed per your "if it's not
+  used, remove it."
+- **Stray `text-decoration: underline`** on `.eem-sc-banner-amber .eem-link-btn` — hygiene rule #8
+  violation, removed. (Rebuilt `admin.min.css` after.)
+- **Test-seed harness was silently dead** (`tools/seed-test-data.php`): wrote to the dropped
+  `en_*` table names (post-#45 rename), omitted the `reservation_id` link, pulled dates from
+  post-meta instead of the chart's config range, and didn't record `amount_paid`. Fixed all four —
+  **your dev site now seeds realistic orders again** (run `wp eval-file tools/seed-test-data.php`).
+
+**3. Add-On Report (#2) — found already CODE-COMPLETE** (the "paused mid-build" was finished);
+smoke passes 12/0. Marked in the v1 list; **just needs your visual verify** (Reports → Add-Ons).
+
+### NEXT UP TOMORROW (in priority order)
+
+1. **#22 Bulk-notification unsubscribe** + **#23 Auto payment-reminder cron** — both APPROVED and
+   buildable, but BOTH generate **emails that go to real customers**, so build them committed-dormant
+   (no version bump) and **review the rendered emails before activating**. ⚠️ KEY FINDING that
+   reshapes #23: the stored email templates (`payment_reminder`, `refund_confirmation`,
+   `cancellation`) in `EEM_Email_Templates_Repo` are **defined with `{{placeholders}}` but never
+   wired to any send path** — the live emails (confirmation/refund/invoice) use hand-built
+   `build_*_email_html()` methods instead. So #23 first needs a **stored-template render-and-send
+   helper** (placeholder substitution + escaping + Emogrifier inline) before the cron can "send the
+   PAYMENT_REMINDER template." Decide at kickoff: build that render infra, OR have the reminder reuse
+   the proven `build_invoice_email_html()` payment-link path. Existing cron pattern to model:
+   `EEM_Unit_Holds_Repo::schedule_cleanup()` (CRON_HOOK + `wp_schedule_event` daily). `send_invoice_
+   email_for_order()` already writes dedupe notes ("Invoice Sent At") — model the reminder dedupe on it.
+
+2. **#16 Import/Export event dates — NEEDS A CONCRETE REPRO from you.** Investigated: import already
+   allowlists every date-prefixed meta key and imports config dates + event meta, so the obvious gap
+   isn't there. Likely specific to external TEC/GEMS sources (dates fetched live, not stored locally).
+   Before touching it: export *one specific* reservation, import it, and note exactly which dates are
+   missing + what its event source is.
+
+### Standing constraints carried forward (unchanged)
+- **Never bump version without explicit Whitney approval each time.**
+- Reservation **5990 RV map is corrupted** — test stall/RV maps on **NTR 6519** only.
+- **PR #36 + the Group Names branch MUST be merged before any version bump** (see branch table below).
+- One Bash command per call, no chaining/heredocs (CLAUDE.md command hygiene).
+- Local PHP binary: `/Applications/Local.app/.../php-8.2.29+0/bin/darwin-arm64/bin/php`; smoke runner:
+  `tests/run-all-smokes.php <wp-path> <php-bin> <wp-cli.phar>` (full suite >10min → run backgrounded).
+
+### Open / deferred
+- **`native-events-slice3` smoke** (last red) — v2 Native Events geocoding. The coords now persist to
+  the relational venue store (not `_en_venue_lat` post-meta), and the en_venue needs a resolved
+  canonical venue first (the save hook only fires when Native Events is enabled). My partial fix got
+  lat/lng passing but the HTTP-call-count/cache-guard assertions cascade more store-vs-postmeta
+  reads (address, geocoded_address). Reverted to keep the tree clean. Needs a dedicated pass that
+  seeds EVERY venue field consistently in the store. Low priority — it's a gated v2 feature.
+- **P1 (Auth.net charge-amount verification)** — still deferred to launch-prep; needs your Signature
+  Key + a real test charge.
 
 ---
 
