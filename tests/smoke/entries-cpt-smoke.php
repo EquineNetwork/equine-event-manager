@@ -72,11 +72,15 @@ $check( 'admin.css defines the .eem-res-status--past pill', false !== strpos( (s
 
 // --- styled editor render --------------------------------------------------
 update_post_meta( $eid, EEM_Entries::META_RESERVATION, $rid_for_entry );
-update_post_meta( $eid, EEM_Entries::META_DESCRIPTION, 'Pre-purchase your division entry.' );
-update_post_meta( $eid, EEM_Entries::META_DIVISION_NAME, '#9.5 Division' );
-update_post_meta( $eid, EEM_Entries::META_PRICE, '45.00' );
-update_post_meta( $eid, EEM_Entries::META_SPOTS, 20 );
-update_post_meta( $eid, EEM_Entries::META_MAX, 2 );
+// #55: the editor render + resolver read division data from the relational
+// division-config table (and the post title is composed at save time), so persist
+// through the canonical save_entry_fields() rather than raw post-meta.
+EEM_Entries::save_entry_fields( (int) $eid, (int) $rid_for_entry, 'Pre-purchase your division entry.', array(
+	'division_name' => '#9.5 Division',
+	'price'         => '45.00',
+	'spots'         => 20,
+	'max'           => 2,
+), 'draft' );
 $_GET = array( 'entry_id' => (string) $eid );
 ob_start(); EEM_Entries::render(); $html = (string) ob_get_clean();
 $_GET = array();
@@ -132,9 +136,12 @@ $ret = EEM_Entries::save_entry_fields(
 );
 $check( 'save composes "Event - Division" title + status', 'Entries Smoke Event - #10.5 Division' === $ret['title'] && 'publish' === $ret['status'] );
 
-$check( 'save persisted the description', 'Edited via save handler.' === (string) get_post_meta( $eid, EEM_Entries::META_DESCRIPTION, true ) );
-$check( 'save persisted the division name', '#10.5 Division' === (string) get_post_meta( $eid, EEM_Entries::META_DIVISION_NAME, true ) );
-$check( 'save persisted price as 2dp + spots/max as ints', '30.00' === (string) get_post_meta( $eid, EEM_Entries::META_PRICE, true ) && 10 === (int) get_post_meta( $eid, EEM_Entries::META_SPOTS, true ) && 1 === (int) get_post_meta( $eid, EEM_Entries::META_MAX, true ) );
+// #55: save_entry_fields() persists to the relational division-config table
+// (mig), not post-meta — read back through the canonical repo.
+$cfg_after = EEM_Division_Config_Repo::get( (int) $eid );
+$check( 'save persisted the description', 'Edited via save handler.' === (string) ( $cfg_after['description'] ?? '' ) );
+$check( 'save persisted the division name', '#10.5 Division' === (string) ( $cfg_after['division_name'] ?? '' ) );
+$check( 'save persisted price as 2dp + spots/max as ints', '30.00' === (string) ( $cfg_after['price'] ?? '' ) && 10 === (int) ( $cfg_after['spots'] ?? 0 ) && 1 === (int) ( $cfg_after['max_per_customer'] ?? 0 ) );
 $check( 'save published + composed the title', 'publish' === get_post_status( $eid ) && 'Entries Smoke Event - #10.5 Division' === get_post_field( 'post_title', $eid ) );
 
 wp_delete_post( (int) $eid, true );
