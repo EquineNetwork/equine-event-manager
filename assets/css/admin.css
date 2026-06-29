@@ -5552,9 +5552,10 @@ a.eem-btn-checkin:link, a.eem-btn-checkin:visited, a.eem-btn-checkin:hover, a.ee
 	flex-basis: 100%;
 }
 
-/* Outstanding-documents banner reuses the amber payment-banner chrome. */
+/* Outstanding-documents banner reuses the amber payment-banner chrome. Sits
+   flush under the order header row — no top gap (Whitney 2026-06-29). */
 .eem-order-docs-banner {
-	margin-top: 10px;
+	margin-top: 0;
 }
 
 /* ── ACTIVITY LOG placeholder (C6.E will flesh out) ── */
