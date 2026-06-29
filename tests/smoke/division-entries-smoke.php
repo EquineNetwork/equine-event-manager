@@ -31,10 +31,15 @@ $check( 'ledger table exists', $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" ) =
 $rid = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'Divisions Ledger Event' ) );
 $did = wp_insert_post( array( 'post_type' => 'en_entry', 'post_status' => 'publish', 'post_title' => 'Divisions Ledger Event - #5 Division' ) );
 update_post_meta( $did, EEM_Entries::META_RESERVATION, $rid );
-update_post_meta( $did, EEM_Entries::META_DIVISION_NAME, '#5 Division' );
-update_post_meta( $did, EEM_Entries::META_PRICE, '40.00' );
-update_post_meta( $did, EEM_Entries::META_SPOTS, 2 );
-update_post_meta( $did, EEM_Entries::META_MAX, 0 );
+// #55: division config (spots cap etc.) lives in the relational division-config
+// table that validate_submission + record_division_entries read — persist there
+// via the canonical save_entry_fields(), not raw post-meta.
+EEM_Entries::save_entry_fields( (int) $did, (int) $rid, '', array(
+	'division_name' => '#5 Division',
+	'price'         => '40.00',
+	'spots'         => 2,
+	'max'           => 0,
+), 'publish' );
 
 // --- status mapping --------------------------------------------------------
 $check( 'maps paid → paid',              'paid'      === EEM_Division_Entries::ledger_status_for_order_status( 'paid' ) );
@@ -126,7 +131,7 @@ $check( 'detail_url carries the division_id param', false !== strpos( EEM_Entrie
 
 ob_start(); EEM_Entries::render_detail( $did ); $detail_html = (string) ob_get_clean();
 $check( 'detail renders the composed Event - Division title', false !== strpos( $detail_html, 'Divisions Ledger Event - #5 Division' ) );
-$check( 'detail renders the Entered / Spots / Spots Left stat cards', 3 === substr_count( $detail_html, 'eem-dashboard-kpi-card eem-dashboard-kpi-card--' ) );
+$check( 'detail renders the Entered / Spots / Spots Left stat cards', 3 === substr_count( $detail_html, 'class="eem-div-stat-card' ) );
 $check( 'detail renders the entrants table with the held customer', false !== strpos( $detail_html, 'eem-table' ) && false !== strpos( $detail_html, 'Hold, One' ) );
 $check( 'detail renders an Edit Division action', false !== strpos( $detail_html, 'Edit Division' ) );
 $check( 'detail renders a paid status badge', false !== strpos( $detail_html, 'eem-status-paid' ) );
@@ -135,7 +140,7 @@ $check( 'detail renders a paid status badge', false !== strpos( $detail_html, 'e
 $_GET = array( 'page' => EEM_Entries::LIST_SLUG, 'division_id' => (string) $did );
 ob_start(); EEM_Entries::render_list(); $dispatch_html = (string) ob_get_clean();
 $_GET = array();
-$check( 'render_list dispatches division_id to the detail view', false !== strpos( $dispatch_html, 'Divisions Ledger Event - #5 Division' ) && false !== strpos( $dispatch_html, 'eem-dashboard-kpi-card' ) );
+$check( 'render_list dispatches division_id to the detail view', false !== strpos( $dispatch_html, 'Divisions Ledger Event - #5 Division' ) && false !== strpos( $dispatch_html, 'eem-div-stat-card' ) );
 
 // oversold: drop spots below entered → list shows the oversold note
 update_post_meta( $did, EEM_Entries::META_SPOTS, 1 ); // entered is 1 (ORDER-HOLD) → not oversold; add another hold.
