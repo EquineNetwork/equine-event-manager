@@ -84,6 +84,18 @@ $division    = wp_insert_post( array( 'post_type' => 'en_entry', 'post_status' =
 update_post_meta( $division, '_en_entry_reservation_id', $reservation );
 update_post_meta( $division, '_en_division_name', 'OFT Open' );
 update_post_meta( $division, '_en_division_price', '40.00' );
+// #55: EEM_Entries::get_for_reservation reads divisions from the relational
+// division-config table (joined to the en_entry post), not post-meta — seed it.
+if ( class_exists( 'EEM_Division_Config_Repo' ) ) {
+	EEM_Division_Config_Repo::create_table();
+	EEM_Division_Config_Repo::save( (int) $division, array(
+		'reservation_id'   => (int) $reservation,
+		'division_name'    => 'OFT Open',
+		'price'            => 40.00,
+		'spots'            => 0,
+		'max_per_customer' => 0,
+	) );
+}
 
 $events = new EEM_Events();
 $row    = new ReflectionMethod( 'EEM_Events', 'render_event_list_row_markup' );
