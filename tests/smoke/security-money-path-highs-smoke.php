@@ -44,8 +44,16 @@ $check( 'lock released in finally via RELEASE_LOCK',
 	str_contains( $engine_src, 'RELEASE_LOCK' ) && str_contains( $engine_src, 'finally' ) );
 $check( 'lock name namespaced + hashed per order',
 	str_contains( $engine_src, "'eem_refund_' . md5(" ) );
-$check( 'worker does NOT acquire its own lock (single lock owner)',
-	1 === substr_count( $engine_src, 'GET_LOCK' ) );
+// #55: there are now TWO public refund entry points (process_amount_refund +
+// process_tender_refunds), each a legitimate single lock-owner. The invariant is
+// that the PRIVATE worker never acquires its own lock (it runs under the public
+// wrapper's lock) — assert that directly rather than a file-wide GET_LOCK count.
+$worker_src = '';
+if ( preg_match( '/private function process_amount_refund_locked\b.*?\n\t\}/s', $engine_src, $wm ) ) {
+	$worker_src = $wm[0];
+}
+$check( 'worker does NOT acquire its own lock (single lock owner per public entry)',
+	'' !== $worker_src && false === strpos( $worker_src, 'GET_LOCK' ) );
 
 // Runtime round-trip: a refund on a nonexistent order must run the worker
 // (returns order_not_found) — proving the lock was acquired and the finally
