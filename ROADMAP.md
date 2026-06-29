@@ -287,7 +287,6 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 12. [ ] **Auto-save stall/RV maps to the venue** — built on branch (rolling "Auto-saved (latest)" per venue, empty-guard; smokes pass). Needs your verify + merge.
 
-13. [ ] **Restyle "View Event" overview page** to match plugin design system.
 
 14. [ ] **Remove "X days" countdown chip** on the event-list flyer card. **BLOCKED** — needs Whitney's mockup before starting.
 
