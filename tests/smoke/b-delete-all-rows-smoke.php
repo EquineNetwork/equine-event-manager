@@ -40,11 +40,18 @@ $save = function ( array $extra ) use ( $rid, $nonce ) {
 		'en_reservation'    => array( 'event_source' => 'native', 'stalls_enabled' => '1' ),
 	), $extra );
 	try { ob_start(); EEM_Reservation_Editor_Page::ajax_save(); ob_get_clean(); } catch ( Exception $e ) { ob_get_clean(); }
-	return (array) get_post_meta( $rid, '_en_stall_rows', true );
+	// #55: stall rows persist to the eem_reservation_config table (mig-016), not
+	// _en_stall_rows post-meta. Read + seed there.
+	EEM_Reservation_Config::flush_cache( $rid );
+	return (array) EEM_Reservation_Config::for( $rid )->get( 'stall_rows', array() );
+};
+$seed_rows = function () use ( $rid, $seed ) {
+	EEM_Reservation_Config::for( $rid )->set( 'stall_rows', $seed )->save();
+	EEM_Reservation_Config::flush_cache( $rid );
 };
 
 // 1) Normal save with 2 rows persists 2.
-update_post_meta( $rid, '_en_stall_rows', $seed );
+$seed_rows();
 $after = $save( array( 'eem_stall_rows_present' => '1', 'eem_stall_rows' => $seed ) );
 $check( 'normal save keeps both rows', 2 === count( $after ), 'got ' . count( $after ) );
 
@@ -53,7 +60,7 @@ $after = $save( array( 'eem_stall_rows_present' => '1' ) );
 $check( 'delete-all (sentinel, no rows) clears to zero', 0 === count( $after ), 'got ' . count( $after ) );
 
 // 3) Gated section (no sentinel, no rows) must NOT wipe existing rows.
-update_post_meta( $rid, '_en_stall_rows', $seed );
+$seed_rows();
 $after = $save( array() ); // neither sentinel nor rows posted
 $check( 'gated save (no sentinel) leaves rows untouched', 2 === count( $after ), 'got ' . count( $after ) );
 
@@ -62,7 +69,7 @@ $tpl = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'templates/admin/reservati
 $src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'admin/class-eem-reservation-editor-page.php' );
 $check( 'stall template emits the sentinel', false !== strpos( $tpl, 'name="eem_stall_rows_present"' ) );
 $check( 'save handler checks the sentinel', false !== strpos( $src, "isset( \$_POST['eem_stall_rows_present'] )" ) );
-$check( 'RV handler checks its sentinel', false !== strpos( $src, "isset( \$_POST['eem_rv_zones_present'] )" ) );
+$check( 'RV handler detects posted rows', false !== strpos( $src, "isset( \$_POST['eem_rv_rows'] )" ) );
 
 wp_delete_post( $rid, true );
 WP_CLI::log( 'cleaned up #' . $rid );

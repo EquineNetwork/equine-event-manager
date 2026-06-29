@@ -48,7 +48,10 @@ $_POST = $_REQUEST = array(
 );
 try { ob_start(); EEM_Reservation_Editor_Page::ajax_save(); ob_get_clean(); } catch ( Exception $e ) { ob_get_clean(); }
 
-$after = (array) get_post_meta( $rid, '_en_stall_rows', true );
+// #55: stall rows persist to the eem_reservation_config table now (mig-016),
+// not _en_stall_rows post-meta. Read from the config the save writes.
+EEM_Reservation_Config::flush_cache( $rid );
+$after = (array) EEM_Reservation_Config::for( $rid )->get( 'stall_rows', array() );
 $check( 'all 3 rows persisted (none dropped)', 3 === count( $after ), 'got ' . count( $after ) );
 
 $byname = array();
