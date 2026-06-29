@@ -225,11 +225,21 @@ class EEM_Events {
 		if ( null === $coords ) {
 			return;
 		}
-		EEM_Venue::save_detail( $venue_id, array(
+		// When this geocode CREATES the venue's first relational store-detail row,
+		// the address columns would otherwise stay empty (the address lives in
+		// en_venue post-meta), and an empty store row then SHADOWS the post-meta
+		// fallback in EEM_Venue::get_detail() — so a geocoded native venue would
+		// render no address. Sync the address fields alongside the coords so the
+		// store row is complete.
+		$detail_to_save = array(
 			'lat'              => $coords['lat'],
 			'lng'              => $coords['lng'],
 			'geocoded_address' => $address,
-		), true );
+		);
+		foreach ( array( 'address_1', 'address_2', 'city', 'state', 'postal_code', 'phone', 'website' ) as $eem_addr_field ) {
+			$detail_to_save[ $eem_addr_field ] = (string) get_post_meta( $venue_id, '_equine_event_manager_venue_' . $eem_addr_field, true );
+		}
+		EEM_Venue::save_detail( $venue_id, $detail_to_save, true );
 	}
 
 	/**

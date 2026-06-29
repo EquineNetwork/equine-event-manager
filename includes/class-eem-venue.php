@@ -1027,6 +1027,18 @@ class EEM_Venue {
 				foreach ( self::DETAIL_FIELDS as $f ) {
 					$detail[ $f ] = isset( $row[ $f ] ) ? (string) $row[ $f ] : '';
 				}
+				// When resolved from an en_venue post, a partial store row (e.g. one
+				// created by resolve_for_native_venue or a coords-only geocode save)
+				// would otherwise SHADOW the post's address fields with empties. Fall
+				// back to post-meta for any empty address field so the post's address
+				// still surfaces.
+				if ( $post_id > 0 ) {
+					foreach ( array( 'address_1', 'address_2', 'city', 'state', 'postal_code', 'phone', 'website' ) as $eem_addr_field ) {
+						if ( '' === $detail[ $eem_addr_field ] ) {
+							$detail[ $eem_addr_field ] = (string) get_post_meta( $post_id, '_equine_event_manager_venue_' . $eem_addr_field, true );
+						}
+					}
+				}
 				self::$detail_cache[ $venue_id ] = $detail;
 				return $detail;
 			}

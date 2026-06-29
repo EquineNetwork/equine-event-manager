@@ -44,11 +44,22 @@ $coords = EEM_Events::geocode_address( '101 Main St, Rapid City, SD', 'AIzaKEY' 
 $check( 'geocode_address parses lat/lng from Google response', is_array( $coords ) && 44.0805 === $coords['lat'] && -103.231 === $coords['lng'] );
 
 // --- seed venue + address assembly ----------------------------------------
-$vid = wp_insert_post( array( 'post_type' => 'en_venue', 'post_status' => 'publish', 'post_title' => 'Slice3 Geocode Venue' ) );
+// Unique title per run: resolve_for_native_venue matches the canonical venue by
+// name, and the relational store row outlives the en_venue post on cleanup — a
+// fixed title would reuse a prior run's already-geocoded venue (0 HTTP calls).
+$venue_title = 'Slice3 Geocode Venue ' . substr( md5( (string) wp_rand() ), 0, 8 );
+$vid = wp_insert_post( array( 'post_type' => 'en_venue', 'post_status' => 'publish', 'post_title' => $venue_title ) );
 update_post_meta( $vid, '_equine_event_manager_venue_address_1', '101 Main St' );
 update_post_meta( $vid, '_equine_event_manager_venue_city', 'Rapid City' );
 update_post_meta( $vid, '_equine_event_manager_venue_state', 'SD' );
 update_post_meta( $vid, '_equine_event_manager_venue_postal_code', '57701' );
+// Geocoded coords persist to the relational venue store (save_detail), which needs
+// a resolved canonical venue. The save_post_en_venue resolve hook only fires when
+// Native Events is enabled (gated off here), so resolve explicitly. get_detail
+// backfills the address from post-meta, so the address string still assembles.
+if ( class_exists( 'EEM_Venue' ) ) {
+	EEM_Venue::resolve_for_native_venue( (int) $vid, $venue_title );
+}
 $check( 'get_venue_address_string assembles the address', '101 Main St, Rapid City, SD, 57701' === EEM_Events::get_venue_address_string( $vid ) );
 
 // --- maybe_geocode_venue with a configured key ----------------------------
@@ -60,9 +71,11 @@ update_option( 'equine_event_manager_integration_settings', $integ, false );
 
 $GLOBALS['eem_geocode_calls'] = 0;
 EEM_Events::maybe_geocode_venue( $vid );
-$check( 'auto-geocode saved latitude', (float) get_post_meta( $vid, '_en_venue_lat', true ) === 44.0805 );
-$check( 'auto-geocode saved longitude', (float) get_post_meta( $vid, '_en_venue_lng', true ) === -103.231 );
-$check( 'auto-geocode cached the address marker', EEM_Events::get_venue_address_string( $vid ) === (string) get_post_meta( $vid, '_en_venue_geocoded_address', true ) );
+// Coords + marker persist to the relational venue store — read them back there.
+$geo = EEM_Venue::get_detail( (int) $vid, true );
+$check( 'auto-geocode saved latitude', (float) ( $geo['lat'] ?? 0 ) === 44.0805 );
+$check( 'auto-geocode saved longitude', (float) ( $geo['lng'] ?? 0 ) === -103.231 );
+$check( 'auto-geocode cached the address marker', EEM_Events::get_venue_address_string( $vid ) === (string) ( $geo['geocoded_address'] ?? '' ) );
 $check( 'auto-geocode made exactly one HTTP call', 1 === $GLOBALS['eem_geocode_calls'] );
 
 // Re-run with unchanged address → cache guard prevents a second call.
@@ -70,8 +83,12 @@ $GLOBALS['eem_geocode_calls'] = 0;
 EEM_Events::maybe_geocode_venue( $vid );
 $check( 'unchanged address does NOT re-geocode (cache guard)', 0 === $GLOBALS['eem_geocode_calls'] );
 
-// Address change → re-geocodes.
+// Address change → re-geocodes. A real venue edit goes through save_detail (which
+// also busts the per-request detail cache), so mirror that rather than touching
+// post-meta alone — otherwise the cached detail from the geocode above is stale
+// within this single request (a non-issue across separate requests in production).
 update_post_meta( $vid, '_equine_event_manager_venue_address_1', '202 Elm Ave' );
+EEM_Venue::save_detail( (int) $vid, array( 'address_1' => '202 Elm Ave' ), true );
 $GLOBALS['eem_geocode_calls'] = 0;
 EEM_Events::maybe_geocode_venue( $vid );
 $check( 'changed address re-geocodes', 1 === $GLOBALS['eem_geocode_calls'] );
