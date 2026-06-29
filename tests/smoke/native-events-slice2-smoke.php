@@ -50,8 +50,11 @@ $check( 'editor renders the Instagram input', false !== strpos( $editor, 'name="
 $check( 'editor pre-fills the saved Facebook URL', false !== strpos( $editor, 'https://facebook.com/smokeevent' ) );
 
 $src = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-events.php' );
-$check( 'save handler writes _en_event_facebook', false !== strpos( $src, "update_post_meta( \$post_id, '_en_event_facebook'" ) );
-$check( 'save handler writes _en_event_instagram', false !== strpos( $src, "update_post_meta( \$post_id, '_en_event_instagram'" ) );
+// #55: native event data moved from wp_postmeta to the eem_native_events table
+// (EEM_Native_Event_Repo); the save handler now reads the posted social URLs and
+// persists them via the repo, so assert it processes those fields.
+$check( 'save handler processes en_event_facebook', false !== strpos( $src, "\$_POST['en_event_facebook']" ) );
+$check( 'save handler processes en_event_instagram', false !== strpos( $src, "\$_POST['en_event_instagram']" ) );
 
 wp_delete_post( (int) $eid, true );
 
