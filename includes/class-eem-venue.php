@@ -463,8 +463,18 @@ class EEM_Venue {
 		if ( $en_venue_post_id <= 0 || 'en_venue' !== get_post_type( $en_venue_post_id ) ) {
 			return 0;
 		}
-		$name     = (string) get_the_title( $en_venue_post_id );
-		$venue_id = self::resolve( 'native', (string) $en_venue_post_id, $name );
+		$name = (string) get_the_title( $en_venue_post_id );
+
+		// A native en_venue post has a stable identity: once linked, the durable
+		// back-reference is authoritative. Renaming the post relabels the SAME
+		// venue — it does not become a different one (unlike a TEC upstream
+		// venue-name change, which resolve() intentionally re-points by name).
+		// Honor the existing canonical id when present so a rename keeps the same
+		// venue instead of orphaning it into a fresh name-matched record.
+		$existing = (int) get_post_meta( $en_venue_post_id, self::CANONICAL_VENUE_META, true );
+		$venue_id = ( $existing > 0 && self::get( $existing ) )
+			? $existing
+			: self::resolve( 'native', (string) $en_venue_post_id, $name );
 		if ( $venue_id <= 0 ) {
 			return 0;
 		}

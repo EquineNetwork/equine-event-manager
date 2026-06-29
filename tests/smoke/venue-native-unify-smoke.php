@@ -22,6 +22,14 @@ if ( $admins ) { wp_set_current_user( $admins[0]->ID ); }
 if ( ! post_type_exists( 'en_venue' ) && class_exists( 'EEM_Events' ) ) {
 	( new EEM_Events() )->register_content_types();
 }
+// #55: the save_post_en_venue → sync_native_venue_on_save wiring is registered by
+// the plugin ONLY when Native Events is enabled (a v2 feature, gated off by
+// default). Mirror that wiring here so the eager-sync behavior under test runs
+// regardless of the env toggle (matches the plugin's native-events-on path).
+if ( class_exists( 'EEM_Events' ) && ! has_action( 'save_post_en_venue', array( $GLOBALS['eem_smoke_events'] ?? null, 'sync_native_venue_on_save' ) ) ) {
+	$GLOBALS['eem_smoke_events'] = new EEM_Events();
+	add_action( 'save_post_en_venue', array( $GLOBALS['eem_smoke_events'], 'sync_native_venue_on_save' ), 20, 1 );
+}
 EEM_Venue::create_tables();
 
 $suffix = substr( md5( (string) wp_rand() ), 0, 6 );
