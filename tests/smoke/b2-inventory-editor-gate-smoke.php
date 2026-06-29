@@ -80,6 +80,16 @@ $mk = function ( array $meta ) {
 	$id = wp_insert_post( array( 'post_type' => EEM_Reservations_CPT::POST_TYPE, 'post_status' => 'publish', 'post_title' => 'B2 tmp' ) );
 	update_post_meta( $id, '_en_stalls_enabled', 1 );
 	foreach ( $meta as $k => $v ) { update_post_meta( $id, $k, $v ); }
+	// #55: get_reservation_meta reads the stall inventory config from the relational
+	// config table (mig-016 decouple), not _en_ post-meta — mirror it there.
+	if ( class_exists( 'EEM_Reservation_Config' ) ) {
+		$cfg_map = array( 'stalls_enabled' => 1 );
+		foreach ( $meta as $k => $v ) {
+			$cfg_map[ preg_replace( '/^_en_/', '', $k ) ] = $v;
+		}
+		EEM_Reservation_Config::for( (int) $id )->set_many( $cfg_map )->save();
+		EEM_Reservation_Config::flush_cache( (int) $id );
+	}
 	return (int) $id;
 };
 $res_pick = $mk( array( '_en_stall_inventory_type' => 'numbered', '_en_stall_customer_selection' => 'pick_layout' ) );
