@@ -271,7 +271,6 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 - [ ] **Group Names feature — verify when groups are actually in use (not yet).** Shipped 2.7.650 + branch follow-ups. Verify: (1) admin adds names in the editor Group Names table; (2) customer event page shows the strict-list Group dropdown; (3) assign/change/remove group from the map popover; (4) sidebar Groups filter (only when groups enabled); (5) group shows on order detail; (6) **Grounds Fee + Rider Deposit charges show on the customer Order Summary AND admin Order Detail** with correct per-rider totals. Editor-cleanup commit `1bc0432` on the branch is NOT yet merged/deployed — bump + merge when ready to verify.
 
 
-1. [ ] **Global mobile visual polish** — per-page pass to match Daily Movement standard (row heights, badge sizing, spacing/density). Scaffolding shipped (2.7.577–580); per-page work not started.
 
 3. [ ] **Full end-to-end customer checkout sweep** — run a real checkout on the NTR 6519 fixture page. Also the recommended way to seed test data (real checkout writes correct `reservation_id` + notes tag + config-based pricing).
 
