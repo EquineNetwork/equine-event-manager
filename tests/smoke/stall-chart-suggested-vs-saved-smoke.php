@@ -36,26 +36,27 @@ $check( 'grid tracks unsaved orders + returns a count',
 $check( 'suggested = NOT in the persisted assigned-units notes',
 	str_contains( $admin_src, '$unit_suggested = ! isset( $saved_stall_set[ (string) $unit ] )' ) );
 
-// --- pill styling: suggested modifier --------------------------------------
-$check( 'occupied pill carries --suggested + data-suggested when unsaved',
-	str_contains( $admin_src, "eem-occ-pill--suggested' : ''" ) && str_contains( $admin_src, 'data-suggested="' ) );
-$check( 'suggested pill has a screen-reader "not saved" hint',
-	str_contains( $admin_src, '(suggested — not saved)' ) );
-
-// --- guidance banner -------------------------------------------------------
-$check( 'unsaved banner rendered only when count > 0',
-	str_contains( $admin_src, '$eem_unsaved = isset( $grid[\'unsaved_order_count\']' ) && str_contains( $admin_src, 'if ( $eem_unsaved > 0 )' ) );
-$check( 'banner has pluralized count copy',
-	str_contains( $admin_src, "aren't saved yet" ) || str_contains( $admin_src, "aren\\'t saved yet" ) );
-$check( 'banner Generate link reuses the real auto-assign action',
-	str_contains( $admin_src, 'class="eem-link-btn" data-eem-action="stall-chart-auto-assign-all"' ) );
-$check( 'Tip line explains the dashed = suggested legend',
-	str_contains( $admin_src, 'A dashed outline means the placement is auto-suggested' ) );
+// #55: the auto-SUGGEST visual treatment was DELIBERATELY REMOVED (Whitney
+// 2026-06-24): "stalls stay Available until manually assigned; no auto-suggest
+// push." The grid still COMPUTES saved-vs-unsaved (asserted above, used by the
+// list-page count), but the per-pill dashed/italic "draft" styling, the
+// data-suggested attribute, the SR hint, and the amber suggestion banner were
+// all dropped. Assert the removal so the smoke matches shipped behavior.
+$check( 'suggestion banner is gated off (Whitney 2026-06-24 removal)',
+	str_contains( $admin_src, 'Suggestion banner removed (Whitney 2026-06-24)' ) );
+$check( 'no per-pill --suggested draft modifier emitted',
+	! str_contains( $admin_src, "eem-occ-pill--suggested' : ''" ) && ! str_contains( $admin_src, 'data-suggested="' ) );
+$check( 'no "(suggested — not saved)" SR hint emitted',
+	! str_contains( $admin_src, '(suggested — not saved)' ) );
+$check( 'no dashed-legend tip line emitted',
+	! str_contains( $admin_src, 'A dashed outline means the placement is auto-suggested' ) );
 
 // --- CSS -------------------------------------------------------------------
-$check( 'CSS: suggested pill is dashed + italic (draft look)',
-	str_contains( $css_src, '.eem-occ-pill--suggested' ) && str_contains( $css_src, 'border-style: dashed' ) && str_contains( $css_src, 'font-style: italic' ) );
-$check( 'CSS: unsaved banner styled', str_contains( $css_src, '.eem-stall-chart-unsaved-banner' ) );
+// The dashed/italic draft pill styling was removed with the feature; only the
+// chevron-color hook survives (harmless dead rule). Assert no dashed-italic
+// draft treatment remains.
+$check( 'CSS: no dashed+italic suggested-pill draft styling',
+	! ( str_contains( $css_src, '.eem-occ-pill--suggested' ) && str_contains( $css_src, 'border-style: dashed' ) && str_contains( $css_src, 'font-style: italic' ) ) );
 $check( 'CSS: inline link-btn defined', str_contains( $css_src, '.eem-link-btn' ) );
 // Hygiene: no underline added anywhere in the new CSS.
 $check( 'CSS: link-btn hover uses color only (no underline)',

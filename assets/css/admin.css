@@ -9274,7 +9274,7 @@ a.eem-sc-mob-edit-btn:focus { background: #e8eef8; color: #0d1b3e; text-decorati
 .eem-shell-page--stall-charts .eem-sc-banner-amber strong { color: #92400e; }
 .eem-shell-page--stall-charts .eem-sc-banner-amber .eem-link-btn {
 	background: none; border: 0; padding: 0; font: inherit; font-weight: 700;
-	color: #92400e; text-decoration: underline; cursor: pointer;
+	color: #92400e; cursor: pointer; /* #55: no underline — hygiene rule #8 (color-only affordance). */
 }
 /* Card variant: amber banner sitting inside the padded content area. */
 .eem-shell-page--stall-charts .eem-sc-banner-amber--card {
