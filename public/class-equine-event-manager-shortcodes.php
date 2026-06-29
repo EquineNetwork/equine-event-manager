@@ -13767,7 +13767,10 @@ RV Lot: " . $rv_lot['name'] );
 				var requiredShavingsPrice = parseCurrency(form.dataset.requiredShavingsPrice);
 				var groupToggle = form.querySelector('[data-eem-group-toggle]');
 				var groupEnabled = !!(groupToggle && groupToggle.checked);
-				var groupRiderCount = groupEnabled ? Math.max(1, getNumberFieldValue(form, 'group_rider_count')) : 0;
+				// Allow 0 riders (Whitney 2026-06-29): the group section adds $0 until
+				// the customer sets a rider count, even though the toggle is ON. Do NOT
+				// clamp to a minimum of 1 here — that was forcing a $200 charge on load.
+				var groupRiderCount = groupEnabled ? Math.max(0, getNumberFieldValue(form, 'group_rider_count')) : 0;
 				var groupGroundsFeeEnabled = form.dataset.groupGroundsFeeEnabled === '1';
 				var groupGroundsFeeAmount = parseCurrency(form.dataset.groupGroundsFeeAmount);
 				var groupDepositEnabled = form.dataset.groupDepositEnabled === '1';

@@ -64,6 +64,14 @@ $check( 'group toggle is still ON by default', (bool) preg_match( '/data-eem-gro
 // 5. The group subtotal placeholder renders at $0.00 (no pre-charge on load).
 $check( 'group subtotal renders $0.00 on load', false !== strpos( $html, 'data-eem-total="group_subtotal">$0.00' ) );
 
+// 6. Regression guard: NEITHER JS clamp may force the rider count to a minimum of
+//    1. Both the rider-row renderer and the price recalc must allow 0 — a leftover
+//    Math.max(1, ...) on group_rider_count is what pre-charged $200 on load.
+$src = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'public/class-equine-event-manager-shortcodes.php' );
+$check( 'no Math.max(1) clamp on group rider count in recalc', false === strpos( $src, "Math.max(1, getNumberFieldValue(form, 'group_rider_count')" ) );
+$check( 'recalc allows 0 riders', false !== strpos( $src, "Math.max(0, getNumberFieldValue(form, 'group_rider_count')" ) );
+$check( 'rider-row renderer no longer forces count to 1', false === strpos( $src, 'count = Math.max(1, count || 1)' ) );
+
 wp_delete_post( $rid, true );
 
 echo "\n{$passed} passed, {$failed} failed\n";
