@@ -51,6 +51,22 @@ update_post_meta( $rid, '_en_external_event_name', (string) $gems['title'] );
 // Stale window that must be overridden by the GEMS dates.
 update_post_meta( $rid, '_en_available_start_date', '2000-01-01' );
 update_post_meta( $rid, '_en_available_end_date', '2000-01-02' );
+// #55: event source + external-event link resolve from the relational config
+// table (mig-016 decouple), not post-meta — seed it there so the normalized
+// reservation-event lookup finds the GEMS link.
+if ( class_exists( 'EEM_Reservation_Config' ) ) {
+	EEM_Reservation_Config::for( (int) $rid )
+		->set_many( array(
+			'event_source'            => 'feed',
+			'use_global_event_source' => 0,
+			'external_event_id'       => (string) $gems['external_event_id'],
+			'external_event_name'     => (string) $gems['title'],
+			'available_start_date'    => '2000-01-01',
+			'available_end_date'      => '2000-01-02',
+		) )
+		->save();
+	EEM_Reservation_Config::flush_cache( (int) $rid );
+}
 
 $f = EEM_Reservation_Source_Resolver::resolve_event_fields( (int) $rid );
 
