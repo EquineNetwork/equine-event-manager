@@ -1121,7 +1121,11 @@
 .eem-map-inline .eem-map-pick { border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; background: #fff; margin-top: 10px; }
 .eem-map-inline-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
 .eem-map-inline .eem-map-tabs { padding: 0; }
-.eem-zoom { display: inline-flex; border: 1px solid #d9e2ec; border-radius: 3px; overflow: hidden; flex: none; }
+/* Match the admin Stall & RV Charts zoom chrome: use the shared --eem-radius
+   token (8px on admin; falls back to 8px here since the front-end event page
+   doesn't define the token) so the customer zoom isn't a tighter 3px than the
+   admin maps. (Whitney 2026-06-29 — "style them all like Stall & RV Charts".) */
+.eem-zoom { display: inline-flex; border: 1px solid #d9e2ec; border-radius: var(--eem-radius, 8px); overflow: hidden; flex: none; }
 .eem-zoom button { appearance: none; border: 0; border-left: 1px solid #d9e2ec; background: #fff; color: #031B4E; font-weight: 700; font-size: 13px; padding: 5px 12px; cursor: pointer; line-height: 1; }
 .eem-zoom button:first-child { border-left: 0; }
 /* Scope hover under .eem-event-page so the brand blue wins over the theme's
