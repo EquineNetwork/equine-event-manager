@@ -2125,7 +2125,7 @@ class EEM_Settings_Page {
 				<h3><?php esc_html_e( 'Export Reservation Setup', 'equine-event-manager' ); ?></h3>
 			</div>
 			<div class="eem-card-body">
-				<p class="eem-card-subtitle"><?php esc_html_e( 'Download a JSON file containing the full reservation setup (event, venue, config, packages, and all orders). Use this to transfer a reservation to another site.', 'equine-event-manager' ); ?></p>
+				<p class="eem-card-subtitle"><?php esc_html_e( 'Download a JSON file of a reservation. The reservation setup — including the stall/RV map, blocked units, and pricing config — is always included. Choose what else to bundle below. Use this to clone a setup to another event or transfer it to another site.', 'equine-event-manager' ); ?></p>
 				<div class="eem-field-row">
 					<label class="eem-field-label" for="eem-export-reservation"><?php esc_html_e( 'Reservation', 'equine-event-manager' ); ?></label>
 					<select id="eem-export-reservation" class="eem-field-select">
@@ -2135,6 +2135,27 @@ class EEM_Settings_Page {
 						<?php endforeach; ?>
 					</select>
 				</div>
+
+				<div class="eem-field-row">
+					<label class="eem-field-label"><?php esc_html_e( 'Include', 'equine-event-manager' ); ?></label>
+					<div class="eem-field-control">
+						<label class="eem-checkbox-row">
+							<input type="checkbox" id="eem-export-include-event" checked />
+							<span><?php esc_html_e( 'Event & venue', 'equine-event-manager' ); ?></span>
+						</label>
+						<p class="eem-field-hint" style="margin:2px 0 10px;"><?php esc_html_e( 'Uncheck to export the setup on its own, then link it to a different event when you import.', 'equine-event-manager' ); ?></p>
+						<label class="eem-checkbox-row">
+							<input type="checkbox" id="eem-export-include-packages" checked />
+							<span><?php esc_html_e( 'Stay packages', 'equine-event-manager' ); ?></span>
+						</label>
+						<label class="eem-checkbox-row" style="margin-top:8px;">
+							<input type="checkbox" id="eem-export-include-orders" />
+							<span><?php esc_html_e( 'Orders & customer data', 'equine-event-manager' ); ?></span>
+						</label>
+						<p class="eem-field-hint" style="margin:2px 0 0;"><?php esc_html_e( 'Off by default. Only check this to copy existing customer orders (names, emails, payments) along with the setup.', 'equine-event-manager' ); ?></p>
+					</div>
+				</div>
+
 				<div style="margin-top:16px">
 					<button type="button" class="eem-btn eem-btn-primary" data-eem-action="export-setup"><?php esc_html_e( 'Download Setup JSON', 'equine-event-manager' ); ?></button>
 				</div>
@@ -2384,7 +2405,14 @@ class EEM_Settings_Page {
 				if (action === 'export-setup') {
 					var resId = document.getElementById('eem-export-reservation').value;
 					if (!resId) { alert('Please select a reservation.'); return; }
-					var url = exportUrl + '?action=eem_export_setup&reservation_id=' + resId + '&_wpnonce=' + <?php echo wp_json_encode( wp_create_nonce( 'eem_export_setup' ) ); ?>;
+					var incEvent    = document.getElementById('eem-export-include-event').checked ? '1' : '0';
+					var incPackages = document.getElementById('eem-export-include-packages').checked ? '1' : '0';
+					var incOrders   = document.getElementById('eem-export-include-orders').checked ? '1' : '0';
+					var url = exportUrl + '?action=eem_export_setup&reservation_id=' + resId +
+						'&include_event=' + incEvent +
+						'&include_packages=' + incPackages +
+						'&include_orders=' + incOrders +
+						'&_wpnonce=' + <?php echo wp_json_encode( wp_create_nonce( 'eem_export_setup' ) ); ?>;
 					window.location.href = url;
 				}
 

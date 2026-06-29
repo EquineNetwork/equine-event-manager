@@ -547,7 +547,17 @@ class EEM_Import_Handler {
 			wp_die( esc_html__( 'Invalid reservation.', 'equine-event-manager' ) );
 		}
 
-		$export = self::build_export( $reservation_id );
+		// Section selection from the export UI checkboxes. An unchecked box is
+		// simply absent from the query string, so each flag defaults to OFF and is
+		// only ON when its param is explicitly '1'. The reservation setup + map
+		// always export regardless.
+		$include = array(
+			'event'    => isset( $_GET['include_event'] ) && '1' === $_GET['include_event'],
+			'packages' => isset( $_GET['include_packages'] ) && '1' === $_GET['include_packages'],
+			'orders'   => isset( $_GET['include_orders'] ) && '1' === $_GET['include_orders'],
+		);
+
+		$export = self::build_export( $reservation_id, $include );
 
 		$filename = sanitize_file_name( 'eem-setup-' . $reservation->post_title . '-' . gmdate( 'Y-m-d' ) . '.json' );
 
@@ -565,8 +575,18 @@ class EEM_Import_Handler {
 	 * @param int $reservation_id Reservation post ID.
 	 * @return array Complete setup data.
 	 */
-	private static function build_export( int $reservation_id ): array {
+	private static function build_export( int $reservation_id, array $include = array() ): array {
 		global $wpdb;
+
+		// Which optional sections to bundle. The reservation post (with its map +
+		// blocked units in post-meta) and its config are ALWAYS exported — that's
+		// the irreducible "setup." Everything else is opt-in via the export UI's
+		// checkboxes. Defaults to everything for backward-compatible callers.
+		$include = wp_parse_args( $include, array(
+			'event'    => true, // event + its venue
+			'packages' => true, // stay packages / pricing tiers
+			'orders'   => true, // stall + RV orders (customer PII)
+		) );
 
 		$reservation = get_post( $reservation_id );
 		$res_meta    = get_post_meta( $reservation_id );
@@ -574,64 +594,72 @@ class EEM_Import_Handler {
 		$cfg      = class_exists( 'EEM_Reservation_Config' ) ? EEM_Reservation_Config::for( $reservation_id ) : null;
 		$cfg_data = $cfg ? $cfg->all() : array();
 
-		$event_id = (int) ( $cfg_data['event_id'] ?? 0 );
-		$event    = $event_id ? get_post( $event_id ) : null;
-
-		$venue_id = 0;
-		if ( $event ) {
-			$venue_id = (int) get_post_meta( $event_id, '_equine_event_manager_event_venue_id', true );
-		}
-		$venue = $venue_id ? get_post( $venue_id ) : null;
-
-		$packages = array();
-		if ( class_exists( 'EEM_Stay_Packages_Repo' ) ) {
-			$packages = EEM_Stay_Packages_Repo::get_packages( $reservation_id );
-		}
-
-		$stall_table = $wpdb->prefix . 'eem_stall_reservations';
-		$rv_table    = $wpdb->prefix . 'eem_rv_reservations';
-
-		$stall_orders = $wpdb->get_results( $wpdb->prepare(
-			"SELECT * FROM {$stall_table} WHERE reservation_id = %d AND trashed_at IS NULL ORDER BY id ASC",
-			$reservation_id
-		), ARRAY_A );
-
-		$rv_orders = $wpdb->get_results( $wpdb->prepare(
-			"SELECT * FROM {$rv_table} WHERE reservation_id = %d AND trashed_at IS NULL ORDER BY id ASC",
-			$reservation_id
-		), ARRAY_A );
-
 		$export = array(
-			'export_version' => '1.0',
+			'export_version' => '1.1',
 			'exported_at'    => current_time( 'c' ),
 			'plugin_version' => defined( 'EEM_VERSION' ) ? EEM_VERSION : 'unknown',
+			'included'       => array(
+				'event'    => (bool) $include['event'],
+				'packages' => (bool) $include['packages'],
+				'orders'   => (bool) $include['orders'],
+			),
 		);
 
-		if ( $venue ) {
-			$export['venue'] = array(
-				'title' => $venue->post_title,
-				'meta'  => self::flatten_meta( get_post_meta( $venue_id ) ),
-			);
+		/* ── Event + venue (optional) ─────────────────────────────── */
+		if ( $include['event'] ) {
+			$event_id = (int) ( $cfg_data['event_id'] ?? 0 );
+			$event    = $event_id ? get_post( $event_id ) : null;
+
+			$venue_id = $event ? (int) get_post_meta( $event_id, '_equine_event_manager_event_venue_id', true ) : 0;
+			$venue    = $venue_id ? get_post( $venue_id ) : null;
+
+			if ( $venue ) {
+				$export['venue'] = array(
+					'title' => $venue->post_title,
+					'meta'  => self::flatten_meta( get_post_meta( $venue_id ) ),
+				);
+			}
+			if ( $event ) {
+				$export['event'] = array(
+					'title' => $event->post_title,
+					'meta'  => self::flatten_meta( get_post_meta( $event_id ) ),
+				);
+			}
 		}
 
-		if ( $event ) {
-			$export['event'] = array(
-				'title' => $event->post_title,
-				'meta'  => self::flatten_meta( get_post_meta( $event_id ) ),
-			);
-		}
-
+		/* ── Reservation + config (always) ────────────────────────── */
 		$export['reservation'] = array(
 			'title'  => $reservation->post_title,
 			'status' => $reservation->post_status,
 			'meta'   => self::flatten_meta( $res_meta ),
 		);
+		$export['config'] = $cfg_data;
 
-		$export['config']   = $cfg_data;
-		$export['packages'] = $packages;
+		/* ── Stay packages (optional) ─────────────────────────────── */
+		if ( $include['packages'] && class_exists( 'EEM_Stay_Packages_Repo' ) ) {
+			$export['packages'] = EEM_Stay_Packages_Repo::get_packages( $reservation_id );
+		} else {
+			$export['packages'] = array();
+		}
 
-		$export['stall_orders'] = $stall_orders ?: array();
-		$export['rv_orders']    = $rv_orders ?: array();
+		/* ── Orders + customer data (optional) ────────────────────── */
+		if ( $include['orders'] ) {
+			$stall_table = $wpdb->prefix . 'eem_stall_reservations';
+			$rv_table    = $wpdb->prefix . 'eem_rv_reservations';
+
+			$export['stall_orders'] = $wpdb->get_results( $wpdb->prepare(
+				"SELECT * FROM {$stall_table} WHERE reservation_id = %d AND trashed_at IS NULL ORDER BY id ASC",
+				$reservation_id
+			), ARRAY_A ) ?: array();
+
+			$export['rv_orders'] = $wpdb->get_results( $wpdb->prepare(
+				"SELECT * FROM {$rv_table} WHERE reservation_id = %d AND trashed_at IS NULL ORDER BY id ASC",
+				$reservation_id
+			), ARRAY_A ) ?: array();
+		} else {
+			$export['stall_orders'] = array();
+			$export['rv_orders']    = array();
+		}
 
 		return $export;
 	}
