@@ -48,6 +48,11 @@ class EEM_Activator {
 			// A8 — schedule the hourly expired-holds sweep (idempotent).
 			EEM_Unit_Holds_Repo::schedule_cleanup();
 		}
+		// #23 — schedule the daily payment-reminder sweep (idempotent; the sweep
+		// itself no-ops until the feature is explicitly enabled in options).
+		if ( class_exists( 'EEM_Payment_Reminder' ) ) {
+			EEM_Payment_Reminder::schedule();
+		}
 		if ( class_exists( 'EEM_Division_Entries' ) ) {
 			EEM_Division_Entries::create_table();
 		}

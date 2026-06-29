@@ -59,6 +59,10 @@ register_deactivation_hook( __FILE__, function () {
 	if ( class_exists( 'EEM_Unit_Holds_Repo' ) ) {
 		EEM_Unit_Holds_Repo::unschedule_cleanup();
 	}
+	// #23 — clear the daily payment-reminder sweep on deactivation too.
+	if ( class_exists( 'EEM_Payment_Reminder' ) ) {
+		EEM_Payment_Reminder::unschedule();
+	}
 } );
 
 // GitHub-backed in-WordPress auto-updates: a push to `main` with a bumped

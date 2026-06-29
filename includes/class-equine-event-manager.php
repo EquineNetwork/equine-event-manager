@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-formatter.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-secret-store.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-email-optout.php';
+require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-payment-reminder.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-orders-repository.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-order-adjustments-repo.php';
 require_once EQUINE_EVENT_MANAGER_PATH . 'includes/class-eem-order-payments-repo.php';
@@ -269,6 +270,9 @@ class EEM_Plugin {
 		// A8 — hourly WP-cron sweep of expired cart holds (the event itself is
 		// scheduled on activation; this binds the handler that runs when it fires).
 		add_action( EEM_Unit_Holds_Repo::CRON_HOOK, array( 'EEM_Unit_Holds_Repo', 'cleanup_expired' ) );
+		// #23 — daily payment-reminder sweep handler (scheduled on activation; the
+		// handler no-ops unless the feature is explicitly enabled).
+		EEM_Payment_Reminder::init();
 		add_action( 'init', array( $this->reservations_cpt, 'register_post_type' ) );
 		// Entries feature (v1): CPT + admin under Orders, reservation-linked.
 		EEM_Entries::register();

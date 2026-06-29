@@ -53,15 +53,13 @@ smoke passes 12/0. Marked in the v1 list; **just needs your visual verify** (Rep
   (HMAC link, opt-out option, public handler, footer + skip-check) wired into both bulk-send paths;
   transactional sends untouched. **Review the rendered footer + confirmation page before activating.**
 
-### NEXT UP — ONE DECISION NEEDED from Whitney, then I can finish it
+### NEXT UP
 
-- **#23 Auto payment-reminder cron — pick A or B (see the #23 item below).** Investigation found the
-  `PAYMENT_REMINDER` template is defined but never wired to a send path, so there's a real fork in
-  WHICH email customers get: **(A)** reuse the proven payment-link email (`send_invoice_email_for_order`,
-  my recommendation) vs **(B)** build a stored-template renderer for the editable `PAYMENT_REMINDER`
-  wording. Everything else (daily cron, min-age + repeat-dedupe options, payment_status-only reads) is
-  settled. It auto-emails customers, so also needs your sign-off on content + cadence. Tell me A or B
-  and it's a quick build + smoke.
+- **#23 Auto payment-reminder cron — ✅ BUILT (Option A), ships DISABLED.** Done: `EEM_Payment_Reminder`
+  daily cron reuses the payment-link email; defaults OFF; smoke 20/0; committed dormant. **To turn it on
+  for real, two small things remain:** (1) add a Settings UI toggle (`eem_payment_reminder_enabled`) plus
+  the two day-count fields (`eem_payment_reminder_min_age_days` default 3, `eem_payment_reminder_repeat_days`
+  default 7); (2) Whitney flips it on after review. Until then it's inert. See item #23 below for full detail.
 
 ### Standing constraints carried forward (unchanged)
 - **Never bump version without explicit Whitney approval each time.**
@@ -259,8 +257,6 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 - [ ] **Group Names feature — verify when groups are actually in use (not yet).** Shipped 2.7.650 + branch follow-ups. Verify: (1) admin adds names in the editor Group Names table; (2) customer event page shows the strict-list Group dropdown; (3) assign/change/remove group from the map popover; (4) sidebar Groups filter (only when groups enabled); (5) group shows on order detail; (6) **Grounds Fee + Rider Deposit charges show on the customer Order Summary AND admin Order Detail** with correct per-rider totals. Editor-cleanup commit `1bc0432` on the branch is NOT yet merged/deployed — bump + merge when ready to verify.
 
-0. [ ] **Stall & RV Charts — rethink the toolbar layout (Whitney sleeping on it, 2026-06-27).** The 2.7.657 cleanup shipped but feels "clunky." THE core problem (Whitney, said twice): **the filters/controls MOVE on every one of the 3 views** (By Customer / By Location—List / By Location—Map) — that inconsistency is the jarring part. Goal: **ONE consistent control layout that stays put across all 3 views**, with **Show + View anchored together, left-aligned directly under the page title**, identical position on every view. Today they sit top-right and the surrounding controls (Search, Barns, Quick-view, sidebar) reflow per view. Tomorrow: design a single fixed toolbar; Show/View never move; only the contents that genuinely don't apply to a view (e.g. Bulk update, barn tabs) hide in place rather than reshuffling everything. Don't start until Whitney confirms the direction. Header moves + sidebar declutter from 2.7.657 are self-contained commits → easy to revert individually if she wants a different base.
-
 
 1. [ ] **Global mobile visual polish** — per-page pass to match Daily Movement standard (row heights, badge sizing, spacing/density). Scaffolding shipped (2.7.577–580); per-page work not started.
 
@@ -292,10 +288,7 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 22. [ ] **Bulk-notification unsubscribe.** ✅ BUILT + smoke (`email-optout-smoke.php` 23/0); committed dormant (no version bump). `includes/class-eem-email-optout.php` (`EEM_Email_Optout`): HMAC link keyed off `wp_salt('auth')` (no DB token to leak), opt-out stored in the `eem_email_optouts` option (email→timestamp), public `admin-post.php?action=eem_unsubscribe` handler (verify→record→confirmation page), per-recipient footer + `is_opted_out()` skip-check. Wired into **Notifications `dispatch_batch`** + **Email Customers** (both now skip opted-out + append the footer; return a `skipped` count). **Transactional sends are never gated** (smoke asserts `send_invoice_email_for_order` doesn't touch the opt-out gate). **Verify before activating:** review the rendered footer copy + the unsubscribe confirmation page, then send yourself a test Notification and click Unsubscribe.
 
-23. [ ] **Auto payment-reminder for unpaid orders.** ⚠️ NEEDS A DECISION FROM WHITNEY before building — investigation surfaced a **design fork that changes the customer email**. The spec says "send the existing `PAYMENT_REMINDER` template," BUT that template (and refund/cancellation) are **defined with `{{placeholders}}` and never wired to any send path** — the live emails use hand-built `build_*_email_html()` methods. So there are two real options, producing different customer emails:
-    - **(A) Reuse the proven payment-link path** (`EEM_Admin::send_invoice_email_for_order`): it already generates a pay link (invoice token), sends a branded payment email, flips status to invoice-sent, and writes dedupe notes ("Invoice Sent At"). Lowest-risk; the reminder = the same email as "Send Payment Link." ← my recommendation.
-    - **(B) Build a stored-template renderer** for `PAYMENT_REMINDER` (`{{customer_name}}/{{event_name}}/{{event_dates}}/{{balance}}/{{payment_link}}` substitution + escaping + Emogrifier) so the email matches the editable template wording. More work + still needs a `{{payment_link}}` generator (same invoice-token flow).
-    Everything else is settled + low-risk: daily WP-cron (model `EEM_Unit_Holds_Repo::schedule_cleanup`), min-age option (default ~3d), repeat-dedupe option (don't re-remind within N days), reads `payment_status` only (no payment-dispatch changes). **This auto-emails customers**, so it also needs your sign-off on the email content + cadence before activation. Pick A or B and I'll build it.
+23. [x] **Auto payment-reminder for unpaid orders. ✅ BUILT (Option A) — ships DISABLED.** Whitney chose Option A: reuse the proven payment-link email (`EEM_Admin::send_invoice_email_for_order`) so the reminder is byte-for-byte the same hotel-style header/footer + "Click here to pay" email as the manual "Send Payment Link" button (Whitney: "just build it so that it matches the style of our other emails"). New class `includes/class-eem-payment-reminder.php` (`EEM_Payment_Reminder`): daily WP-cron (`eem_payment_reminder_sweep`, scheduled on activation, unscheduled on deactivation), finds unpaid/invoice-sent orders older than a configurable min-age (option `eem_payment_reminder_min_age_days`, default 3), dedupes off the existing "Invoice Sent At" note (option `eem_payment_reminder_repeat_days`, default 7; 0 = remind once), 200/run safety cap, logs each sweep to the activity log. **SAFETY: feature defaults OFF** (`eem_payment_reminder_enabled`) — the cron is scheduled but `run_sweep()` no-ops until Whitney flips the option on after reviewing. Reads `payment_status` only; no payment-dispatch changes. Smoke: `tests/smoke/payment-reminder-smoke.php` (20/0 — due/dedupe/repeat-window logic, default-OFF guard, scheduling, canonical-email reuse). Committed dormant (no version bump → no auto-deploy). **Remaining before live use: (1) an enable toggle + the two day-count fields in Settings UI; (2) Whitney flips it on.**
 
 ---
 
