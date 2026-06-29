@@ -2109,20 +2109,29 @@
 .eem-group-reservation-fields[hidden] {
 	display: none !important;
 }
-/* "I'm one of the riders" opt-in — checkbox + label inline. */
-.eem-group-self-toggle {
-	display: flex;
+/* "I'm one of the riders" opt-in — checkbox + label on one line. Scoped with
+   .eem-event-page (mirroring .eem-stall-assign-card__check-label) so it beats the
+   global .eem-event-page label block rule that would otherwise stack them. */
+.eem-event-page .eem-group-self-toggle {
+	display: inline-flex;
 	align-items: center;
 	gap: 8px;
 	font-weight: 600;
+	color: #031B4E;
 	cursor: pointer;
+	line-height: 1;
 }
-.eem-group-self-toggle input[type="checkbox"] {
-	width: 18px;
-	height: 18px;
+.eem-event-page .eem-group-self-toggle input[type="checkbox"] {
+	width: 16px;
+	height: 16px;
+	min-width: 16px;
 	margin: 0;
+	accent-color: #1668F2;
 	flex-shrink: 0;
 	cursor: pointer;
+}
+.eem-event-page .eem-group-self-toggle span {
+	display: inline;
 }
 /* Explicit group-reservation opt-in (decoupled from the section collapse toggle
    so the card renders expanded like every other enabled section, while the
