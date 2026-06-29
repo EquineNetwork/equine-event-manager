@@ -22,7 +22,38 @@ $check = function ( $label, $cond ) use ( &$fail, &$pass ) {
 
 $rid = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => '2026 Southeast Region Super Sort' ) );
 update_post_meta( $rid, '_en_required_shavings_price', '22.00' );
-update_post_meta( $rid, '_en_cancellation_policy_override', 'Full refund 14+ days before the event; non-refundable within 14 days.' );
+// #55: the cancellation resolver reads the canonical _eem_-prefixed override key.
+update_post_meta( $rid, '_eem_cancellation_policy_override', 'Full refund 14+ days before the event; non-refundable within 14 days.' );
+// #55: the stall breakdown reads the shavings PRICE from the config table and the
+// shavings QTY from a real stall component ROW — seed both so the "Required
+// Shavings" line splits out (seeding a config row also activates the config read
+// path, so the cancellation override is mirrored there for consistency).
+if ( class_exists( 'EEM_Reservation_Config' ) ) {
+	EEM_Reservation_Config::for( (int) $rid )
+		->set_many( array(
+			'required_shavings_price'      => 22.00,
+			'cancellation_policy_override' => 'Full refund 14+ days before the event; non-refundable within 14 days.',
+		) )
+		->save();
+	EEM_Reservation_Config::flush_cache( (int) $rid );
+}
+global $wpdb;
+$wpdb->insert( $wpdb->prefix . 'eem_stall_reservations', array( // phpcs:ignore WordPress.DB
+	'event_source'            => 'native',
+	'reservation_id'          => (int) $rid,
+	'customer_name'           => 'Whitney Mitchell',
+	'email'                   => 'whitney@eem-test.local',
+	'stall_qty'               => 1,
+	'required_shavings_qty'   => 2,
+	'additional_shavings_qty' => 0,
+	'arrival_date'            => '2026-05-08',
+	'departure_date'          => '2026-05-10',
+	'subtotal'                => '64.00',
+	'total'                   => '64.00',
+	'payment_status'          => 'paid',
+	'order_number'            => '42',
+) );
+$c12_stall_row_id = (int) $wpdb->insert_id;
 
 $order = array(
 	'order_key' => 'rcpt', 'order_number' => '42', 'created_at' => '2026-04-24 10:30:00',
@@ -31,9 +62,11 @@ $order = array(
 	'customer_name' => 'Whitney Mitchell', 'email' => 'info@wmpromotions.com', 'phone' => '5593935352',
 	'type_labels' => array( 'stall' => 'Stall', 'rv' => 'RV' ),
 	'total' => 208.66, 'fees' => 6.56, 'tax' => 14.10, 'tax_rate' => 7.500, 'transaction_id' => 'ch_1',
+	// Fully-settled so the receipt renders the "Total Amount Paid" grand-total row.
+	'status_slug' => 'paid', 'payment_status' => 'paid', 'amount_paid' => 1208.66, 'amount_due' => 0,
 	// Real notes format: freeform special-request text first, then Billing Name/Address.
 	'notes' => "Early arrival please\n\nBilling Name: Whitney Mitchell\nBilling Address: 12253 Avenue 472\nOrange Cove, California 93646\nReservation setup ID: {$rid}",
-	'components' => array(),
+	'components' => array( array( 'table' => 'stall', 'row_id' => $c12_stall_row_id ) ),
 	'stall_quantity' => 1, 'stall_subtotal' => 64.00, 'stall_arrival_date' => '2026-05-08', 'stall_departure_date' => '2026-05-10',
 	'stall_stay_type' => 'nightly', 'required_shavings_qty' => 2, 'additional_shavings_qty' => 0,
 	'rv_quantity' => 1, 'rv_arrival_date' => '2026-05-08', 'rv_departure_date' => '2026-05-10',
