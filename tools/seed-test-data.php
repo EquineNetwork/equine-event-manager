@@ -297,8 +297,16 @@ class EEM_Test_Data_Seeder {
 			if ( empty( $stalls ) && empty( $rvs ) ) {
 				continue; // No configured chart — skip.
 			}
-			$start = (string) ( get_post_meta( $rid, '_en_source_event_start_date', true ) ?: get_post_meta( $rid, '_en_event_start_date', true ) );
-			$end   = (string) ( get_post_meta( $rid, '_en_nightly_end_date', true ) ?: get_post_meta( $rid, '_en_event_end_date', true ) );
+			// The stall chart's date columns come from the reservation CONFIG TABLE
+			// (available_start_date/end_date), NOT post-meta. Seed order dates from the
+			// SAME source so assigned units land on real grid cells (not just the
+			// date-independent occupant fallback) — otherwise grouped/assigned cells
+			// never render on the By Location chart. Fall back to post-meta, then +30d.
+			$rcfg  = EEM_Reservation_Config::for( $rid );
+			$start = (string) ( $rcfg->get( 'available_start_date' )
+				?: ( get_post_meta( $rid, '_en_source_event_start_date', true ) ?: get_post_meta( $rid, '_en_event_start_date', true ) ) );
+			$end   = (string) ( $rcfg->get( 'available_end_date' )
+				?: ( get_post_meta( $rid, '_en_nightly_end_date', true ) ?: get_post_meta( $rid, '_en_event_end_date', true ) ) );
 			$start = $start ?: gmdate( 'Y-m-d', strtotime( '+30 days' ) );
 			$end   = $end ?: gmdate( 'Y-m-d', strtotime( $start . ' +2 days' ) );
 			$nights = max( 1, (int) round( ( strtotime( $end ) - strtotime( $start ) ) / DAY_IN_SECONDS ) );
