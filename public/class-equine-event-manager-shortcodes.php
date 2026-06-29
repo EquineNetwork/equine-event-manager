@@ -4032,6 +4032,16 @@ class EEM_Shortcodes {
 			);
 		}
 
+		// Over-pick guard for exact_map. The matching check at ~line 3989 only runs
+		// inside the `stall_chart_enabled` block, but a MAP reservation can have
+		// stall_chart_enabled = 0 (it picks from the _en_stall_map snapshot instead),
+		// so a crafted POST could submit MORE picks than the quantity and skip that
+		// check. Gate to exact_map + !stall_chart_enabled to avoid a duplicate error.
+		// (Whitney 2026-06-29 — found by checkout-validation-gates-smoke.)
+		if ( 'exact_map' === $eem_pick_mode && empty( $data['stall_chart_enabled'] ) && $has_stall_selection && $eem_pick_count > $eem_pick_stall_qty ) {
+			$errors[] = __( 'Please do not choose more preferred stall numbers than the number of stalls you are reserving.', 'equine-event-manager' );
+		}
+
 		// Same all-or-nothing rule for the RV map (preferred_rv_lots vs rv_qty).
 		$eem_rv_mode    = class_exists( 'EEM_Reservations_CPT' ) ? ( EEM_Reservations_CPT::resolve_rv_pair( $eem_pick_reservation_id )['selection_mode'] ?? '' ) : '';
 		$eem_rv_qty     = absint( $submission['rv_qty'] ?? 0 );
@@ -4044,6 +4054,10 @@ class EEM_Shortcodes {
 				$eem_rv_picked,
 				$eem_rv_qty
 			);
+		}
+
+		if ( 'exact_map' === $eem_rv_mode && $has_rv_selection && $eem_rv_picked > $eem_rv_qty ) {
+			$errors[] = __( 'Please do not choose more preferred RV lots than the number of RV spaces you are reserving.', 'equine-event-manager' );
 		}
 
 		if ( $has_stall_selection ) {
