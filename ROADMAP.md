@@ -277,7 +277,6 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 5. [ ] **Postmeta → relational de-coupling Phase 1** — remaining gaps: map snapshots, hybrid blocked-units reads, events/venues/producers/divisions editors still on post-meta. Audit plan: `docs/POSTMETA-AUDIT.md`.
 
 
-8. [ ] **Convenience Fee → global Settings → Payments** — built on branch (global fee, ships disabled/$0, editor Fees section removed; smokes pass). Needs your verify + merge.
 
 9. [ ] **Display-math parity across all 4 surfaces** — built on branch (admin Order Detail uses the canonical breakdown; receipt/Order Detail itemize surcharges; Σ rows == total guard). Needs your verify + merge. Live side-by-side of customer checkout JS vs receipt is folded into #3.
 
