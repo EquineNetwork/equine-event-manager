@@ -34,8 +34,14 @@ $rv_t    = $wpdb->prefix . 'eem_rv_reservations';
 $rid = wp_insert_post( array( 'post_type' => 'en_reservation', 'post_status' => 'publish', 'post_title' => 'Notif Smoke Event' ) );
 $did = wp_insert_post( array( 'post_type' => 'en_entry', 'post_status' => 'publish', 'post_title' => 'Notif Smoke Event - #9.5 Division' ) );
 update_post_meta( $did, EEM_Entries::META_RESERVATION, $rid );
-update_post_meta( $did, EEM_Entries::META_DIVISION_NAME, '#9.5 Division' );
-update_post_meta( $did, EEM_Entries::META_PRICE, '45.00' );
+// #55: the divisions dropdown reads the relational division-config table — persist
+// the division there via the canonical save_entry_fields(), not raw post-meta.
+EEM_Entries::save_entry_fields( (int) $did, (int) $rid, '', array(
+	'division_name' => '#9.5 Division',
+	'price'         => '45.00',
+	'spots'         => 0,
+	'max'           => 0,
+), 'publish' );
 
 $note = static function ( $tok ) use ( $rid ) { return "Reservation setup ID: {$rid}\nSubmission token: {$tok}"; };
 
