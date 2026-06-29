@@ -79,7 +79,9 @@ $pay_orig = get_option( 'equine_event_manager_payment_settings' );
 update_option( 'equine_event_manager_payment_settings', array_merge( (array) $pay_orig, array( 'selected_gateway' => 'stripe' ) ) );
 $pref = new ReflectionMethod( 'EEM_Collect_Payment_Page', 'render_payment_card' );
 $pref->setAccessible( true );
-ob_start(); $pref->invoke( null, admin_url( 'admin.php' ), wp_generate_password( 32, false ), 'pending', 140.00 ); $card = (string) ob_get_clean();
+// #55: signature is render_payment_card( detail_url, order_key, float total_due, email )
+// — the legacy status arg was removed, so total_due is now the 3rd positional.
+ob_start(); $pref->invoke( null, admin_url( 'admin.php' ), wp_generate_password( 32, false ), 140.00 ); $card = (string) ob_get_clean();
 update_option( 'equine_event_manager_payment_settings', $pay_orig ); // restore active gateway
 // Stripe is configured in this dev env, so the live form should render.
 $check( 'card element mount point rendered', str_contains( $card, 'id="eem-cp-card-element"' ) );
@@ -89,8 +91,9 @@ $check( 'inline client calls create-intent', str_contains( $card, 'eem_collect_p
 $check( 'inline client calls confirm', str_contains( $card, 'eem_collect_payment_confirm' ) );
 $check( 'no raw card <input> in the form', ! preg_match( '/<input[^>]*name="(card|cvc|exp)/i', $card ) );
 
-// Paid order → no charge form.
-ob_start(); $pref->invoke( null, admin_url( 'admin.php' ), wp_generate_password( 32, false ), 'paid', 140.00 ); $paid = (string) ob_get_clean();
+// Paid/settled order ($0 due) → no charge form (the settled path is now driven
+// by total_due <= 0, not a removed status arg).
+ob_start(); $pref->invoke( null, admin_url( 'admin.php' ), wp_generate_password( 32, false ), 0.0 ); $paid = (string) ob_get_clean();
 $check( 'paid order shows no card element', ! str_contains( $paid, 'id="eem-cp-card-element"' ) );
 
 echo "\n{$passed} passed, {$failed} failed\n";
