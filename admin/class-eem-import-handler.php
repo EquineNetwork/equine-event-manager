@@ -773,6 +773,20 @@ class EEM_Import_Handler {
 					update_post_meta( $event_id, $key, $val );
 				}
 			}
+			// #16: TEC/feed-sourced events don't store their start/end in en_event
+			// post-meta (the dates live in the upstream calendar), so a cloned event
+			// imports dateless even though the reservation's date window is known.
+			// Backfill the cloned event's display dates from the export's
+			// available_start/end window when the event has none — fills empties only,
+			// never overwrites a real event date.
+			$cfg_avail_start = isset( $data['config']['available_start_date'] ) ? (string) $data['config']['available_start_date'] : '';
+			$cfg_avail_end   = isset( $data['config']['available_end_date'] ) ? (string) $data['config']['available_end_date'] : '';
+			if ( '' !== $cfg_avail_start && '' === (string) get_post_meta( $event_id, '_equine_event_manager_event_start_date', true ) ) {
+				update_post_meta( $event_id, '_equine_event_manager_event_start_date', $cfg_avail_start );
+			}
+			if ( '' !== $cfg_avail_end && '' === (string) get_post_meta( $event_id, '_equine_event_manager_event_end_date', true ) ) {
+				update_post_meta( $event_id, '_equine_event_manager_event_end_date', $cfg_avail_end );
+			}
 			if ( class_exists( 'EEM_Native_Event_Repo' ) && method_exists( 'EEM_Native_Event_Repo', 'save' ) ) {
 				$start = get_post_meta( $event_id, '_equine_event_manager_event_start_date', true );
 				$end   = get_post_meta( $event_id, '_equine_event_manager_event_end_date', true );
