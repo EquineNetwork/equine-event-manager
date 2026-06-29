@@ -275,6 +275,31 @@ class EEM_Customer_Profile_Page {
 				</div>
 			</div>
 			<div class="eem-cp-detail">
+				<div class="eem-cp-detail-label"><?php esc_html_e( 'Email Updates', 'equine-event-manager' ); ?></div>
+				<div class="eem-cp-detail-body">
+					<?php
+					$eem_opted_out = '' !== $p['email'] && class_exists( 'EEM_Email_Optout' ) && EEM_Email_Optout::is_opted_out( $p['email'] );
+					if ( $eem_opted_out ) {
+						$eem_optouts = (array) get_option( EEM_Email_Optout::OPTION, array() );
+						$eem_when    = $eem_optouts[ strtolower( trim( $p['email'] ) ) ] ?? '';
+						?>
+						<span class="eem-status-badge eem-status-cancelled"><?php esc_html_e( 'Unsubscribed', 'equine-event-manager' ); ?></span>
+						<?php if ( '' !== (string) $eem_when ) : ?>
+							<div class="eem-cp-muted" style="margin-top:4px;"><?php
+								echo esc_html( sprintf(
+									/* translators: %s: date the customer unsubscribed */
+									__( 'since %s', 'equine-event-manager' ),
+									date_i18n( (string) get_option( 'date_format' ), (int) strtotime( (string) $eem_when ) )
+								) );
+							?></div>
+						<?php endif; ?>
+					<?php } else { ?>
+						<span class="eem-status-badge eem-status-active"><?php esc_html_e( 'Subscribed', 'equine-event-manager' ); ?></span>
+					<?php } ?>
+					<div class="eem-cp-muted" style="margin-top:6px;font-size:12px;"><?php esc_html_e( 'Applies to bulk update emails only — order receipts &amp; payment notices always send.', 'equine-event-manager' ); ?></div>
+				</div>
+			</div>
+			<div class="eem-cp-detail">
 				<div class="eem-cp-detail-label"><?php esc_html_e( 'Billing Address', 'equine-event-manager' ); ?></div>
 				<div class="eem-cp-detail-body">
 					<?php if ( ! empty( $billing['lines'] ) ) : ?>
