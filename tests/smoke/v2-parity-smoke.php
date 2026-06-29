@@ -54,10 +54,12 @@ v2p_ok(
 	$pass, $fail, $log
 );
 
-// Source: Group Name field wrapped in group_reservations_enabled.
+// Source: the Group Reservation section is gated behind group_reservations_enabled.
+// #55: the simple <label class="eem-group-name-field"> was redesigned into a full
+// collapsible .eem-reservation-section--group-reservation block (still gated).
 v2p_ok(
-	'Group Name field gated behind group_reservations_enabled',
-	(bool) preg_match( "/if\s*\(\s*\\\$group_reservations_enabled\s*\)\s*:\s*\?>\s*<label class=\"eem-group-name-field\"/", $src ),
+	'Group Reservation section gated behind group_reservations_enabled',
+	(bool) preg_match( "/if\s*\(\s*\\\$group_reservations_enabled\s*\)\s*:\s*\?>\s*<div class=\"eem-reservation-section eem-reservation-section--group-reservation\"/", $src ),
 	$pass, $fail, $log
 );
 
@@ -108,7 +110,8 @@ v2p_ok( 'stall partial opens the .eem-layout-group wrapper', false !== strpos( $
 v2p_ok( 'stall partial closes the .eem-layout-group wrapper', false !== strpos( $stall_tpl, "echo '</div>'; // .eem-layout-group" ), $pass, $fail, $log );
 v2p_ok( 'rv partial opens the .eem-layout-group wrapper', false !== strpos( $rv_tpl, "'<div class=\"eem-layout-group\">'" ), $pass, $fail, $log );
 v2p_ok( 'rv partial closes the .eem-layout-group wrapper', false !== strpos( $rv_tpl, '</div><!-- .eem-layout-group -->' ), $pass, $fail, $log );
-v2p_ok( 'admin.css defines .eem-layout-group with the blue-gray surface token', (bool) preg_match( '/\.eem-layout-group\s*\{[^}]*background:\s*var\(--eem-bg\)/s', $css ), $pass, $fail, $log );
+// #55: the surface token was renamed to --eem-bg-muted.
+v2p_ok( 'admin.css defines .eem-layout-group with the muted surface token', (bool) preg_match( '/\.eem-layout-group\s*\{[^}]*background:\s*var\(--eem-bg-muted/s', $css ), $pass, $fail, $log );
 
 echo "\n=== v2 parity smoke: $pass passed, $fail failed ===\n";
 foreach ( $log as $l ) { echo "  $l\n"; }
