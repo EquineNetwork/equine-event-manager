@@ -552,9 +552,9 @@ class EEM_Import_Handler {
 		// only ON when its param is explicitly '1'. The reservation setup + map
 		// always export regardless.
 		$include = array(
-			'event'    => isset( $_GET['include_event'] ) && '1' === $_GET['include_event'],
-			'packages' => isset( $_GET['include_packages'] ) && '1' === $_GET['include_packages'],
-			'orders'   => isset( $_GET['include_orders'] ) && '1' === $_GET['include_orders'],
+			'event'       => isset( $_GET['include_event'] ) && '1' === $_GET['include_event'],
+			'reservation' => isset( $_GET['include_reservation'] ) && '1' === $_GET['include_reservation'],
+			'orders'      => isset( $_GET['include_orders'] ) && '1' === $_GET['include_orders'],
 		);
 
 		$export = self::build_export( $reservation_id, $include );
@@ -578,15 +578,24 @@ class EEM_Import_Handler {
 	private static function build_export( int $reservation_id, array $include = array() ): array {
 		global $wpdb;
 
-		// Which optional sections to bundle. The reservation post (with its map +
-		// blocked units in post-meta) and its config are ALWAYS exported — that's
-		// the irreducible "setup." Everything else is opt-in via the export UI's
-		// checkboxes. Defaults to everything for backward-compatible callers.
+		// Which sections to bundle, chosen via the export UI checkboxes:
+		//   event       — the linked event + its venue
+		//   reservation — the reservation setup: stall/RV map + blocked units +
+		//                  pricing config + stay packages (these always travel
+		//                  together; packages are part of the reservation)
+		//   orders      — stall + RV orders (customer PII)
+		// Defaults to everything for backward-compatible callers.
 		$include = wp_parse_args( $include, array(
-			'event'    => true, // event + its venue
-			'packages' => true, // stay packages / pricing tiers
-			'orders'   => true, // stall + RV orders (customer PII)
+			'event'       => true,
+			'reservation' => true,
+			'orders'      => true,
 		) );
+
+		// Orders reference their reservation setup, so they can only be exported
+		// alongside it — you can't import orders that have nothing to attach to.
+		if ( ! $include['reservation'] ) {
+			$include['orders'] = false;
+		}
 
 		$reservation = get_post( $reservation_id );
 		$res_meta    = get_post_meta( $reservation_id );
@@ -599,9 +608,9 @@ class EEM_Import_Handler {
 			'exported_at'    => current_time( 'c' ),
 			'plugin_version' => defined( 'EEM_VERSION' ) ? EEM_VERSION : 'unknown',
 			'included'       => array(
-				'event'    => (bool) $include['event'],
-				'packages' => (bool) $include['packages'],
-				'orders'   => (bool) $include['orders'],
+				'event'       => (bool) $include['event'],
+				'reservation' => (bool) $include['reservation'],
+				'orders'      => (bool) $include['orders'],
 			),
 		);
 
@@ -613,10 +622,19 @@ class EEM_Import_Handler {
 			$venue_id = $event ? (int) get_post_meta( $event_id, '_equine_event_manager_event_venue_id', true ) : 0;
 			$venue    = $venue_id ? get_post( $venue_id ) : null;
 
+			$producer_id = $event ? (int) get_post_meta( $event_id, '_equine_event_manager_event_producer_id', true ) : 0;
+			$producer    = $producer_id ? get_post( $producer_id ) : null;
+
 			if ( $venue ) {
 				$export['venue'] = array(
 					'title' => $venue->post_title,
 					'meta'  => self::flatten_meta( get_post_meta( $venue_id ) ),
+				);
+			}
+			if ( $producer ) {
+				$export['producer'] = array(
+					'title' => $producer->post_title,
+					'meta'  => self::flatten_meta( get_post_meta( $producer_id ) ),
 				);
 			}
 			if ( $event ) {
@@ -627,19 +645,17 @@ class EEM_Import_Handler {
 			}
 		}
 
-		/* ── Reservation + config (always) ────────────────────────── */
-		$export['reservation'] = array(
-			'title'  => $reservation->post_title,
-			'status' => $reservation->post_status,
-			'meta'   => self::flatten_meta( $res_meta ),
-		);
-		$export['config'] = $cfg_data;
-
-		/* ── Stay packages (optional) ─────────────────────────────── */
-		if ( $include['packages'] && class_exists( 'EEM_Stay_Packages_Repo' ) ) {
-			$export['packages'] = EEM_Stay_Packages_Repo::get_packages( $reservation_id );
-		} else {
-			$export['packages'] = array();
+		/* ── Reservation setup: map + config + packages (optional) ── */
+		if ( $include['reservation'] ) {
+			$export['reservation'] = array(
+				'title'  => $reservation->post_title,
+				'status' => $reservation->post_status,
+				'meta'   => self::flatten_meta( $res_meta ),
+			);
+			$export['config']   = $cfg_data;
+			$export['packages'] = class_exists( 'EEM_Stay_Packages_Repo' )
+				? EEM_Stay_Packages_Repo::get_packages( $reservation_id )
+				: array();
 		}
 
 		/* ── Orders + customer data (optional) ────────────────────── */
@@ -758,9 +774,10 @@ class EEM_Import_Handler {
 	private static function import_setup( array $data ): array {
 		global $wpdb;
 
-		$summary = array();
-		$venue_id = 0;
-		$event_id = 0;
+		$summary     = array();
+		$venue_id    = 0;
+		$producer_id = 0;
+		$event_id    = 0;
 
 		/* ── Venue ─────────────────────────────────────────────── */
 		if ( ! empty( $data['venue'] ) ) {
@@ -783,6 +800,24 @@ class EEM_Import_Handler {
 			$summary['venue_id'] = $venue_id;
 		}
 
+		/* ── Producer ──────────────────────────────────────────── */
+		if ( ! empty( $data['producer'] ) ) {
+			$producer_id = (int) wp_insert_post( array(
+				'post_type'   => 'en_producer',
+				'post_status' => 'publish',
+				'post_title'  => sanitize_text_field( $data['producer']['title'] ?? 'Imported Producer' ),
+			) );
+			if ( $producer_id && ! empty( $data['producer']['meta'] ) ) {
+				foreach ( $data['producer']['meta'] as $key => $val ) {
+					if ( ! self::is_importable_meta_key( (string) $key ) ) {
+						continue;
+					}
+					update_post_meta( $producer_id, $key, $val );
+				}
+			}
+			$summary['producer_id'] = $producer_id;
+		}
+
 		/* ── Event ─────────────────────────────────────────────── */
 		if ( ! empty( $data['event'] ) ) {
 			$event_id = (int) wp_insert_post( array(
@@ -797,6 +832,9 @@ class EEM_Import_Handler {
 					}
 					if ( $key === '_equine_event_manager_event_venue_id' && $venue_id ) {
 						$val = $venue_id;
+					}
+					if ( $key === '_equine_event_manager_event_producer_id' && $producer_id ) {
+						$val = $producer_id;
 					}
 					update_post_meta( $event_id, $key, $val );
 				}
