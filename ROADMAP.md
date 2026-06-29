@@ -94,15 +94,18 @@ smoke passes 12/0. Marked in the v1 list; **just needs your visual verify** (Rep
 
 ---
 
-## ⚠️ BRANCHES WAITING TO MERGE — DO THIS BEFORE NEXT PLUGIN UPDATE
+## ✅ BRANCHES — NOTHING WAITING TO MERGE (resolved 2026-06-29)
 
-Before any version bump or release, these branches MUST be merged to `main` first:
-
-| Branch | PR | What's in it |
-|---|---|---|
-| `claude/page-styling-template-jwx3ez` | PR #36 | Import/Export styling; list-page rounded border fix (Events, Customers, Term Categories); Daily Movement footer; invoice/refund/payment-received email restyle to design system; report PDF color tokens; **audit fixes A2 (CSV import hardening), A7 (order-status whitelist), A8 (cart-hold cleanup cron), A9 (admin BCC failure logging), A11 (move_uploaded_file suppression)**; ROADMAP #15/#17/#18/#19 done |
-
-**How to merge when ready:** Whitney approves → merge PR on GitHub → confirm `main` has the changes → then bump version as normal.
+The old "branches waiting to merge" block was **stale**. Audited 2026-06-29: PR #36 is
+CLOSED (not merged) and every remaining open branch is 100–468 commits behind `main`.
+All the features they described (#7 contiguous stalls, #8 global convenience fee, #9
+display-math parity, #10 hide-assignment-UI, #12 venue auto-save, plus PR #36's
+Import/Export styling + audit fixes A2/A7/A8/A9/A11) were **re-landed directly on main**
+over the hundreds of commits since and are confirmed present. #7/#8/#9/#10/#12 were
+Whitney-verified live on 2026-06-29. **Do NOT merge any of the orphan branches** — they
+would clobber newer work. The stale branches (`claude/festive-heisenberg-muha01`,
+`…plugin-github-deployment…`, `…session-context-recovery…`, `…trusting-bardeen…`,
+`…vigilant-curie…`, `hotfix/charts-list-empty`, `v4-stall-mapping`) can be deleted.
 
 ---
 
@@ -280,14 +283,11 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 
 
-12. [ ] **Auto-save stall/RV maps to the venue** — built on branch (rolling "Auto-saved (latest)" per venue, empty-guard; smokes pass). Needs your verify + merge.
 
 
 14. [ ] **Remove "X days" countdown chip** on the event-list flyer card. **BLOCKED** — needs Whitney's mockup before starting.
 
 20. [ ] **TEC event list template** — frontend event-list display for TEC-sourced events (part of the deferred frontend-lists work; scope/design TBD).
-
-21. [ ] **Verify + merge PR #36 (styling + audit fixes, this branch).** All built and pushed, needs your click-through then merge: Import/Export page styling + custom file inputs; list-table bottom-border fix (Events/Customers/Term Categories); Daily Movement footer; invoice/refund/payment-received email + report-PDF design-system parity; CSV import hardening (size/type validation, no DB-error leak); order payment-status whitelist; hourly cart-hold cleanup cron; admin BCC send-failure logging; move_uploaded_file error-suppression fix.
 
 22. [ ] **Bulk-notification unsubscribe.** ✅ BUILT + smoke (`email-optout-smoke.php` 23/0); committed dormant (no version bump). `includes/class-eem-email-optout.php` (`EEM_Email_Optout`): HMAC link keyed off `wp_salt('auth')` (no DB token to leak), opt-out stored in the `eem_email_optouts` option (email→timestamp), public `admin-post.php?action=eem_unsubscribe` handler (verify→record→confirmation page), per-recipient footer + `is_opted_out()` skip-check. Wired into **Notifications `dispatch_batch`** + **Email Customers** (both now skip opted-out + append the footer; return a `skipped` count). **Transactional sends are never gated** (smoke asserts `send_invoice_email_for_order` doesn't touch the opt-out gate). **Verify before activating:** review the rendered footer copy + the unsubscribe confirmation page, then send yourself a test Notification and click Unsubscribe.
 
