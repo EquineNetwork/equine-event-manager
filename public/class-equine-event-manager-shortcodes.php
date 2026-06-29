@@ -2574,6 +2574,7 @@ class EEM_Shortcodes {
 			</div>
 			<div class="eem-map-scroll" data-eem-map-scroll><div class="eem-map-grid" data-eem-map-grid></div></div>
 			<div class="eem-map-summary" data-eem-map-summary></div>
+			<div class="stall-selection-warn stall-selection-warn--incomplete eem-map-incomplete" data-eem-stall-incomplete><?php esc_html_e( 'Please pick a spot for every stall before checkout, or clear your selections to have stalls auto-assigned after checkout.', 'equine-event-manager' ); ?></div>
 			<?php if ( $tack_enabled ) : ?>
 				<?php // v4: customer-designated tack stall for the map picker. Mirrors the
 				// quantity-picker control; shares the [data-eem-tack-select] hook so the
@@ -3170,7 +3171,8 @@ class EEM_Shortcodes {
 					<div class="stall-selection-count" data-eem-stall-count><strong>0</strong> <?php esc_html_e( 'of 0 stalls selected', 'equine-event-manager' ); ?></div>
 					<div class="stall-selection-list" data-eem-stall-list></div>
 				</div>
-				<div class="stall-selection-warn" data-eem-stall-warn><?php esc_html_e( "You've selected the maximum. Tap a selected stall to deselect, or use the +/− buttons above to reserve more.", 'equine-event-manager' ); ?></div>
+				<div class="stall-selection-warn stall-selection-warn--incomplete" data-eem-stall-incomplete><?php esc_html_e( 'Please pick a spot for every stall before checkout, or clear your selections to have stalls auto-assigned after checkout.', 'equine-event-manager' ); ?></div>
+					<div class="stall-selection-warn" data-eem-stall-warn><?php esc_html_e( "You've selected the maximum. Tap a selected stall to deselect, or use the +/− buttons above to reserve more.", 'equine-event-manager' ); ?></div>
 			</div>
 			<?php // V1 #5d — optional tack-stall designation. JS reveals it once stalls
 			// are picked and populates the options from the current selection. No
@@ -4001,6 +4003,27 @@ class EEM_Shortcodes {
 					);
 				}
 			}
+		}
+
+		// Map/pick mode is all-or-nothing: the customer either picks NONE (we
+		// auto-assign every stall after checkout) or picks a spot for EVERY stall
+		// in the quantity. A PARTIAL selection (some but not all) must block
+		// checkout — otherwise the customer pays for N stalls but only chose
+		// locations for some of them, and the rest are silently undefined. This
+		// is the authoritative server gate; the form also blocks + prompts live.
+		// (Whitney 2026-06-29.)
+		$eem_pick_reservation_id = isset( $_POST['en_reservation_id'] ) ? absint( $_POST['en_reservation_id'] ) : 0;
+		$eem_pick_mode           = $this->get_resolved_stall_selection_mode( $eem_pick_reservation_id, $data );
+		$eem_pick_stall_qty      = absint( $submission['stall_qty'] ?? 0 );
+		$eem_pick_count          = count( (array) ( $submission['preferred_stall_units'] ?? array() ) );
+
+		if ( 'exact_map' === $eem_pick_mode && $has_stall_selection && $eem_pick_count > 0 && $eem_pick_count < $eem_pick_stall_qty ) {
+			$errors[] = sprintf(
+				/* translators: 1: number of stalls picked on the map, 2: number of stalls being reserved. */
+				__( 'You have selected %1$d of %2$d stalls on the map. Please pick a spot for every stall, or clear your selections to have stalls auto-assigned after checkout.', 'equine-event-manager' ),
+				$eem_pick_count,
+				$eem_pick_stall_qty
+			);
 		}
 
 		if ( $has_stall_selection ) {
@@ -12929,6 +12952,7 @@ RV Lot: " . $rv_lot['name'] );
 					initializeInvoiceActionButtons(form);
 					initializeInvoiceBillingToggle(form);
 					initializeStripeCardField(form);
+					bindStallPickGuard(form);
 					bindStripeSubmitHandler(form);
 						bindStallPickConfirm(form);
 					initializeCollapsibleReservationSections(form);
@@ -13537,6 +13561,29 @@ RV Lot: " . $rv_lot['name'] );
 				}, 800);
 			}
 
+			// All-or-nothing stall-pick guard. If any map picker has SOME but not all
+			// stalls selected, block every checkout path (Stripe, Auth.net, cash) before
+			// it starts, reveal the warning, and scroll it into view so the customer is
+			// prompted to finish picking (or clear to auto-assign). Capture phase so it
+			// runs before the Stripe submit handler and can stop it. Mirrors the
+			// authoritative server gate in validate_submission(). (Whitney 2026-06-29.)
+			function bindStallPickGuard(form) {
+				form.addEventListener('submit', function(event) {
+					var incomplete = Array.prototype.some.call(
+						form.querySelectorAll('[data-eem-stall-picker]'),
+						function(p) { return p.dataset.eemPickIncomplete === '1'; }
+					);
+					if (!incomplete) { return; }
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					var warn = form.querySelector('[data-eem-stall-incomplete]');
+					if (warn) {
+						warn.classList.add('show');
+						warn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+					}
+				}, true);
+			}
+
 			function bindStripeSubmitHandler(form) {
 				form.addEventListener('submit', function(event) {
 					var stripeState = enStripeForms.get(form);
@@ -14076,12 +14123,30 @@ RV Lot: " . $rv_lot['name'] );
 				toggleSummaryRow(form, 'tax', tax > 0);
 				syncStallAssignmentAvailability(form);
 				syncStallPicker(form);
+					syncStallPickWarning(form);
 			}
 
 			/* C10.D — "Pick Your Stalls" picker. Reflects checkbox state onto the
 			   cells, updates the count / list / max-warning, and caps selections at
 			   the stall quantity (the +/- stepper above). */
-			function syncStallPicker(form) {
+			function syncStallPickWarning(form) {
+					var qtyInput = form.querySelector('[name="stall_qty"]');
+					var qty = qtyInput ? (parseInt(qtyInput.value, 10) || 0) : 0;
+					var pickEls = form.querySelectorAll('[name="preferred_stall_units[]"]');
+					var picked = Array.prototype.filter.call(pickEls, function(el) {
+						return el.type !== 'checkbox' || el.checked;
+					}).length;
+					// All-or-nothing: SOME but not all picked → block checkout. Mirrors the
+					// server gate in validate_submission(). Picker-agnostic (map + grid).
+					var incomplete = qty > 0 && picked > 0 && picked < qty;
+					Array.prototype.forEach.call(form.querySelectorAll('[data-eem-stall-incomplete]'), function(el) {
+						el.classList.toggle('show', incomplete);
+					});
+					form.dataset.eemPickIncomplete = incomplete ? '1' : '';
+					return incomplete;
+				}
+
+				function syncStallPicker(form) {
 				var picker = form.querySelector('[data-eem-stall-picker]');
 				if (!picker) { return; }
 				var max = Math.max(0, getNumberFieldValue(form, 'stall_qty'));
@@ -14160,6 +14225,7 @@ RV Lot: " . $rv_lot['name'] );
 					}
 				}
 				syncStallPicker(form);
+					syncStallPickWarning(form);
 			});
 
 			function parseJsonAttribute(value) {

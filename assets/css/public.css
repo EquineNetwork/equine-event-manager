@@ -1455,6 +1455,15 @@
 .eem-event-page .stall-selection-warn.show {
 	display: block;
 }
+/* Blocking "finish your picks" warning — red + bold to distinguish it from the
+   amber informational max-selected notice. Shown when SOME but not all stalls
+   are picked; checkout is gated until it clears. */
+.eem-event-page .stall-selection-warn--incomplete {
+	color: #b91c1c;
+	background: #FEF2F2;
+	border-color: #fecaca;
+	font-weight: 600;
+}
 .eem-event-page .stall-hint {
 	font-size: 12px;
 	color: #6B7A99;
