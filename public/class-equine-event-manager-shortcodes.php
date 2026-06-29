@@ -1238,23 +1238,31 @@ class EEM_Shortcodes {
 												<?php endforeach; ?>
 											</select>
 										</label>
-										<p class="eem-reservation-help"><?php esc_html_e( 'If you’re booking with a group, choose it here so we can stall your group together.', 'equine-event-manager' ); ?></p>
-										<p class="eem-reservation-help">
-											<?php
-											if ( '' !== $support_phone ) {
-												printf(
-													/* translators: %s: support phone number. */
-													esc_html__( 'Don’t see your group in the list? Please call us at %s to be added.', 'equine-event-manager' ),
-													'<strong>' . esc_html( $support_phone ) . '</strong>'
-												);
-											} else {
-												esc_html_e( 'Don’t see your group in the list? Please contact us to be added.', 'equine-event-manager' );
-											}
-											?>
-										</p>
 									</div>
 								<?php endif; ?>
-								<p class="eem-reservation-help"><?php esc_html_e( 'This is a group reservation — we’ll capture the rider count and a first and last name for each rider. Switch the toggle off if you’re not booking for a group.', 'equine-event-manager' ); ?></p>
+								<?php
+								// One consolidated helper paragraph (Whitney 2026-06-29): the
+								// section explainer + the "call us to be added" line, with the
+								// Settings → Branding support phone when one is set.
+								$eem_group_help = __( 'This is a group reservation — we’ll capture the rider count and a first and last name for each rider. Switch the toggle off if you’re not booking for a group.', 'equine-event-manager' );
+								?>
+								<p class="eem-reservation-help">
+									<?php
+									if ( '' !== $support_phone ) {
+										printf(
+											'%1$s %2$s',
+											esc_html( $eem_group_help ),
+											sprintf(
+												/* translators: %s: support phone number. */
+												esc_html__( 'Don’t see your group in the list? Please contact us at %s to be added.', 'equine-event-manager' ),
+												'<strong>' . esc_html( $support_phone ) . '</strong>'
+											)
+										);
+									} else {
+										echo esc_html( $eem_group_help ) . ' ' . esc_html__( 'Don’t see your group in the list? Please contact us to be added.', 'equine-event-manager' );
+									}
+									?>
+								</p>
 								<div class="eem-group-reservation-fields" data-eem-group-fields hidden>
 									<div class="eem-product-list eem-product-list--group-reservation">
 										<?php $this->render_product_list_header(); ?>
@@ -1268,7 +1276,7 @@ class EEM_Shortcodes {
 											<div class="eem-product-line-item__qty">
 												<div class="eem-quantity-control">
 													<button type="button" class="eem-quantity-button" data-eem-quantity-step="-1" aria-label="<?php esc_attr_e( 'Decrease quantity', 'equine-event-manager' ); ?>">-</button>
-													<input type="number" name="group_rider_count" min="1" step="1" value="1" data-eem-group-count inputmode="numeric" />
+													<input type="number" name="group_rider_count" min="0" step="1" value="0" data-eem-group-count inputmode="numeric" />
 													<button type="button" class="eem-quantity-button" data-eem-quantity-step="1" aria-label="<?php esc_attr_e( 'Increase quantity', 'equine-event-manager' ); ?>">+</button>
 												</div>
 											</div>
@@ -13057,7 +13065,11 @@ RV Lot: " . $rv_lot['name'] );
 					var count = parseInt(countInput.value || '0', 10);
 					var existingValues = [];
 
-					count = Math.max(1, count || 1);
+					// Allow 0 riders so the group section adds $0 on load (Whitney
+					// 2026-06-29): the toggle is ON by default to surface the option,
+					// but a customer who isn't actually booking a group shouldn't be
+					// pre-charged. They increment the count to add riders/fees.
+					if (isNaN(count) || count < 0) { count = 0; }
 					countInput.value = count;
 
 					list.querySelectorAll('.eem-group-rider-card').forEach(function(card) {
