@@ -13,6 +13,19 @@
 
 if ( ! defined( 'ABSPATH' ) ) { fwrite( STDERR, "Must run via wp eval-file\n" ); exit( 1 ); }
 
+// #55: Sheets & Results is a gated feature (default-on, but OFF in this env). The
+// AJAX handlers + editor section card only wire up when it's enabled, and the
+// plugin registers them at init — past by now. Enable the feature via the
+// settings filter and run the registration so the behavior under test is live.
+add_filter( 'option_equine_event_manager_feature_settings', static function ( $v ) {
+	if ( ! is_array( $v ) ) { $v = array(); }
+	$v['sheets_results_enabled'] = 1;
+	return $v;
+}, 99 );
+if ( class_exists( 'EEM_Sheets_Results_Page' ) && ! has_action( 'wp_ajax_eem_sr_render_section' ) ) {
+	EEM_Sheets_Results_Page::register();
+}
+
 $passed = 0; $failed = 0;
 $check = static function ( string $label, bool $ok ) use ( &$passed, &$failed ): void {
 	if ( $ok ) { $passed++; echo "  ok  - {$label}\n"; }
