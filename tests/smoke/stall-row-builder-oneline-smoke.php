@@ -41,9 +41,10 @@ $check( 'CSS .eem-row-card-line is a flex row', (bool) preg_match( '/\.eem-row-c
 $check( 'CSS name field is wider (flex 2)', str_contains( $css, '.eem-row-card-line .eem-row-card-field--name { flex: 2' ) );
 $check( 'CSS optional label is muted', str_contains( $css, '.eem-row-card-optional' ) );
 
-// --- chart: Block column dropped when all rows unnamed ---------------------
+// --- chart: Barn column dropped when all rows unnamed ----------------------
+// #55: the secondary column label was renamed 'Block' → 'Barn'.
 $check( 'chart computes $eem_has_block from row blocks', str_contains( $adm, '$eem_has_block' ) && str_contains( $adm, "trim( (string) ( \$eem_sr['block'] ?? '' ) )" ) );
-$check( 'chart passes empty Block label when unnamed', str_contains( $adm, "\$eem_has_block ? __( 'Block', 'equine-event-manager' ) : ''" ) );
+$check( 'chart passes empty Barn label when unnamed', str_contains( $adm, "\$eem_has_block ? __( 'Barn', 'equine-event-manager' ) : ''" ) );
 
 // --- server still treats name as optional (usable = first+last) ------------
 $ref = new ReflectionMethod( 'EEM_Reservation_Editor_Page', 'count_usable_rows' );
