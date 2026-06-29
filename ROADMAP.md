@@ -284,7 +284,7 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 14. [ ] **Remove "X days" countdown chip** on the event-list flyer card. **BLOCKED** — needs Whitney's mockup before starting.
 
-16. [ ] **Import/Export: event-level dates not carried** into the imported reservation.
+16. [ ] **Import/Export: event-level dates not carried** into the imported reservation. ✅ FIXED + smoke (`import-event-dates-smoke.php` 6/0); awaiting your verify. Reproduced on Local: the JSON setup round-trip already carries the reservation's `available_start/end` window fine — the real gap is that **TEC/feed-sourced events store NO start/end in `en_event` post-meta** (those live in the upstream calendar), so a cloned event imported dateless. `import_setup` now backfills the cloned event's `_equine_event_manager_event_start/end_date` from the available window **only when empty** (native events with real dates are untouched). **Verify:** export a TEC-sourced reservation, import it, confirm the cloned event shows dates on the event page / list flyer.
 
 20. [ ] **TEC event list template** — frontend event-list display for TEC-sourced events (part of the deferred frontend-lists work; scope/design TBD).
 
