@@ -35,8 +35,16 @@ $rows = (array) $list_m->invoke( $admin );
 // Parse "<n> Available", "<n> Reserved", "<n> Blocked" out of a stats array.
 $parse = function ( array $stats, $needle ) {
 	foreach ( $stats as $s ) {
-		$label = isset( $s['label'] ) ? (string) $s['label'] : '';
-		if ( false !== stripos( $label, $needle ) && preg_match( '/(\d+)/', $label, $m ) ) {
+		// #55: stats shape is now { tone, count, name } — the count is a separate
+		// int field, not embedded in the label. Fall back to the old label form.
+		$label = (string) ( $s['name'] ?? $s['label'] ?? '' );
+		if ( false === stripos( $label, $needle ) ) {
+			continue;
+		}
+		if ( isset( $s['count'] ) ) {
+			return (int) $s['count'];
+		}
+		if ( preg_match( '/(\d+)/', $label, $m ) ) {
 			return (int) $m[1];
 		}
 	}
