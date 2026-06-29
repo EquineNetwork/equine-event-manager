@@ -39,9 +39,16 @@ up_ok( 'main file requires the updater', false !== strpos( $main, "includes/clas
 up_ok( 'main file calls EEM_Updater::init()', false !== strpos( $main, 'EEM_Updater::init()' ), $pass, $fail, $log );
 
 // --- export-ignore keeps the updater's download archive clean ---
-$attrs = (string) file_get_contents( $root . '.gitattributes' );
-foreach ( array( '/tests/ export-ignore', '/.mockups/ export-ignore', '/CLAUDE.md export-ignore', '/composer.json export-ignore' ) as $rule ) {
-	up_ok( ".gitattributes has: $rule", false !== strpos( $attrs, $rule ), $pass, $fail, $log );
+// #55: .gitattributes is a repo build-config file; it is itself export-ignored and
+// is NOT present in a deployed/copied plugin (EQUINE_EVENT_MANAGER_PATH). Only
+// assert the rules when the file is present (dev checkout / source tree).
+if ( file_exists( $root . '.gitattributes' ) ) {
+	$attrs = (string) file_get_contents( $root . '.gitattributes' );
+	foreach ( array( '/tests/ export-ignore', '/.mockups/ export-ignore', '/CLAUDE.md export-ignore', '/composer.json export-ignore' ) as $rule ) {
+		up_ok( ".gitattributes has: $rule", false !== strpos( $attrs, $rule ), $pass, $fail, $log );
+	}
+} else {
+	$log[] = 'SKIP .gitattributes rules — not present on a deployed install (export-ignored).';
 }
 
 echo "\n=== EEM_Updater (GitHub auto-update) smoke: $pass passed, $fail failed ===\n";

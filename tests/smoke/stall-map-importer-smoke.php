@@ -30,13 +30,22 @@ sm_ok( 'parse_grid: (0,1) gap', 'gap' === $g[0][1]['type'], $pass, $fail, $log )
 sm_ok( 'parse_grid: (0,2) landmark', 'landmark' === $g[0][2]['type'] && 'Office' === $g[0][2]['label'], $pass, $fail, $log );
 
 /* ── offline parse of the REAL Montcrief mockup CSV ────────────── */
-$mont_csv = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . '.mockups/montcrief.csv' );
-$mont = EEM_Stall_Map_Importer::parse_grid( $mont_csv );
-$snap_mont = array( 'barns' => array( array( 'name' => 'Montcrief', 'grid' => $mont ) ) );
-$mont_stalls = EEM_Stall_Map_Importer::stall_labels( $snap_mont );
-sm_ok( 'Montcrief parses to 262 stalls', 262 === count( $mont_stalls ), $pass, $fail, $log );
-sm_ok( 'Montcrief 0 duplicate labels', array() === EEM_Stall_Map_Importer::find_duplicate_labels( $snap_mont ), $pass, $fail, $log );
-sm_ok( 'Montcrief has 5001 and 5262', in_array( '5001', $mont_stalls, true ) && in_array( '5262', $mont_stalls, true ), $pass, $fail, $log );
+// #55: the .mockups/ fixtures are a dev-only resource (export-ignored), so the
+// CSV isn't present on a deployed/copied plugin. Run the fixture-backed checks
+// only when it's available; the importer is otherwise exercised by the inline
+// synthetic grids above + below.
+$mont_csv_path = EQUINE_EVENT_MANAGER_PATH . '.mockups/montcrief.csv';
+if ( file_exists( $mont_csv_path ) ) {
+	$mont_csv = (string) file_get_contents( $mont_csv_path );
+	$mont = EEM_Stall_Map_Importer::parse_grid( $mont_csv );
+	$snap_mont = array( 'barns' => array( array( 'name' => 'Montcrief', 'grid' => $mont ) ) );
+	$mont_stalls = EEM_Stall_Map_Importer::stall_labels( $snap_mont );
+	sm_ok( 'Montcrief parses to 262 stalls', 262 === count( $mont_stalls ), $pass, $fail, $log );
+	sm_ok( 'Montcrief 0 duplicate labels', array() === EEM_Stall_Map_Importer::find_duplicate_labels( $snap_mont ), $pass, $fail, $log );
+	sm_ok( 'Montcrief has 5001 and 5262', in_array( '5001', $mont_stalls, true ) && in_array( '5262', $mont_stalls, true ), $pass, $fail, $log );
+} else {
+	$log[] = 'SKIP Montcrief CSV fixture — .mockups/ not present on a deployed install.';
+}
 
 /* ── per-barn stats breakdown (total/available/reserved/tack/blocked) ── */
 $stats_snap = array( 'barns' => array( array( 'name' => 'A', 'grid' => array(
