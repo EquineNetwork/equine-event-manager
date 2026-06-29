@@ -100,7 +100,7 @@ update_post_meta( $rid, '_en_general_addons', array( array( 'name' => 'Shavings'
 update_post_meta( $rid, '_en_venue_agreement_enabled', 0 );
 update_post_meta( $rid, '_en_venue_agreement_file_id', 4242 );
 
-$v = $cpt->get_meta_values( $rid );
+$v = $cpt->get_meta_values( $rid, true ); // #55: this guards the POST-META read path's OFF-persistence backfills, so read post-meta-first (default is config-table-first, mig-016).
 foreach ( $three as $k ) {
 	fix2348_ok( "read: {$k}_enabled stored 0 + data present → 0 on reload",
 		0 === (int) $v[ "{$k}_enabled" ],
@@ -119,7 +119,7 @@ $leg = wp_insert_post( array(
 update_post_meta( $leg, '_en_general_addons', array( array( 'name' => 'Mats', 'price' => '5.00' ) ) );
 update_post_meta( $leg, '_en_venue_agreement_file_id', 99 );
 
-$lv = $cpt->get_meta_values( $leg );
+$lv = $cpt->get_meta_values( $leg, true );
 fix2348_ok( 'read: general_addons never stored + rows present → backfill 1',
 	1 === (int) $lv['general_addons_enabled'],
 	$pass, $fail, $log, var_export( $lv['general_addons_enabled'], true ) );
@@ -157,7 +157,7 @@ update_post_meta( $all, '_en_general_addons', array( array( 'name' => 'X', 'pric
 update_post_meta( $all, '_en_venue_agreement_file_id', 7 );
 update_post_meta( $all, '_en_convenience_fee_type', 'none' );
 
-$av = $cpt->get_meta_values( $all );
+$av = $cpt->get_meta_values( $all, true );
 foreach ( $ten as $k ) {
 	fix2348_ok( "defensive: {$k} stored 0 → reads 0",
 		0 === (int) $av[ $k ],
