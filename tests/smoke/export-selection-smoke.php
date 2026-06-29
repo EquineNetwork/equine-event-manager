@@ -60,6 +60,7 @@ $result  = $import->invoke( null, $setup );
 $new_rid = (int) ( $result['reservation_id'] ?? 0 );
 $check( 'import: setup-only payload creates a reservation', $new_rid > 0 );
 $check( 'import: no event created from eventless payload', empty( $result['event_id'] ) );
+$check( 'import: reservation lands as Draft for review', $new_rid > 0 && 'draft' === get_post_status( $new_rid ) );
 if ( $new_rid > 0 ) {
 	wp_delete_post( $new_rid, true );
 }

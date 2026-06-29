@@ -868,10 +868,13 @@ class EEM_Import_Handler {
 		}
 
 		/* ── Reservation ───────────────────────────────────────── */
+		// Imported reservations always land as Draft (Whitney 2026-06-29) so the
+		// admin can review dates, link the event, and check pricing before the
+		// clone goes live — regardless of the exported status.
 		$res_data = $data['reservation'];
 		$reservation_id = (int) wp_insert_post( array(
 			'post_type'   => 'en_reservation',
-			'post_status' => sanitize_text_field( $res_data['status'] ?? 'publish' ),
+			'post_status' => 'draft',
 			'post_title'  => sanitize_text_field( $res_data['title'] ?? 'Imported Reservation' ),
 		) );
 
