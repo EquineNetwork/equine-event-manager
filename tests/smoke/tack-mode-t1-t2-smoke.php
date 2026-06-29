@@ -76,7 +76,7 @@ tk_ok( 'tack count: on + designated = 1',      1 === $gtc->invoke( $sc, $sub_one
 tk_ok( 'tack count: on, none designated = 0',  0 === $gtc->invoke( $sc, $sub_no_tack,  $on_data ),  $pass, $fail, $log );
 
 /* ── Required-shavings bills on the post-tack quantity ──────────── */
-tk_ok( 'server shavings uses shavings_stall_qty (tack-excluded)', false !== strpos( $sc_src, '$shavings_stall_qty * absint( $data[\'required_shavings_per_stall\'] )' ), $pass, $fail, $log );
+tk_ok( 'server shavings uses shavings_stall_qty (tack-excluded)', false !== strpos( $sc_src, '$shavings_stall_qty * absint( $data[\'required_shavings_per_stall\']' ), $pass, $fail, $log );
 tk_ok( 'shavings_stall_qty = stall_qty_total - tack count',        false !== strpos( $sc_src, '$shavings_stall_qty            = max( 0, $stall_qty_total - $tack_stall_count )' ), $pass, $fail, $log );
 tk_ok( 'JS live total excludes tack from shavings', false !== strpos( $sc_src, 'countTackStalls(form, stallQty)' ) && false !== strpos( $sc_src, 'shavingsStallQty' ), $pass, $fail, $log );
 

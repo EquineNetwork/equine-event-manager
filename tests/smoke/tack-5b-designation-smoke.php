@@ -121,9 +121,14 @@ $check( 'grid leaves the other stall is_tack=false', $other_cell_not_tack );
 ob_start();
 $priv( 'render_stall_chart_matrix_table' )->invoke( $admin, $grid['stall_rows'], $grid['date_columns'] );
 $html = ob_get_clean();
-$check( 'render outputs a Tack badge (eem-occ-badge--tack)', false !== strpos( $html, 'eem-occ-badge--tack' ) );
-$check( 'Tack badge carries the "Tack" label', (bool) preg_match( '/eem-occ-badge--tack[^>]*>Tack</', $html ) );
+// #55: the Tack badge element is painted CLIENT-SIDE by admin.js from the
+// server's data-is-tack contract (the matrix renders the data attribute; the
+// pill badge is built in JS), so assert the contract + the JS builder, not a
+// server-rendered badge element.
 $check( 'render outputs data-is-tack="1" somewhere', false !== strpos( $html, 'data-is-tack="1"' ) );
+$tack_js = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'assets/js/admin.js' );
+$check( 'admin.js builds the eem-occ-badge--tack pill', false !== strpos( $tack_js, 'eem-occ-badge--tack' ) );
+$check( 'admin.js drives the tack badge off data-is-tack', false !== strpos( $tack_js, 'is-tack' ) || false !== strpos( $tack_js, 'isTack' ) );
 
 // ── #5b.2: by-customer view shows the amber Tack note + data-has-tack + filter ──
 $brows = $priv( 'build_stall_chart_rows' )->invoke( $admin, $seed_rid, $cfg );
