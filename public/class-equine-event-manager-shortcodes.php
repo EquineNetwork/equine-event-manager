@@ -2574,7 +2574,10 @@ class EEM_Shortcodes {
 			</div>
 			<div class="eem-map-scroll" data-eem-map-scroll><div class="eem-map-grid" data-eem-map-grid></div></div>
 			<div class="eem-map-summary" data-eem-map-summary></div>
-			<div class="stall-selection-warn stall-selection-warn--incomplete eem-map-incomplete" data-eem-stall-incomplete><?php esc_html_e( 'Please pick a spot for every stall before checkout, or clear your selections to have stalls auto-assigned after checkout.', 'equine-event-manager' ); ?></div>
+			<div class="stall-selection-warn stall-selection-warn--incomplete eem-map-incomplete" data-eem-stall-incomplete data-eem-unit-field="<?php echo esc_attr( $opts['unit_field'] ); ?>" data-eem-qty-field="<?php echo esc_attr( $opts['qty_field'] ); ?>"><?php
+				/* translators: %s: plural noun for the reservable unit (e.g. "stalls", "lots"). */
+				printf( esc_html__( 'Please pick a spot for all your %s before checkout, or clear your selections to have them auto-assigned after checkout.', 'equine-event-manager' ), esc_html( $opts['noun_plural'] ) );
+			?></div>
 			<?php if ( $tack_enabled ) : ?>
 				<?php // v4: customer-designated tack stall for the map picker. Mirrors the
 				// quantity-picker control; shares the [data-eem-tack-select] hook so the
@@ -4023,6 +4026,20 @@ class EEM_Shortcodes {
 				__( 'You have selected %1$d of %2$d stalls on the map. Please pick a spot for every stall, or clear your selections to have stalls auto-assigned after checkout.', 'equine-event-manager' ),
 				$eem_pick_count,
 				$eem_pick_stall_qty
+			);
+		}
+
+		// Same all-or-nothing rule for the RV map (preferred_rv_lots vs rv_qty).
+		$eem_rv_mode    = class_exists( 'EEM_Reservations_CPT' ) ? ( EEM_Reservations_CPT::resolve_rv_pair( $eem_pick_reservation_id )['selection_mode'] ?? '' ) : '';
+		$eem_rv_qty     = absint( $submission['rv_qty'] ?? 0 );
+		$eem_rv_picked  = count( (array) ( $submission['preferred_rv_lots'] ?? array() ) );
+
+		if ( 'exact_map' === $eem_rv_mode && $has_rv_selection && $eem_rv_picked > 0 && $eem_rv_picked < $eem_rv_qty ) {
+			$errors[] = sprintf(
+				/* translators: 1: number of RV spaces picked on the map, 2: number of RV spaces being reserved. */
+				__( 'You have selected %1$d of %2$d RV spaces on the map. Please pick a spot for every RV space, or clear your selections to have them auto-assigned after checkout.', 'equine-event-manager' ),
+				$eem_rv_picked,
+				$eem_rv_qty
 			);
 		}
 
@@ -14138,12 +14155,25 @@ RV Lot: " . $rv_lot['name'] );
 					}).length;
 					// All-or-nothing: SOME but not all picked → block checkout. Mirrors the
 					// server gate in validate_submission(). Picker-agnostic (map + grid).
-					var incomplete = qty > 0 && picked > 0 && picked < qty;
+					var anyIncomplete = false;
+					// Evaluate EACH notice against ITS OWN unit field + quantity, so the
+					// stall map and the RV map are judged independently. The row-picker
+					// grid omits the data attrs and falls back to the stall defaults.
 					Array.prototype.forEach.call(form.querySelectorAll('[data-eem-stall-incomplete]'), function(el) {
-						el.classList.toggle('show', incomplete);
+						var unitField = el.getAttribute('data-eem-unit-field') || 'preferred_stall_units';
+						var qtyField  = el.getAttribute('data-eem-qty-field') || 'stall_qty';
+						var qInput    = form.querySelector('[name="' + qtyField + '"]');
+						var q         = qInput ? (parseInt(qInput.value, 10) || 0) : 0;
+						var n         = Array.prototype.filter.call(
+							form.querySelectorAll('[name="' + unitField + '[]"]'),
+							function(p) { return p.type !== 'checkbox' || p.checked; }
+						).length;
+						var inc = q > 0 && n > 0 && n < q;
+						el.classList.toggle('show', inc);
+						if (inc) { anyIncomplete = true; }
 					});
-					form.dataset.eemPickIncomplete = incomplete ? '1' : '';
-					return incomplete;
+					form.dataset.eemPickIncomplete = anyIncomplete ? '1' : '';
+					return anyIncomplete;
 				}
 
 				function syncStallPicker(form) {
