@@ -2109,6 +2109,21 @@
 .eem-group-reservation-fields[hidden] {
 	display: none !important;
 }
+/* "I'm one of the riders" opt-in — checkbox + label inline. */
+.eem-group-self-toggle {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-weight: 600;
+	cursor: pointer;
+}
+.eem-group-self-toggle input[type="checkbox"] {
+	width: 18px;
+	height: 18px;
+	margin: 0;
+	flex-shrink: 0;
+	cursor: pointer;
+}
 /* Explicit group-reservation opt-in (decoupled from the section collapse toggle
    so the card renders expanded like every other enabled section, while the
    fee-adding choice stays an unchecked, deliberate customer action). */

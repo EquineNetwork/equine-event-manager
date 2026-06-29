@@ -1264,6 +1264,11 @@ class EEM_Shortcodes {
 									?>
 								</p>
 								<div class="eem-group-reservation-fields" data-eem-group-fields hidden>
+									<label class="eem-group-self-toggle">
+										<input type="checkbox" name="group_self_is_rider" value="1" data-eem-group-self />
+										<span><?php esc_html_e( 'I’m one of the riders in this group', 'equine-event-manager' ); ?></span>
+									</label>
+									<p class="eem-reservation-help" style="margin-top:4px;"><?php esc_html_e( 'Check this if you’re riding — we’ll add you as Rider 1 using your contact name (you can still edit it). Leave it unchecked if you’re booking on behalf of other riders only.', 'equine-event-manager' ); ?></p>
 									<div class="eem-product-list eem-product-list--group-reservation">
 										<?php $this->render_product_list_header(); ?>
 										<div class="eem-product-line-item eem-product-line-item--group-riders">
@@ -13111,6 +13116,76 @@ RV Lot: " . $rv_lot['name'] );
 				countInput.addEventListener('change', renderRiderFields);
 				countInput.addEventListener('input', renderRiderFields);
 				syncGroupState();
+
+				// "I'm one of the riders in this group" (Whitney 2026-06-29): a
+				// self-booker shouldn't have to retype their name as Rider 1, and it
+				// should be obvious whose names go in the rider fields. When checked we
+				// ensure there's at least one rider and fill Rider 1 from the contact
+				// name (kept in sync until the customer edits Rider 1 by hand). Default
+				// UNCHECKED so the group section still loads at $0; a trainer booking
+				// for others leaves it off and just lists the riders.
+				var selfCb = form.querySelector('[data-eem-group-self]');
+				if (selfCb) {
+					var contactFirst = form.querySelector('input[name="first_name"]');
+					var contactLast = form.querySelector('input[name="last_name"]');
+					var rider1Manual = false;   // customer hand-edited Rider 1 → stop auto-sync
+					var programmaticFill = false; // guard so our own fill isn't seen as a manual edit
+
+					function rider1Inputs() {
+						var card = list.querySelector('.eem-group-rider-card');
+						if (!card) { return null; }
+						return {
+							first: card.querySelector('[data-eem-group-first-name]'),
+							last: card.querySelector('[data-eem-group-last-name]')
+						};
+					}
+					function fillRider1FromContact() {
+						var r = rider1Inputs();
+						if (!r || !r.first || !r.last) { return; }
+						programmaticFill = true;
+						r.first.value = contactFirst ? contactFirst.value : '';
+						r.last.value = contactLast ? contactLast.value : '';
+						r.first.dispatchEvent(new Event('input', { bubbles: true }));
+						programmaticFill = false;
+					}
+					selfCb.addEventListener('change', function() {
+						if (selfCb.checked) {
+							rider1Manual = false;
+							if (parseInt(countInput.value || '0', 10) < 1) {
+								countInput.value = 1;
+								// Dispatch change so BOTH the rider-row render and the
+								// price recalc fire (the global listeners drive both).
+								countInput.dispatchEvent(new Event('change', { bubbles: true }));
+							}
+							fillRider1FromContact();
+						} else {
+							var r = rider1Inputs();
+							if (r && r.first && r.last) {
+								programmaticFill = true;
+								r.first.value = '';
+								r.last.value = '';
+								r.first.dispatchEvent(new Event('input', { bubbles: true }));
+								programmaticFill = false;
+							}
+							rider1Manual = false;
+						}
+					});
+					function maybeSync() {
+						if (selfCb.checked && !rider1Manual) { fillRider1FromContact(); }
+					}
+					if (contactFirst) { contactFirst.addEventListener('input', maybeSync); }
+					if (contactLast) { contactLast.addEventListener('input', maybeSync); }
+					// A genuine hand-edit to Rider 1 stops the contact→rider sync.
+					list.addEventListener('input', function(e) {
+						if (programmaticFill || !selfCb.checked || !e.target) { return; }
+						if (e.target.matches('[data-eem-group-first-name]') || e.target.matches('[data-eem-group-last-name]')) {
+							var first = list.querySelector('.eem-group-rider-card [data-eem-group-first-name]');
+							if (first && e.target.closest('.eem-group-rider-card') === first.closest('.eem-group-rider-card')) {
+								rider1Manual = true;
+							}
+						}
+					});
+				}
 			}
 
 			function initializeStallAssignmentSelector(form) {

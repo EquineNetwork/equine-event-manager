@@ -72,6 +72,13 @@ $check( 'no Math.max(1) clamp on group rider count in recalc', false === strpos(
 $check( 'recalc allows 0 riders', false !== strpos( $src, "Math.max(0, getNumberFieldValue(form, 'group_rider_count')" ) );
 $check( 'rider-row renderer no longer forces count to 1', false === strpos( $src, 'count = Math.max(1, count || 1)' ) );
 
+// 7. "I'm one of the riders" self-rider opt-in (Whitney 2026-06-29).
+$check( 'form renders the self-rider checkbox', false !== strpos( $html, 'name="group_self_is_rider"' ) );
+$check( 'self-rider helper text present', false !== strpos( $html, 'we’ll add you as Rider 1 using your contact name' ) );
+$check( 'JS defines the contact→Rider 1 auto-fill', false !== strpos( $src, 'function fillRider1FromContact' ) );
+$check( 'JS stops auto-sync on a manual Rider 1 edit', false !== strpos( $src, 'rider1Manual = true' ) );
+$check( 'self-rider defaults UNCHECKED (keeps $0 on load)', false === strpos( $html, 'name="group_self_is_rider" value="1" data-eem-group-self checked' ) );
+
 wp_delete_post( $rid, true );
 
 echo "\n{$passed} passed, {$failed} failed\n";
