@@ -276,7 +276,6 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 5. [ ] **Postmeta → relational de-coupling Phase 1** — remaining gaps: map snapshots, hybrid blocked-units reads, events/venues/producers/divisions editors still on post-meta. Audit plan: `docs/POSTMETA-AUDIT.md`.
 
-7. [ ] **Generate Assignments — single customer's stalls kept contiguous** — built on branch (Pass 1.6 `assign_order_contiguous_stalls`; smokes pass). Needs your verify + merge.
 
 8. [ ] **Convenience Fee → global Settings → Payments** — built on branch (global fee, ships disabled/$0, editor Fees section removed; smokes pass). Needs your verify + merge.
 
