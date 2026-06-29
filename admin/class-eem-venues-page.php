@@ -226,30 +226,6 @@ class EEM_Venues_Page {
 	}
 
 	/**
-	 * Stats-card strip.
-	 *
-	 * @return void
-	 */
-	private static function render_stats( int $total, int $published, int $in_use, int $with_site, int $templates ): void {
-		$cards = array(
-			array( __( 'Total', 'equine-event-manager' ), $total ),
-			array( __( 'Published', 'equine-event-manager' ), $published ),
-			array( __( 'In Use', 'equine-event-manager' ), $in_use ),
-			array( __( 'With Website', 'equine-event-manager' ), $with_site ),
-			array( __( 'Facility Templates', 'equine-event-manager' ), $templates ),
-		);
-		echo '<div class="eem-venues-stats">';
-		foreach ( $cards as $c ) {
-			printf(
-				'<div class="eem-stat-card"><div class="eem-stat-card-label">%s</div><div class="eem-stat-card-num">%s</div></div>',
-				esc_html( $c[0] ),
-				esc_html( number_format_i18n( (int) $c[1] ) )
-			);
-		}
-		echo '</div>';
-	}
-
-	/**
 	 * Status tabs (All / Published / Draft / Trash).
 	 *
 	 * @param array<string,int> $counts

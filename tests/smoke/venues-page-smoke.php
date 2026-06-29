@@ -37,8 +37,11 @@ $lid = EEM_Venue::save_layout( $vid, $rid, 'Page Smoke Layout' );
 $check( 'seed layout created', $lid > 0 );
 
 // --- list render -----------------------------------------------------------
-// The branded list (DS Native Events Admin A) is backed by en_venue POSTS, not
-// the relational EEM_Venue store, so seed a real en_venue post for the list.
+// #55: the branded list is backed by the relational EEM_Venue store
+// (wp_eem_venues), resolved source-agnostically. Seed an en_venue post AND
+// resolve it into the canonical store so the list query (all_with_counts) sees
+// it. The dead render_stats() stats-strip was removed (unused), so the list no
+// longer emits eem-venues-stats / eem-stat-card-num.
 $venue_post = wp_insert_post( array(
 	'post_type'   => 'en_venue',
 	'post_status' => 'publish',
@@ -46,17 +49,19 @@ $venue_post = wp_insert_post( array(
 ) );
 update_post_meta( $venue_post, '_equine_event_manager_venue_city', 'Perry' );
 update_post_meta( $venue_post, '_equine_event_manager_venue_state', 'GA' );
+EEM_Venue::resolve_for_native_venue( (int) $venue_post, 'Page Smoke Venue ' . $suffix );
 
 ob_start();
-$_GET = array( 'page' => EEM_Venues_Page::MENU_SLUG );
+// Search for the seeded venue so it surfaces regardless of pagination (the
+// store accumulates venues across runs).
+$_GET = array( 'page' => EEM_Venues_Page::MENU_SLUG, 's' => 'Page Smoke Venue ' . $suffix );
 EEM_Venues_Page::render();
 $list = ob_get_clean();
 $check( 'list renders the shared list table', false !== strpos( $list, 'eem-table' ) );
-$check( 'list renders the stats strip', false !== strpos( $list, 'eem-venues-stats' ) );
-$check( 'list renders stat cards', false !== strpos( $list, 'eem-stat-card-num' ) );
 $check( 'list shows the seeded venue name', false !== strpos( $list, 'Page Smoke Venue ' . $suffix ) );
-$check( 'list shows the venue city/state', false !== strpos( $list, 'Perry, GA' ) );
-$check( 'list renders status tabs', false !== strpos( $list, 'eem-status-tabs' ) );
+// #55: status tabs render via the shared .eem-filter-tabs component (renamed
+// from eem-status-tabs).
+$check( 'list renders status tabs', false !== strpos( $list, 'eem-filter-tabs' ) );
 $check( 'list renders the search toolbar', false !== strpos( $list, 'eem-search-input' ) );
 $check( 'list wires venue-name links', false !== strpos( $list, 'eem-venue-name' ) );
 
@@ -70,7 +75,9 @@ $check( 'detail renders the Saved Layouts card', false !== strpos( $detail, 'eem
 $check( 'detail lists the seeded layout by name', false !== strpos( $detail, 'Page Smoke Layout' ) );
 $check( 'detail wires a rename button to the layout id', (bool) preg_match( '/data-eem-action="venue-layout-rename"[^>]*data-layout-id="' . $lid . '"/', $detail ) );
 $check( 'detail wires a delete button to the layout id', (bool) preg_match( '/data-eem-action="venue-layout-delete"[^>]*data-layout-id="' . $lid . '"/', $detail ) );
-$check( 'detail renders the Event Sources card', false !== strpos( $detail, 'eem-venue-sources-table' ) );
+// #55: the event source was redesigned from a standalone sources-table card into
+// the page-header subtitle (source_label of the primary mapping).
+$check( 'detail surfaces the event source in the page header', false !== strpos( $detail, 'eem-page-subtitle' ) );
 $check( 'detail shows the source label', false !== strpos( $detail, 'The Events Calendar' ) );
 
 // --- AJAX handler gates + data layer ---------------------------------------
