@@ -139,17 +139,47 @@ class EEM_Reports_Page {
 	}
 
 	/**
-	 * Inline notice after an export redirect (e.g. ?eem_notice=...).
+	 * Post-redirect action notice (e.g. ?eem_notice=...). Rendered as a hidden
+	 * flash-toast stub that admin.js promotes into a top-right toast on load —
+	 * the same affordance as every other save/confirm action — rather than a
+	 * static inline banner above the filters.
 	 *
 	 * @return void
 	 */
 	private function render_action_notice(): void {
 		$notice = isset( $_GET['eem_notice'] ) ? sanitize_key( wp_unslash( $_GET['eem_notice'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( 'export_failed' === $notice ) {
-			echo '<div class="eem-admin-notice eem-admin-notice--error">' . esc_html__( 'That report could not be exported. Please try again.', 'equine-event-manager' ) . '</div>';
+			$this->render_flash_toast(
+				__( 'That report could not be exported. Please try again.', 'equine-event-manager' ),
+				'',
+				'error'
+			);
 		} elseif ( 'history_cleared' === $notice ) {
-			echo '<div class="eem-admin-notice eem-admin-notice--success">' . esc_html__( 'Export history cleared.', 'equine-event-manager' ) . '</div>';
+			$this->render_flash_toast(
+				__( 'Export history cleared.', 'equine-event-manager' ),
+				__( 'Cached export files were deleted.', 'equine-event-manager' ),
+				'success'
+			);
 		}
+	}
+
+	/**
+	 * Emit a hidden flash-toast stub. admin.js reads `[data-eem-flash-toast]` on
+	 * load, fires EEM.showSaveToast() with the message/sub/variant, then removes
+	 * the stub so a refresh doesn't replay it.
+	 *
+	 * @param string $message Toast title.
+	 * @param string $sub     Optional secondary line.
+	 * @param string $variant 'success' (default) or 'error'.
+	 * @return void
+	 */
+	private function render_flash_toast( string $message, string $sub, string $variant ): void {
+		printf(
+			'<div class="eem-flash-toast" data-eem-flash-toast data-eem-flash-message="%s" data-eem-flash-sub="%s" data-eem-flash-variant="%s" hidden></div>',
+			esc_attr( $message ),
+			esc_attr( $sub ),
+			esc_attr( 'error' === $variant ? 'error' : 'success' )
+		);
 	}
 
 	/**

@@ -1341,12 +1341,39 @@
 			EEM.showSaveToast('Setup complete', { sub: 'Create your first reservation to start taking orders.', duration: 5000 });
 		}
 	}
+	/* Promote a server-rendered flash-toast stub (data-eem-flash-toast) into a
+	   top-right toast — used for post-redirect notices (e.g. "Export history
+	   cleared.") so they match every other save/confirm affordance instead of
+	   rendering as a static banner. Removes the stub + strips the ?eem_notice
+	   query param so a refresh doesn't replay the toast. */
+	function eemFlashToast() {
+		var el = document.querySelector('[data-eem-flash-toast]');
+		if (!el) return;
+		var message = el.getAttribute('data-eem-flash-message') || '';
+		if (message && EEM && typeof EEM.showSaveToast === 'function') {
+			EEM.showSaveToast(message, {
+				sub: el.getAttribute('data-eem-flash-sub') || '',
+				variant: el.getAttribute('data-eem-flash-variant') === 'error' ? 'error' : 'success',
+				duration: 4000
+			});
+		}
+		if (el.parentNode) el.parentNode.removeChild(el);
+		try {
+			if (window.history && window.history.replaceState) {
+				var url = new URL(window.location.href);
+				url.searchParams.delete('eem_notice');
+				window.history.replaceState({}, document.title, url.toString());
+			}
+		} catch (e) {}
+	}
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', eemWizardMaybeAutoOpen);
 		document.addEventListener('DOMContentLoaded', eemWizardFinishToast);
+		document.addEventListener('DOMContentLoaded', eemFlashToast);
 	} else {
 		eemWizardMaybeAutoOpen();
 		eemWizardFinishToast();
+		eemFlashToast();
 	}
 	/* Escape closes the wizard. */
 	document.addEventListener('keydown', function (e) {
