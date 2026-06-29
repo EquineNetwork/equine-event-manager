@@ -1874,7 +1874,7 @@ class EEM_Shortcodes {
 						<?php endif; ?>
 						<div class="eem-payment-summary" aria-live="polite">
 						<div class="eem-payment-summary-row" data-eem-summary-row="stall_subtotal" hidden>
-							<span><?php esc_html_e( 'Stall Subtotal', 'equine-event-manager' ); ?></span>
+							<span><?php esc_html_e( 'Stalls', 'equine-event-manager' ); ?></span>
 							<strong data-eem-total="stall_subtotal">$0.00</strong>
 						</div>
 						<div class="eem-payment-summary-row" data-eem-summary-row="stall_surcharge" hidden>
@@ -1882,15 +1882,15 @@ class EEM_Shortcodes {
 							<strong data-eem-total="stall_surcharge">$0.00</strong>
 						</div>
 						<div class="eem-payment-summary-row" data-eem-summary-row="required_shavings_subtotal" hidden>
-							<span><?php esc_html_e( 'Required Shavings Subtotal', 'equine-event-manager' ); ?></span>
+							<span><?php esc_html_e( 'Required Shavings', 'equine-event-manager' ); ?></span>
 							<strong data-eem-total="required_shavings_subtotal">$0.00</strong>
 						</div>
 						<div class="eem-payment-summary-row" data-eem-summary-row="additional_shavings_subtotal" hidden>
-							<span><?php esc_html_e( 'Additional Shavings Subtotal', 'equine-event-manager' ); ?></span>
+							<span><?php esc_html_e( 'Additional Shavings', 'equine-event-manager' ); ?></span>
 							<strong data-eem-total="additional_shavings_subtotal">$0.00</strong>
 						</div>
 						<div class="eem-payment-summary-row" data-eem-summary-row="rv_subtotal" hidden>
-							<span><?php esc_html_e( 'RV Reservations Subtotal', 'equine-event-manager' ); ?></span>
+							<span><?php esc_html_e( 'RV Reservations', 'equine-event-manager' ); ?></span>
 							<strong data-eem-total="rv_subtotal">$0.00</strong>
 						</div>
 						<div class="eem-payment-summary-row" data-eem-summary-row="rv_surcharge" hidden>
@@ -1923,7 +1923,12 @@ class EEM_Shortcodes {
 							</div>
 						<?php endforeach; ?>
 						<?php // RV Add-On summary rows removed (Slice 6). ?>
-						<div class="eem-payment-summary-row" data-eem-summary-row="fees" hidden>
+						<div class="order-divider" data-eem-summary-row="subtotal_divider" aria-hidden="true" hidden></div>
+							<div class="eem-payment-summary-row eem-payment-summary-row--subtotal" data-eem-summary-row="subtotal" hidden>
+								<span><?php esc_html_e( 'Subtotal', 'equine-event-manager' ); ?></span>
+								<strong data-eem-total="subtotal">$0.00</strong>
+							</div>
+							<div class="eem-payment-summary-row" data-eem-summary-row="fees" hidden>
 							<span><?php echo esc_html( class_exists( 'EEM_Settings_Repo' ) ? EEM_Settings_Repo::get_convenience_fee()['label'] : __( 'Non-Refundable Convenience Fee', 'equine-event-manager' ) ); ?></span>
 							<strong data-eem-total="fees">$0.00</strong>
 						</div>
@@ -14043,7 +14048,8 @@ RV Lot: " . $rv_lot['name'] );
 				Object.keys(preEntryPricingMatrix || {}).forEach(function(entryKey) {
 					setTotal(form, 'pre_entry_' + entryKey + '_subtotal', preEntrySubtotals[entryKey] || 0);
 				});
-				setTotal(form, 'fees', fees);
+				setTotal(form, 'subtotal', subtotal);
+					setTotal(form, 'fees', fees);
 				setTotal(form, 'tax', tax);
 				setTotal(form, 'total', total);
 				setReadonlyQuantity(form, 'required_shavings', requiredShavingsQty);
@@ -14063,7 +14069,10 @@ RV Lot: " . $rv_lot['name'] );
 				Object.keys(preEntryPricingMatrix || {}).forEach(function(entryKey) {
 					toggleSummaryRow(form, 'pre_entry_' + entryKey + '_subtotal', (preEntrySubtotals[entryKey] || 0) > 0);
 				});
-				toggleSummaryRow(form, 'fees', fees > 0);
+				// Subtotal row + its divider show whenever there are any line items.
+					toggleSummaryRow(form, 'subtotal_divider', subtotal > 0);
+					toggleSummaryRow(form, 'subtotal', subtotal > 0);
+					toggleSummaryRow(form, 'fees', fees > 0);
 				toggleSummaryRow(form, 'tax', tax > 0);
 				syncStallAssignmentAvailability(form);
 				syncStallPicker(form);
