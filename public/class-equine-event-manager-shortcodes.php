@@ -2558,7 +2558,7 @@ class EEM_Shortcodes {
 				<div class="eem-map-tabs" data-eem-map-tabs></div>
 				<div class="eem-zoom" role="group" aria-label="<?php esc_attr_e( 'Zoom', 'equine-event-manager' ); ?>">
 					<button type="button" data-eem-map-zoom="out" aria-label="<?php esc_attr_e( 'Zoom out', 'equine-event-manager' ); ?>">&minus;</button>
-					<button type="button" data-eem-map-zoom="fit"><?php esc_html_e( 'Zoom', 'equine-event-manager' ); ?></button>
+					<button type="button" class="is-active" data-eem-map-zoom="fit"><?php esc_html_e( 'Zoom', 'equine-event-manager' ); ?></button>
 					<button type="button" data-eem-map-zoom="in" aria-label="<?php esc_attr_e( 'Zoom in', 'equine-event-manager' ); ?>">+</button>
 				</div>
 			</div>
@@ -2980,6 +2980,9 @@ class EEM_Shortcodes {
 					if (k === 'in'){ zoom = Math.min(1.8, zoom + 0.2); applyZoom(); }
 					else if (k === 'out'){ zoom = Math.max(0.5, zoom - 0.2); applyZoom(); }
 					else { zoom = 1; applyZoom(); }
+					// Mirror the admin map zoom: the last-pressed button shows the blue
+					// active state (matches the Stall & RV Charts / Stall Map Builder zoom).
+					root.querySelectorAll('[data-eem-map-zoom]').forEach(function(x){ x.classList.toggle('is-active', x === b); });
 				});
 			});
 

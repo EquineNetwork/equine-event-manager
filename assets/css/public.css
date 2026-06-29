@@ -1130,8 +1130,15 @@
 .eem-zoom button:first-child { border-left: 0; }
 /* Scope hover under .eem-event-page so the brand blue wins over the theme's
    generic button:hover (which was bleeding pink/washed-out into these). */
+/* Square inner buttons (the front-end theme pills all buttons to 100px) so the
+   zoom matches the admin Stall & RV Charts / Stall Map Builder control exactly. */
+.eem-event-page .eem-zoom button { border-radius: 0; }
 .eem-event-page .eem-zoom button:hover,
-.eem-event-page .eem-zoom button:focus { background: #eef4ff; color: #1668F2; }
+.eem-event-page .eem-zoom button:focus { background: #eef4ff; color: #031B4E; }
+/* Blue active-level state, identical to the admin .eem-zoom button.is-active. */
+.eem-event-page .eem-zoom button.is-active,
+.eem-event-page .eem-zoom button.is-active:hover,
+.eem-event-page .eem-zoom button.is-active:focus { background: #1668F2; color: #fff; }
 .eem-map-inline .eem-map-legend { padding: 6px 0 10px; border: 0; }
 .eem-map-inline .eem-map-scroll { max-height: 460px; overflow: auto; padding: 14px; background: #fbfcfe; border: 1px solid #e2e8f0; border-radius: 6px; -webkit-overflow-scrolling: touch; min-width: 0; max-width: 100%; cursor: grab; }
 .eem-map-inline .eem-map-scroll.is-panning { cursor: grabbing; }
