@@ -42,26 +42,26 @@ pattern = seed/read through the canonical repo (`EEM_Reservation_Config`,
 **3. Add-On Report (#2) — found already CODE-COMPLETE** (the "paused mid-build" was finished);
 smoke passes 12/0. Marked in the v1 list; **just needs your visual verify** (Reports → Add-Ons).
 
-### NEXT UP TOMORROW (in priority order)
+### 2026-06-29 continued (autonomous, all committed dormant + pushed, NO version bumps)
 
-1. **#22 Bulk-notification unsubscribe** + **#23 Auto payment-reminder cron** — both APPROVED and
-   buildable, but BOTH generate **emails that go to real customers**, so build them committed-dormant
-   (no version bump) and **review the rendered emails before activating**. ⚠️ KEY FINDING that
-   reshapes #23: the stored email templates (`payment_reminder`, `refund_confirmation`,
-   `cancellation`) in `EEM_Email_Templates_Repo` are **defined with `{{placeholders}}` but never
-   wired to any send path** — the live emails (confirmation/refund/invoice) use hand-built
-   `build_*_email_html()` methods instead. So #23 first needs a **stored-template render-and-send
-   helper** (placeholder substitution + escaping + Emogrifier inline) before the cron can "send the
-   PAYMENT_REMINDER template." Decide at kickoff: build that render infra, OR have the reminder reuse
-   the proven `build_invoice_email_html()` payment-link path. Existing cron pattern to model:
-   `EEM_Unit_Holds_Repo::schedule_cleanup()` (CRON_HOOK + `wp_schedule_event` daily). `send_invoice_
-   email_for_order()` already writes dedupe notes ("Invoice Sent At") — model the reminder dedupe on it.
+- **#16 Import event dates — ✅ DONE + smoke** (`import-event-dates-smoke.php` 6/0). Reproduced on
+  Local: the round-trip already carries the reservation's available window; the real gap is TEC/feed
+  events store no start/end in `en_event` post-meta, so a cloned event imported dateless.
+  `import_setup` now backfills the cloned event's dates from the available window **only when empty**.
+- **#2 Add-On Report — ✅ confirmed already CODE-COMPLETE** (smoke 12/0); just needs your visual verify.
+- **#22 Bulk unsubscribe — ✅ BUILT + smoke** (`email-optout-smoke.php` 23/0). New `EEM_Email_Optout`
+  (HMAC link, opt-out option, public handler, footer + skip-check) wired into both bulk-send paths;
+  transactional sends untouched. **Review the rendered footer + confirmation page before activating.**
 
-2. **#16 Import/Export event dates — NEEDS A CONCRETE REPRO from you.** Investigated: import already
-   allowlists every date-prefixed meta key and imports config dates + event meta, so the obvious gap
-   isn't there. Likely specific to external TEC/GEMS sources (dates fetched live, not stored locally).
-   Before touching it: export *one specific* reservation, import it, and note exactly which dates are
-   missing + what its event source is.
+### NEXT UP — ONE DECISION NEEDED from Whitney, then I can finish it
+
+- **#23 Auto payment-reminder cron — pick A or B (see the #23 item below).** Investigation found the
+  `PAYMENT_REMINDER` template is defined but never wired to a send path, so there's a real fork in
+  WHICH email customers get: **(A)** reuse the proven payment-link email (`send_invoice_email_for_order`,
+  my recommendation) vs **(B)** build a stored-template renderer for the editable `PAYMENT_REMINDER`
+  wording. Everything else (daily cron, min-age + repeat-dedupe options, payment_status-only reads) is
+  settled. It auto-emails customers, so also needs your sign-off on content + cadence. Tell me A or B
+  and it's a quick build + smoke.
 
 ### Standing constraints carried forward (unchanged)
 - **Never bump version without explicit Whitney approval each time.**
@@ -290,9 +290,12 @@ Code locations: List = `openAssignPickModal()` + server menu in `assets/js/admin
 
 21. [ ] **Verify + merge PR #36 (styling + audit fixes, this branch).** All built and pushed, needs your click-through then merge: Import/Export page styling + custom file inputs; list-table bottom-border fix (Events/Customers/Term Categories); Daily Movement footer; invoice/refund/payment-received email + report-PDF design-system parity; CSV import hardening (size/type validation, no DB-error leak); order payment-status whitelist; hourly cart-hold cleanup cron; admin BCC send-failure logging; move_uploaded_file error-suppression fix.
 
-22. [ ] **Bulk-notification unsubscribe.** Per-recipient opt-out: HMAC-signed (WP-salt keyed) unsubscribe link in bulk emails (Notifications page + Email Customers), a public handler that records the opt-out, a skip-check before non-transactional sends. Transactional sends (confirmation, refund, payment, invoice, cancellation) always send regardless. Approved, not started.
+22. [ ] **Bulk-notification unsubscribe.** ✅ BUILT + smoke (`email-optout-smoke.php` 23/0); committed dormant (no version bump). `includes/class-eem-email-optout.php` (`EEM_Email_Optout`): HMAC link keyed off `wp_salt('auth')` (no DB token to leak), opt-out stored in the `eem_email_optouts` option (email→timestamp), public `admin-post.php?action=eem_unsubscribe` handler (verify→record→confirmation page), per-recipient footer + `is_opted_out()` skip-check. Wired into **Notifications `dispatch_batch`** + **Email Customers** (both now skip opted-out + append the footer; return a `skipped` count). **Transactional sends are never gated** (smoke asserts `send_invoice_email_for_order` doesn't touch the opt-out gate). **Verify before activating:** review the rendered footer copy + the unsubscribe confirmation page, then send yourself a test Notification and click Unsubscribe.
 
-23. [ ] **Auto payment-reminder for unpaid orders.** Daily WP-cron finds unpaid orders past a configurable age and sends the existing `PAYMENT_REMINDER` template, with dedupe so an order isn't reminded repeatedly. Reads payment_status + sends email only (no payment-dispatch changes). Approved, not started.
+23. [ ] **Auto payment-reminder for unpaid orders.** ⚠️ NEEDS A DECISION FROM WHITNEY before building — investigation surfaced a **design fork that changes the customer email**. The spec says "send the existing `PAYMENT_REMINDER` template," BUT that template (and refund/cancellation) are **defined with `{{placeholders}}` and never wired to any send path** — the live emails use hand-built `build_*_email_html()` methods. So there are two real options, producing different customer emails:
+    - **(A) Reuse the proven payment-link path** (`EEM_Admin::send_invoice_email_for_order`): it already generates a pay link (invoice token), sends a branded payment email, flips status to invoice-sent, and writes dedupe notes ("Invoice Sent At"). Lowest-risk; the reminder = the same email as "Send Payment Link." ← my recommendation.
+    - **(B) Build a stored-template renderer** for `PAYMENT_REMINDER` (`{{customer_name}}/{{event_name}}/{{event_dates}}/{{balance}}/{{payment_link}}` substitution + escaping + Emogrifier) so the email matches the editable template wording. More work + still needs a `{{payment_link}}` generator (same invoice-token flow).
+    Everything else is settled + low-risk: daily WP-cron (model `EEM_Unit_Holds_Repo::schedule_cleanup`), min-age option (default ~3d), repeat-dedupe option (don't re-remind within N days), reads `payment_status` only (no payment-dispatch changes). **This auto-emails customers**, so it also needs your sign-off on the email content + cadence before activation. Pick A or B and I'll build it.
 
 ---
 
