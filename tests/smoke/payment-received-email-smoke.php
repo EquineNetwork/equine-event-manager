@@ -13,6 +13,13 @@
 
 if ( ! defined( 'ABSPATH' ) ) { fwrite( STDERR, "Must run via wp eval-file\n" ); exit( 1 ); }
 
+// #55: force the wp_mail transport (strip the SendGrid API key) so the send-path
+// test's pre_wp_mail short-circuit intercepts instead of the live SendGrid call.
+add_filter( 'option_equine_event_manager_integration_settings', static function ( $v ) {
+	if ( is_array( $v ) ) { unset( $v['sendgrid_api_key'] ); }
+	return $v;
+}, 99 );
+
 $passed = 0; $failed = 0;
 $check = static function ( string $label, bool $ok ) use ( &$passed, &$failed ): void {
 	if ( $ok ) { $passed++; echo "  ok  - {$label}\n"; }

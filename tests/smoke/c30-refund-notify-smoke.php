@@ -17,6 +17,15 @@ $check = static function ( string $label, bool $ok ) use ( &$passed, &$failed ):
 	else { $failed++; echo "FAIL  - {$label}\n"; }
 };
 
+// #55: EEM_Mailer sends via the SendGrid API directly when a key is configured
+// (this box has one), which bypasses the pre_wp_mail short-circuit the send-path
+// test relies on. Strip the key for this run so the mailer falls to wp_mail,
+// where pre_wp_mail intercepts cleanly (no real delivery either way).
+add_filter( 'option_equine_event_manager_integration_settings', static function ( $v ) {
+	if ( is_array( $v ) ) { unset( $v['sendgrid_api_key'] ); }
+	return $v;
+}, 99 );
+
 $admin = new EEM_Admin();
 $order = array(
 	'order_key'        => 'smoke-refund-' . wp_generate_password( 8, false ),
