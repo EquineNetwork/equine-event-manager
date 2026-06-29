@@ -159,6 +159,14 @@ $reservation_id = wp_insert_post( array(
 ) );
 update_post_meta( $reservation_id, '_en_event_source', 'native' );
 update_post_meta( $reservation_id, '_en_event_id', $test_event_id );
+// #55: source detection now reads the relational config table (mig-016 decouple),
+// not _en_event_source post-meta — seed it there so the resolver picks 'native'.
+if ( class_exists( 'EEM_Reservation_Config' ) ) {
+	EEM_Reservation_Config::for( $reservation_id )
+		->set_many( array( 'event_source' => 'native', 'use_global_event_source' => 0 ) )
+		->save();
+	EEM_Reservation_Config::flush_cache( $reservation_id );
+}
 // Restore the test event default after the venue map test cleared it
 $repo->set_cancellation_policy( $test_event_id, 'native', 'Event default policy text.' );
 
@@ -341,10 +349,12 @@ if ( $saved_flag_2 ) {
 
 // ── [17] wp-cli wrapper file ─────────────────────────────────────────
 echo "\n[17] wp-cli wrapper file\n";
+// #55: the scripts/ wp-cli wrapper is dev-only tooling (export-ignored via
+// .distignore, like the internal .md docs), so it is NOT present in a deployed
+// plugin. The shipped behavior is the migration FUNCTION itself (asserted in [1]
+// + sourced below). Only assert the wrapper's contents when scripts/ is present
+// (dev checkout); skip gracefully on a deployed install.
 $wrapper_path = EQUINE_EVENT_MANAGER_PATH . 'scripts/eem-mig-001-cancellation-snapshot.php';
-c7a_ok( 'wrapper file exists at scripts/eem-mig-001-cancellation-snapshot.php',
-	file_exists( $wrapper_path ),
-	$pass, $fail, $log );
 if ( file_exists( $wrapper_path ) ) {
 	$wrapper_src = (string) file_get_contents( $wrapper_path );
 	c7a_ok( 'wrapper sources the migration function file',
