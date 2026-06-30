@@ -190,11 +190,16 @@ foreach ( $scenarios as $snum => $S ) {
 		// THE BIG ONE: stored/displayed total must equal what was actually charged.
 		$chk( $approx( $stored_total, $charge_total ), sprintf( 'stored total %.2f == CHARGE %.2f', $stored_total, $charge_total ) );
 
+		// build_order_line_items($order, true) is the EMAIL variant: it itemizes
+		// BOTH the convenience fee AND the tax line (2.7.711 added the tax line so
+		// the email rows sum to the Total Paid). So Σ(lines) already includes fee +
+		// tax and must equal the stored total directly — adding tax again would
+		// double-count it.
 		$items = $buildItems->invoke( $sc, $order, true );
 		$sum_lines = 0.0; $present = array();
 		foreach ( $items as $it ) { $sum_lines += $money( $it['total'] ); $present[ $it['section'] ] = true; $present[ $it['desc'] ] = true; }
 		$tax = (float) ( $order['tax'] ?? 0 );
-		$chk( $approx( $sum_lines + $tax, $stored_total ), sprintf( 'RECONCILE Σlines %.2f + tax %.2f == stored %.2f', $sum_lines, $tax, $stored_total ) );
+		$chk( $approx( $sum_lines, $stored_total ), sprintf( 'RECONCILE Σlines %.2f (incl. fee + tax) == stored %.2f', $sum_lines, $stored_total ) );
 		foreach ( $S['lines'] as $need ) { $chk( isset( $present[ $need ] ), "receipt shows '$need'" ); }
 	}
 	$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}eem_stall_reservations WHERE notes LIKE %s", $like ) );

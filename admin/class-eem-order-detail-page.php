@@ -1210,10 +1210,19 @@ class EEM_Order_Detail_Page {
 		// (Whitney 2026-06-30 — live audit found the bundled breakdown + the tax
 		// showing as "Add-Ons" because compute_addon_subtotal was a fee/tax-blind
 		// residual.)
+		$stored_stall         = $stall_subtotal;
 		$group_subtotal       = $this->sum_note_subtotal( $order, '/Group Charge:.*?Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi' );
 		$pre_entries_subtotal = $this->sum_note_subtotal( $order, '/Pre-Entry:.*?Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi' );
-		$addon_subtotal       = $this->sum_note_subtotal( $order, '/(?:^|\n)Add-On:.*?Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi' );
-		$stall_subtotal       = max( 0.0, $stall_subtotal - $group_subtotal - $pre_entries_subtotal - $addon_subtotal );
+		$parsed_addon         = $this->sum_note_subtotal( $order, '/(?:^|\n)Add-On:.*?Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi' );
+		// Any portion of the grand total NOT explained by stall + rv + fees + tax is
+		// an out-of-band add-on residual. Most creation paths bundle add-ons INTO
+		// stall_subtotal (then the residual is ~0 and $parsed_addon carries them);
+		// some store them outside it (then the residual carries them and there are
+		// no notes to parse). Folding the residual into the add-on section keeps the
+		// displayed sections reconciled to the grand total under BOTH storage models.
+		$addon_residual       = max( 0.0, $total - $stored_stall - $rv_subtotal - $fees - $tax );
+		$addon_subtotal       = $parsed_addon + $addon_residual;
+		$stall_subtotal       = max( 0.0, $stored_stall - $group_subtotal - $pre_entries_subtotal - $parsed_addon );
 		// Individual line items for the Group + Pre-Entry sections (itemized like the receipt).
 		$group_items     = $this->parse_note_items( $order, '/Group Charge:\s*(.+?)\s*\|.*?Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi' );
 		$pre_entry_items = $this->parse_note_items( $order, '/Pre-Entry:\s*(.+?)\s*\|.*?Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi' );
