@@ -435,9 +435,11 @@ class EEM_Orders_List_Page {
 		$status_label = isset( $order['status_label'] ) ? (string) $order['status_label'] : '';
 		$status_css   = self::status_slug_to_css_class( $status_slug );
 		// Mirror the Order Detail badge override: a "paid" order whose total grew
-		// after line-item edits has a real uncollected balance, so the list reads
-		// amber "Balance Due" instead of green "Paid" — keeping list + detail in sync.
-		if ( 'paid' === $status_slug && isset( $order['amount_due'] ) && (float) $order['amount_due'] > 0.005 ) {
+		// after line-item edits / a custom item has a real uncollected balance, so
+		// the list reads amber "Balance Due" instead of green "Paid". Uses the
+		// composed+ledger balance (not the component-based amount_due, which misses
+		// custom-item/discount adjustments — bug #8). Short-circuits for non-paid.
+		if ( 'paid' === $status_slug && self::order_true_outstanding( $order ) > 0.005 ) {
 			$status_css   = 'unpaid';
 			$status_label = __( 'Balance Due', 'equine-event-manager' );
 		}
@@ -606,8 +608,9 @@ class EEM_Orders_List_Page {
 				$status_label = isset( $order['status_label'] ) ? (string) $order['status_label'] : '';
 				$status_css   = self::status_slug_to_css_class( $status_slug );
 				// Mirror the Order Detail badge override (see desktop row): a "paid"
-				// order with an uncollected balance reads amber "Balance Due".
-				if ( 'paid' === $status_slug && isset( $order['amount_due'] ) && (float) $order['amount_due'] > 0.005 ) {
+				// order with an uncollected balance reads amber "Balance Due". Uses
+				// the composed+ledger balance (bug #8).
+				if ( 'paid' === $status_slug && self::order_true_outstanding( $order ) > 0.005 ) {
 					$status_css   = 'unpaid';
 					$status_label = __( 'Balance Due', 'equine-event-manager' );
 				}
@@ -750,6 +753,33 @@ class EEM_Orders_List_Page {
 	 * @param string $status_slug
 	 * @return string
 	 */
+	/**
+	 * True uncollected balance for an order = composed grand total (incl. custom
+	 * line items + discount) − ledger net collected. The stored `amount_due`
+	 * column is component-based and can't see custom-item/discount adjustments, so
+	 * a "paid" order with a post-payment custom item read as fully paid on this
+	 * list while the Order Detail correctly showed a balance. This mirrors the
+	 * Order Detail's compute_balance_due so the list badge agrees. (Whitney
+	 * 2026-06-30 live audit — bug #8.)
+	 *
+	 * @param array<string,mixed> $order
+	 * @return float Outstanding balance, floored at 0.
+	 */
+	private static function order_true_outstanding( array $order ): float {
+		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		if ( '' === $order_key || ! class_exists( 'EEM_Orders_Repository' ) ) {
+			return isset( $order['amount_due'] ) ? (float) $order['amount_due'] : 0.0;
+		}
+		$grand = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		if ( class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			$adj      = EEM_Order_Adjustments_Repo::get_for_order( $order_key );
+			$composed = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $adj );
+			$grand    = (float) $composed['grand_total'];
+		}
+		$collected = ( new EEM_Orders_Repository() )->get_net_collected( $order_key, $order );
+		return round( max( 0.0, $grand - $collected ), 2 );
+	}
+
 	// C6.A: promoted to public static so EEM_Order_Detail_Page can share the same status→class map.
 	public static function status_slug_to_css_class( $status_slug ) {
 		// C5.G.6: legacy EEM_Orders_Repository::get_order_status_display()

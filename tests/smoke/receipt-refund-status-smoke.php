@@ -38,6 +38,11 @@ $sc  = new EEM_Shortcodes();
 // Paid control: ensure status is paid AND strip any refund traces (the chosen
 // order may itself be refunded in the live DB — scrub it to a clean paid state).
 $paid = $order;
+// Point at a key with NO payments-ledger rows so get_net_collected() falls back
+// to the synthetic amount_paid below (the ledger is authoritative when present,
+// so without this the sampled real order's actual ledger would override the
+// "fully settled" amount_paid this control sets — 2.7.716 ledger-based collected).
+$paid['order_key'] = 'eem-noledger-paid-' . uniqid();
 $paid['payment_status'] = 'paid';
 // #55: the "Total Amount Paid" grand-total row renders only when the receipt has
 // NO outstanding balance (and no refund). balance_due is computed from the
