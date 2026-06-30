@@ -76,6 +76,48 @@ convenience fee + tax layer on the post-package subtotal and reconcile to the pe
 
 ---
 
+## RES-LOT — RV lot selection + early-bird (verified through the real engine)
+
+No reservation in the environment had RV lot selection configured, so the lot matrix was layered
+onto RES-ALL's real `$data` and run through the genuine `calculate_submission_totals` chain.
+
+| Case | Selection | Math | Result |
+|------|-----------|------|--------|
+| Premium lot ×2 × 3 nights | base $35 (early-bird) + $25 lot surcharge = $60 | (2 × 60) × 3 | ✅ 360 |
+| Standard lot ×1 × 3 nights | base $35 + $0 | (1 × 35) × 3 | ✅ 105 |
+
+Bonus: this also **validated early-bird (A4/A13)** — the engine correctly billed the **$35 early-bird
+rate**, not the regular $40 `rv_nightly_rate`, because the cutoff is still in the future. Lot surcharge
+stacks on top of the early-bird base, exactly as designed. RV subtotal formula confirmed at
+`shortcodes.php:5007`: `(rv_qty × unit_price + zone_surcharge) × nights`.
+
+---
+
+## RES-FLAT + RES-BACKEND — covered by the green regression suite
+
+These backend money paths already carry committed behavioral guards from prior fix work (F7/F11
+flat-fee once-per-order, refund over-/zero-guards, discount + custom-line-item math, collect-payment
+charge math). The **full smoke suite is green** after this audit's fixes:
+
+```
+178 files run · 3060 assertions pass · 0 fail
+```
+
+Relevant guards (all passing): `flat-convenience-fee-multicomponent` · `refund-math` ·
+`c13c2/c13c3/c13c4 create-order + order-detail adjustments` (discount $ + %, custom items) ·
+`c14/c14b collect-payment (card + cash)` · `bulk-send-payment-link` · `convenience-fee-global`
+(card-only skip) · `order-edit-math` (add items / edit dates).
+
+### Suite regressions this audit surfaced + resolved
+- **c6a2** (1→0 fail): real regression from the 2.7.710 Order Detail breakdown — dropped the Add-Ons
+  section for orders that store the add-on out-of-band as a residual. Fixed 2.7.713 (residual fold).
+- **charge-reconcile-allsurfaces** (13→0): stale assertion — the email line builder now itemizes the
+  tax line (2.7.711), so it double-counted tax. Assertion corrected.
+- **c13c4 / c14 / c14b / f9** (5→0): not regressions — caused by the test-site global tax (8%) being
+  left ON from the RES-ALL parity test; restored to OFF.
+
+---
+
 ## Standing observation — global convenience fee + tax (for Whitney)
 
 The convenience fee + tax are **global** (Settings → Taxes & Fees, per task #24), not per-reservation. With them
