@@ -6487,6 +6487,22 @@ RV Lot: " . $rv_lot['name'] );
 			);
 		}
 
+		// Tax line — mirrors the fee line so the confirmation email's itemized rows
+		// sum to the Total Paid. Without it the rows came up short by the tax amount
+		// (the total includes tax but no line explained it). Only when $include_fee
+		// (email) — the receipt/PDF carry tax in their own summary block.
+		// (Whitney 2026-06-30 — master live audit.)
+		if ( $include_fee && (float) ( $order['tax'] ?? 0 ) > 0 ) {
+			$line_items[] = array(
+				'section' => __( 'Tax', 'equine-event-manager' ),
+				'desc'    => ( isset( $order['tax_label'] ) && '' !== (string) $order['tax_label'] ) ? (string) $order['tax_label'] : __( 'Sales Tax', 'equine-event-manager' ),
+				'qty'     => '1',
+				'units'   => '-',
+				'rate'    => '$' . number_format_i18n( (float) $order['tax'], 2 ),
+				'total'   => '$' . number_format_i18n( (float) $order['tax'], 2 ),
+			);
+		}
+
 		return $line_items;
 	}
 
