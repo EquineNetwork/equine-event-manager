@@ -192,6 +192,36 @@ behavior, flagging it for a decision rather than changing it — parallel to the
 
 ---
 
+## RES-BACKEND — live-clicked through the real handlers (no smoke reliance)
+
+Every backend money path driven live against the admin via the real AJAX/admin-post handlers,
+verifying stored results to the penny. Found **2 real bugs** this pass.
+
+| Path | How | Result |
+|------|-----|--------|
+| Create Order + custom line item + discount | real `eem_admin_create_order` | ✅ #91944: RV $160 + custom $30 − discount $10 = **grand $180**, both adjustments stored |
+| Send Payment Link | same submission (`send_payment_link` mode) | ✅ "Order created and payment link sent" |
+| Collect Payment — **cash** | real `equine_event_manager_mark_order_paid` | ✅ order → paid; **convenience fee WAIVED** (4% → $0, collected the fee-free total) |
+| Refund — over-refund guard | real `eem_order_refund_single` | ✅ $99,999 **rejected** server-side ("exceeds the $1,078.24 refundable"), no gateway call; cap correctly nets the prior $100 refund |
+
+### 🐛 Bug #6 (2.7.716) — phantom balance on orders with custom items (cash AND card) — FIXED
+Live-clicking cash-collect on #91944 marked it **paid but left a $20 balance that was uncollectable**.
+Root cause was systemic (card too): "amount collected" was summed from per-component `amount_paid`, which
+can't represent custom-item/discount adjustments, while the grand total includes them — so every fully-paid
+order with net-positive custom items showed a phantom balance = the adjustment. Fix (Whitney-approved):
+ledger-based `get_net_collected()` (payments − refunds, the true money in/out) with a legacy fallback; cash
+collect now records the full composed total. Verified live: #91944 cleared to $0 (ledger net $180). Subsumes
+the 2.7.714 refund-netting. Guard: `receipt-email-net-collected-smoke` (5/0, incl. a phantom-balance assertion).
+
+### 🐛 Bug #7 (2.7.717) — Collect Payment cash "Amount Received" showed $0.00 — FIXED
+The Paid Cash tab always pre-filled **$0.00** instead of the fee-waived balance. `render_payment_card()`
+referenced `$cash_total_due`, which is computed in `render_workspace()` and was never passed in (undefined →
+`number_format(null)` = "$0.00"). Confirmed server-side (raw HTML, not JS). Collection was unaffected (handler
+defaults correctly), but admins saw a wrong amount on the payment screen. Fix: pass the fee-waived
+`cash_outstanding` in. Live-verified: shows $80.00. Guard: `collect-payment-cash-field-smoke` (3/0).
+
+---
+
 ## Standing observation — global convenience fee + tax (for Whitney)
 
 The convenience fee + tax are **global** (Settings → Taxes & Fees, per task #24), not per-reservation. With them
