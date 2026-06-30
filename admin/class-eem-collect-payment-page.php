@@ -203,7 +203,7 @@ class EEM_Collect_Payment_Page {
 			<aside class="eem-co-rail">
 				<?php
 				self::render_amount_due_card( $order_no, $status, $customer, $stall_subtotal, $rv_subtotal, $fees, $custom_items, $discount, $discount_amt, $total_due, $outstanding );
-				self::render_payment_card( $detail_url, $order_key, $outstanding, $email );
+				self::render_payment_card( $detail_url, $order_key, $outstanding, $email, $cash_outstanding );
 				?>
 			</aside>
 		</div>
@@ -385,9 +385,14 @@ class EEM_Collect_Payment_Page {
 	 * @param string $status     Payment status.
 	 * @param float  $total_due  Recomputed balance due.
 	 * @param string $email      Customer email (for the Send Link copy).
+	 * @param float  $cash_total_due Fee-waived balance for the Paid Cash tab's
+	 *                          "Amount Received" pre-fill (cash/check waive the
+	 *                          convenience fee). Computed by render_workspace and
+	 *                          passed in — previously referenced here as an
+	 *                          out-of-scope variable, so the field rendered $0.00.
 	 * @return void
 	 */
-	private static function render_payment_card( string $detail_url, string $order_key, float $total_due, string $email = '' ): void {
+	private static function render_payment_card( string $detail_url, string $order_key, float $total_due, string $email = '', float $cash_total_due = 0.0 ): void {
 		// No outstanding balance — show a settled notice rather than a payment form.
 		if ( $total_due <= 0.0 ) {
 			?>
