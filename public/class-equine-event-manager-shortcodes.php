@@ -6334,6 +6334,11 @@ RV Lot: " . $rv_lot['name'] );
 			if ( 'weekly' === $stay_type ) {
 				return __( 'Weekly', 'equine-event-manager' );
 			}
+			// Stay Packages bill once for the whole window — the "units" column
+			// shows "Package", not a (misleading) per-night count.
+			if ( is_string( $stay_type ) && 0 === strpos( $stay_type, 'pkg_' ) ) {
+				return __( 'Package', 'equine-event-manager' );
+			}
 			return $this->get_night_count_label( $count );
 		};
 		$stay_desc = function ( $stay_type, $arrival, $departure ): string {
@@ -6687,7 +6692,7 @@ RV Lot: " . $rv_lot['name'] );
 				'badge' => sprintf( _n( '%d Reserved', '%d Reserved', $stall_qty, 'equine-event-manager' ), $stall_qty ),
 				'rows'  => array(
 					array( 'label' => __( 'Stay Type', 'equine-event-manager' ), 'value' => $this->format_stay_type_label( $order['stall_stay_type'] ) ),
-					array( 'label' => __( 'Nights', 'equine-event-manager' ), 'value' => 'weekend' === $order['stall_stay_type'] ? __( 'Weekend', 'equine-event-manager' ) : ( 'weekly' === $order['stall_stay_type'] ? __( 'Weekly', 'equine-event-manager' ) : $this->get_night_count_label( $stall_units ) ) ),
+					array( 'label' => __( 'Nights', 'equine-event-manager' ), 'value' => 'weekend' === $order['stall_stay_type'] ? __( 'Weekend', 'equine-event-manager' ) : ( 'weekly' === $order['stall_stay_type'] ? __( 'Weekly', 'equine-event-manager' ) : ( 0 === strpos( (string) $order['stall_stay_type'], 'pkg_' ) ? __( 'Package', 'equine-event-manager' ) : $this->get_night_count_label( $stall_units ) ) ) ),
 					array( 'label' => __( 'Arrival', 'equine-event-manager' ), 'value' => $this->format_reservation_date_label( $order['stall_arrival_date'] ) ),
 					array( 'label' => __( 'Departure', 'equine-event-manager' ), 'value' => $this->format_reservation_date_label( $order['stall_departure_date'] ) ),
 					array( 'label' => __( 'Stalls', 'equine-event-manager' ), 'value' => (string) $stall_qty ),
@@ -6698,7 +6703,7 @@ RV Lot: " . $rv_lot['name'] );
 		if ( $rv_qty > 0 ) {
 			$rv_rows = array(
 				array( 'label' => __( 'Stay Type', 'equine-event-manager' ), 'value' => $this->format_stay_type_label( $order['rv_stay_type'] ) ),
-				array( 'label' => __( 'Nights', 'equine-event-manager' ), 'value' => 'weekend' === $order['rv_stay_type'] ? __( 'Weekend', 'equine-event-manager' ) : ( 'weekly' === $order['rv_stay_type'] ? __( 'Weekly', 'equine-event-manager' ) : $this->get_night_count_label( $rv_units ) ) ),
+				array( 'label' => __( 'Nights', 'equine-event-manager' ), 'value' => 'weekend' === $order['rv_stay_type'] ? __( 'Weekend', 'equine-event-manager' ) : ( 'weekly' === $order['rv_stay_type'] ? __( 'Weekly', 'equine-event-manager' ) : ( 0 === strpos( (string) $order['rv_stay_type'], 'pkg_' ) ? __( 'Package', 'equine-event-manager' ) : $this->get_night_count_label( $rv_units ) ) ) ),
 				array( 'label' => __( 'Arrival', 'equine-event-manager' ), 'value' => $this->format_reservation_date_label( $order['rv_arrival_date'] ) ),
 				array( 'label' => __( 'Departure', 'equine-event-manager' ), 'value' => $this->format_reservation_date_label( $order['rv_departure_date'] ) ),
 				array( 'label' => __( 'RV Spots', 'equine-event-manager' ), 'value' => (string) $rv_qty ),
@@ -8130,6 +8135,19 @@ RV Lot: " . $rv_lot['name'] );
 
 		if ( 'nightly' === $stay_type ) {
 			return __( 'Nightly', 'equine-event-manager' );
+		}
+
+		// Stay Packages: the stored stay type is `pkg_<id>`. Resolve it to the
+		// package's human name (e.g. "Stall Thu-Sun") so receipts, the
+		// confirmation email, and Order Detail show the package name rather than
+		// the raw "Pkg_7" identifier. Package ids are globally unique, so the id
+		// alone resolves the row regardless of reservation/type.
+		if ( 0 === strpos( $stay_type, 'pkg_' ) && class_exists( 'EEM_Stay_Packages_Repo' ) ) {
+			$pkg = EEM_Stay_Packages_Repo::get( (int) substr( $stay_type, 4 ) );
+			if ( is_array( $pkg ) && '' !== (string) ( $pkg['name'] ?? '' ) ) {
+				return (string) $pkg['name'];
+			}
+			return __( 'Package', 'equine-event-manager' );
 		}
 
 		return $stay_type ? ucfirst( $stay_type ) : '';
