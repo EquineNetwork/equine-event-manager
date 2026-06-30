@@ -1200,7 +1200,23 @@ class EEM_Order_Detail_Page {
 		$rv_subtotal    = isset( $order['rv_subtotal'] )    ? (float) $order['rv_subtotal']    : 0.0;
 		$fees           = isset( $order['fees'] ) ? (float) $order['fees'] : 0.0;
 		$total          = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
-		$addon_subtotal = $this->compute_addon_subtotal( $order );
+		$tax            = isset( $order['tax'] ) ? (float) $order['tax'] : 0.0;
+
+		// The stored stall_subtotal BUNDLES group charges, pre-entries, and general
+		// add-ons into one stall component (the receipt itemizes them by parsing the
+		// component notes). Parse those same notes so the Order Detail breakdown
+		// shows real Group / Pre-Entry / Add-On sections + a Tax line — and so
+		// "Stalls Subtotal" reflects only stall charges, not the whole non-RV bundle.
+		// (Whitney 2026-06-30 — live audit found the bundled breakdown + the tax
+		// showing as "Add-Ons" because compute_addon_subtotal was a fee/tax-blind
+		// residual.)
+		$group_subtotal       = $this->sum_note_subtotal( $order, '/Group Charge:.*?Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi' );
+		$pre_entries_subtotal = $this->sum_note_subtotal( $order, '/Pre-Entry:.*?Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi' );
+		$addon_subtotal       = $this->sum_note_subtotal( $order, '/(?:^|\n)Add-On:.*?Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi' );
+		$stall_subtotal       = max( 0.0, $stall_subtotal - $group_subtotal - $pre_entries_subtotal - $addon_subtotal );
+		// Individual line items for the Group + Pre-Entry sections (itemized like the receipt).
+		$group_items     = $this->parse_note_items( $order, '/Group Charge:\s*(.+?)\s*\|.*?Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi' );
+		$pre_entry_items = $this->parse_note_items( $order, '/Pre-Entry:\s*(.+?)\s*\|.*?Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi' );
 
 		$stall_nights = $this->compute_nights(
 			isset( $order['stall_arrival_date'] )   ? (string) $order['stall_arrival_date']   : '',
@@ -1277,7 +1293,29 @@ class EEM_Order_Detail_Page {
 						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Add-Ons Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $addon_subtotal, 2 ) ); ?></span></div>
 					</div>
 				<?php endif; ?>
-				<?php if ( $fees > 0 ) : ?>
+				<?php if ( $pre_entries_subtotal > 0.005 ) : ?>
+						<div class="eem-order-summary__section">
+							<div class="eem-order-summary__section-header">
+								<span class="eem-order-summary__section-title"><?php esc_html_e( 'Pre-Entries', 'equine-event-manager' ); ?></span>
+							</div>
+							<?php foreach ( $pre_entry_items as $pe ) : ?>
+								<div class="eem-order-summary__line"><span><?php echo esc_html( $pe['label'] ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $pe['amount'], 2 ) ); ?></span></div>
+							<?php endforeach; ?>
+							<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Pre-Entries Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $pre_entries_subtotal, 2 ) ); ?></span></div>
+						</div>
+					<?php endif; ?>
+					<?php if ( $group_subtotal > 0.005 ) : ?>
+						<div class="eem-order-summary__section">
+							<div class="eem-order-summary__section-header">
+								<span class="eem-order-summary__section-title"><?php esc_html_e( 'Group Reservation', 'equine-event-manager' ); ?></span>
+							</div>
+							<?php foreach ( $group_items as $gi ) : ?>
+								<div class="eem-order-summary__line"><span><?php echo esc_html( $gi['label'] ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $gi['amount'], 2 ) ); ?></span></div>
+							<?php endforeach; ?>
+							<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Group Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $group_subtotal, 2 ) ); ?></span></div>
+						</div>
+					<?php endif; ?>
+					<?php if ( $fees > 0 ) : ?>
 					<div class="eem-order-summary__section">
 						<div class="eem-order-summary__section-header">
 							<span class="eem-order-summary__section-title"><?php esc_html_e( 'Fees', 'equine-event-manager' ); ?></span>
@@ -1286,7 +1324,16 @@ class EEM_Order_Detail_Page {
 						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Fees Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $fees, 2 ) ); ?></span></div>
 					</div>
 				<?php endif; ?>
-				<?php if ( ! empty( $custom_items ) ) : ?>
+				<?php if ( $tax > 0.005 ) : ?>
+						<div class="eem-order-summary__section">
+							<div class="eem-order-summary__section-header">
+								<span class="eem-order-summary__section-title"><?php esc_html_e( 'Tax', 'equine-event-manager' ); ?></span>
+							</div>
+							<div class="eem-order-summary__line"><span><?php echo esc_html( isset( $order['tax_label'] ) && '' !== (string) $order['tax_label'] ? (string) $order['tax_label'] : __( 'Sales Tax', 'equine-event-manager' ) ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $tax, 2 ) ); ?></span></div>
+							<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'Tax Total', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $tax, 2 ) ); ?></span></div>
+						</div>
+					<?php endif; ?>
+					<?php if ( ! empty( $custom_items ) ) : ?>
 					<div class="eem-order-summary__section">
 						<div class="eem-order-summary__section-header">
 							<span class="eem-order-summary__section-title"><?php esc_html_e( 'Custom Line Items', 'equine-event-manager' ); ?></span>
@@ -1503,6 +1550,64 @@ class EEM_Order_Detail_Page {
 	 * @param array<string, mixed> $order
 	 * @return float
 	 */
+	/**
+	 * Sum a "… | Subtotal: $X" line item across every component's notes.
+	 *
+	 * The order-creation path bundles group charges, pre-entries, and general
+	 * add-ons into the stall component's notes (each as a `Type: … | Subtotal: $X`
+	 * line) rather than separate priced component rows. The customer receipt parses
+	 * these to itemize; the Order Detail summary reuses the same parse so the two
+	 * surfaces agree. `$regex` must capture the dollar amount in group 1.
+	 *
+	 * @param array  $order The order with a `components` array.
+	 * @param string $regex Pattern with the amount in capture group 1.
+	 * @return float Sum of matched subtotals across all components.
+	 */
+	private function sum_note_subtotal( array $order, string $regex ): float {
+		$sum = 0.0;
+		// The full order notes are duplicated onto EVERY component row, so summing
+		// across all components double-counts. Use the first component that carries
+		// the matching lines and stop.
+		foreach ( (array) ( $order['components'] ?? array() ) as $component ) {
+			$notes = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+			if ( '' === $notes ) { continue; }
+			if ( preg_match_all( $regex, $notes, $matches ) ) {
+				foreach ( $matches[1] as $amount ) { $sum += (float) str_replace( ',', '', $amount ); }
+				return $sum;
+			}
+		}
+		return $sum;
+	}
+
+	/**
+	 * Parse `Type: <label> | … | Subtotal: $<amount>` note lines into line items.
+	 *
+	 * `$regex` must capture the label in group 1 and the dollar amount in group 2.
+	 * Returns a flat list of `['label' => string, 'amount' => float]` across every
+	 * component — so the Order Detail can itemize group charges and pre-entries the
+	 * same way the customer receipt does.
+	 *
+	 * @param array  $order The order with a `components` array.
+	 * @param string $regex Pattern: group 1 = label, group 2 = amount.
+	 * @return array<int, array{label:string,amount:float}>
+	 */
+	private function parse_note_items( array $order, string $regex ): array {
+		$items = array();
+		// Notes are duplicated onto every component row — take the first component
+		// that carries the matching lines and stop, to avoid double-listing.
+		foreach ( (array) ( $order['components'] ?? array() ) as $component ) {
+			$notes = isset( $component['notes'] ) ? (string) $component['notes'] : '';
+			if ( '' === $notes ) { continue; }
+			if ( preg_match_all( $regex, $notes, $matches, PREG_SET_ORDER ) ) {
+				foreach ( $matches as $m ) {
+					$items[] = array( 'label' => trim( $m[1] ), 'amount' => (float) str_replace( ',', '', $m[2] ) );
+				}
+				return $items;
+			}
+		}
+		return $items;
+	}
+
 	private function compute_addon_subtotal( array $order ) {
 		$total          = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
 		$stall_subtotal = isset( $order['stall_subtotal'] ) ? (float) $order['stall_subtotal'] : 0.0;
