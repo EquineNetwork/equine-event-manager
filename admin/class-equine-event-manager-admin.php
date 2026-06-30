@@ -10707,7 +10707,11 @@ class EEM_Admin {
 			'status_badge_html'    => $status_badge_html,
 			'banner_html'          => $banner_html,
 			'refund_history_html'  => $refund_history_html,
-			'requires_reload'      => false,
+			// Reload after a refund so the authoritative full render recomputes the
+			// Balance Due net of this refund (compute_amount_paid nets ledger
+			// refunds; the in-place banner fragment above is gross-only). Whitney
+			// 2026-06-30 — "net the refund in".
+			'requires_reload'      => true,
 			'notification_sent'    => $notification_sent,
 		) );
 	}

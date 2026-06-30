@@ -1538,6 +1538,23 @@ class EEM_Order_Detail_Page {
 		if ( $paid <= 0.005 && isset( $order['status_slug'] ) && 'paid' === $order['status_slug'] ) {
 			$paid = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
 		}
+		// Net out refunds recorded in the payments ledger. A refund returns money
+		// to the customer, so it reduces the amount effectively collected — which
+		// raises the outstanding Balance Due, and lets a "Refund Due" banner clear
+		// itself once the owed amount is actually refunded. The stored amount_paid
+		// aggregate is left GROSS by the refund handler (refunds live only in the
+		// ledger), so this is the single place that reconciles the two. (Whitney
+		// 2026-06-30 live audit — "net the refund in".)
+		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		if ( '' !== $order_key && class_exists( 'EEM_Order_Payments_Repo' ) ) {
+			$refunded = 0.0;
+			foreach ( EEM_Order_Payments_Repo::get_for_order( $order_key ) as $entry ) {
+				if ( isset( $entry['direction'] ) && EEM_Order_Payments_Repo::DIRECTION_REFUND === $entry['direction'] ) {
+					$refunded += (float) ( $entry['amount'] ?? 0 );
+				}
+			}
+			$paid = max( 0.0, $paid - $refunded );
+		}
 		return round( $paid, 2 );
 	}
 

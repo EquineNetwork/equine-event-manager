@@ -33,8 +33,14 @@ $m    = new ReflectionMethod( $page, 'render_payment_details_card' );
 $m->setAccessible( true );
 $render = function ( $order ) use ( $m, $page ) { ob_start(); $m->invoke( $page, $order ); return (string) ob_get_clean(); };
 
-// Clean (no refund) — strip any refund note lines.
+// Clean (no refund) — strip any refund note lines AND point at a key with no
+// payments-ledger entries. The card prefers the C14 ledger (get_for_order keys
+// off order_key), so a clean test must not inherit whatever real refunds the
+// sampled base order happens to carry in its ledger (otherwise a live refund on
+// the most-recent order silently breaks this smoke). Mirrors the refunded case
+// below, which already uses a no-ledger key.
 $clean = $base;
+$clean['order_key'] = 'eem-noledger-clean-' . uniqid();
 foreach ( $clean['components'] as $i => $c ) {
 	$clean['components'][ $i ]['notes'] = preg_replace( '/^.*Refunded Amount:.*$/mi', '', (string) ( $c['notes'] ?? '' ) );
 }
@@ -48,11 +54,15 @@ $ok( 'clean order has no refund-line', false === strpos( $clean_html, 'eem-order
 // point the in-memory order at a key with no ledger entries.
 $refunded = $base;
 $refunded['order_key'] = 'eem-noledger-refund-' . uniqid();
+// Strip any pre-existing refund notes from EVERY component first (the sampled
+// base order may already carry real refunds), then inject exactly one known
+// refund note — so the assertions below test only the injected line, not
+// whatever the base order happened to carry.
 foreach ( $refunded['components'] as $i => $c ) {
-	$refunded['components'][ $i ]['notes'] = (string) ( $c['notes'] ?? '' )
-		. "\nRefunded Amount: 2.00\nLast Refund Transaction: authorize-net-refund\nLast Refunded At: 2026-06-09 21:23:48";
-	break; // one component is enough
+	$refunded['components'][ $i ]['notes'] = preg_replace( '/^.*(Refunded Amount|Last Refund Transaction|Last Refunded At):.*$/mi', '', (string) ( $c['notes'] ?? '' ) );
 }
+$refunded['components'][0]['notes'] = (string) ( $refunded['components'][0]['notes'] ?? '' )
+	. "\nRefunded Amount: 2.00\nLast Refund Transaction: authorize-net-refund\nLast Refunded At: 2026-06-09 21:23:48";
 $ref_html = $render( $refunded );
 $ok( 'refunded order does NOT show "No refunds processed"', false === strpos( $ref_html, 'No refunds processed' ) );
 $ok( 'refunded order renders a refund-line', false !== strpos( $ref_html, 'eem-order-payment__refund-line' ) );
