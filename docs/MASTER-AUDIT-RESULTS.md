@@ -118,6 +118,49 @@ Relevant guards (all passing): `flat-convenience-fee-multicomponent` · `refund-
 
 ---
 
+## RES-BACKEND — real-browser pass (Create Order → discount → refund)
+
+Driven live against the admin UI on the Local site. The admin form uses Choices.js typeaheads +
+native `<select>` dropdowns + modals that **freeze the Chrome-extension automation layer** whenever a
+dropdown/modal is open (`Cannot access a chrome-extension:// URL of different extension`). Worked
+around by driving the form via the page's own JS state + posting the **real AJAX handler forms** (with
+their baked-in nonces) — i.e. exactly what each button POSTs — then reloading and verifying the
+rendered result. So every check below exercises the genuine server handler + real persistence + real
+render, not a reimplementation.
+
+| Check | Method | Result |
+|-------|--------|--------|
+| Create Order — reservation select loads section | JS set + real reload | ✅ NTR Rapid City RV section server-rendered |
+| Create Order — live pricing | set RV qty=2 | ✅ Order Summary recalculated **RV $160 = 2 × $40 × 2 nights**, itemized RV → Subtotal → Total |
+| Order Detail — breakdown render (my 2.7.710/713 fix) | navigate + read | ✅ un-bundled stall, **Group/Pre-Entry/Tax sections all present**, reconciles to stored total to the penny |
+| Discount apply | real `eem_order_add_discount` POST | ✅ "$50 off" persisted, reloaded page shows **Discount −$50.00 + reason + Remove**, Balance Due recomputed |
+| Refund (partial) | real `eem_order_refund_single` POST | ✅ real **Stripe test refund** (`re_…` object) + ledger entry + **Refund History $100.00** renders on Order Detail |
+
+### 🚩 OPEN QUESTION for Whitney — refund vs. outstanding balance (payment-behavior; not changed unilaterally)
+
+After a **partial refund on an order that still has an outstanding balance**, the Order Detail's
+**Balance Due ignores the refund**. `compute_amount_paid()` returns the *gross* collected amount and
+does **not** subtract ledger refunds, so:
+
+- Tenders show **$1,178.24** collected · Refund History shows **−$100.00** · but Balance Due shows
+  **$273.52** (= effective total − gross paid), when net collected is **$1,078.24** → true balance
+  **$373.52**. The displayed balance understates what's owed by the refunded amount.
+
+For the *common* case (refunding a **fully-paid** order) this reads as defensible — the order stays
+"settled" at $0 balance and the refund is shown separately in Refund History as its own event. The
+edge case (refund on an already-underpaid order) is where it looks wrong. **Decision needed:** should a
+refund increase the outstanding balance (`balance = effective_total − (gross_paid − refunds)`), or stay
+decoupled (refunds tracked only in Refund History)? This touches payment behavior, so it's flagged, not
+changed. The refund *processing* (gateway call, ledger, history display) is correct either way.
+
+### Note — test fixture #91717 is polluted
+The canonical RES-ALL order #91717 was mutated during this audit's earlier Edit-Order recalc testing
+(stall qty 2 → 10, total $1,178 → $1,501, now carrying a $100 test refund). Its Order Detail **renders
+correctly** (reconciles to the mutated stored total), so it's not a product bug — but #91717 is no
+longer a clean fixture. Re-seed before reusing it.
+
+---
+
 ## Standing observation — global convenience fee + tax (for Whitney)
 
 The convenience fee + tax are **global** (Settings → Taxes & Fees, per task #24), not per-reservation. With them
