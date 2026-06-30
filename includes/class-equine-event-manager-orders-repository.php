@@ -693,6 +693,62 @@ class EEM_Orders_Repository {
 	 * @param string $payment_method Human label, e.g. "Cash" or "Check #1042".
 	 * @return bool True if at least one component row was updated.
 	 */
+	/**
+	 * Canonical NET amount collected on an order = ledger payments − ledger refunds.
+	 *
+	 * The payments ledger (wp_eem_order_payments) is the single source of truth for
+	 * money in / out: it records the full charged/collected amount including the
+	 * adjustment-inclusive grand total (custom line items + discount), which the
+	 * per-component `amount_paid` column cannot represent (custom items aren't
+	 * components). So a balance computed as grand_total − component_amount_paid
+	 * left a phantom balance equal to the net adjustment on any fully-paid order
+	 * with custom items. Reading the ledger fixes that for BOTH card and cash, and
+	 * subsumes the 2.7.714 refund-netting (refunds are ledger entries too).
+	 *
+	 * Legacy fallback: orders created before the ledger shipped (and not backfilled)
+	 * have no ledger rows — fall back to the gross component `amount_paid` minus any
+	 * note-based refunds, so their balance keeps computing as before.
+	 *
+	 * @param string     $order_key Order key.
+	 * @param array|null $order     Pre-fetched order (avoids a re-query); fetched when null.
+	 * @return float Net collected, floored at 0.
+	 */
+	public function get_net_collected( string $order_key, ?array $order = null ): float {
+		$has_ledger = false;
+		$payments   = 0.0;
+		$refunds    = 0.0;
+		if ( '' !== $order_key && class_exists( 'EEM_Order_Payments_Repo' ) ) {
+			foreach ( EEM_Order_Payments_Repo::get_for_order( $order_key ) as $entry ) {
+				$has_ledger = true;
+				if ( isset( $entry['direction'] ) && EEM_Order_Payments_Repo::DIRECTION_REFUND === $entry['direction'] ) {
+					$refunds += (float) ( $entry['amount'] ?? 0 );
+				} else {
+					$payments += (float) ( $entry['amount'] ?? 0 );
+				}
+			}
+		}
+		if ( $has_ledger ) {
+			return round( max( 0.0, $payments - $refunds ), 2 );
+		}
+		// Legacy fallback — no ledger rows for this order.
+		if ( null === $order ) { $order = $this->get_order( $order_key ); }
+		if ( ! is_array( $order ) ) { return 0.0; }
+		$gross = isset( $order['amount_paid'] ) ? (float) $order['amount_paid'] : 0.0;
+		if ( $gross <= 0.005 && isset( $order['status_slug'] ) && 'paid' === $order['status_slug'] ) {
+			$gross = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		}
+		$note_refunds = 0.0;
+		foreach ( (array) ( $order['components'] ?? array() ) as $eem_c ) {
+			$eem_notes = isset( $eem_c['notes'] ) ? (string) $eem_c['notes'] : '';
+			if ( preg_match( '/Refunded Amount:\s*([0-9]+(?:\.[0-9]+)?)/i', $eem_notes, $eem_m ) ) {
+				$note_refunds += (float) $eem_m[1];
+			} elseif ( isset( $eem_c['payment_status'] ) && 'refunded' === $eem_c['payment_status'] ) {
+				$note_refunds += isset( $eem_c['total'] ) ? (float) $eem_c['total'] : 0.0;
+			}
+		}
+		return round( max( 0.0, $gross - $note_refunds ), 2 );
+	}
+
 	public function record_manual_payment( $order_key, $amount, $payment_method = 'Cash' ) {
 		$order = $this->get_order( $order_key );
 		if ( ! $order ) {
@@ -709,13 +765,26 @@ class EEM_Orders_Repository {
 			return false;
 		}
 
+		// Outstanding INCLUDING custom-item / discount adjustments. The per-component
+		// rows only carry the reservation charges, so capping on the base amount_due
+		// stranded the adjustment portion uncollectable — the order showed "paid"
+		// while still owing the net custom-item amount. Cap on the composed grand
+		// total minus what the ledger already shows collected. (Whitney 2026-06-30.)
 		$outstanding = isset( $order['amount_due'] ) ? round( max( 0.0, (float) $order['amount_due'] ), 2 ) : 0.0;
+		if ( class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			$eem_adj      = EEM_Order_Adjustments_Repo::get_for_order( (string) $order_key );
+			$eem_composed = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $eem_adj );
+			$outstanding  = round( max( 0.0, (float) $eem_composed['grand_total'] - $this->get_net_collected( (string) $order_key, $order ) ), 2 );
+		}
 		if ( $outstanding <= 0 ) {
 			return false; // Nothing due.
 		}
 
-		$leftover       = min( $amount, $outstanding );
-		$to_apply       = $leftover; // Captured up-front so we can record the actually-applied total in the ledger.
+		// The full money received goes to the ledger (the source of truth for
+		// "amount collected"); component rows only absorb up to their own charged
+		// totals, so the adjustment portion lives in the ledger alone.
+		$received       = round( min( $amount, $outstanding ), 2 );
+		$leftover       = $received;
 		$paid_at        = current_time( 'mysql' );
 		$payment_method = trim( sanitize_text_field( (string) $payment_method ) );
 		$payment_method = '' !== $payment_method ? $payment_method : 'Cash';
@@ -773,11 +842,13 @@ class EEM_Orders_Repository {
 			) || $updated_any;
 		}
 
-		if ( $updated_any ) {
-			$applied = round( $to_apply - $leftover, 2 );
-			$this->record_payment_ledger_entry( (string) $order_key, $applied, $payment_method );
+		// Record the FULL money received in the ledger even when no component row
+		// changed (e.g. an adjustment-only top-up after the reservation rows were
+		// already settled) — the ledger is what "amount collected" is read from.
+		if ( $received > 0.005 ) {
+			$this->record_payment_ledger_entry( (string) $order_key, $received, $payment_method );
 
-			$new_balance = round( $outstanding - min( $amount, $outstanding ), 2 );
+			$new_balance = round( $outstanding - $received, 2 );
 			$new_status  = ( $new_balance <= 0.005 ) ? 'paid' : 'partially_paid';
 			if ( $old_status !== $new_status ) {
 				/**
@@ -795,6 +866,7 @@ class EEM_Orders_Repository {
 					'payment_method' => $payment_method,
 				) );
 			}
+			return true;
 		}
 
 		return $updated_any;

@@ -6542,32 +6542,12 @@ RV Lot: " . $rv_lot['name'] );
 	 * @return float Net collected, floored at 0.
 	 */
 	private function get_order_net_collected( array $order ): float {
-		$gross = isset( $order['amount_paid'] ) ? (float) $order['amount_paid'] : 0.0;
-		// Legacy 'paid' rows with no recorded amount_paid count their total as collected.
-		if ( $gross <= 0.005 && isset( $order['status_slug'] ) && 'paid' === $order['status_slug'] ) {
-			$gross = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
-		}
-		$refunded  = 0.0;
+		// Ledger-based (delegates to the canonical repo method): amount collected =
+		// ledger payments − ledger refunds, with a legacy fallback for pre-ledger
+		// orders. Keeps the customer receipt + email in lock-step with the admin
+		// Order Detail's balance math. (Whitney 2026-06-30 — ledger-based collected.)
 		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
-		if ( '' !== $order_key && class_exists( 'EEM_Order_Payments_Repo' ) ) {
-			foreach ( EEM_Order_Payments_Repo::get_for_order( $order_key ) as $entry ) {
-				if ( isset( $entry['direction'] ) && EEM_Order_Payments_Repo::DIRECTION_REFUND === $entry['direction'] ) {
-					$refunded += (float) ( $entry['amount'] ?? 0 );
-				}
-			}
-		}
-		if ( $refunded <= 0.009 ) {
-			// Note-based fallback for pre-ledger orders (mirrors the receipt's scan).
-			foreach ( (array) ( $order['components'] ?? array() ) as $eem_c ) {
-				$eem_notes = isset( $eem_c['notes'] ) ? (string) $eem_c['notes'] : '';
-				if ( preg_match( '/Refunded Amount:\s*([0-9]+(?:\.[0-9]+)?)/i', $eem_notes, $eem_m ) ) {
-					$refunded += (float) $eem_m[1];
-				} elseif ( isset( $eem_c['payment_status'] ) && 'refunded' === $eem_c['payment_status'] ) {
-					$refunded += isset( $eem_c['total'] ) ? (float) $eem_c['total'] : 0.0;
-				}
-			}
-		}
-		return round( max( 0.0, $gross - $refunded ), 2 );
+		return ( new EEM_Orders_Repository() )->get_net_collected( $order_key, $order );
 	}
 
 	private function build_confirmation_email_html( array $order, bool $pdf_attached = false ): string {
