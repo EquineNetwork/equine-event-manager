@@ -161,6 +161,37 @@ longer a clean fixture. Re-seed before reusing it.
 
 ---
 
+## Remaining-gaps sweep — engine math + rendered surfaces (every option, real code)
+
+To close the audit to 100%, I drove every charging option I hadn't personally exercised through the
+**real engine** (`calculate_submission_totals` / `get_current_rate`) and rendered every customer
+**surface** through the real render methods. All green:
+
+**Engine math (real `calculate_submission_totals`):**
+- ✅ FLAT convenience fee charged **once** ($15, not $30) across a stall+RV order (F7 re-proven live through the engine)
+- ✅ PERCENT convenience fee = rate × subtotal
+- ✅ **Tack-stall shavings exclusion** — required shavings drop $40 → $20 when one of two stalls is tack
+- ✅ **Early-bird active** gives the discounted rate ($35), and **past the cutoff switches to the regular rate ($40)**
+
+**Rendered surfaces (real render methods, not just the line-item builder):**
+- ✅ Confirmation email HTML carries a design-time `<style>` block, and **send-time Emogrifier inlining** (`EEM_Mailer::inline_css`) produces inlined `style=""` attributes (Outlook-safe)
+- ✅ Email itemized rows reconcile to the stored total
+- ✅ Receipt HTML (web + PDF variants) render
+- ✅ **Dompdf produces a valid 206 KB PDF** (`%PDF-` header)
+- ✅ **Hosted receipt page** (customer-facing `?eem_receipt=…`) renders all sections, shows the refund ("$100 was returned to the original payment method"), and reconciles to the grand total
+
+Guard: `surface-render-integrity-smoke.php` (9/0).
+
+### 🚩 Related consistency observation (same family as the refund-netting decision)
+The **email/receipt header "Amount Paid"** uses the order **total** (`shortcodes.php:6570`), and the receipt's
+own paid/balance math (`:6816`) reads the gross `amount_paid` without netting ledger refunds — so on a
+**refunded or underpaid** order the hosted receipt can show "Amount Paid = total" while also showing the
+refund banner. For the normal paid-in-full receipt (issued at payment time, total == paid) this is correct;
+it only looks off on the unusual refunded/underpaid state. Since this is customer-facing payment-display
+behavior, flagging it for a decision rather than changing it — parallel to the 2.7.714 admin balance fix.
+
+---
+
 ## Standing observation — global convenience fee + tax (for Whitney)
 
 The convenience fee + tax are **global** (Settings → Taxes & Fees, per task #24), not per-reservation. With them
