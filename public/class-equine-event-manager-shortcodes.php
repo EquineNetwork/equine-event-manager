@@ -6527,6 +6527,49 @@ RV Lot: " . $rv_lot['name'] );
 	 *                            (C12 re-enables it once a PDF is actually attached).
 	 * @return string Rendered (un-inlined) HTML.
 	 */
+	/**
+	 * Net amount actually collected on an order = gross collected − refunds.
+	 *
+	 * Mirrors the admin Order Detail's compute_amount_paid (2.7.714, "net the
+	 * refund in"): a refund returns money to the customer, so the customer-facing
+	 * receipt + confirmation email must reflect what was net-collected, not the
+	 * gross charge. Prefers the C14 payments ledger (authoritative); falls back to
+	 * note-based "Refunded Amount" on components for legacy / imported orders, and
+	 * never double-counts (ledger wins; notes only consulted when the ledger has
+	 * no refund entry).
+	 *
+	 * @param array<string, mixed> $order Grouped order payload.
+	 * @return float Net collected, floored at 0.
+	 */
+	private function get_order_net_collected( array $order ): float {
+		$gross = isset( $order['amount_paid'] ) ? (float) $order['amount_paid'] : 0.0;
+		// Legacy 'paid' rows with no recorded amount_paid count their total as collected.
+		if ( $gross <= 0.005 && isset( $order['status_slug'] ) && 'paid' === $order['status_slug'] ) {
+			$gross = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		}
+		$refunded  = 0.0;
+		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		if ( '' !== $order_key && class_exists( 'EEM_Order_Payments_Repo' ) ) {
+			foreach ( EEM_Order_Payments_Repo::get_for_order( $order_key ) as $entry ) {
+				if ( isset( $entry['direction'] ) && EEM_Order_Payments_Repo::DIRECTION_REFUND === $entry['direction'] ) {
+					$refunded += (float) ( $entry['amount'] ?? 0 );
+				}
+			}
+		}
+		if ( $refunded <= 0.009 ) {
+			// Note-based fallback for pre-ledger orders (mirrors the receipt's scan).
+			foreach ( (array) ( $order['components'] ?? array() ) as $eem_c ) {
+				$eem_notes = isset( $eem_c['notes'] ) ? (string) $eem_c['notes'] : '';
+				if ( preg_match( '/Refunded Amount:\s*([0-9]+(?:\.[0-9]+)?)/i', $eem_notes, $eem_m ) ) {
+					$refunded += (float) $eem_m[1];
+				} elseif ( isset( $eem_c['payment_status'] ) && 'refunded' === $eem_c['payment_status'] ) {
+					$refunded += isset( $eem_c['total'] ) ? (float) $eem_c['total'] : 0.0;
+				}
+			}
+		}
+		return round( max( 0.0, $gross - $refunded ), 2 );
+	}
+
 	private function build_confirmation_email_html( array $order, bool $pdf_attached = false ): string {
 		$company_settings = $this->get_company_settings();
 		$event_label      = ! empty( $order['reservation_title'] ) ? $order['reservation_title'] : $order['event_name'];
@@ -6567,7 +6610,10 @@ RV Lot: " . $rv_lot['name'] );
 			'event_dates'         => isset( $order['event_dates'] ) ? (string) $order['event_dates'] : '',
 			'order_number'        => sprintf( '#%05d', absint( $order['order_number'] ) ),
 			'payment_date'        => $paid_ts ? date_i18n( 'F j, Y', $paid_ts ) : '',
-			'amount_paid'         => '$' . number_format_i18n( (float) $order['total'], 2 ),
+			// Net of any refunds (2.7.715, "net the refund in"). At first-send time
+			// the order is freshly paid with no refund, so this equals the total;
+			// the netting only changes a re-render after a later refund.
+			'amount_paid'         => '$' . number_format_i18n( $this->get_order_net_collected( $order ), 2 ),
 			'customer_first'      => $customer_first,
 			// Hosted order page lands in C12; link withheld until then.
 			// C12 — hosted order page (web view of this receipt), token-bearer URL.
@@ -6811,13 +6857,11 @@ RV Lot: " . $rv_lot['name'] );
 		} else {
 			$receipt_grand_total = round( $eem_order_total + $receipt_custom_total - $receipt_discount_amt, 2 );
 		}
-		// Amount actually collected (mig-029). Legacy 'paid' rows with no recorded
-		// amount_paid count their component total as collected.
-		$receipt_amount_paid = isset( $order['amount_paid'] ) ? (float) $order['amount_paid'] : 0.0;
+		// Amount actually collected, NET of refunds (2.7.715, "net the refund in").
+		// Shared helper mirrors the admin Order Detail's compute_amount_paid so the
+		// customer receipt and the backend agree on what's been collected.
 		$eem_status_slug     = isset( $order['status_slug'] ) ? (string) $order['status_slug'] : '';
-		if ( $receipt_amount_paid <= 0.005 && 'paid' === $eem_status_slug ) {
-			$receipt_amount_paid = $eem_order_total;
-		}
+		$receipt_amount_paid = $this->get_order_net_collected( $order );
 		$receipt_balance_due = round( max( 0.0, $receipt_grand_total - $receipt_amount_paid ), 2 );
 		$receipt_has_balance = ! $is_cancelled && ! $is_fully_refunded && ! $is_partial_refunded && $receipt_balance_due > 0.005;
 
@@ -6866,9 +6910,12 @@ RV Lot: " . $rv_lot['name'] );
 			'event_title'         => $event_label,
 			'event_sub'           => implode( '  ·  ', $sub_parts ),
 			'payment_date'        => $paid_ts ? date_i18n( 'm-d-Y', $paid_ts ) : '',
-			// Header "amount" badge: shows the balance due when one is outstanding,
-			// else the collected total.
-			'amount_paid'         => $receipt_has_balance ? $money( $receipt_balance_due ) : $money( $receipt_grand_total ),
+			// Header "amount" badge: balance due when one is outstanding; the NET
+			// collected (gross − refunds) when the order has been refunded; else the
+			// collected grand total (2.7.715 — "net the refund in").
+			'amount_paid'         => $receipt_has_balance
+				? $money( $receipt_balance_due )
+				: ( ( $is_partial_refunded || $is_fully_refunded ) ? $money( $receipt_amount_paid ) : $money( $receipt_grand_total ) ),
 			'customer_name'       => isset( $order['customer_name'] ) ? trim( (string) $order['customer_name'] ) : '',
 			'reservation_type'    => ! empty( $order['type_labels'] ) && is_array( $order['type_labels'] ) ? implode( ', ', $order['type_labels'] ) : '',
 			'customer_email'      => $this->get_order_customer_email( $order ),
