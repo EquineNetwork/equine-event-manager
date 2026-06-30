@@ -134,15 +134,21 @@ class EEM_Collect_Payment_Page {
 		} else {
 			$total_due = $base_total + $custom_total - $discount_amt;
 		}
-		$amount_paid    = isset( $order['amount_paid'] ) ? (float) $order['amount_paid'] : 0.0;
+		// Amount collected = ledger net (payments − refunds), NOT the component
+		// amount_paid column (which can't represent custom-item/discount portions,
+		// so a fully-collected adjusted order otherwise read as still owing the
+		// adjustment — bug #9). Single source of truth shared with Order Detail.
+		$amount_paid    = class_exists( 'EEM_Orders_Repository' )
+			? ( new EEM_Orders_Repository() )->get_net_collected( $order_key, $order )
+			: ( isset( $order['amount_paid'] ) ? (float) $order['amount_paid'] : 0.0 );
 		$outstanding    = max( 0.0, $total_due - $amount_paid );
 
 		// Cash/check waives the convenience fee (Whitney decision: the fee is a
 		// pass-through of the card processing cost, so offline payments drop it).
-		// The Paid Cash tab pre-fills this fee-free balance; the server handler
-		// (handle_mark_order_paid) zeroes the fee on the order to match.
-		$cash_total_due = max( 0.0, $total_due - $fees );
-		$cash_outstanding = max( 0.0, $cash_total_due - $amount_paid );
+		// The Paid Cash tab pre-fills the fee-free REMAINING balance; the server
+		// handler (handle_mark_order_paid) zeroes the fee on the order to match.
+		$cash_total_due = max( 0.0, ( $total_due - $fees ) - $amount_paid );
+		$cash_outstanding = $cash_total_due;
 
 		$customer = isset( $order['customer_name'] ) ? (string) $order['customer_name'] : '';
 		$email    = isset( $order['email'] ) ? (string) $order['email'] : '';

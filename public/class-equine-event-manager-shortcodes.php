@@ -8828,14 +8828,13 @@ RV Lot: " . $rv_lot['name'] );
 	 */
 	private function get_order_amount_due( $order, $order_key ) {
 		// F4: the CHARGE amount (Stripe + Auth.net Collect Payment) must equal the
-		// DISPLAYED total, including the convenience fee that now follows admin-added
-		// line items. Route through the same single-source composer the Collect
-		// Payment / Order Detail / receipt surfaces use so the charge never diverges
-		// from what the admin/customer sees.
-		if ( class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
-			$adj      = EEM_Order_Adjustments_Repo::get_for_order( $order_key );
-			$composed = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $adj );
-			return max( 0.0, (float) $composed['grand_total'] );
+		// DISPLAYED balance — the OUTSTANDING (composed grand total incl. admin
+		// line items, MINUS what the ledger says is already collected), so an order
+		// that's been partly paid charges only the remainder and a fully-collected
+		// order can't be re-charged. Single source of truth shared with the Collect
+		// Payment / Order Detail / receipt surfaces. (Whitney 2026-06-30 ledger model.)
+		if ( '' !== (string) $order_key && class_exists( 'EEM_Orders_Repository' ) ) {
+			return ( new EEM_Orders_Repository() )->get_order_outstanding( (string) $order_key, $order );
 		}
 		$total = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
 		return max( 0.0, round( $total, 2 ) );

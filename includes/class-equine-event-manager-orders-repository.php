@@ -749,6 +749,29 @@ class EEM_Orders_Repository {
 		return round( max( 0.0, $gross - $note_refunds ), 2 );
 	}
 
+	/**
+	 * Canonical OUTSTANDING balance for an order = composed grand total (incl.
+	 * custom line items + discount) − ledger net collected. The single source of
+	 * truth for "how much is still owed", so the Collect Payment display, the
+	 * card/cash charge amount, the Orders list badge, and the Order Detail all
+	 * agree. Floored at 0. (Whitney 2026-06-30 — ledger-based money model.)
+	 *
+	 * @param string     $order_key Order key.
+	 * @param array|null $order     Pre-fetched order (avoids a re-query).
+	 * @return float Outstanding balance, floored at 0.
+	 */
+	public function get_order_outstanding( string $order_key, ?array $order = null ): float {
+		if ( null === $order ) { $order = $this->get_order( $order_key ); }
+		if ( ! is_array( $order ) ) { return 0.0; }
+		$grand = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		if ( '' !== $order_key && class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			$adj      = EEM_Order_Adjustments_Repo::get_for_order( $order_key );
+			$composed = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $adj );
+			$grand    = (float) $composed['grand_total'];
+		}
+		return round( max( 0.0, $grand - $this->get_net_collected( $order_key, $order ) ), 2 );
+	}
+
 	public function record_manual_payment( $order_key, $amount, $payment_method = 'Cash' ) {
 		$order = $this->get_order( $order_key );
 		if ( ! $order ) {
