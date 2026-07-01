@@ -301,18 +301,21 @@ class EEM_Dashboard_Repo {
 	private function compute_revenue_outstanding_totals( array $orders ) {
 		$rev = 0.0; $out_amt = 0.0; $out_count = 0;
 		$outstanding_statuses = array( 'unpaid', 'invoice-sent', 'partially-paid' );
+		$repo = class_exists( 'EEM_Orders_Repository' ) ? new EEM_Orders_Repository() : null;
 		foreach ( $orders as $o ) {
-			$slug  = (string) ( $o['status_slug'] ?? '' );
-			$total = (float) ( $o['total'] ?? 0 );
-			$paid  = max( 0.0, (float) ( $o['amount_paid'] ?? 0 ) );
-			// Revenue = money actually COLLECTED (Whitney decision 2026-06-27), not the
-			// booked order total — so a partially-paid order contributes only what has
-			// been paid, never the unpaid remainder.
-			$rev += $paid;
+			$slug     = (string) ( $o['status_slug'] ?? '' );
+			$key      = (string) ( $o['order_key'] ?? '' );
+			// Revenue = money actually COLLECTED, NET of refunds (Whitney decision
+			// 2026-06-27; ledger-based 2026-06-30). The component amount_paid column
+			// is GROSS (refunds live only in the payments ledger), so summing it
+			// counted refunded money as revenue — overstating it by every refund.
+			$collected = ( null !== $repo && '' !== $key ) ? $repo->get_net_collected( $key, $o ) : max( 0.0, (float) ( $o['amount_paid'] ?? 0 ) );
+			$rev += $collected;
 			if ( in_array( $slug, $outstanding_statuses, true ) ) {
-				// Outstanding = the remaining balance (total − collected), so a
-				// partially-paid order counts only what's still owed.
-				$out_amt += max( 0.0, $total - $paid );
+				// Outstanding = the true remaining balance (composed grand − net
+				// collected), so custom-item/discount adjustments + refunds are
+				// reflected, not just the component total.
+				$out_amt += ( null !== $repo && '' !== $key ) ? $repo->get_order_outstanding( $key, $o ) : max( 0.0, (float) ( $o['total'] ?? 0 ) - (float) ( $o['amount_paid'] ?? 0 ) );
 				$out_count++;
 			}
 		}
