@@ -104,6 +104,22 @@ $scenarios = array(
 			'rv_qty' => 1, 'rv_stay_type' => 'weekend', 'rv_arrival_date' => $A, 'rv_departure_date' => $D,
 		),
 		'expect_sub' => 650.0, 'lines' => array( 'Stall Res.', 'RV Res.' ) ), // 500 + 150
+	// RV PACKAGE: flat price × qty, billed ONCE (twin of the stall package the
+	// capstone charge-reconcile already covers — RV package was untested).
+	array( 'label' => 'RV PACKAGE 2×$200 flat billed once',
+		'data' => array( 'rv_pricing_mode' => 'packages', 'rv_packages' => array(
+			array( 'id' => 1, 'name' => 'RV Weekend Package', 'price' => 200.0, 'early_bird_price' => 160.0, 'start_date' => '', 'end_date' => '', 'max_quantity' => 0 ),
+		) ),
+		'sub' => array( 'rv_qty' => 2, 'rv_stay_type' => 'pkg_1', 'rv_arrival_date' => $A, 'rv_departure_date' => $D ),
+		'expect_sub' => 400.0, 'lines' => array( 'RV Res.' ) ),
+	// RV EARLY-BIRD nightly: the early-bird rate ($30) applies, not the regular
+	// $45 nightly. 2 qty × $30 × 2 nights = $120 (untested — stall early-bird was
+	// covered, RV early-bird was not).
+	array( 'label' => 'RV EARLY-BIRD nightly 2×$30×2n = $120 (not $45 regular)',
+		'data' => array( 'rv_early_bird_enabled' => 1, 'rv_early_bird_cutoff' => '2030-01-01 00:00:00',
+			'rv_early_bird_nightly_rate' => 30.0, 'rv_early_bird_weekend_rate' => 0.0, 'rv_early_bird_weekly_rate' => 0.0 ),
+		'sub' => array( 'rv_qty' => 2, 'rv_stay_type' => 'nightly', 'rv_arrival_date' => '2026-08-19', 'rv_departure_date' => '2026-08-21' ),
+		'expect_sub' => 120.0, 'lines' => array( 'RV Res.' ) ),
 );
 
 foreach ( $scenarios as $snum => $S ) {

@@ -28,7 +28,8 @@ audit for the full smoke-by-smoke map.
 | **CO-JS vs CHG** — customer JS summary vs actual charge, ALL combos | 🔴 highest (displayed ≠ charged) | **OPEN** — needs the real-browser session (JS-rendered, no in-process reach). |
 | **Weekly (stall+RV)** billed correctly (once, not ×nights) | 🟠 | ✅ **CLOSED** 2.7.734 — `stay-type-matrix-allsurfaces-smoke` (weekly bills once; reconciles CHG→stored→EMAIL). No bug found. |
 | **RV weekend / weekly** pricing at charge | 🟠 | ✅ **CLOSED** — same smoke. |
-| **RV early-bird** | 🟠 | ◻️ partial — nightly early-bird covered elsewhere; RV early-bird render TBD. |
+| **RV early-bird** | 🟠 | ✅ **CLOSED** — `stay-type-matrix-allsurfaces-smoke` (early-bird rate $30 applies, not the $45 regular). No bug. |
+| **RV package** (flat × qty, once) | 🟠 | ✅ **CLOSED** — same smoke ($400 = 2×$200 flat, billed once). No bug. |
 | **Surcharge tier orders — money reconciles** | 🟠 | ✅ **CLOSED** — `surcharge-order-render-reconcile-smoke` (2026-07-01): premium-tier surcharge folds into the charge, charge == stored, Σ email lines == stored (surcharge dollars reach the document, not dropped). |
 | **Surcharge tier orders — separate "Stall Premium" LINE** | 🟡 | ◻️ **BROWSER-PASS ITEM** — `get_order_stall_surcharge_total()` re-reads the reservation tier config + a stored "Stall Tiers:" note to break the premium into its own line; the synthetic harness can't reproduce that. **VERIFY on a configured QUANTITY-MODE tier reservation** that a real surcharge order shows a "Stall Premium" line on Order Detail / receipt / email (not silently folded into the stall line). |
 | **Packages at RENDER surfaces (OD/PDF)** | 🟠 | ◻️ OPEN — charge + email proven (charge-reconcile); OD/PDF itemization not yet asserted. |
