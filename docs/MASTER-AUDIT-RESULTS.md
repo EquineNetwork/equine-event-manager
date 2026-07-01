@@ -222,6 +222,41 @@ defaults correctly), but admins saw a wrong amount on the payment screen. Fix: p
 
 ---
 
+## Ledger-based money model — the bug family (#6–#12), all fixed
+
+Live-clicking Collect Payment surfaced a **systemic** root cause: "amount collected" and "amount due"
+were computed from the per-component `amount_paid` / `amount_due` columns, which **cannot represent
+custom-item / discount adjustments** (they aren't components) and are **gross of refunds** (refunds live
+only in the payments ledger). Every surface that read those columns diverged from the truth for adjusted
+or refunded orders. Fix: one canonical pair on the repo —
+`get_net_collected()` (ledger payments − refunds) and `get_order_outstanding()` (composed grand − net
+collected) — that **every** money surface now routes through. Each fix has a behavioral guard.
+
+| # | Ver | Surface | Symptom (adjusted / refunded order) |
+|---|-----|---------|--------------------------------------|
+| 6 | 2.7.716 | Order Detail balance + cash/card collect | Fully-paid order with a custom item showed a **phantom balance** = the adjustment, and it was uncollectable |
+| — | 2.7.714/715 | Order Detail + receipt + email "Amount Paid" | Refund not netted (folded into #6's ledger model) |
+| 7 | 2.7.717 | Collect Payment cash field | "Amount Received" rendered **$0.00** (out-of-scope var) |
+| 8 | 2.7.718 | Orders list badge | Paid order + custom item read green **"Paid"** while detail showed Balance Due |
+| 9 | 2.7.719 | Collect page outstanding + **card charge** | Fully-collected order still **chargeable**; partially-paid over-charged the full grand |
+| 10 | 2.7.720 | Cash mark-paid handler | Couldn't **collect an adjustment-only balance** ("no outstanding balance") |
+| 11 | 2.7.721 | Dashboard Revenue KPI | **Refunds counted as revenue** (gross, overstated) |
+| 12 | 2.7.722 | Payment-link invoice email | "Amount Due" showed base total — **understated** vs what the link charges |
+
+Cross-surface reconciliation guards (all green): `receipt-email-net-collected` · `orders-list-balance-badge`
+(list == detail across 60 orders) · `collect-charge-outstanding` (charge == outstanding) ·
+`dashboard-revenue-net` · `invoice-email-amount` · `collect-payment-cash-field`.
+
+### 🚩 Remaining consistency observation (display convention, for Whitney)
+The **summary "Total"** shown on the Orders-list column, the CSV export, and the email `[total]`
+placeholder still shows the **base reservation total**, not the composed grand (base + custom items −
+discount). It's correct for the ~99% of orders with no adjustments; for adjusted orders it understates
+(custom items) or overstates (discounts) the effective total. This is a display-convention choice — should
+those summary "Total" figures reflect admin adjustments? — not a transactional bug (every charge / collect
+/ balance / refund / revenue figure is now correct). Flagged rather than changed.
+
+---
+
 ## Standing observation — global convenience fee + tax (for Whitney)
 
 The convenience fee + tax are **global** (Settings → Taxes & Fees, per task #24), not per-reservation. With them
