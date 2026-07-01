@@ -298,6 +298,22 @@ every path, refund sign handling, concurrency locks, multi-partial base refunds,
   components, not adjustments), not a money-loss bug — needs a product decision on whether v1 must refund
   admin-added charges.
 
+### Cycle 3b — edit-under-adjustments + ledger concurrency (2 more agents), 2.7.732–733
+
+| # | Ver | Severity | Bug |
+|---|-----|----------|-----|
+| 22 | 2.7.732 | 🟠 gating | Order Detail top banner `compute_grand_total()` dropped custom-item fee + tax → banner disagreed with the Summary card / Collect Payment; could mis-gate Refund-Due vs Payment-Outstanding. Now delegates to the composer. |
+| 23 | 2.7.732 | 🟠 display | A percentage discount frozen at set-time, after an Edit-Dates shorten, drove the composed grand **negative** → inflated the displayed "Refund Owed" (paid − grand). Both `compose_order_totals` + `compute_grand_total` now floor at 0. (#20 already capped the actual refund execution.) |
+| 24 | 2.7.733 | 🔴/🟠 ledger integrity | **F1** replayed Stripe webhook → double PAYMENT ledger row; **F2** hosted-invoice submit wrote NO ledger row; **F3** manual Mark-Cash double-click → double row. **Code-only fix** (Whitney's call): `record()` dedupes gateway rows on `(order_key, transaction_id, direction)`; the invoice submit now writes its ledger row (deduped vs the webhook); the webhook + `record_manual_payment` are serialized behind the per-order `eem_charge_*` advisory lock (same lock the card-charge path uses). |
+
+Edit-under-adjustments architecture otherwise verified sound: edits touch only component rows, adjustments re-compose at read time, `amount_paid` desync impossible (ledger is authoritative), outstanding-after-edit correct on the charge path.
+
+Smokes: `order-detail-grand-total-parity` · `ledger-idempotency` (behavioral dedupe + source-asserted locks).
+
+**Deferred (Whitney's call):** the DB-level unique index on the ledger as a hard backstop for the F1/F3
+*simultaneous* race (the advisory lock closes it in practice; the index would need de-duping existing rows +
+a migration on the live payments table). Code-only fix shipped first per decision.
+
 ---
 
 ## Standing observation — global convenience fee + tax (for Whitney)

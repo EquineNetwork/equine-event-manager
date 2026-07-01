@@ -8853,6 +8853,26 @@ RV Lot: " . $rv_lot['name'] );
 				array( '%s', '%s', '%s', '%s' )
 			);
 		}
+
+		// bug #24 (F2): record the payment in the ledger — the single source of
+		// truth for money collected. Every OTHER payment path (checkout, Collect
+		// Payment, the Stripe webhook) writes a ledger row; the hosted-invoice
+		// submit did not, so an invoice-paid order read as $0 collected on the
+		// ledger (masked only by get_net_collected's legacy fallback, which
+		// under-counts adjusted orders). The amount is the charged balance
+		// ($order['total'] was reassigned to the outstanding before the charge).
+		// Deduped by transaction_id against the webhook's later row in
+		// EEM_Order_Payments_Repo::record().
+		if ( class_exists( 'EEM_Order_Payments_Repo' ) && ! empty( $order['order_key'] ) ) {
+			EEM_Order_Payments_Repo::record( array(
+				'order_key'      => (string) $order['order_key'],
+				'direction'      => EEM_Order_Payments_Repo::DIRECTION_PAYMENT,
+				'method'         => 'Card',
+				'gateway'        => sanitize_key( $payment_gateway ),
+				'amount'         => isset( $order['total'] ) ? (float) $order['total'] : 0.0,
+				'transaction_id' => (string) $transaction_id,
+			) );
+		}
 	}
 
 	/**
@@ -9332,6 +9352,19 @@ RV Lot: " . $rv_lot['name'] );
 			if ( '' === $order_key || '' === $intent_id ) {
 				return;
 			}
+
+			// bug #24 (F1): serialize concurrent/replayed webhooks for this order
+			// behind the same per-order advisory lock the charge path uses, so the
+			// check-then-act below (read status → mark paid → record ledger) is
+			// atomic. Combined with the transaction_id dedupe in
+			// EEM_Order_Payments_Repo::record(), a duplicated Stripe delivery can
+			// neither double the ledger nor race a Collect Payment on the same order.
+			global $wpdb;
+			$eem_wh_lock = 'eem_charge_' . substr( md5( $order_key ), 0, 40 );
+			if ( '1' !== (string) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 10)', $eem_wh_lock ) ) ) {
+				return; // another worker holds it; Stripe will retry this event.
+			}
+			try {
 			$repo  = new EEM_Orders_Repository();
 			$order = $repo->get_order( $order_key );
 			if ( ! is_array( $order ) || ( isset( $order['payment_status'] ) && 'paid' === $order['payment_status'] ) ) {
@@ -9389,6 +9422,9 @@ RV Lot: " . $rv_lot['name'] );
 				);
 			}
 			return;
+			} finally {
+				$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $eem_wh_lock ) );
+			}
 		}
 
 		if ( ( 'charge.refunded' === $type || 'charge.dispute.created' === $type ) && class_exists( 'EEM_Activity_Log' ) ) {

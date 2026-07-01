@@ -91,6 +91,33 @@ class EEM_Order_Payments_Repo {
 
 		$created_by = isset( $args['created_by'] ) ? (int) $args['created_by'] : (int) get_current_user_id();
 
+		$transaction_id = isset( $args['transaction_id'] ) ? substr( (string) $args['transaction_id'], 0, 191 ) : '';
+
+		// Idempotency (bug #24 — F1/F2). A gateway payment/refund carries a
+		// transaction_id that uniquely identifies it. If a row for the same
+		// (order_key, transaction_id, direction) already exists this call is a
+		// DUPLICATE — a retried/replayed Stripe webhook, or the hosted-invoice
+		// submit racing its own webhook for the same charge — so return the
+		// existing row instead of inserting a second one that would double the
+		// order's collected / refunded total. Manual cash/check entries carry no
+		// transaction_id and are NOT deduped here; those paths guard with a
+		// per-order advisory lock instead. (Callers that can race concurrently —
+		// the webhook — also take a GET_LOCK so this check-then-insert is atomic.)
+		if ( '' !== $transaction_id ) {
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is internal.
+			$existing_id = $wpdb->get_var(
+				$wpdb->prepare(
+					'SELECT id FROM ' . self::table() . ' WHERE order_key = %s AND transaction_id = %s AND direction = %s LIMIT 1',
+					$order_key,
+					$transaction_id,
+					$direction
+				)
+			);
+			if ( $existing_id ) {
+				return (int) $existing_id;
+			}
+		}
+
 		$inserted = $wpdb->insert(
 			self::table(),
 			array(
@@ -99,7 +126,7 @@ class EEM_Order_Payments_Repo {
 				'method'         => isset( $args['method'] ) ? substr( (string) $args['method'], 0, 50 ) : '',
 				'gateway'        => isset( $args['gateway'] ) ? substr( (string) $args['gateway'], 0, 50 ) : '',
 				'amount'         => $amount,
-				'transaction_id' => isset( $args['transaction_id'] ) ? substr( (string) $args['transaction_id'], 0, 191 ) : '',
+				'transaction_id' => $transaction_id,
 				'reference'      => isset( $args['reference'] ) ? substr( (string) $args['reference'], 0, 191 ) : '',
 				'reason'         => isset( $args['reason'] ) ? substr( (string) $args['reason'], 0, 255 ) : '',
 				'note'           => isset( $args['note'] ) ? substr( (string) $args['note'], 0, 255 ) : '',

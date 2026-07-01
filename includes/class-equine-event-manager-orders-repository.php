@@ -811,6 +811,19 @@ class EEM_Orders_Repository {
 	}
 
 	public function record_manual_payment( $order_key, $amount, $payment_method = 'Cash' ) {
+		global $wpdb;
+		// bug #24 (F3): serialize concurrent manual-payment writes for this order
+		// (admin double-click, re-submitted admin-post) so the read-outstanding →
+		// record-ledger sequence below is atomic and the order is re-read fresh
+		// inside the lock. Manual cash/check entries carry no transaction_id, so
+		// the ledger's transaction_id dedupe can't catch a double — the lock is the
+		// guard. Same lock name as the card-charge + webhook paths, so a manual
+		// payment can't race a gateway charge on the same order either.
+		$eem_mp_lock = 'eem_charge_' . substr( md5( (string) $order_key ), 0, 40 );
+		if ( '1' !== (string) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 10)', $eem_mp_lock ) ) ) {
+			return false; // another payment/charge for this order is in flight.
+		}
+		try {
 		$order = $this->get_order( $order_key );
 		if ( ! $order ) {
 			return false;
@@ -931,6 +944,9 @@ class EEM_Orders_Repository {
 		}
 
 		return $updated_any;
+		} finally {
+			$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $eem_mp_lock ) );
+		}
 	}
 
 	/**
