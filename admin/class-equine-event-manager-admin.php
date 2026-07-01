@@ -12859,7 +12859,11 @@ class EEM_Admin {
 			$this->redirect_to_order_notice( $order_key, 'manual_payment_failed', __( 'A cash or check payment can’t be recorded against a cancelled or refunded order.', 'equine-event-manager' ) );
 		}
 
-		$outstanding = isset( $order['amount_due'] ) ? round( max( 0.0, (float) $order['amount_due'] ), 2 ) : 0.0;
+		// Canonical outstanding (composed grand − ledger net collected), NOT the
+		// component amount_due — otherwise an order whose component rows are settled
+		// but whose custom-item/discount adjustment is still uncollected reads as
+		// "nothing due" and the admin can't collect the adjustment (bug #10).
+		$outstanding = $this->orders_repository->get_order_outstanding( $order_key, $order );
 		if ( $outstanding <= 0 ) {
 			$this->redirect_to_order_notice( $order_key, 'manual_payment_failed', __( 'This order has no outstanding balance to collect.', 'equine-event-manager' ) );
 		}
@@ -12887,10 +12891,11 @@ class EEM_Admin {
 		// custom items / discount stay accounted for.
 		$this->orders_repository->waive_convenience_fee( $order_key );
 		$order = $this->orders_repository->get_order( $order_key );
-		if ( is_array( $order ) && class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
-			$eem_adj      = EEM_Order_Adjustments_Repo::get_for_order( $order_key );
-			$eem_composed = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $eem_adj );
-			$outstanding  = round( max( 0.0, (float) $eem_composed['grand_total'] - (float) ( isset( $order['amount_paid'] ) ? $order['amount_paid'] : 0 ) ), 2 );
+		if ( is_array( $order ) ) {
+			// Re-read the fee-free outstanding via the canonical method (composed
+			// grand − ledger net collected), so the cash default covers the
+			// adjustment portion and never the already-collected amount (bug #10).
+			$outstanding = $this->orders_repository->get_order_outstanding( $order_key, $order );
 		}
 
 		// Amount received (optional). Parse from the Collect Payment field; default
