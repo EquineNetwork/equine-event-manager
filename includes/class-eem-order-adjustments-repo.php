@@ -415,7 +415,10 @@ class EEM_Order_Adjustments_Repo {
 			'effective_tax'   => round( $base_tax + $custom_tax, 2 ),
 			// Discount reduces the payable total but NOT the fee (Whitney decision).
 			// A cash/check waiver removes the base convenience fee ($fee_removed).
-			'grand_total'     => round( $base_total + $custom_total + $custom_fee + $custom_tax - $discount_amt - $fee_removed, 2 ),
+			// bug #23: floor at 0 — a discount frozen at set-time can exceed the base
+			// after an Edit-Dates shorten; a negative grand total would inflate the
+			// displayed "Refund Owed" (paid − grand). An order never owes < $0.
+			'grand_total'     => round( max( 0.0, $base_total + $custom_total + $custom_fee + $custom_tax - $discount_amt - $fee_removed ), 2 ),
 		);
 	}
 

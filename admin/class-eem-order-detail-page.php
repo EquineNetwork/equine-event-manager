@@ -1517,14 +1517,17 @@ class EEM_Order_Detail_Page {
 	private function compute_grand_total( array $order ): float {
 		$base = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
 		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
-		$custom = 0.0;
-		$discount = 0.0;
+		// bug #22: use the SAME composer every other surface uses (Order Summary
+		// card, get_order_outstanding, Collect Payment) so the top-of-page banner's
+		// Balance Due / Refund Owed agrees. The old inline math dropped the custom-
+		// item convenience fee + tax, understating the banner and mis-gating the
+		// Refund-Due vs Payment-Outstanding boundary. compose_order_totals floors at 0.
 		if ( '' !== $order_key && class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
 			$adj      = EEM_Order_Adjustments_Repo::get_for_order( $order_key );
-			$custom   = isset( $adj['custom_items_total'] ) ? (float) $adj['custom_items_total'] : 0.0;
-			$discount = ( isset( $adj['discount'] ) && is_array( $adj['discount'] ) ) ? (float) $adj['discount']['amount'] : 0.0;
+			$composed = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $adj );
+			return round( max( 0.0, (float) $composed['grand_total'] ), 2 );
 		}
-		return round( $base + $custom - $discount, 2 );
+		return round( max( 0.0, $base ), 2 );
 	}
 
 	/**
