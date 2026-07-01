@@ -29,7 +29,9 @@ audit for the full smoke-by-smoke map.
 | **Weekly (stall+RV)** billed correctly (once, not ×nights) | 🟠 | ✅ **CLOSED** 2.7.734 — `stay-type-matrix-allsurfaces-smoke` (weekly bills once; reconciles CHG→stored→EMAIL). No bug found. |
 | **RV weekend / weekly** pricing at charge | 🟠 | ✅ **CLOSED** — same smoke. |
 | **RV early-bird** | 🟠 | ◻️ partial — nightly early-bird covered elsewhere; RV early-bird render TBD. |
-| **Packages / surcharge tiers at RENDER surfaces (OD/PDF)** | 🟠 | ◻️ OPEN — charge is proven; the OD/PDF itemization for these modes is not yet asserted. |
+| **Surcharge tier orders — money reconciles** | 🟠 | ✅ **CLOSED** — `surcharge-order-render-reconcile-smoke` (2026-07-01): premium-tier surcharge folds into the charge, charge == stored, Σ email lines == stored (surcharge dollars reach the document, not dropped). |
+| **Surcharge tier orders — separate "Stall Premium" LINE** | 🟡 | ◻️ **BROWSER-PASS ITEM** — `get_order_stall_surcharge_total()` re-reads the reservation tier config + a stored "Stall Tiers:" note to break the premium into its own line; the synthetic harness can't reproduce that. **VERIFY on a configured QUANTITY-MODE tier reservation** that a real surcharge order shows a "Stall Premium" line on Order Detail / receipt / email (not silently folded into the stall line). |
+| **Packages at RENDER surfaces (OD/PDF)** | 🟠 | ◻️ OPEN — charge + email proven (charge-reconcile); OD/PDF itemization not yet asserted. |
 | **Hosted order page** pricing content (maximal order) | 🟡 | ◻️ OPEN — `c12-hosted` covers lookup only; needs a reconcile assertion. |
 | **Reports** for surcharge/package/group/shavings orders | 🟡 | ◻️ OPEN — `c15a` seeds plain orders only. |
 | **Mixed maximal order at PDF/EMAIL** | 🟡 | ◻️ partial — indirect via `surface-render-integrity`. |
