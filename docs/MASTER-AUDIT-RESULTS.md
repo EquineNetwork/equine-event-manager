@@ -247,13 +247,30 @@ Cross-surface reconciliation guards (all green): `receipt-email-net-collected` �
 (list == detail across 60 orders) · `collect-charge-outstanding` (charge == outstanding) ·
 `dashboard-revenue-net` · `invoice-email-amount` · `collect-payment-cash-field`.
 
-### 🚩 Remaining consistency observation (display convention, for Whitney)
-The **summary "Total"** shown on the Orders-list column, the CSV export, and the email `[total]`
-placeholder still shows the **base reservation total**, not the composed grand (base + custom items −
-discount). It's correct for the ~99% of orders with no adjustments; for adjusted orders it understates
-(custom items) or overstates (discounts) the effective total. This is a display-convention choice — should
-those summary "Total" figures reflect admin adjustments? — not a transactional bug (every charge / collect
-/ balance / refund / revenue figure is now correct). Flagged rather than changed.
+### Cycle 2 — adjusted-order surface sweep (2.7.723–2.7.730)
+
+Second convergence pass. Same root cause as #6–#12 (a surface reading the bare component base
+`$order['total']` instead of the ledger / composed grand), swept across every remaining display + report:
+
+| # | Ver | Surface | The bug |
+|---|-----|---------|---------|
+| 13 | 2.7.725 | Confirmation email totals row | "Total" row showed base while line items included custom charges — didn't add up |
+| 14 | 2.7.726 | Hosted invoice page + success | "Amount Due" / "Pay $X" / "Total Paid" showed base — **display ≠ what the card is charged** |
+| 15 | 2.7.727 | Order Detail "Mark as Paid" modal | Cash pre-fill = base — accepting the default **under-records** an adjusted balance |
+| 16 | 2.7.728 | Reservation-overview "Revenue" KPI | Summed gross base (counted unpaid, ignored refunds) → net collected |
+| 17 | 2.7.728 | Admin print receipt | Omitted custom items / discount / tax; total = base → composes grand + ledger paid/balance |
+| 18 | 2.7.729 | Reports repo (4 aggregations) | Orders Total col, Revenue Total/Net, Reservations rev, Customer LTV → composed grand |
+| 19 | 2.7.730 | Customer profile / list | "Lifetime Spend" / "Total Spent" → **net collected**; order-value columns → booked grand |
+
+Money-definition scheme locked this cycle (flag for Whitney): **"Spend"** metrics (Lifetime Spend, Total
+Spent, Dashboard/reservation Revenue KPIs) = **ledger net collected** (paid − refunds, excludes unpaid).
+**"Value"/"Total"** columns (per-order Total, Reports Lifetime Value, Revenue report, avg order value) =
+**booked composed grand** (base + custom items − discount). CSV export + REST `total` field stay base (raw
+stored value; no live UI renders them as an effective total).
+
+New reconcile smokes (all green): `confirmation-email-totals-reconcile` · `invoice-page-amount-due` ·
+`mark-paid-prefill-outstanding` · `reservation-revenue-net-collected` · `print-receipt-totals-reconcile` ·
+`reports-grand-total-adjustments` · `customer-lifetime-spend-net`.
 
 ---
 

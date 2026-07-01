@@ -122,6 +122,41 @@ class EEM_Customer_Profile_Repo {
 	}
 
 	/**
+	 * Money the customer actually paid on an order, net of refunds (ledger net
+	 * collected). 0 for unpaid orders. Basis for "spend" metrics — what the
+	 * customer handed over and kept-paid, NOT the booked value. (bug #19)
+	 *
+	 * @param array<string, mixed> $o
+	 * @return float
+	 */
+	private function order_net_collected( array $o ): float {
+		$key = (string) ( $o['order_key'] ?? '' );
+		return '' !== $key ? $this->orders->get_net_collected( $key, $o ) : (float) ( $o['total'] ?? 0 );
+	}
+
+	/**
+	 * Booked grand total for an order = base + admin-added custom line items −
+	 * discount. No-op for unadjusted / legacy orders. Basis for "order value" /
+	 * "total" columns — matches the Orders list / Reports effective total. (#19)
+	 *
+	 * @param array<string, mixed> $o
+	 * @return float
+	 */
+	private function order_grand_total( array $o ): float {
+		$base = (float) ( $o['total'] ?? 0 );
+		$key  = (string) ( $o['order_key'] ?? '' );
+		if ( '' === $key || ! class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			return $base;
+		}
+		$adj = EEM_Order_Adjustments_Repo::get_for_order( $key );
+		if ( empty( $adj['custom_items'] ) && empty( $adj['discount'] ) ) {
+			return $base;
+		}
+		$composed = EEM_Order_Adjustments_Repo::compose_order_totals( $o, $adj );
+		return round( (float) $composed['grand_total'], 2 );
+	}
+
+	/**
 	 * KPI stats: lifetime spend, order counts, average value, last order.
 	 *
 	 * @param array<int, array<string, mixed>> $orders
@@ -135,10 +170,11 @@ class EEM_Customer_Profile_Repo {
 		$last_ts      = 0;
 
 		foreach ( $orders as $o ) {
-			$amt  = (float) ( $o['total'] ?? 0 );
-			$gross += $amt;
+			// "Average order value" is a booked-value metric; "Lifetime Spend" is
+			// what the customer actually paid, net of refunds. (bug #19)
+			$gross += $this->order_grand_total( $o );
 			if ( in_array( (string) ( $o['status_slug'] ?? '' ), $this->paid_statuses, true ) ) {
-				$spend += $amt;
+				$spend += $this->order_net_collected( $o );
 				$paid_count++;
 			}
 			$ts = ! empty( $o['created_at'] ) ? (int) strtotime( (string) $o['created_at'] ) : 0;
@@ -182,7 +218,7 @@ class EEM_Customer_Profile_Repo {
 				'status_label' => (string) ( $o['status_label'] ?? '' ),
 				'date'         => $ts ? date_i18n( 'M j, Y', $ts ) : '',
 				'date_ts'      => $ts,
-				'total'        => $this->money( (float) ( $o['total'] ?? 0 ) ),
+				'total'        => $this->money( $this->order_grand_total( $o ) ),
 				'can_collect'  => in_array( $slug, array( 'unpaid', 'invoice-sent' ), true ),
 			);
 		}
@@ -212,7 +248,7 @@ class EEM_Customer_Profile_Repo {
 				);
 			}
 			$by_res[ $key ]['orders']++;
-			$by_res[ $key ]['total_raw'] += (float) ( $o['total'] ?? 0 );
+			$by_res[ $key ]['total_raw'] += $this->order_grand_total( $o );
 			foreach ( $this->type_labels( $o ) as $slug => $label ) {
 				$by_res[ $key ]['type_labels'][ $slug ] = $label;
 			}
@@ -406,8 +442,9 @@ class EEM_Customer_Profile_Repo {
 				);
 			}
 			$by_email[ $email ]['orders']++;
+			// "Total Spent" = money actually collected, net of refunds. (bug #19)
 			if ( in_array( (string) ( $o['status_slug'] ?? '' ), $this->paid_statuses, true ) ) {
-				$by_email[ $email ]['spent_raw'] += (float) ( $o['total'] ?? 0 );
+				$by_email[ $email ]['spent_raw'] += $this->order_net_collected( $o );
 			}
 			$ts = ! empty( $o['created_at'] ) ? (int) strtotime( (string) $o['created_at'] ) : 0;
 			if ( $ts > $by_email[ $email ]['last_ts'] ) {
