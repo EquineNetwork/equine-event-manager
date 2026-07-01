@@ -6541,6 +6541,27 @@ RV Lot: " . $rv_lot['name'] );
 	 * @param array<string, mixed> $order Grouped order payload.
 	 * @return float Net collected, floored at 0.
 	 */
+	/**
+	 * Composed grand total for an order = base total + custom line items − discount.
+	 * Equals $order['total'] for orders with no adjustments. (bug #13 family.)
+	 *
+	 * @param array<string,mixed> $order
+	 * @return float
+	 */
+	private function receipt_grand_total( array $order ): float {
+		$base      = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		if ( '' === $order_key || ! class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			return $base;
+		}
+		$adj = EEM_Order_Adjustments_Repo::get_for_order( $order_key );
+		if ( empty( $adj['custom_items'] ) && empty( $adj['discount'] ) ) {
+			return $base;
+		}
+		$composed = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $adj );
+		return round( (float) $composed['grand_total'], 2 );
+	}
+
 	private function get_order_net_collected( array $order ): float {
 		// Ledger-based (delegates to the canonical repo method): amount collected =
 		// ledger payments − ledger refunds, with a legacy fallback for pre-ledger
@@ -6963,7 +6984,10 @@ RV Lot: " . $rv_lot['name'] );
 			'[event_dates]'   => isset( $order['event_dates'] ) ? $order['event_dates'] : '',
 			'[order_number]'  => ! empty( $order['order_number'] ) ? ( is_numeric( $order['order_number'] ) ? sprintf( '#%05d', (int) $order['order_number'] ) : '#' . $order['order_number'] ) : '',
 			'[customer_name]' => isset( $order['customer_name'] ) ? $order['customer_name'] : '',
-			'[total]'         => '$' . number_format_i18n( (float) $order['total'], 2 ),
+			// [total] = the composed grand total (base + custom items − discount), so
+			// a customizable email using [total] shows the order's true total, not
+			// just the reservation subtotal (bug #13 family).
+			'[total]'         => '$' . number_format_i18n( $this->receipt_grand_total( $order ), 2 ),
 			'[support_phone]' => isset( $company_settings['support_phone'] ) ? $company_settings['support_phone'] : '',
 			'[support_email]' => isset( $company_settings['support_email'] ) ? $company_settings['support_email'] : '',
 		);

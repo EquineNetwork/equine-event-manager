@@ -480,7 +480,7 @@ class EEM_Orders_List_Page {
 				<?php endif; ?>
 			</td>
 			<td><span class="eem-status-badge eem-status-<?php echo esc_attr( $status_css ); ?>"><?php echo esc_html( $status_label ); ?></span></td>
-			<td><span class="eem-amount-val"><?php echo esc_html( isset( $order['total'] ) ? '$' . number_format( (float) $order['total'], 2 ) : '—' ); ?></span></td>
+			<td><span class="eem-amount-val"><?php echo esc_html( isset( $order['total'] ) ? '$' . number_format( self::order_effective_total( $order ), 2 ) : '—' ); ?></span></td>
 			<td><span class="eem-date-val"><?php echo esc_html( $date_label ); ?></span></td>
 			<td><?php $this->render_row_action_cell( $order, 'desktop' ); ?></td>
 		</tr>
@@ -778,6 +778,30 @@ class EEM_Orders_List_Page {
 		}
 		$collected = ( new EEM_Orders_Repository() )->get_net_collected( $order_key, $order );
 		return round( max( 0.0, $grand - $collected ), 2 );
+	}
+
+	/**
+	 * Effective order total = composed grand total (base reservation total + custom
+	 * line items − discount), so the Orders-list "Total" column + CSV export show
+	 * the order's true value, not just the reservation subtotal. For the ~99% of
+	 * orders with no adjustments this equals $order['total']. (Whitney 2026-06-30
+	 * live audit — bug #13: adjusted orders showed the base total on summaries.)
+	 *
+	 * @param array<string,mixed> $order
+	 * @return float
+	 */
+	private static function order_effective_total( array $order ): float {
+		$base      = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
+		if ( '' === $order_key || ! class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			return $base;
+		}
+		$adj      = EEM_Order_Adjustments_Repo::get_for_order( $order_key );
+		if ( empty( $adj['custom_items'] ) && empty( $adj['discount'] ) ) {
+			return $base; // fast path — no adjustments, no compose needed.
+		}
+		$composed = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $adj );
+		return round( (float) $composed['grand_total'], 2 );
 	}
 
 	// C6.A: promoted to public static so EEM_Order_Detail_Page can share the same status→class map.
