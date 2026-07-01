@@ -15339,7 +15339,16 @@ class EEM_Admin {
 		$company_settings = $this->get_company_settings();
 		$company_logo_url = $this->get_company_logo_url( 'medium' );
 		$event_label      = ! empty( $order['reservation_title'] ) ? $order['reservation_title'] : $order['event_name'];
-		$amount_paid      = '$' . number_format_i18n( (float) ( isset( $order['total'] ) ? $order['total'] : 0 ), 2 );
+		// Amount Paid = the NET collected (ledger payments − refunds), so the
+		// "Payment Received" confirmation matches what was actually collected,
+		// including custom-item/discount adjustments — not the base reservation
+		// total (bug #14, ledger-model family).
+		$amount_paid      = '$' . number_format_i18n(
+			( isset( $order['order_key'] ) && '' !== (string) $order['order_key'] )
+				? $this->orders_repository->get_net_collected( (string) $order['order_key'], $order )
+				: (float) ( $order['total'] ?? 0 ),
+			2
+		);
 		$support_chunks   = array_filter(
 			array(
 				! empty( $company_settings['support_phone'] ) ? $this->format_phone_label( $company_settings['support_phone'] ) : '',

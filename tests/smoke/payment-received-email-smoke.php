@@ -41,6 +41,11 @@ $order = array(
 	'event_name'        => 'Spring Classic',
 	'reservation_title' => 'Spring Classic',
 	'total'             => 250.00,
+	// The "Amount Paid" is now the NET collected (ledger-based, 2.7.723). This is a
+	// no-ledger synthetic key, so the fallback reads the component amount_paid —
+	// set it to the collected total so the fixture reflects a settled payment.
+	'amount_paid'       => 250.00,
+	'status_slug'       => 'paid',
 	'order_key'         => 'pr-smoke-key',
 );
 $build = new ReflectionMethod( 'EEM_Admin', 'build_payment_received_email_html' );
