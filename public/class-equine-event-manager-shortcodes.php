@@ -4318,7 +4318,7 @@ class EEM_Shortcodes {
 		$units         = array();
 		$blocked_units = array_map( 'sanitize_text_field', array_filter( array_map( 'trim', (array) ( isset( $data['stall_chart_blocked_stall_units'] ) ? $data['stall_chart_blocked_stall_units'] : array() ) ) ) );
 
-		foreach ( (array) $data['stall_chart_stall_blocks'] as $block ) {
+		foreach ( (array) ( isset( $data['stall_chart_stall_blocks'] ) ? $data['stall_chart_stall_blocks'] : array() ) as $block ) {
 			if ( ! is_array( $block ) ) {
 				continue;
 			}
