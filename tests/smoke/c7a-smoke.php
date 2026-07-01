@@ -14,12 +14,11 @@
  *   [10] Resolver — empty toggle meta = enabled (Q7 contract)
  *   [11] Resolver — request-scoped memo cache hit
  *   [12] Resolver — cache cleared on set_cancellation_policy write
- *   [13] Migration #001 — flag-gated, idempotent, snapshots from global option
- *   [14] Migration #001 — row-level idempotency (skips pre-existing override)
- *   [15] Migration #001 — empty-global edge case (no-op + flag set)
- *   [16] Migration #002 — 'external'→'feed' canonicalization + collision handling
- *   [17] wp-cli wrapper file exists + syntax-valid
- *   [18] Activator integration — create_event_defaults_table + run_one_time_migrations wired
+ *   [13] Activator integration — create_event_defaults_table + migration baseline guard wired
+ *
+ * NOTE: the #001/#002 migration-behavior sections were removed when the 42 one-time
+ * migrations were collapsed into the dbDelta baseline (#41). The ongoing resolver +
+ * source-normalization behavior they fed is still covered by sections [3]–[12].
  *
  * @package EEM_Plugin
  */
@@ -82,8 +81,6 @@ c7a_ok( 'EEM_Event_Defaults_Repo class loaded', class_exists( 'EEM_Event_Default
 c7a_ok( 'eem_resolve_cancellation_policy() function exists', function_exists( 'eem_resolve_cancellation_policy' ), $pass, $fail, $log );
 c7a_ok( 'eem_is_cancellation_policy_enabled() helper exists', function_exists( 'eem_is_cancellation_policy_enabled' ), $pass, $fail, $log );
 c7a_ok( 'eem_clear_cancellation_policy_resolver_cache() exists', function_exists( 'eem_clear_cancellation_policy_resolver_cache' ), $pass, $fail, $log );
-c7a_ok( 'eem_mig_001_cancellation_snapshot() function exists', function_exists( 'eem_mig_001_cancellation_snapshot' ) || file_exists( EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-001-cancellation-snapshot.php' ), $pass, $fail, $log );
-c7a_ok( 'eem_mig_002_feed_source_canon() function exists', function_exists( 'eem_mig_002_feed_source_canon' ) || file_exists( EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-002-feed-source-canon.php' ), $pass, $fail, $log );
 
 // ── [3] Source normalization ─────────────────────────────────────────
 echo "\n[3] EEM_Event_Defaults_Repo::normalize_event_source\n";
@@ -236,140 +233,8 @@ c7a_ok( 'resolver returns NEW value after cache clear',
 	'New event default after write.' === eem_resolve_cancellation_policy( $reservation_id ),
 	$pass, $fail, $log );
 
-// ── [13] Migration #001 — basic shape ───────────────────────────────
-echo "\n[13] Migration #001 — basic shape\n";
-require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-001-cancellation-snapshot.php';
-$flag_key = 'eem_mig_001_cancellation_snapshot_complete';
-
-// Snapshot the current flag state so we can restore it (the migration
-// has likely already run in this environment).
-$saved_flag = get_option( $flag_key );
-
-delete_option( $flag_key );
-$saved_global = get_option( 'cancellation_policy', '' );
-update_option( 'cancellation_policy', 'Smoke-test global policy text.' );
-
-$result_1 = eem_mig_001_cancellation_snapshot();
-c7a_ok( 'first run reports source = global-wp-option',
-	isset( $result_1['source'] ) && 'global-wp-option' === $result_1['source'],
-	$pass, $fail, $log );
-c7a_ok( 'first run sets the completion flag',
-	false !== get_option( $flag_key ),
-	$pass, $fail, $log );
-$result_2 = eem_mig_001_cancellation_snapshot();
-c7a_ok( 'second run is no-op (source = already-complete)',
-	isset( $result_2['source'] ) && 'already-complete' === $result_2['source']
-		&& 0 === $result_2['snapshotted'] && 0 === $result_2['skipped'],
-	$pass, $fail, $log );
-
-// ── [14] Migration #001 — row-level idempotency ────────────────────
-echo "\n[14] Migration #001 — row-level idempotency\n";
-delete_option( $flag_key );
-// Snapshot a SECOND reservation that already has an override.
-$rid2 = wp_insert_post( array(
-	'post_type' => 'en_reservation', 'post_status' => 'publish',
-	'post_title' => 'C7.A Smoke Pre-existing Override',
-) );
-update_post_meta( $rid2, '_eem_cancellation_policy_override', 'Pre-existing override that must NOT be overwritten.' );
-$result_3 = eem_mig_001_cancellation_snapshot();
-c7a_ok( 'pre-existing override preserved across migration',
-	'Pre-existing override that must NOT be overwritten.' === get_post_meta( $rid2, '_eem_cancellation_policy_override', true ),
-	$pass, $fail, $log );
-c7a_ok( 'metrics include at least one skip',
-	$result_3['skipped'] >= 1,
-	$pass, $fail, $log );
-
-// ── [15] Migration #001 — empty-global edge case ───────────────────
-echo "\n[15] Migration #001 — empty-global edge case\n";
-delete_option( $flag_key );
-update_option( 'cancellation_policy', '' );
-$result_4 = eem_mig_001_cancellation_snapshot();
-c7a_ok( 'empty global reports source = empty-global',
-	isset( $result_4['source'] ) && 'empty-global' === $result_4['source'],
-	$pass, $fail, $log );
-c7a_ok( 'empty global still sets the flag',
-	false !== get_option( $flag_key ),
-	$pass, $fail, $log );
-
-// Restore prior global + flag state
-update_option( 'cancellation_policy', $saved_global );
-if ( $saved_flag ) {
-	update_option( $flag_key, $saved_flag );
-} else {
-	delete_option( $flag_key );
-}
-wp_delete_post( $rid2, true );
-
-// ── [16] Migration #002 — canonicalization + collisions ────────────
-echo "\n[16] Migration #002 — 'external'→'feed' canonicalization\n";
-require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-002-feed-source-canon.php';
-$flag_key_2 = 'eem_mig_002_feed_source_canon_complete';
-$saved_flag_2 = get_option( $flag_key_2 );
-delete_option( $flag_key_2 );
-
-// Plant an 'external' row directly via $wpdb (bypassing the boundary
-// normalization to simulate pre-canonicalization state).
-$external_event_id = 'c7a-mig002-' . wp_generate_password( 6, false, false );
-$wpdb->insert( $table, array(
-	'event_id'            => $external_event_id,
-	'event_source'        => 'external',
-	'cancellation_policy' => 'External-tagged row to canonicalize',
-) );
-$result_5 = eem_mig_002_feed_source_canon();
-c7a_ok( 'mig #002 flipped the planted external row',
-	$result_5['updated'] >= 1,
-	$pass, $fail, $log );
-$row_after = $wpdb->get_row( $wpdb->prepare( "SELECT event_source FROM {$table} WHERE event_id = %s", $external_event_id ) );
-c7a_ok( "planted row event_source now 'feed'",
-	$row_after && 'feed' === $row_after->event_source,
-	$pass, $fail, $log );
-
-// Collision test — same event_id under BOTH external + feed; mig should delete 'external'.
-$collision_id = 'c7a-mig002-collision-' . wp_generate_password( 6, false, false );
-delete_option( $flag_key_2 );
-$wpdb->insert( $table, array( 'event_id' => $collision_id, 'event_source' => 'feed',     'cancellation_policy' => 'Canonical winner' ) );
-$wpdb->insert( $table, array( 'event_id' => $collision_id, 'event_source' => 'external', 'cancellation_policy' => 'Legacy loser' ) );
-$result_6 = eem_mig_002_feed_source_canon();
-c7a_ok( 'mig #002 deleted 1 collision row',
-	$result_6['deleted_collisions'] >= 1,
-	$pass, $fail, $log );
-$collision_rows = $wpdb->get_col( $wpdb->prepare( "SELECT event_source FROM {$table} WHERE event_id = %s ORDER BY event_source", $collision_id ) );
-c7a_ok( "collision survivor is the 'feed' row (canonical wins)",
-	array( 'feed' ) === $collision_rows,
-	$pass, $fail, $log );
-
-// Cleanup
-$wpdb->delete( $table, array( 'event_id' => $external_event_id ) );
-$wpdb->delete( $table, array( 'event_id' => $collision_id ) );
-if ( $saved_flag_2 ) {
-	update_option( $flag_key_2, $saved_flag_2 );
-} else {
-	delete_option( $flag_key_2 );
-}
-
-// ── [17] wp-cli wrapper file ─────────────────────────────────────────
-echo "\n[17] wp-cli wrapper file\n";
-// #55: the scripts/ wp-cli wrapper is dev-only tooling (export-ignored via
-// .distignore, like the internal .md docs), so it is NOT present in a deployed
-// plugin. The shipped behavior is the migration FUNCTION itself (asserted in [1]
-// + sourced below). Only assert the wrapper's contents when scripts/ is present
-// (dev checkout); skip gracefully on a deployed install.
-$wrapper_path = EQUINE_EVENT_MANAGER_PATH . 'scripts/eem-mig-001-cancellation-snapshot.php';
-if ( file_exists( $wrapper_path ) ) {
-	$wrapper_src = (string) file_get_contents( $wrapper_path );
-	c7a_ok( 'wrapper sources the migration function file',
-		false !== strpos( $wrapper_src, "require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-001-cancellation-snapshot.php'" ),
-		$pass, $fail, $log );
-	c7a_ok( 'wrapper invokes eem_mig_001_cancellation_snapshot()',
-		false !== strpos( $wrapper_src, 'eem_mig_001_cancellation_snapshot()' ),
-		$pass, $fail, $log );
-	c7a_ok( 'wrapper reads the completion flag for status reporting',
-		false !== strpos( $wrapper_src, 'eem_mig_001_cancellation_snapshot_complete' ),
-		$pass, $fail, $log );
-}
-
-// ── [18] Activator integration ──────────────────────────────────────
-echo "\n[18] Activator integration\n";
+// ── [13] Activator integration + #41 baseline guard ─────────────────
+echo "\n[13] Activator integration + migration baseline guard\n";
 $activator_src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-activator.php' );
 c7a_ok( 'activate() calls create_event_defaults_table()',
 	false !== strpos( $activator_src, 'self::create_event_defaults_table()' ),
@@ -377,9 +242,9 @@ c7a_ok( 'activate() calls create_event_defaults_table()',
 c7a_ok( 'activate() calls run_one_time_migrations()',
 	false !== strpos( $activator_src, 'self::run_one_time_migrations()' ),
 	$pass, $fail, $log );
-c7a_ok( 'run_one_time_migrations dispatcher gates #001 + #002 by flag',
-	false !== strpos( $activator_src, 'eem_mig_001_cancellation_snapshot_complete' )
-	&& false !== strpos( $activator_src, 'eem_mig_002_feed_source_canon_complete' ),
+c7a_ok( 'run_one_time_migrations is now the #41 baseline guard (no per-migration flags)',
+	false !== strpos( $activator_src, 'MIGRATION_BASELINE_VERSION' )
+	&& false !== strpos( $activator_src, 'eem_migration_baseline_gap' ),
 	$pass, $fail, $log );
 
 // ── Final cleanup ───────────────────────────────────────────────────

@@ -73,14 +73,13 @@ $ok( 'update_name rejects id 0', false === EEM_Venue::update_name( 0, 'x' ) );
 $ok( 'sync rejects non-venue post', 0 === EEM_Venue::sync_native_venue( (int) $admins[0]->ID ) );
 $ok( 'sync rejects id 0', 0 === EEM_Venue::sync_native_venue( 0 ) );
 
-// --- backfill migration unifies a venue with no back-ref --------------------
+// --- runtime unify links a venue that has no back-ref -----------------------
+// The one-time backfill (eem-mig-015) was collapsed into the #41 baseline; the
+// ongoing sync_native_venue() path performs the same unification on demand.
 $bare = wp_insert_post( array( 'post_type' => 'en_venue', 'post_status' => 'publish', 'post_title' => 'NU Bare ' . $suffix ) );
 delete_post_meta( $bare, $meta ); // ensure unlinked
-require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-015-native-venue-unify.php';
-delete_option( 'eem_mig_015_native_venue_unify_complete' );
-eem_mig_015_native_venue_unify();
-$ok( 'migration linked the bare venue', (int) get_post_meta( $bare, $meta, true ) > 0 );
-$ok( 'migration set the complete flag', '1' === (string) get_option( 'eem_mig_015_native_venue_unify_complete' ) );
+EEM_Venue::sync_native_venue( (int) $bare );
+$ok( 'runtime sync linked the bare venue', (int) get_post_meta( $bare, $meta, true ) > 0 );
 
 // --- cleanup -----------------------------------------------------------------
 global $wpdb;

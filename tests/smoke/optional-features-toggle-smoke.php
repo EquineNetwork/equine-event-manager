@@ -50,24 +50,9 @@ $after = get_option( $OPT, array() );
 $check( 'save: checked entries → 1', 1 === (int) $after['entries_enabled'] );
 $check( 'save: unchecked sheets → 0', 0 === (int) $after['sheets_results_enabled'] );
 
-// --- 3. Migration eem-mig-014 (existing→1, new→0) ---------------------------
-require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-014-optional-feature-defaults.php';
-$dbv_before = get_option( EEM_Activator::DB_VERSION_OPTION, '' );
-// Existing install: a DB version is present.
-update_option( EEM_Activator::DB_VERSION_OPTION, '2.7.000' );
-$set( null, null );
-eem_mig_014_optional_feature_defaults();
-$mexist = get_option( $OPT, array() );
-$check( 'migration: existing install → both ON', 1 === (int) $mexist['entries_enabled'] && 1 === (int) $mexist['sheets_results_enabled'] );
-// New install: no DB version yet.
-delete_option( EEM_Activator::DB_VERSION_OPTION );
-$set( null, null );
-eem_mig_014_optional_feature_defaults();
-$mnew = get_option( $OPT, array() );
-$check( 'migration: new install → both OFF', 0 === (int) $mnew['entries_enabled'] && 0 === (int) $mnew['sheets_results_enabled'] );
-// restore db version + clear the mig-complete flag set by the calls above.
-if ( '' !== (string) $dbv_before ) { update_option( EEM_Activator::DB_VERSION_OPTION, $dbv_before ); }
-delete_option( 'eem_mig_014_optional_feature_defaults_complete' );
+// NOTE: the one-time existing→ON / new→OFF defaulting migration (eem-mig-014) was
+// collapsed into the #41 baseline and no longer ships. The flag-helper default
+// semantics it relied on are still covered by section 1 above.
 
 // --- seed an event with sheets + a reservation with a division --------------
 $suffix = substr( md5( (string) wp_rand() ), 0, 6 );

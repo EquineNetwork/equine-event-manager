@@ -55,29 +55,10 @@ $bad = $mk( array( '_en_stall_inventory_type' => 'quantity_only', '_en_stall_cus
 $p_bad = EEM_Reservations_CPT::resolve_stall_pair( $bad );
 $check( 'invalid stored pair corrected (quantity_only forces quantity)', 'quantity' === $p_bad['customer_selection'] && 'quantity' === $p_bad['selection_mode'] );
 
-// ── Migration mapping + idempotency on the synthetic legacy posts ──
-require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-004-stall-inventory-split.php';
-delete_option( 'eem_mig_004_stall_inventory_split_complete' ); // force run for the test
-$res = eem_mig_004_stall_inventory_split();
-$check( 'migration ran (sweep)', 'sweep' === $res['source'] );
-$check( 'migration migrated at least the 2 legacy posts', $res['migrated'] >= 2 );
-// legacy_bulk now has explicit keys
-$check( 'migration set bulk post → quantity_only', 'quantity_only' === get_post_meta( $legacy_bulk, '_en_stall_inventory_type', true ) );
-$check( 'migration set bulk post → quantity', 'quantity' === get_post_meta( $legacy_bulk, '_en_stall_customer_selection', true ) );
-$check( 'migration set mapped post → numbered', 'numbered' === get_post_meta( $legacy_mapped, '_en_stall_inventory_type', true ) );
-$check( 'migration set mapped post → pick_layout', 'pick_layout' === get_post_meta( $legacy_mapped, '_en_stall_customer_selection', true ) );
-$check( 'migration preserved legacy key on mapped post', 'exact_map' === get_post_meta( $legacy_mapped, '_en_stall_selection_mode', true ) );
-$check( 'migration did NOT clobber the NEW-combo post', 'numbered' === get_post_meta( $new_numqty, '_en_stall_inventory_type', true ) && 'quantity' === get_post_meta( $new_numqty, '_en_stall_customer_selection', true ) );
-
-// Idempotency: re-run (flag cleared) migrates 0 (all have keys now).
-delete_option( 'eem_mig_004_stall_inventory_split_complete' );
-$res2 = eem_mig_004_stall_inventory_split();
-$check( 'idempotent re-run migrates 0 new rows', 0 === $res2['migrated'] );
-$check( 'idempotent re-run skips already-split rows', $res2['skipped'] >= 4 );
-
-// Flag-gated: with the flag set, returns already-complete.
-$res3 = eem_mig_004_stall_inventory_split();
-$check( 'flag-gated: returns already-complete', 'already-complete' === $res3['source'] );
+// NOTE: the one-time legacy→explicit-keys sweep (eem-mig-004) was collapsed into
+// the #41 baseline and no longer ships. The runtime resolver/sanitizer paths above
+// derive the same triple from legacy meta on the fly, so ongoing behavior is
+// unaffected and still covered without a stored migration.
 
 // ── get_meta_values exposes the triple consistently ──
 $cpt = new EEM_Reservations_CPT();

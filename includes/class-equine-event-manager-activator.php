@@ -23,6 +23,13 @@ class EEM_Activator {
 	const NATIVE_EVENT_REWRITE_VERSION_OPTION = 'equine_event_manager_native_event_rewrite_version';
 
 	/**
+	 * Plugin version at which the 42 one-time migrations were collapsed into the
+	 * dbDelta baseline (#41). Sites upgrading from before this version without a
+	 * completed legacy migration chain trip the baseline gap guard.
+	 */
+	const MIGRATION_BASELINE_VERSION = '2.7.736';
+
+	/**
 	 * Next stable order number option key.
 	 */
 	const NEXT_ORDER_NUMBER_OPTION = 'equine_event_manager_next_order_number';
@@ -257,217 +264,71 @@ class EEM_Activator {
 	}
 
 	/**
-	 * Run all one-time migrations, each gated by its own wp_options flag.
+	 * One-time-migration baseline guard (#41).
 	 *
-	 * Sequenced per Q6 in-flight D: #001 (cancellation snapshot from
-	 * global wp_option to per-reservation override) before #002
-	 * ('external'→'feed' event_source canonicalization in
-	 * wp_eem_event_defaults). Both idempotent at top level via flag;
-	 * #001 also row-level idempotent.
+	 * The 42 one-time migrations (#001–#042) that this method used to run were
+	 * collapsed into the dbDelta CREATE TABLE baseline as of
+	 * {@see self::MIGRATION_BASELINE_VERSION}. Their schema is now reproduced by the
+	 * create_*() methods alone — proven by tests/schema-baseline-drift-check.php,
+	 * which reports 0 drift between the dbDelta baseline and the fully-migrated live
+	 * schema. Their DATA backfills already ran on every existing install (each set its
+	 * own wp_options flag) and are no-ops on fresh installs (there is no legacy data to
+	 * transform).
 	 *
-	 * Failure on any single migration does NOT block the others — they
-	 * each set their own flag on success; a re-fire next admin load
-	 * resumes any that didn't complete.
+	 * This therefore no longer runs any migration. It only guards the ONE unsafe case
+	 * the collapse introduces: a site that upgrades ACROSS the collapse boundary —
+	 * i.e. it carries existing data but never finished the pre-collapse migration chain
+	 * — would be missing a data backfill that no longer ships. That case cannot occur
+	 * on a fresh install or an already-current site; the guard detects it and records a
+	 * flag so {@see self::render_migration_baseline_notice()} can warn the operator to
+	 * reinstall the last pre-collapse release (<= 2.7.735), let it finish migrating,
+	 * then upgrade again. Schema is already correct via dbDelta, so this is a DATA
+	 * integrity guard, not a fatal.
 	 *
 	 * @return void
 	 */
-	private static function run_one_time_migrations() {
-		if ( ! get_option( 'eem_mig_001_cancellation_snapshot_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-001-cancellation-snapshot.php';
-			eem_mig_001_cancellation_snapshot();
-		}
-		if ( ! get_option( 'eem_mig_002_feed_source_canon_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-002-feed-source-canon.php';
-			eem_mig_002_feed_source_canon();
-		}
-		if ( ! get_option( 'eem_mig_003_reservation_name_inherit_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-003-reservation-name-inherit.php';
-			eem_mig_003_reservation_name_inherit();
-		}
-		if ( ! get_option( 'eem_mig_004_stall_inventory_split_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-004-stall-inventory-split.php';
-			eem_mig_004_stall_inventory_split();
-		}
-		if ( ! get_option( 'eem_mig_005_split_back_to_back_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-005-split-back-to-back.php';
-			eem_mig_005_split_back_to_back();
-		}
-		if ( ! get_option( 'eem_mig_006_tack_mode_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-006-tack-mode.php';
-			eem_mig_006_tack_mode();
-		}
-		if ( ! get_option( 'eem_mig_007_section_enabled_rename_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-007-section-enabled-rename.php';
-			eem_mig_007_section_enabled_rename();
-		}
-		if ( ! get_option( 'eem_mig_008_activity_log_order_key_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-008-activity-log-order-key.php';
-			eem_mig_008_activity_log_order_key();
-		}
-		if ( ! get_option( 'eem_mig_009_order_reservation_id_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-009-order-reservation-id.php';
-			eem_mig_009_order_reservation_id();
-		}
-		if ( ! get_option( 'eem_mig_010_activity_event_type_underscores_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-010-activity-event-type-underscores.php';
-			eem_mig_010_activity_event_type_underscores();
-		}
-		if ( ! get_option( 'eem_mig_011_refund_amount_column_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-011-refund-amount-column.php';
-			eem_mig_011_refund_amount_column();
-		}
-		if ( ! get_option( 'eem_mig_012_frontend_url_cache_cleanup_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-012-frontend-url-cache-cleanup.php';
-			eem_mig_012_frontend_url_cache_cleanup();
-		}
-		if ( ! get_option( 'eem_mig_013_order_trashed_at_column_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-013-order-trashed-at-column.php';
-			eem_mig_013_order_trashed_at_column();
-		}
-		if ( ! get_option( 'eem_mig_014_optional_feature_defaults_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-014-optional-feature-defaults.php';
-			eem_mig_014_optional_feature_defaults();
+	private static function run_one_time_migrations(): void {
+		$installed = (string) get_option( self::DB_VERSION_OPTION, '' );
+
+		// Fresh install: dbDelta just built the complete baseline schema and there is
+		// no legacy data to backfill. Record the baseline and return.
+		if ( '' === $installed ) {
+			update_option( 'eem_migration_baseline_complete', self::MIGRATION_BASELINE_VERSION, false );
+			return;
 		}
 
-		if ( ! get_option( 'eem_mig_015_native_venue_unify_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-015-native-venue-unify.php';
-			eem_mig_015_native_venue_unify();
+		// Safe upgrade paths:
+		//  - the final pre-collapse migration flag (#042) is set → the full legacy
+		//    chain completed before this upgrade;
+		//  - the installed version is already at/after the baseline → this site was
+		//    activated on a collapsed build already;
+		//  - the baseline-complete marker is already recorded.
+		if ( get_option( 'eem_mig_042_backfill_order_tokens_complete' )
+			|| version_compare( $installed, self::MIGRATION_BASELINE_VERSION, '>=' )
+			|| get_option( 'eem_migration_baseline_complete' ) ) {
+			update_option( 'eem_migration_baseline_complete', self::MIGRATION_BASELINE_VERSION, false );
+			return;
 		}
 
-		if ( ! get_option( 'eem_mig_016_reservation_config_table_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-016-reservation-config-table.php';
-			eem_mig_016_reservation_config_table();
-		}
+		// Pre-baseline site that crossed the collapse boundary without finishing the
+		// legacy chain. The one-time backfills no longer ship, so flag for the notice.
+		update_option( 'eem_migration_baseline_gap', 1, false );
+	}
 
-		if ( ! get_option( 'eem_mig_017_drop_config_postmeta_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-017-drop-config-postmeta.php';
-			eem_mig_017_drop_config_postmeta();
+	/**
+	 * Admin notice shown when {@see self::run_one_time_migrations()} detected a site
+	 * that upgraded across the #41 migration-collapse boundary without completing the
+	 * legacy migration chain. Hooked to `admin_notices` from the main plugin class.
+	 *
+	 * @return void
+	 */
+	public static function render_migration_baseline_notice(): void {
+		if ( ! get_option( 'eem_migration_baseline_gap' ) || ! current_user_can( 'manage_options' ) ) {
+			return;
 		}
-
-		if ( ! get_option( 'eem_mig_018_producer_table_backfill_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-018-producer-table-backfill.php';
-			eem_mig_018_producer_table_backfill();
-		}
-
-		if ( ! get_option( 'eem_mig_019_drop_producer_postmeta_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-019-drop-producer-postmeta.php';
-			eem_mig_019_drop_producer_postmeta();
-		}
-
-		if ( ! get_option( 'eem_mig_020_venue_detail_backfill_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-020-venue-detail-backfill.php';
-			eem_mig_020_venue_detail_backfill();
-		}
-
-		if ( ! get_option( 'eem_mig_021_drop_venue_detail_postmeta_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-021-drop-venue-detail-postmeta.php';
-			eem_mig_021_drop_venue_detail_postmeta();
-		}
-
-		if ( ! get_option( 'eem_mig_022_division_config_backfill_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-022-division-config-backfill.php';
-			eem_mig_022_division_config_backfill();
-		}
-
-		if ( ! get_option( 'eem_mig_023_drop_division_config_postmeta_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-023-drop-division-config-postmeta.php';
-			eem_mig_023_drop_division_config_postmeta();
-		}
-
-		if ( ! get_option( 'eem_mig_024_native_event_backfill_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-024-native-event-backfill.php';
-			eem_mig_024_native_event_backfill();
-		}
-
-		if ( ! get_option( 'eem_mig_025_drop_native_event_postmeta_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-025-drop-native-event-postmeta.php';
-			eem_mig_025_drop_native_event_postmeta();
-		}
-
-		if ( ! get_option( 'eem_mig_026_stay_packages_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-026-stay-packages.php';
-			eem_mig_026_stay_packages();
-		}
-
-		if ( ! get_option( 'eem_mig_027_rv_zones_to_rows_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-027-rv-zones-to-rows.php';
-			update_option( 'eem_mig_027_rv_zones_to_rows_complete', 1, false );
-		}
-
-		if ( ! get_option( 'eem_mig_028_rv_row_surcharge_object_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-028-rv-row-surcharge-object.php';
-			update_option( 'eem_mig_028_rv_row_surcharge_object_complete', 1, false );
-		}
-
-		if ( ! get_option( 'eem_mig_029_amount_paid_column_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-029-amount-paid-column.php';
-			eem_mig_029_amount_paid_column();
-		}
-
-		if ( ! get_option( 'eem_mig_030_stall_status_backfill_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-030-stall-status-backfill.php';
-			eem_mig_030_stall_status_backfill();
-		}
-
-		if ( ! get_option( 'eem_mig_031_order_checkin_backfill_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-031-order-checkin-backfill.php';
-			eem_mig_031_order_checkin_backfill();
-		}
-
-		if ( ! get_option( 'eem_mig_032_package_early_bird_price_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-032-package-early-bird-price.php';
-			eem_mig_032_package_early_bird_price();
-		}
-
-		if ( ! get_option( 'eem_mig_033_doc_satisfied_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-033-doc-satisfied.php';
-			eem_mig_033_doc_satisfied();
-		}
-
-		if ( ! get_option( 'eem_mig_034_additional_shavings_items_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-034-additional-shavings-items.php';
-			eem_mig_034_additional_shavings_items();
-		}
-
-		if ( ! get_option( 'eem_mig_035_shavings_products_column_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-035-shavings-products-column.php';
-			eem_mig_035_shavings_products_column();
-		}
-
-		if ( ! get_option( 'eem_mig_036_venue_status_column_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-036-venue-status-column.php';
-			eem_mig_036_venue_status_column();
-		}
-
-		if ( ! get_option( 'eem_mig_037_layout_type_column_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-037-layout-type-column.php';
-			update_option( 'eem_mig_037_layout_type_column_complete', 1 );
-		}
-
-		if ( ! get_option( 'eem_mig_038_normalize_caps_names_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-038-normalize-caps-names.php';
-			eem_mig_038_normalize_caps_names();
-		}
-
-		if ( ! get_option( 'eem_mig_039_backfill_order_dates_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-039-backfill-order-dates.php';
-			eem_mig_039_backfill_order_dates();
-		}
-
-		if ( ! get_option( 'eem_mig_040_section_enabled_postmeta_mirror_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-040-section-enabled-postmeta-mirror.php';
-			eem_mig_040_section_enabled_postmeta_mirror();
-		}
-
-		if ( ! get_option( 'eem_mig_041_payments_ledger_backfill_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-041-payments-ledger-backfill.php';
-			eem_mig_041_payments_ledger_backfill();
-		}
-
-		if ( ! get_option( 'eem_mig_042_backfill_order_tokens_complete' ) ) {
-			require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-042-backfill-order-tokens.php';
-			eem_mig_042_backfill_order_tokens();
-		}
+		echo '<div class="notice notice-error"><p>';
+		echo esc_html__( 'Equine Event Manager: this site was upgraded from a version older than 2.7.736 without completing its data migrations. Please reinstall version 2.7.735 or earlier, let it finish, then upgrade again to avoid missing order data.', 'equine-event-manager' );
+		echo '</p></div>';
 	}
 
 	/**

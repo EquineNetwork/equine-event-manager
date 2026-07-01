@@ -35,24 +35,12 @@ $check( 'readable route has the /equine-event/{slug}-{id}/ shape', false !== str
 $check( 'linked reservation resolves to the readable route, NOT the stale cache', $resolved === $readable );
 $check( 'stale cache value is bypassed', false === strpos( $resolved, 'old-bare-form' ) );
 
-// --- migration deletes the dead cache meta ---------------------------------
-require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-012-frontend-url-cache-cleanup.php';
-// Re-arm the flag so the migration runs in this smoke (it may already be done).
-delete_option( 'eem_mig_012_frontend_url_cache_cleanup_complete' );
-$mig = eem_mig_012_frontend_url_cache_cleanup();
-$check( 'migration deletes at least the seeded cache row', isset( $mig['deleted'] ) && $mig['deleted'] >= 1 );
-$check( 'seeded reservation no longer has the cache meta', '' === (string) get_post_meta( $rid, '_eem_frontend_url_cache', true ) );
-
-// Idempotent: a second run is a no-op (flag set).
-$mig2 = eem_mig_012_frontend_url_cache_cleanup();
-$check( 'migration is flag-gated / idempotent (second run deletes 0)', 0 === $mig2['deleted'] );
-
-// --- still readable after the cache is gone --------------------------------
-$check( 'resolver still returns the readable route after cache cleanup', EEM_Events::get_reservation_public_url( $rid ) === (string) $resolve->invoke( $page, $rid ) );
-
-// --- registered in the activator -------------------------------------------
-$act_src = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-activator.php' );
-$check( 'eem-mig-012 registered in the activator', false !== strpos( $act_src, 'eem_mig_012_frontend_url_cache_cleanup' ) );
+// NOTE: the one-time stale-cache cleanup (eem-mig-012) was collapsed into the #41
+// baseline and no longer ships. The resolver bypasses the stale cache for linked
+// reservations regardless (proven above), so the readable route wins with or
+// without the cache row present.
+delete_post_meta( $rid, '_eem_frontend_url_cache' );
+$check( 'resolver still returns the readable route with no cache', EEM_Events::get_reservation_public_url( $rid ) === (string) $resolve->invoke( $page, $rid ) );
 
 wp_delete_post( (int) $rid, true );
 $check( 'cleaned up temp reservation', null === get_post( $rid ) );

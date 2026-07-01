@@ -31,12 +31,9 @@ foreach ( array( 'eem_stall_reservations', 'eem_rv_reservations' ) as $suffix ) 
 	$check( "{$suffix} has the trashed_at column", 1 === $has );
 }
 
-// --- migration is idempotent / flag-gated ----------------------------------
-require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-013-order-trashed-at-column.php';
-delete_option( 'eem_mig_013_order_trashed_at_column_complete' );
-$mig = eem_mig_013_order_trashed_at_column();
-$check( 'migration runs (column already present → adds 0)', isset( $mig['added'] ) && 0 === $mig['added'] );
-$check( 'migration sets its completion flag', (bool) get_option( 'eem_mig_013_order_trashed_at_column_complete' ) );
+// NOTE: the trashed_at column is provided by the dbDelta baseline as of #41 (the
+// old eem-mig-013 that ALTERed it in was collapsed into create_reservation_tables()).
+// The schema check above now validates the baseline directly.
 
 // --- repo methods exist ----------------------------------------------------
 $repo = new EEM_Orders_Repository();
@@ -88,10 +85,6 @@ $loader = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-
 $check( 'handle_trash now trashes (no deferred stub)', false !== strpos( $lp_src, 'trash_order( (string) $order' ) && false === strpos( $lp_src, "redirect_with_notice( 'order_trash_deferred' )" ) );
 $check( 'restore + delete-permanently handlers defined', method_exists( 'EEM_Orders_List_Page', 'handle_restore' ) && method_exists( 'EEM_Orders_List_Page', 'handle_delete_permanently' ) );
 $check( 'admin_post actions registered', false !== strpos( $loader, 'admin_post_eem_order_restore' ) && false !== strpos( $loader, 'admin_post_eem_order_delete_permanently' ) );
-
-// --- registered in the activator -------------------------------------------
-$act = file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-activator.php' );
-$check( 'eem-mig-013 registered in the activator', false !== strpos( $act, 'eem_mig_013_order_trashed_at_column' ) );
 
 echo "\n{$passed} passed, {$failed} failed\n";
 if ( $failed > 0 ) { exit( 1 ); }

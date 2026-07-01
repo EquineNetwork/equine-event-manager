@@ -81,11 +81,9 @@ tk_ok( 'shavings_stall_qty = stall_qty_total - tack count',        false !== str
 tk_ok( 'JS live total excludes tack from shavings', false !== strpos( $sc_src, 'countTackStalls(form, stallQty)' ) && false !== strpos( $sc_src, 'shavingsStallQty' ), $pass, $fail, $log );
 
 /* ── Migration #006 ─────────────────────────────────────────────── */
-tk_ok( 'migration 006 file exists', is_readable( EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-006-tack-mode.php' ), $pass, $fail, $log );
-$act = (string) file_get_contents( EQUINE_EVENT_MANAGER_PATH . 'includes/class-equine-event-manager-activator.php' );
-tk_ok( 'migration 006 registered in activator', false !== strpos( $act, 'eem_mig_006_tack_mode_complete' ) && false !== strpos( $act, 'eem_mig_006_tack_mode()' ), $pass, $fail, $log );
-require_once EQUINE_EVENT_MANAGER_PATH . 'includes/migrations/eem-mig-006-tack-mode.php';
-tk_ok( 'migration resolver function defined', function_exists( 'eem_mig_006_resolve_mode' ), $pass, $fail, $log );
+// The old-boolean→3-mode converter (eem-mig-006) was collapsed into the #41
+// baseline and no longer ships. The 3-mode sanitize/default semantics it fed
+// are covered by the CPT-data-layer assertions above.
 
 echo "\n=== Tack on/off + shavings smoke: $pass passed, $fail failed ===\n";
 foreach ( $log as $l ) { echo "  $l\n"; }

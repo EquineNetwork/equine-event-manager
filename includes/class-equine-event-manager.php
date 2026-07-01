@@ -364,6 +364,7 @@ class EEM_Plugin {
 		add_filter( 'post_row_actions', array( $this->reservations_cpt, 'filter_row_actions' ), 10, 2 );
 		add_filter( 'post_updated_messages', array( $this->reservations_cpt, 'filter_updated_messages' ) );
 		add_action( 'admin_notices', array( $this->reservations_cpt, 'render_validation_notice' ) );
+		add_action( 'admin_notices', array( 'EEM_Activator', 'render_migration_baseline_notice' ) );
 		add_action( 'admin_menu', array( $this->admin, 'register_menu' ), 20 );
 		add_filter( 'parent_file', array( $this->admin, 'filter_parent_file' ) );
 		add_filter( 'submenu_file', array( $this->admin, 'filter_submenu_file' ) );
