@@ -49,6 +49,17 @@ foreach ( $files as $file ) {
 		$last = end( $m );
 		$pass = (int) $last[1];
 		$fail = (int) $last[2];
+	} elseif ( preg_match_all( '/\bPASS=(\d+)\s+FAIL=(\d+)/i', $out, $m, PREG_SET_ORDER ) ) {
+		// Some smokes print "Done. PASS=N FAIL=N" instead of "N passed, M failed".
+		// Parse that format too, or their assertions go uncounted AND a real
+		// failure lands silently in the "no tally line" bucket instead of turning
+		// the roll-up red. Several of these are the highest-value money-math smokes
+		// (refund-math, order-totals-math, admin-totals-reconcile, receipt-line-
+		// items-parity, the surcharge/discount smokes) — a regression in one must
+		// NOT slip through green. (Pre-launch code-health finding, 2026-07-01.)
+		$last = end( $m );
+		$pass = (int) $last[1];
+		$fail = (int) $last[2];
 	}
 
 	$isFatal = (bool) preg_match( '/(PHP )?(Fatal error|Parse error|Uncaught)/i', $out );
@@ -96,3 +107,12 @@ if ( $noTally ) {
 	}
 }
 echo "====================================================\n";
+
+// Exit non-zero on any failed assertion or fatal/parse error so the suite can
+// gate CI / a release build hard, instead of always returning success and
+// relying on a human to read the roll-up. (noTally is informational — e.g. a
+// smoke that prints SKIP — and does NOT fail the run.)
+if ( $totalFail > 0 || count( $errored ) > 0 ) {
+	exit( 1 );
+}
+exit( 0 );
