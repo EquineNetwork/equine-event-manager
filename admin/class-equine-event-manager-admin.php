@@ -14984,7 +14984,16 @@ class EEM_Admin {
 			__( 'Event', 'equine-event-manager' )           => $event_label,
 			__( 'Event Dates', 'equine-event-manager' )     => ! empty( $order['event_dates'] ) ? $order['event_dates'] : __( 'Dates unavailable', 'equine-event-manager' ),
 			__( 'Reservation Type', 'equine-event-manager' ) => $order['type'] ?? '',
-			__( 'Amount Due', 'equine-event-manager' )      => '$' . number_format_i18n( (float) ( $order['total'] ?? 0 ), 2 ),
+			// Amount Due = the canonical OUTSTANDING (composed grand incl. custom
+			// items/discount − ledger collected), so the invoiced amount matches
+			// what the payment link actually charges (get_order_amount_due). Using
+			// the base component total understated adjusted orders (bug #12).
+			__( 'Amount Due', 'equine-event-manager' )      => '$' . number_format_i18n(
+				( isset( $order['order_key'] ) && '' !== (string) $order['order_key'] )
+					? $this->orders_repository->get_order_outstanding( (string) $order['order_key'], $order )
+					: (float) ( $order['total'] ?? 0 ),
+				2
+			),
 		);
 
 		ob_start();
