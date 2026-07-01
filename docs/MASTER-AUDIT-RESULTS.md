@@ -272,6 +272,32 @@ New reconcile smokes (all green): `confirmation-email-totals-reconcile` · `invo
 `mark-paid-prefill-outstanding` · `reservation-revenue-net-collected` · `print-receipt-totals-reconcile` ·
 `reports-grand-total-adjustments` · `customer-lifetime-spend-net`.
 
+### Cycle 3 — new-lens audit (3 parallel agents: rounding / refund / tax-fee), 2.7.731
+
+After cycles 1–2 exhausted the base-total display class (grep-confirmed), a third pass changed lens to
+**math-correctness** rather than string-matching, via three focused agents. Two found real defects:
+
+| # | Ver | Severity | Bug |
+|---|-----|----------|-----|
+| 20 | 2.7.731 | 🔴 **money loss** | **Over-refund on discounted / fee-waived orders.** The amount / **bulk** refund path capped at Σ component base `total`, not the ledger. A $100-charge order with a $40 discount (customer paid $60) would bulk-refund **$100** on the card — $40 that was never collected — then `get_net_collected` floored at 0 and masked it. Fixed: new `get_gross_collected()` + shared `EEM_Refund_Engine::get_order_refundable_ceiling()` = `min(Σ remaining, gross_collected − already_refunded)`, used by BOTH the bulk path and the amount-guard. **Behaviorally verified**: caps at $60, and stays $0 after the $60 is refunded (multi-refund safe, even though the amount path records refunds in notes not the ledger). |
+| 21 | 2.7.731 | 🟠 reconcile | **Custom-item tax missing from the itemized Tax line.** Composer taxes custom items (`custom_tax` → `grand_total`, so the charge is right) but Order Detail + receipt rendered the Tax line from raw `$order['tax']`, so the itemization came up short. Fixed to consume the composer's `effective_tax`. (Email is sent at checkout pre-adjustment, so unaffected.) |
+
+Smokes: `refund-ceiling-collected` (behavioral, seeds a real ledger) · `custom-item-tax-line-reconcile`.
+
+**Verified correct by the agents (no bug):** tax order-of-operations, flat-fee-charged-once, cash fee-waive on
+every path, refund sign handling, concurrency locks, multi-partial base refunds, percent-fee rounding.
+
+### 🟡 Two lower items flagged, NOT auto-fixed (need Whitney's call)
+
+- **Epsilon-threshold inconsistency** (0.005 vs 0.009 vs exact-0 across surfaces). *Largely theoretical* — money
+  is stored at 2-decimal precision, so a real residual is $0.00 or ≥$0.01, never in the narrow band the
+  thresholds disagree on. Code-smell tidy, not a live discrepancy. Deferred.
+- **Custom-item surcharge is unrefundable.** If an admin adds a $30 late fee, charges it, then refunds, only the
+  $100 base can be returned — the $30 surcharge can't be placed against any component. **Fails safe** (errors,
+  never over-pays), but the money is stranded. This is a *feature gap* (refund placement only knows base
+  components, not adjustments), not a money-loss bug — needs a product decision on whether v1 must refund
+  admin-added charges.
+
 ---
 
 ## Standing observation — global convenience fee + tax (for Whitney)

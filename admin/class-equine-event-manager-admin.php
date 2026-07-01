@@ -10573,18 +10573,12 @@ class EEM_Admin {
 	 * @return float Sum of remaining refundable across all components, or 0.0 when order missing / already fully refunded.
 	 */
 	public function get_order_remaining_refundable( $order_key ) {
-		$order = $this->orders_repository->get_order( $order_key );
-
-		if ( ! is_array( $order ) || empty( $order['components'] ) ) {
-			return 0.0;
-		}
-
-		$total = 0.0;
-		foreach ( (array) $order['components'] as $component ) {
-			$total += $this->get_component_remaining_refundable_amount( $component );
-		}
-
-		return (float) $total;
+		// bug #20: cap at what was actually COLLECTED (gross − already refunded),
+		// NOT the sum of component base totals — otherwise the fully-automated
+		// bulk-refund step requests (and refunds) the discount / waived-fee amount
+		// that never came in. Single canonical ceiling shared with the amount-path
+		// guard in EEM_Refund_Engine::process_amount_refund_locked().
+		return (float) $this->refund_engine()->get_order_refundable_ceiling( $order_key );
 	}
 
 	/**

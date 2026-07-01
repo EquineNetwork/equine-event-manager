@@ -1252,6 +1252,9 @@ class EEM_Order_Detail_Page {
 		if ( '' !== $order_key && class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
 			$composed = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $adjustments );
 			$fees     = (float) $composed['effective_fees'];
+			// bug #21: the Tax line must include the tax charged on custom line items
+			// (effective_tax), or the itemization won't reconcile to the grand total.
+			$tax      = (float) $composed['effective_tax'];
 			$total    = (float) $composed['grand_total'];
 		} else {
 			$total    = $total + $custom_items_total - $discount_amount;

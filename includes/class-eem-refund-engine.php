@@ -72,6 +72,55 @@ class EEM_Refund_Engine {
 		return max( 0, $total_amount - $refunded_amount );
 	}
 
+	/**
+	 * Canonical refundable ceiling for a whole order (bug #20).
+	 *
+	 * The naive ceiling — Σ component remaining — uses each component's stored
+	 * base `total` (subtotal + fee + tax of the reservation charge). On a
+	 * DISCOUNTED or fee-WAIVED order the base totals exceed what was actually
+	 * collected, so that ceiling would authorise refunding money that never came
+	 * in (a real over-refund onto the card — the bulk-refund path did this
+	 * automatically). The true ceiling is what the ledger says was collected,
+	 * GROSS, minus everything already refunded:
+	 *
+	 *     min( Σ component remaining,  gross_collected − Σ already_refunded )
+	 *
+	 * gross_collected is stable across successive partial refunds (refunds don't
+	 * reduce it), and Σ already_refunded grows as refunds are placed, so the
+	 * ceiling correctly shrinks to 0 once the collected money has been returned —
+	 * even though the amount-refund path records refunds in component notes rather
+	 * than the ledger.
+	 *
+	 * @param string     $order_key Order key.
+	 * @param array|null $order     Pre-fetched grouped order (avoids a re-query).
+	 * @return float Refundable ceiling, floored at 0.
+	 */
+	public function get_order_refundable_ceiling( $order_key, $order = null ) {
+		if ( null === $order ) {
+			$order = $this->orders_repository->get_order( $order_key );
+		}
+		if ( ! is_array( $order ) || empty( $order['components'] ) ) {
+			return 0.0;
+		}
+
+		$remaining        = 0.0;
+		$already_refunded = 0.0;
+		foreach ( (array) $order['components'] as $component ) {
+			$remaining        += $this->get_component_remaining_refundable_amount( $component );
+			$already_refunded += $this->get_component_refunded_amount( $component );
+		}
+
+		// Gross collected caps the refund; fall back to the base sum (old
+		// behaviour) only if the repo can't report it.
+		if ( method_exists( $this->orders_repository, 'get_gross_collected' ) ) {
+			$gross             = (float) $this->orders_repository->get_gross_collected( (string) $order_key, $order );
+			$collected_ceiling = max( 0.0, round( $gross - $already_refunded, 2 ) );
+			return round( min( $remaining, $collected_ceiling ), 2 );
+		}
+
+		return round( $remaining, 2 );
+	}
+
 	public function persist_component_refund( $component, $refund_amount, $refund_transaction_id, $refunded_item_ids ) {
 		$current_refunded_amount = $this->get_component_refunded_amount( $component );
 		$new_refunded_amount     = max( 0, $current_refunded_amount + (float) $refund_amount );
@@ -165,12 +214,11 @@ class EEM_Refund_Engine {
 			return new WP_Error( 'invalid_amount', __( 'Refund amount must be greater than zero.', 'equine-event-manager' ) );
 		}
 
-		$total_remaining = 0.0;
 		$components      = isset( $order['components'] ) && is_array( $order['components'] ) ? $order['components'] : array();
-
-		foreach ( $components as $component ) {
-			$total_remaining += $this->get_component_remaining_refundable_amount( $component );
-		}
+		// bug #20: cap at what was actually COLLECTED (gross − already refunded),
+		// not the sum of component base totals — otherwise a discounted / fee-
+		// waived order refunds money that never came in.
+		$total_remaining = $this->get_order_refundable_ceiling( $order_key, $order );
 
 		// Float-tolerant comparison — accept amounts within $0.01 of the
 		// remaining balance (handles UI rounding without rejecting valid

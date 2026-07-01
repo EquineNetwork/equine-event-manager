@@ -6853,9 +6853,13 @@ RV Lot: " . $rv_lot['name'] );
 		// F4: convenience fee follows admin-added line items; discount leaves the fee
 		// untouched. Shared composer (also used by Collect Payment + Order Detail).
 		$receipt_effective_fees = (float) ( isset( $order['fees'] ) ? $order['fees'] : 0 );
+		// bug #21: Tax line must include tax charged on custom line items so the
+		// receipt itemization reconciles to the grand total.
+		$receipt_effective_tax  = (float) ( isset( $order['tax'] ) ? $order['tax'] : 0 );
 		if ( '' !== $eem_order_key && class_exists( 'EEM_Order_Adjustments_Repo' ) && isset( $eem_adj ) ) {
 			$eem_composed           = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $eem_adj );
 			$receipt_effective_fees = (float) $eem_composed['effective_fees'];
+			$receipt_effective_tax  = (float) $eem_composed['effective_tax'];
 			$receipt_grand_total    = (float) $eem_composed['grand_total'];
 		} else {
 			$receipt_grand_total = round( $eem_order_total + $receipt_custom_total - $receipt_discount_amt, 2 );
@@ -6932,7 +6936,7 @@ RV Lot: " . $rv_lot['name'] );
 			'totals'              => $totals,
 			'subtotal'            => $money( $subtotal_val ),
 			'fee'                 => $receipt_effective_fees > 0 ? $money( $receipt_effective_fees ) : '',
-			'tax'                 => (float) $order['tax'] > 0 ? $money( $order['tax'] ) : '',
+			'tax'                 => $receipt_effective_tax > 0 ? $money( $receipt_effective_tax ) : '',
 			'tax_rate_label'      => $tax_rate_value > 0 ? rtrim( rtrim( number_format( $tax_rate_value, 3 ), '0' ), '.' ) . '%' : '',
 			'grand_total'         => $money( $receipt_grand_total ),
 			// Order-level adjustment lines + Amount Paid / Balance Due flow.

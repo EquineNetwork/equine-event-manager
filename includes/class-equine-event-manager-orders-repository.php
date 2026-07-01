@@ -750,6 +750,44 @@ class EEM_Orders_Repository {
 	}
 
 	/**
+	 * GROSS amount ever collected on an order — total payments taken in, WITHOUT
+	 * subtracting any refunds. This is the hard ceiling on how much can ever be
+	 * refunded (you cannot return money you never collected). Unlike
+	 * get_net_collected(), refunds do NOT reduce it, so it stays stable across
+	 * successive partial refunds — which is exactly what the refund-ceiling math
+	 * needs to prevent an over-refund on a discounted / fee-waived order whose
+	 * component base totals exceed what was actually charged. (bug #20)
+	 *
+	 * @param string     $order_key Order key.
+	 * @param array|null $order     Pre-fetched order (avoids a re-query).
+	 * @return float Gross collected, floored at 0.
+	 */
+	public function get_gross_collected( string $order_key, ?array $order = null ): float {
+		if ( '' !== $order_key && class_exists( 'EEM_Order_Payments_Repo' ) ) {
+			$payments   = 0.0;
+			$has_ledger = false;
+			foreach ( EEM_Order_Payments_Repo::get_for_order( $order_key ) as $entry ) {
+				$has_ledger = true;
+				if ( ! isset( $entry['direction'] ) || EEM_Order_Payments_Repo::DIRECTION_REFUND !== $entry['direction'] ) {
+					$payments += (float) ( $entry['amount'] ?? 0 );
+				}
+			}
+			if ( $has_ledger ) {
+				return round( max( 0.0, $payments ), 2 );
+			}
+		}
+		// Legacy fallback — no ledger rows. Use the gross component amount_paid
+		// (NOT net of note-refunds — this is the gross-collected figure).
+		if ( null === $order ) { $order = $this->get_order( $order_key ); }
+		if ( ! is_array( $order ) ) { return 0.0; }
+		$gross = isset( $order['amount_paid'] ) ? (float) $order['amount_paid'] : 0.0;
+		if ( $gross <= 0.005 && isset( $order['status_slug'] ) && 'paid' === $order['status_slug'] ) {
+			$gross = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		}
+		return round( max( 0.0, $gross ), 2 );
+	}
+
+	/**
 	 * Canonical OUTSTANDING balance for an order = composed grand total (incl.
 	 * custom line items + discount) − ledger net collected. The single source of
 	 * truth for "how much is still owed", so the Collect Payment display, the
