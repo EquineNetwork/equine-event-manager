@@ -8827,7 +8827,13 @@ class EEM_Admin {
 			$rv_sold                  += absint( isset( $order['rv_quantity'] ) ? $order['rv_quantity'] : 0 );
 			$required_shavings_sold   += absint( isset( $order['required_shavings_qty'] ) ? $order['required_shavings_qty'] : 0 );
 			$additional_shavings_sold += absint( isset( $order['additional_shavings_qty'] ) ? $order['additional_shavings_qty'] : 0 );
-			$revenue_total            += (float) ( isset( $order['total'] ) ? $order['total'] : 0 );
+			// bug #16: "Revenue" = money actually COLLECTED, net of refunds (ledger
+			// net collected) — NOT the gross base order total, which would count
+			// unpaid orders, ignore refunds, and miss custom-item/discount
+			// adjustments. Matches the Dashboard revenue definition (2.7.721).
+			$revenue_total            += ( isset( $order['order_key'] ) && class_exists( 'EEM_Orders_Repository' ) )
+				? $this->orders_repository->get_net_collected( (string) $order['order_key'], $order )
+				: (float) ( isset( $order['total'] ) ? $order['total'] : 0 );
 			$group_rider_count         = self::parse_group_rider_count_from_notes( $notes );
 
 			if ( $group_rider_count > 0 ) {
@@ -11849,6 +11855,43 @@ class EEM_Admin {
 		$stall_nights        = $this->get_stay_nights_label( $order['stall_arrival_date'], $order['stall_departure_date'] );
 		$rv_nights           = $this->get_stay_nights_label( $order['rv_arrival_date'], $order['rv_departure_date'] );
 
+		// bug #17: the print receipt must reflect the LIVE order — order-level
+		// adjustments (custom line items + discount) and the fee that follows them,
+		// plus tax — so the totals reconcile and the "Amount Paid/Due" hero matches
+		// what the ledger says. Without this the print shows the bare component base
+		// and silently omits admin-added items / discount / tax. Shared composer used
+		// by Order Detail + receipt + Collect Payment.
+		$print_tax             = isset( $order['tax'] ) ? (float) $order['tax'] : 0.0;
+		$print_custom_items    = array();
+		$print_discount_amt    = 0.0;
+		$print_discount_rsn    = '';
+		$print_effective_fees  = isset( $order['fees'] ) ? (float) $order['fees'] : 0.0;
+		$print_grand_total     = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		if ( '' !== (string) $order_key && class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			$print_adj = EEM_Order_Adjustments_Repo::get_for_order( (string) $order_key );
+			foreach ( (array) ( $print_adj['custom_items'] ?? array() ) as $print_ci ) {
+				$print_custom_items[] = array(
+					'label' => (string) ( $print_ci['description'] ?? '' ),
+					'value' => (float) ( $print_ci['amount'] ?? 0 ),
+				);
+			}
+			if ( isset( $print_adj['discount'] ) && is_array( $print_adj['discount'] ) ) {
+				$print_discount_amt = (float) ( $print_adj['discount']['amount'] ?? 0 );
+				$print_discount_rsn = (string) ( $print_adj['discount']['reason'] ?? '' );
+			}
+			$print_composed       = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $print_adj );
+			$print_effective_fees = (float) $print_composed['effective_fees'];
+			$print_grand_total    = (float) $print_composed['grand_total'];
+		}
+		// Ledger-based collected / outstanding so the hero and total-row labels tell
+		// the truth for partly-paid + refunded orders.
+		$print_net_collected = ( '' !== (string) $order_key && class_exists( 'EEM_Orders_Repository' ) )
+			? $this->orders_repository->get_net_collected( (string) $order_key, $order )
+			: $print_grand_total;
+		$print_outstanding   = ( '' !== (string) $order_key && class_exists( 'EEM_Orders_Repository' ) )
+			? $this->orders_repository->get_order_outstanding( (string) $order_key, $order )
+			: $print_grand_total;
+
 		$footer_contacts         = array_filter(
 			array(
 				$support_phone ? sprintf( __( 'Support: %s', 'equine-event-manager' ), $support_phone ) : '',
@@ -12441,7 +12484,7 @@ class EEM_Admin {
 							</div>
 							<div class="equprint-meta-item">
 								<span><?php echo esc_html( $is_paid ? __( 'Amount Paid', 'equine-event-manager' ) : __( 'Amount Due', 'equine-event-manager' ) ); ?></span>
-								<div><?php echo esc_html( $format_money( $order['total'] ) ); ?></div>
+								<div><?php echo esc_html( $format_money( $is_paid ? $print_net_collected : $print_outstanding ) ); ?></div>
 							</div>
 						</div>
 					</div>
@@ -12570,10 +12613,25 @@ class EEM_Admin {
 									<?php foreach ( $general_addon_breakdown as $addon_row ) : ?>
 										<tr><td><?php echo esc_html( $addon_row['label'] ); ?></td><td><?php echo esc_html( $format_money( $addon_row['subtotal'] ) ); ?></td></tr>
 									<?php endforeach; ?>
-									<?php if ( (float) $order['fees'] > 0 ) : ?>
-										<tr><td><?php esc_html_e( 'Non-Refundable Convenience Fee', 'equine-event-manager' ); ?></td><td><?php echo esc_html( $format_money( $order['fees'] ) ); ?></td></tr>
+									<?php foreach ( $print_custom_items as $print_ci_row ) : ?>
+										<tr><td><?php echo esc_html( '' !== $print_ci_row['label'] ? $print_ci_row['label'] : __( 'Custom Charge', 'equine-event-manager' ) ); ?></td><td><?php echo esc_html( $format_money( $print_ci_row['value'] ) ); ?></td></tr>
+									<?php endforeach; ?>
+									<?php if ( $print_effective_fees > 0 ) : ?>
+										<tr><td><?php esc_html_e( 'Non-Refundable Convenience Fee', 'equine-event-manager' ); ?></td><td><?php echo esc_html( $format_money( $print_effective_fees ) ); ?></td></tr>
 									<?php endif; ?>
-									<tr class="equprint-total-row"><td><?php echo esc_html( $is_paid ? __( 'Total Amount Paid', 'equine-event-manager' ) : __( 'Total Amount Due', 'equine-event-manager' ) ); ?></td><td><?php echo esc_html( $format_money( $order['total'] ) ); ?></td></tr>
+									<?php if ( $print_tax > 0 ) : ?>
+										<tr><td><?php esc_html_e( 'Tax', 'equine-event-manager' ); ?></td><td><?php echo esc_html( $format_money( $print_tax ) ); ?></td></tr>
+									<?php endif; ?>
+									<?php if ( $print_discount_amt > 0 ) : ?>
+										<tr><td><?php echo esc_html( '' !== $print_discount_rsn ? sprintf( __( 'Discount (%s)', 'equine-event-manager' ), $print_discount_rsn ) : __( 'Discount', 'equine-event-manager' ) ); ?></td><td><?php echo esc_html( '−' . $format_money( $print_discount_amt ) ); ?></td></tr>
+									<?php endif; ?>
+									<tr class="equprint-total-row"><td><?php esc_html_e( 'Order Total', 'equine-event-manager' ); ?></td><td><?php echo esc_html( $format_money( $print_grand_total ) ); ?></td></tr>
+									<?php if ( $print_net_collected > 0.005 || $is_paid ) : ?>
+										<tr><td><?php esc_html_e( 'Amount Paid', 'equine-event-manager' ); ?></td><td><?php echo esc_html( $format_money( $print_net_collected ) ); ?></td></tr>
+									<?php endif; ?>
+									<?php if ( $print_outstanding > 0.005 ) : ?>
+										<tr class="equprint-total-row"><td><?php esc_html_e( 'Balance Due', 'equine-event-manager' ); ?></td><td><?php echo esc_html( $format_money( $print_outstanding ) ); ?></td></tr>
+									<?php endif; ?>
 								</tbody>
 							</table>
 						</div>

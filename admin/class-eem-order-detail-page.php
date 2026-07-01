@@ -2384,7 +2384,13 @@ class EEM_Order_Detail_Page {
 			return;
 		}
 		$order_key = isset( $order['order_key'] ) ? (string) $order['order_key'] : '';
-		$amount    = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
+		// bug #15: pre-fill the cash/check amount with the composed OUTSTANDING
+		// (grand incl. admin-added items/discount − ledger collected), not the
+		// component-only base total. Otherwise an adjusted order under-records the
+		// payment when the admin accepts the default.
+		$amount    = ( '' !== $order_key && class_exists( 'EEM_Orders_Repository' ) )
+			? ( new EEM_Orders_Repository() )->get_order_outstanding( $order_key, $order )
+			: ( isset( $order['total'] ) ? (float) $order['total'] : 0.0 );
 		?>
 		<div class="eem-modal" id="eem-order-mark-paid-modal" role="dialog" aria-modal="true" aria-labelledby="eem-order-mark-paid-title" aria-hidden="true">
 			<div class="eem-modal-card">

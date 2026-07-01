@@ -177,7 +177,7 @@ class EEM_Reports_Repo {
 				$this->money( $o['rv_subtotal'] ?? 0 ),
 				$this->money( $o['fees'] ?? 0 ),
 				$this->money( $o['tax'] ?? 0 ),
-				$this->money( $o['total'] ?? 0 ),
+				$this->money( $this->order_grand_total( $o ) ),
 				(string) ( $o['status_label'] ?? ( $o['payment_status'] ?? '' ) ),
 				(string) ( $o['created_at'] ?? '' ),
 			);
@@ -252,7 +252,7 @@ class EEM_Reports_Repo {
 				);
 			}
 			$agg[ $key ]['orders']++;
-			$agg[ $key ]['rev']    += (float) ( $o['total'] ?? 0 );
+			$agg[ $key ]['rev']    += $this->order_grand_total( $o );
 			$agg[ $key ]['stalls'] += absint( $o['stall_quantity'] ?? 0 );
 			$agg[ $key ]['rv']     += absint( $o['rv_quantity'] ?? 0 );
 		}
@@ -301,7 +301,7 @@ class EEM_Reports_Repo {
 		foreach ( $this->get_filtered_orders( $filters ) as $o ) {
 			$subtotal = (float) ( $o['stall_subtotal'] ?? 0 ) + (float) ( $o['rv_subtotal'] ?? 0 );
 			$refunded = $this->order_refunded_amount( $o );
-			$total    = (float) ( $o['total'] ?? 0 );
+			$total    = $this->order_grand_total( $o );
 			$rows[]   = array(
 				substr( (string) ( $o['created_at'] ?? '' ), 0, 10 ),
 				EEM_Formatter::format_order_number( $o['order_number'] ),
@@ -1233,7 +1233,7 @@ class EEM_Reports_Repo {
 				);
 			}
 			$agg[ $key ]['orders']++;
-			$agg[ $key ]['ltv'] += (float) ( $o['total'] ?? 0 );
+			$agg[ $key ]['ltv'] += $this->order_grand_total( $o );
 		}
 
 		$rows = array();
@@ -1394,6 +1394,30 @@ class EEM_Reports_Repo {
 			/* translators: %s: number of units needing cleaning. */
 			'total_label' => sprintf( _n( '%s unit needs cleaning', '%s units need cleaning', $grand_total, 'equine-event-manager' ), number_format_i18n( $grand_total ) ),
 		);
+	}
+
+	/**
+	 * Booked grand total for an order = stored base total + admin-added custom
+	 * line items − discount. Falls back to the bare base total for legacy orders
+	 * with no adjustments, so this is a no-op for the common (checkout-created)
+	 * case and only lifts adjusted orders to their true booked value — matching
+	 * the Order Detail, receipt, and Orders list "effective total". (bug #18)
+	 *
+	 * @param array $order Grouped order.
+	 * @return float
+	 */
+	private function order_grand_total( array $order ): float {
+		$base = (float) ( $order['total'] ?? 0 );
+		$key  = (string) ( $order['order_key'] ?? '' );
+		if ( '' === $key || ! class_exists( 'EEM_Order_Adjustments_Repo' ) ) {
+			return $base;
+		}
+		$adj = EEM_Order_Adjustments_Repo::get_for_order( $key );
+		if ( empty( $adj['custom_items'] ) && empty( $adj['discount'] ) ) {
+			return $base;
+		}
+		$composed = EEM_Order_Adjustments_Repo::compose_order_totals( $order, $adj );
+		return round( (float) $composed['grand_total'], 2 );
 	}
 
 	/**

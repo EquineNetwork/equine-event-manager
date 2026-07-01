@@ -6629,7 +6629,9 @@ RV Lot: " . $rv_lot['name'] );
 			// Assignments are admin-assigned post-checkout (Bulk mode); omit until set.
 			'assignments'         => array(),
 			'line_items'          => $line_items,
-			'total_paid'          => '$' . number_format_i18n( (float) $order['total'], 2 ),
+			// Composed grand (base + custom items − discount) so the email totals
+			// row reconciles with the itemized line items (bug #13 family).
+			'total_paid'          => '$' . number_format_i18n( $this->receipt_grand_total( $order ), 2 ),
 			'special_requests'    => trim( (string) $special_requests ),
 			'event_day'           => $event_day,
 			'support_phone'       => trim( (string) $company_settings['support_phone'] ),
@@ -7994,7 +7996,7 @@ RV Lot: " . $rv_lot['name'] );
 						<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;"><span class="eem-pay-label"><?php esc_html_e( 'Order Number', 'equine-event-manager' ); ?></span><strong style="color:#111827;">#<?php echo esc_html( $order['order_number'] ); ?></strong></div>
 						<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;"><span class="eem-pay-label"><?php esc_html_e( 'Customer', 'equine-event-manager' ); ?></span><strong style="color:#111827;"><?php echo esc_html( $order['customer_name'] ); ?></strong></div>
 						<div style="display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid #d9e1ea;"><span class="eem-pay-label"><?php esc_html_e( 'Status', 'equine-event-manager' ); ?></span><strong style="color:#111827;"><?php echo esc_html( $order['status_label'] ); ?></strong></div>
-						<div style="display:flex;justify-content:space-between;gap:16px;"><span class="eem-pay-label"><?php esc_html_e( 'Total Paid', 'equine-event-manager' ); ?></span><strong style="color:#111827;"><?php echo esc_html( $this->format_money( (float) $order['total'] ) ); ?></strong></div>
+						<div style="display:flex;justify-content:space-between;gap:16px;"><span class="eem-pay-label"><?php esc_html_e( 'Total Paid', 'equine-event-manager' ); ?></span><strong style="color:#111827;"><?php echo esc_html( $this->format_money( $this->get_order_net_collected( $order ) ) ); ?></strong></div>
 					</div>
 				</div>
 				<?php if ( ! empty( $support_chunks ) ) : ?>
@@ -8607,6 +8609,14 @@ RV Lot: " . $rv_lot['name'] );
 		if ( ! $order ) {
 			wp_die( esc_html__( 'That invoice link is no longer available.', 'equine-event-manager' ), esc_html__( 'Invoice Unavailable', 'equine-event-manager' ), array( 'response' => 404 ) );
 		}
+
+		// bug #14: the hosted invoice page must DISPLAY the same amount it CHARGES.
+		// The charge paths (ajax_create_invoice_payment_intent / handle_invoice_
+		// payment_submission) reassign total to the composed OUTSTANDING; do the same
+		// once here so the "Amount Due" header + "Pay $X" button reflect admin-added
+		// line items / discounts and any partial payment already collected. Idempotent
+		// — get_order_amount_due() recomputes from order_key, not from $order['total'].
+		$order['total'] = $this->get_order_amount_due( $order, $order['order_key'] );
 
 		$error_message = '';
 
