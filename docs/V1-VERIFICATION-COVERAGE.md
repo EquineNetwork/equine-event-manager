@@ -32,9 +32,9 @@ audit for the full smoke-by-smoke map.
 | **RV package** (flat × qty, once) | 🟠 | ✅ **CLOSED** — same smoke ($400 = 2×$200 flat, billed once). No bug. |
 | **Surcharge tier orders — money reconciles** | 🟠 | ✅ **CLOSED** — `surcharge-order-render-reconcile-smoke` (2026-07-01): premium-tier surcharge folds into the charge, charge == stored, Σ email lines == stored (surcharge dollars reach the document, not dropped). |
 | **Surcharge tier orders — separate "Stall Premium" LINE** | 🟡 | ◻️ **BROWSER-PASS ITEM** — `get_order_stall_surcharge_total()` re-reads the reservation tier config + a stored "Stall Tiers:" note to break the premium into its own line; the synthetic harness can't reproduce that. **VERIFY on a configured QUANTITY-MODE tier reservation** that a real surcharge order shows a "Stall Premium" line on Order Detail / receipt / email (not silently folded into the stall line). |
-| **Packages at RENDER surfaces (OD/PDF)** | 🟠 | ◻️ OPEN — charge + email proven (charge-reconcile); OD/PDF itemization not yet asserted. |
+| **Packages at RENDER surfaces (OD/PDF)** | 🟠 | ✅ **CLOSED** 2.7.738 — `package-order-render-reconcile-smoke`: a seeded flat-price package driven through the real chain to a persisted order reconciles across charge → stored → receipt/email itemization → Order Detail banner → Reports booked total. Package bills FLAT (not ×nights); the stall line carries the package NAME + "Package" units + flat price×qty; every surface equals the stored total. No bug found. |
 | **Hosted order page** pricing content (maximal order) | 🟡 | ◻️ OPEN — `c12-hosted` covers lookup only; needs a reconcile assertion. |
-| **Reports** for surcharge/package/group/shavings orders | 🟡 | ◻️ OPEN — `c15a` seeds plain orders only. |
+| **Reports** for surcharge/package/group/shavings orders | 🟡 | ◻️ PARTIAL — package order's Reports booked total now asserted (`package-order-render-reconcile-smoke`); surcharge/group/shavings Reports figures still rely on the base-total path (unadjusted `order_grand_total` no-op). |
 | **Mixed maximal order at PDF/EMAIL** | 🟡 | ◻️ partial — indirect via `surface-render-integrity`. |
 
 ## Findings so far
