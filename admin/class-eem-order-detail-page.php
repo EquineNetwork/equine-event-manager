@@ -966,7 +966,10 @@ class EEM_Order_Detail_Page {
 		$stay_type = isset( $order['rv_stay_type'] )      ? (string) $order['rv_stay_type']      : '';
 		$nights    = $this->compute_nights( $arrival, $departure );
 		$rv_addons = isset( $order['rv_type'] ) && is_array( $order['rv_type'] ) ? implode( ', ', $order['rv_type'] ) : '';
-		$subtotal  = isset( $order['rv_subtotal'] ) ? (float) $order['rv_subtotal'] : 0.0;
+		// Display the RV base (stored rv_subtotal minus any add-on/group/pre-entry
+		// folded into it — they render as their own cards), so this line matches the
+		// rate math instead of the extras-inclusive stored value (live audit #93198).
+		$subtotal  = $this->get_rv_base_subtotal_display( $order );
 		$unit_price = $this->component_unit_price( $order, 'rv' );
 
 		?>
@@ -1292,7 +1295,7 @@ class EEM_Order_Detail_Page {
 						<?php if ( $rv_summary_surcharge > 0 ) : ?>
 							<div class="eem-order-summary__line"><span><?php esc_html_e( 'Includes RV Premium Lots', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $rv_summary_surcharge, 2 ) ); ?></span></div>
 						<?php endif; ?>
-						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'RV Subtotal', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $rv_subtotal, 2 ) ); ?></span></div>
+						<div class="eem-order-summary__section-subtotal"><span><?php esc_html_e( 'RV Subtotal', 'equine-event-manager' ); ?></span><span><?php echo esc_html( '$' . number_format_i18n( $this->get_rv_base_subtotal_display( $order ), 2 ) ); ?></span></div>
 					</div>
 				<?php endif; ?>
 				<?php if ( $addon_subtotal > 0.005 ) : ?>
@@ -1627,12 +1630,49 @@ class EEM_Order_Detail_Page {
 		return $items;
 	}
 
+	/**
+	 * General add-on charges on the order, using the SAME logic as the summary
+	 * card's Add-Ons section (parsed "Add-On:" note subtotals + any out-of-band
+	 * residual). The previous residual-only formula omitted tax, so on an order
+	 * whose add-ons are folded into a component subtotal it returned the tax value
+	 * instead of the add-on charge (live audit 2026-07-02, order #93198).
+	 *
+	 * @param array $order Grouped order payload.
+	 * @return float Add-on charges.
+	 */
 	private function compute_addon_subtotal( array $order ) {
 		$total          = isset( $order['total'] ) ? (float) $order['total'] : 0.0;
 		$stall_subtotal = isset( $order['stall_subtotal'] ) ? (float) $order['stall_subtotal'] : 0.0;
 		$rv_subtotal    = isset( $order['rv_subtotal'] )    ? (float) $order['rv_subtotal']    : 0.0;
 		$fees           = isset( $order['fees'] ) ? (float) $order['fees'] : 0.0;
-		return max( 0.0, $total - $stall_subtotal - $rv_subtotal - $fees );
+		$tax            = isset( $order['tax'] )  ? (float) $order['tax']  : 0.0;
+		$parsed_addon   = $this->sum_note_subtotal( $order, '/(?:^|\n)Add-On:.*?Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi' );
+		$residual       = max( 0.0, $total - $stall_subtotal - $rv_subtotal - $fees - $tax );
+		return $parsed_addon + $residual;
+	}
+
+	/**
+	 * RV Reservation base subtotal for DISPLAY — the stored rv_subtotal minus any
+	 * add-on / group / pre-entry charges folded into it. Those extras attach to the
+	 * STALL component when a stall order exists, else the RV component (see
+	 * insert_reservation_orders() $attach_*_to). When they land on RV they're baked
+	 * into rv_subtotal AND rendered as their own sections, so the RV Subtotal line
+	 * must subtract them to avoid double-counting — mirroring the receipt itemizer
+	 * (get_order_rv_attached_extras_total) and the summary card's stall_subtotal.
+	 *
+	 * @param array $order Grouped order payload.
+	 * @return float RV base subtotal for display.
+	 */
+	private function get_rv_base_subtotal_display( array $order ): float {
+		$rv_subtotal    = isset( $order['rv_subtotal'] )    ? (float) $order['rv_subtotal']    : 0.0;
+		$stall_subtotal = isset( $order['stall_subtotal'] ) ? (float) $order['stall_subtotal'] : 0.0;
+		if ( $stall_subtotal > 0.005 ) {
+			return $rv_subtotal; // Extras attached to the stall component instead.
+		}
+		$extras = $this->sum_note_subtotal( $order, '/(?:^|\n)Add-On:.*?Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi' )
+			+ $this->sum_note_subtotal( $order, '/Group Charge:.*?Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi' )
+			+ $this->sum_note_subtotal( $order, '/Pre-Entry:.*?Subtotal:\s*\$?\s*([0-9,]+(?:\.\d{1,2})?)/mi' );
+		return max( 0.0, $rv_subtotal - $extras );
 	}
 
 	/**
