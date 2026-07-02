@@ -56,10 +56,12 @@ if ( '' !== $phone ) {
 	$check( 'helper includes the branding support phone', '' !== $digits && false !== strpos( preg_replace( '/\D+/', '', $html ), $digits ) );
 }
 
-// 4. $0 on load: rider count defaults to 0 (toggle stays ON) so the group section
-//    adds nothing until the customer sets a rider count.
+// 4. Opt-in default (Whitney 2026-07-02): the group toggle is OFF by default so a
+//    non-group customer checks out without hitting the rider-count requirement.
+//    Rider count still defaults to 0 for when a group booker turns the section on.
 $check( 'rider count input defaults to 0', false !== strpos( $html, 'name="group_rider_count" min="0" step="1" value="0"' ) );
-$check( 'group toggle is still ON by default', (bool) preg_match( '/data-eem-group-toggle checked/', $html ) );
+$check( 'group toggle renders', false !== strpos( $html, 'data-eem-group-toggle' ) );
+$check( 'group toggle is OFF by default (opt-in)', false === strpos( $html, 'data-eem-group-toggle checked' ) );
 
 // 5. The group subtotal placeholder renders at $0.00 (no pre-charge on load).
 $check( 'group subtotal renders $0.00 on load', false !== strpos( $html, 'data-eem-total="group_subtotal">$0.00' ) );

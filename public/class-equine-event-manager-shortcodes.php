@@ -1214,9 +1214,12 @@ class EEM_Shortcodes {
 							<div class="eem-reservation-section-heading eem-reservation-section-heading--collapsible">
 								<h4 class="eem-reservation-section__title"><span class="eem-reservation-section__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><?php esc_html_e( 'Group Reservation', 'equine-event-manager' ); ?></h4>
 								<label class="eem-reservation-section-toggle" aria-label="<?php esc_attr_e( 'Turn on group reservation', 'equine-event-manager' ); ?>">
-									<?php // Enabled in the editor → ON by default on the front so customers
-									// don't miss it. The customer can switch it off if they aren't a group. ?>
-									<input type="checkbox" name="group_reservation_enabled" value="1" data-eem-group-toggle checked />
+									<?php // Opt-in: default OFF (Whitney 2026-07-02) so a customer who
+									// isn't booking a group checks out without touching it. Defaulting ON
+									// blocked checkout with a "how many riders?" error even for non-group
+									// bookings. A group booker turns it on, which reveals the rider-count +
+									// rider fields (validation then requires a count). ?>
+									<input type="checkbox" name="group_reservation_enabled" value="1" data-eem-group-toggle />
 									<span class="eem-reservation-section-toggle__track" aria-hidden="true"></span>
 								</label>
 							</div>
