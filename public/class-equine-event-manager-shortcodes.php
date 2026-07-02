@@ -6294,6 +6294,37 @@ RV Lot: " . $rv_lot['name'] );
 
 
 	/**
+	 * Sum of the "extra" charges — general add-ons, group charges, and event
+	 * pre-entries — that were folded into the RV component's stored subtotal.
+	 *
+	 * These extras attach to the STALL component when a stall order exists, else to
+	 * the RV component (see insert_reservation_orders() $attach_*_to). When they land
+	 * on RV they are baked into rv_subtotal AND rendered as their own line items on the
+	 * receipt/email/summary, so the RV Reservation base line must subtract them to
+	 * avoid double-counting — exactly as get_order_stall_breakdown() does for the stall
+	 * base. Returns 0 when a stall order exists (the extras are on the stall row then).
+	 *
+	 * @param array $order Grouped order payload (EEM_Orders_Repository shape).
+	 * @return float Total extras attached to the RV component.
+	 */
+	private function get_order_rv_attached_extras_total( array $order ): float {
+		if ( ! empty( $this->get_order_component_rows( $order, 'stall' ) ) ) {
+			return 0.0; // Extras attached to the stall component instead.
+		}
+		$total = 0.0;
+		foreach ( $this->extract_general_addon_breakdown_from_notes( $order['notes'] ) as $row ) {
+			$total += (float) $row['subtotal'];
+		}
+		foreach ( $this->extract_group_charge_breakdown_from_notes( $order['notes'] ) as $row ) {
+			$total += (float) $row['subtotal'];
+		}
+		foreach ( $this->extract_pre_entry_breakdown_from_notes( $order['notes'] ) as $row ) {
+			$total += (float) $row['subtotal'];
+		}
+		return $total;
+	}
+
+	/**
 	 * Build the per-line "Purchased Items" rows from a grouped order payload.
 	 *
 	 * Shared by the C11 confirmation email and the C12 receipt / hosted page so
@@ -6319,7 +6350,12 @@ RV Lot: " . $rv_lot['name'] );
 		// it out so it shows as its own line, leaving the RV Reservation line at the
 		// base rate. The two add back to the stored subtotal, so totals are unchanged.
 		$rv_surcharge_total = $this->get_order_rv_surcharge_total( $order );
-		$rv_base_subtotal   = max( 0, (float) $order['rv_subtotal'] - $rv_surcharge_total );
+		// Add-ons / group charges / pre-entries attach to the RV component when there is
+		// no stall order; they're baked into rv_subtotal AND itemized as their own lines
+		// below, so subtract them to keep the RV Reservation line at its base rate —
+		// mirroring get_order_stall_breakdown(). Without this an RV-only order with a
+		// pre-entry double-counts it (RV line inflated + separate pre-entry line).
+		$rv_base_subtotal   = max( 0, (float) $order['rv_subtotal'] - $rv_surcharge_total - $this->get_order_rv_attached_extras_total( $order ) );
 
 		$stall_qty = absint( $order['stall_quantity'] );
 		$rv_qty    = absint( $order['rv_quantity'] );
@@ -6683,7 +6719,10 @@ RV Lot: " . $rv_lot['name'] );
 		$group_rider_names  = $this->extract_group_rider_names_from_notes( $order['notes'] );
 		// v4 premium-lot surcharge baked into rv_subtotal — split out for its own line.
 		$rv_surcharge_total = $this->get_order_rv_surcharge_total( $order );
-		$rv_base_subtotal   = max( 0, (float) $order['rv_subtotal'] - $rv_surcharge_total );
+		// Add-ons / group charges / pre-entries attach to RV when there's no stall order;
+		// they're baked into rv_subtotal AND itemized below, so subtract them to keep the
+		// RV Reservation line at its base rate (mirrors get_order_stall_breakdown()).
+		$rv_base_subtotal   = max( 0, (float) $order['rv_subtotal'] - $rv_surcharge_total - $this->get_order_rv_attached_extras_total( $order ) );
 
 		$stall_units = $this->get_billable_stay_units( $order['stall_arrival_date'], $order['stall_departure_date'], $order['stall_stay_type'] );
 		$rv_units    = $this->get_billable_stay_units( $order['rv_arrival_date'], $order['rv_departure_date'], $order['rv_stay_type'] );
@@ -6728,6 +6767,18 @@ RV Lot: " . $rv_lot['name'] );
 				continue;
 			}
 			$totals[] = array( 'label' => (string) $group_charge['label'], 'value' => $money( $group_charge['subtotal'] ) );
+		}
+
+		// Event pre-entries — itemized here (like add-ons + group charges) so the
+		// section lines sum to Subtotal on BOTH stall orders (get_order_stall_breakdown
+		// excludes them from the stall base) and RV-only orders (rv_base excludes them
+		// via get_order_rv_attached_extras_total). Previously omitted, which left the
+		// summary short by the pre-entry amount whenever a pre-entry was purchased.
+		foreach ( $this->extract_pre_entry_breakdown_from_notes( $order['notes'] ) as $pe_row ) {
+			if ( (float) $pe_row['subtotal'] <= 0 ) {
+				continue;
+			}
+			$totals[] = array( 'label' => (string) $pe_row['label'], 'value' => $money( $pe_row['subtotal'] ) );
 		}
 
 		$subtotal_val = max( 0, (float) $order['total'] - (float) $order['fees'] - (float) $order['tax'] );
